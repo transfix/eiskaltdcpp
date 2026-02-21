@@ -4,9 +4,7 @@ cmake_minimum_required (VERSION 3.2.0)
 
 include_directories(${PROJECT_BINARY_DIR})
 
-if (USE_QT)
-    find_package (Qt4 4.7.0 COMPONENTS QtCore QtGui QtXml QtNetwork REQUIRED)
-elseif (USE_QT5)
+if (USE_QT5)
     find_package (Qt5Core          5.0.2 REQUIRED)
     find_package (Qt5Gui           5.0.2 REQUIRED)
     find_package (Qt5Widgets       5.0.2 REQUIRED)
@@ -23,9 +21,7 @@ set (QT_USE_QTXML 1)
 set (QT_USE_QTWEBKIT 0)
 
 if (USE_QT_QML)
-    if (USE_QT)
-        find_package (Qt4 4.7.0 COMPONENTS QtDeclarative REQUIRED)
-    elseif (USE_QT5)
+    if (USE_QT5)
         find_package (Qt5Declarative 5.0.2 REQUIRED)
         find_package (Qt5XmlPatterns 5.0.2 REQUIRED)
     endif ()
@@ -42,11 +38,9 @@ if (APPLE OR HAIKU)
 endif ()
 
 if (DBUS_NOTIFY)
-    if (USE_QT)
-        find_package (Qt4 4.6.0 COMPONENTS QtDBus REQUIRED)
-    elseif (USE_QT5)
+    if (USE_QT5)
         find_package (Qt5DBus 5.0.2 REQUIRED)
-    endif (USE_QT)
+    endif (USE_QT5)
     add_definitions (-DDBUS_NOTIFY)
     set (QT_USE_QTDBUS 1)
     message (STATUS "Building with Qt DBus support")
@@ -55,9 +49,7 @@ else (DBUS_NOTIFY)
 endif (DBUS_NOTIFY)
 
 if (USE_JS)
-    if (USE_QT)
-        find_package (Qt4 4.6.0 COMPONENTS QtScript REQUIRED)
-    elseif (USE_QT5)
+    if (USE_QT5)
         find_package (Qt5Script 5.0.2 REQUIRED)
     endif ()
     add_definitions (-DUSE_JS)
@@ -68,11 +60,9 @@ else (USE_JS)
 endif (USE_JS)
 
 if (USE_QT_SQLITE)
-    if (USE_QT)
-        find_package (Qt4 4.6.0 COMPONENTS QtSql REQUIRED)
-    elseif (USE_QT5)
+    if (USE_QT5)
         find_package (Qt5Sql 5.0.2 REQUIRED)
-    endif (USE_QT)
+    endif (USE_QT5)
     add_definitions (-DUSE_QT_SQLITE)
     set (QT_USE_QTSQL 1)
     message (STATUS "Building with Qt SQLite support")
@@ -157,19 +147,14 @@ if (NOT USE_JS)
             ${PROJECT_SOURCE_DIR}/src/ScriptManagerDialog.h)
 endif (NOT USE_JS)
 
-if (USE_QT)
-    #Create moc files
-    QT4_WRAP_CPP (M_SRCS ${MOC_HDRS} OPTIONS -nn)
-    #Create .h files from ui files
-    QT4_WRAP_UI (U_SRCS ${UI_FORMS})
-elseif (USE_QT5)
+if (USE_QT5)
     #Create moc files
     QT5_WRAP_CPP (M_SRCS ${MOC_HDRS} OPTIONS -nn)
     #Create .h files from ui files
     QT5_WRAP_UI (U_SRCS ${UI_FORMS})
 endif()
 
-if (USE_QT5 AND NOT USE_QT)
+if (USE_QT5)
     set (QT_LRELEASE_EXECUTABLE ${Qt5_LRELEASE_EXECUTABLE})
     get_target_property(QT_RCC_EXECUTABLE Qt5::rcc LOCATION)
 endif()
@@ -235,11 +220,7 @@ execute_process (COMMAND ${QT_RCC_EXECUTABLE} -binary  ${DEFAULT_QRC_FILE}
                                               -o ${PROJECT_BINARY_DIR}/default.rcc
                  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/)
 
-if (USE_QT)
-    include (${QT_USE_FILE})
-    include_directories (${QT_INCLUDES})
-    list (APPEND LIBS ${QT_LIBRARIES})
-elseif (USE_QT5)
+if (USE_QT5)
     include_directories (${Qt5Core_INCLUDE_DIRS}
                          ${Qt5Gui_INCLUDE_DIRS}
                          ${Qt5Widgets_INCLUDE_DIRS}
@@ -544,19 +525,7 @@ if (INSTALL_METAINFO)
 endif ()
 
 if (APPLE)
-    if (USE_QT)
-        install (DIRECTORY ${QT_LIBRARY_DIR}/QtGui.framework/Resources/qt_menu.nib
-                 DESTINATION ${PROJECT_NAME_GLOBAL}.app/Contents/Resources)
-
-        install (CODE "
-                    file(WRITE \"\${CMAKE_INSTALL_PREFIX}/${qtconf_dest_dir}/qt.conf\" \"\")")
-
-        install (CODE "
-                    file(GLOB_RECURSE QTPLUGINS
-                        \"\${CMAKE_INSTALL_PREFIX}/${plugin_dest_dir}/plugins/*${CMAKE_SHARED_LIBRARY_SUFFIX}\")
-                    include(BundleUtilities)
-                    fixup_bundle(\"${APPS}\" \"\${QTPLUGINS}\" \"${DIRS}\")")
-    elseif (USE_QT5)
+    if (USE_QT5)
         if (${_qt5Core_install_prefix} STREQUAL "")
         message(WARNING "Warning! \"_qt5Core_install_prefix\" is not set, macdeployqt found in PATH will be used")
         set (MACDEPLOYQT "macdeployqt")
@@ -566,7 +535,7 @@ if (APPLE)
         install (CODE "
                     execute_process(COMMAND ${MACDEPLOYQT} ${PROJECT_NAME_GLOBAL}.app -verbose=2
                         WORKING_DIRECTORY \${CMAKE_INSTALL_PREFIX})")
-    endif (USE_QT)
+    endif (USE_QT5)
     set (CPACK_BINARY_DRAGNDROP ON)
 endif (APPLE)
 

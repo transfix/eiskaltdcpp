@@ -6,11 +6,9 @@ set (GTK2_DIR "${PROJECT_SOURCE_DIR}/cmake/")
 
 find_package (X11 QUIET)
 
-if (USE_GTK)
-    find_package (GTK2 REQUIRED gtk)
-elseif (USE_GTK3)
+if (USE_GTK3)
     find_package (GTK3 REQUIRED gtk)
-endif (USE_GTK)
+endif (USE_GTK3)
 
 if (USE_LIBGNOME2)
     message (STATUS "Building with LibGnome2 support")
@@ -45,14 +43,11 @@ set (GTK_HDRS ${gtk_hdrs} PARENT_SCOPE)
 set (GTK_UI   ${gtk_ui}  PARENT_SCOPE)
 set (GTHREAD "-lgthread-2.0")
 
-if (USE_GTK)
-    set (GTK_INCLUDE_DIRS ${GTK2_INCLUDE_DIRS})
-    set (GTK_LIBRARIES ${GTK2_LIBRARIES})
-elseif (USE_GTK3)
+if (USE_GTK3)
     add_definitions(-DGSEAL_ENABLE)
     set (GTK_INCLUDE_DIRS ${GTK3_INCLUDE_DIRS})
     set (GTK_LIBRARIES ${GTK3_LIBRARIES})
-endif (USE_GTK)
+endif (USE_GTK3)
 
 include_directories (${GTK_INCLUDE_DIRS}
                      ${LIBGNOME2_INCLUDE_DIRS}
