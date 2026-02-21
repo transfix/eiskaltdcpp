@@ -22,6 +22,7 @@
 #include "dcpp/User.h"
 #include "dcpp/CID.h"
 #include "dcpp/Util.h"
+#include "dcpp/DCPlusPlus.h"
 
 
 using namespace dcpp;
@@ -53,7 +54,7 @@ FavoriteUsers::FavoriteUsers(QWidget *parent) :
     WulforSettings *WS = WulforSettings::getInstance();
     connect(WS, SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
 
-    FavoriteManager::FavoriteMap ul = FavoriteManager::getInstance()->getFavoriteUsers();
+    FavoriteManager::FavoriteMap ul = dcpp::getContext()->getFavoriteManager()->getFavoriteUsers();
     VarMap params;
 
     for (auto &i : ul) {
@@ -61,7 +62,7 @@ FavoriteUsers::FavoriteUsers(QWidget *parent) :
 
         if (WBGET(WB_FAVUSERS_AUTOGRANT)){
             u.setFlag(FavoriteUser::FLAG_GRANTSLOT);
-            FavoriteManager::getInstance()->setAutoGrant(u.getUser(), true);
+            dcpp::getContext()->getFavoriteManager()->setAutoGrant(u.getUser(), true);
         }
 
         getParams(params, u);
@@ -70,7 +71,7 @@ FavoriteUsers::FavoriteUsers(QWidget *parent) :
 
     checkBox_AUTOGRANT->setChecked(WBGET(WB_FAVUSERS_AUTOGRANT));
 
-    FavoriteManager::getInstance()->addListener(this);
+    dcpp::getContext()->getFavoriteManager()->addListener(this);
 
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
 }
@@ -78,7 +79,7 @@ FavoriteUsers::FavoriteUsers(QWidget *parent) :
 FavoriteUsers::~FavoriteUsers(){
     WVSET(WS_FAVUSERS_STATE, treeView->header()->saveState());
     
-    FavoriteManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getFavoriteManager()->removeListener(this);
     
     delete model;
 }
@@ -127,11 +128,11 @@ bool FavoriteUsers::addUserToFav(const QString &id){
 
     string cid = id.toStdString();
 
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
     if (user){
-        if (user != ClientManager::getInstance()->getMe() && !FavoriteManager::getInstance()->isFavoriteUser(user))
-            FavoriteManager::getInstance()->addFavoriteUser(user);
+        if (user != dcpp::getContext()->getClientManager()->getMe() && !dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user))
+            dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
     }
 
     return true;
@@ -143,11 +144,11 @@ bool FavoriteUsers::remUserFromFav(const QString &id){
 
     string cid = id.toStdString();
 
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
     if (user){
-        if (user != ClientManager::getInstance()->getMe() && FavoriteManager::getInstance()->isFavoriteUser(user))
-            FavoriteManager::getInstance()->removeFavoriteUser(user);
+        if (user != dcpp::getContext()->getClientManager()->getMe() && dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user))
+            dcpp::getContext()->getFavoriteManager()->removeFavoriteUser(user);
     }
 
     return true;
@@ -163,9 +164,9 @@ void FavoriteUsers::addUser(const VarMap &params){
 
 void FavoriteUsers::updateUser(const QString &_cid, const QString &stat){
     dcpp::CID cid(_tq(_cid));
-    const dcpp::UserPtr &user = ClientManager::getInstance()->findUser(cid);
+    const dcpp::UserPtr &user = dcpp::getContext()->getClientManager()->findUser(cid);
 
-    QString userUrl = user ? _q(FavoriteManager::getInstance()->getUserURL(user)) : QString();
+    QString userUrl = user ? _q(dcpp::getContext()->getFavoriteManager()->getUserURL(user)) : QString();
     model->updateUserStatus(_cid, stat,
         (user && user->isOnline()) ? (WulforUtil::getInstance()->getHubNames(user)) : userUrl);
 }
@@ -176,10 +177,10 @@ void FavoriteUsers::remUser(const QString &cid){
 
 void FavoriteUsers::handleRemove(const QString & _cid){
     dcpp::CID cid(_tq(_cid));
-    const dcpp::UserPtr &user = ClientManager::getInstance()->findUser(cid);
+    const dcpp::UserPtr &user = dcpp::getContext()->getClientManager()->findUser(cid);
 
     if (user)
-        FavoriteManager::getInstance()->removeFavoriteUser(user);
+        dcpp::getContext()->getFavoriteManager()->removeFavoriteUser(user);
 }
 
 void FavoriteUsers::handleDesc(const QString & _cid){
@@ -190,7 +191,7 @@ void FavoriteUsers::handleDesc(const QString & _cid){
         return;
 
     dcpp::CID cid(_tq(_cid));
-    const dcpp::UserPtr &user = ClientManager::getInstance()->findUser(cid);
+    const dcpp::UserPtr &user = dcpp::getContext()->getClientManager()->findUser(cid);
 
     if (user){
         QString desc = QInputDialog::getText(this, item->data(COLUMN_USER_NICK).toString(), tr("Description"), QLineEdit::Normal, old);
@@ -198,7 +199,7 @@ void FavoriteUsers::handleDesc(const QString & _cid){
         if (!desc.isEmpty()){
             old = desc;
             item->updateColumn(COLUMN_USER_DESC, desc);
-            FavoriteManager::getInstance()->setUserDescription(user, _tq(desc));
+            dcpp::getContext()->getFavoriteManager()->setUserDescription(user, _tq(desc));
         }
     }
 }
@@ -210,10 +211,10 @@ void FavoriteUsers::getFileList(const VarMap &params){
     if (cid.empty())
         return;
 
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
     if (user){
         try {
-            QueueManager::getInstance()->addList(HintedUser(user, hub),  QueueItem::FLAG_CLIENT_VIEW, "");
+            dcpp::getContext()->getQueueManager()->addList(HintedUser(user, hub),  QueueItem::FLAG_CLIENT_VIEW, "");
         } catch(const Exception&) {
             // ...
         }
@@ -221,7 +222,7 @@ void FavoriteUsers::getFileList(const VarMap &params){
 }
 
 void FavoriteUsers::handleBrowseShare(const QString &cid){
-    FavoriteManager::FavoriteMap ul = FavoriteManager::getInstance()->getFavoriteUsers();
+    FavoriteManager::FavoriteMap ul = dcpp::getContext()->getFavoriteManager()->getFavoriteUsers();
 
     auto i = ul.find(CID(_tq(cid)));
     if (i != ul.end()){
@@ -234,7 +235,7 @@ void FavoriteUsers::handleBrowseShare(const QString &cid){
 }
 
 void FavoriteUsers::handleGrant(const QString &cid){
-    FavoriteManager::FavoriteMap ul = FavoriteManager::getInstance()->getFavoriteUsers();
+    FavoriteManager::FavoriteMap ul = dcpp::getContext()->getFavoriteManager()->getFavoriteUsers();
 
     auto i = ul.find(CID(_tq(cid)));
     if (i != ul.end()){
@@ -243,11 +244,11 @@ void FavoriteUsers::handleGrant(const QString &cid){
         if (_q(u.getUser()->getCID().toBase32()) == cid){
             if (u.isSet(FavoriteUser::FLAG_GRANTSLOT)){
                 u.unsetFlag(FavoriteUser::FLAG_GRANTSLOT);
-                FavoriteManager::getInstance()->setAutoGrant(u.getUser(), false);
+                dcpp::getContext()->getFavoriteManager()->setAutoGrant(u.getUser(), false);
             }
             else {
                 u.setFlag(FavoriteUser::FLAG_GRANTSLOT);
-                FavoriteManager::getInstance()->setAutoGrant(u.getUser(), true);
+                dcpp::getContext()->getFavoriteManager()->setAutoGrant(u.getUser(), true);
             }
         }
     }
@@ -314,7 +315,7 @@ void FavoriteUsers::slotSettingsChanged(const QString &key, const QString &){
 
 void FavoriteUsers::on(UserAdded, const FavoriteUser& aUser) noexcept {
     if (WBGET(WB_FAVUSERS_AUTOGRANT))
-        FavoriteManager::getInstance()->setAutoGrant(aUser.getUser(), true);
+        dcpp::getContext()->getFavoriteManager()->setAutoGrant(aUser.getUser(), true);
 
     VarMap params;
 
@@ -331,6 +332,6 @@ void FavoriteUsers::on(StatusChanged, const FavoriteUser& u) noexcept{
     emit coreStatusChanged(_q(u.getUser()->getCID().toBase32()), u.getUser()->isOnline()?
                                                                     tr("Online")
                                                                     :
-                               _q(Util::formatTime("%Y-%m-%d %H:%M", FavoriteManager::getInstance()->getLastSeen(u.getUser()))));
+                               _q(Util::formatTime("%Y-%m-%d %H:%M", dcpp::getContext()->getFavoriteManager()->getLastSeen(u.getUser()))));
 
 }

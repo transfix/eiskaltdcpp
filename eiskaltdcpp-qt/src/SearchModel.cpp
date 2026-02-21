@@ -28,6 +28,7 @@
 #include "dcpp/User.h"
 #include "dcpp/CID.h"
 #include "dcpp/ShareManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 #ifdef _DEBUG_QT_UI
 #include <QtDebug>
@@ -107,7 +108,7 @@ QVariant SearchModel::data(const QModelIndex &index, int role) const
             if (filterRole == static_cast<int>(SearchFrame::Highlight)){
                 TTHValue t(_tq(item->data(COLUMN_SF_TTH).toString()));
 
-                if (ShareManager::getInstance()->isTTHShared(t)){
+                if (dcpp::getContext()->getShareManager()->isTTHShared(t)){
                     static QColor c;
 
                     c.setNamedColor(WSGET(WS_APP_SHARED_FILES_COLOR));
@@ -124,7 +125,7 @@ QVariant SearchModel::data(const QModelIndex &index, int role) const
         case Qt::ToolTipRole:
         {
             TTHValue t(_tq(item->data(COLUMN_SF_TTH).toString()));
-            ShareManager *SM = ShareManager::getInstance();
+            ShareManager *SM = dcpp::getContext()->getShareManager();
 
             try{
                 QString toolTip = _q(SM->toReal(SM->toVirtual(t)));

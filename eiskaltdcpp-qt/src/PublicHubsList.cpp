@@ -16,6 +16,7 @@
 #include "dcpp/Singleton.h"
 #include "dcpp/FavoriteManager.h"
 #include "dcpp/SettingsManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 using namespace dcpp;
 
@@ -23,7 +24,7 @@ PublicHubsList::PublicHubsList(QWidget *parent): QDialog(parent)
 {
     setupUi(this);
 
-    listWidget->addItems(_q(SettingsManager::getInstance()->get(SettingsManager::HUBLIST_SERVERS))
+    listWidget->addItems(_q(dcpp::getContext()->getSettingsManager()->get(SettingsManager::HUBLIST_SERVERS))
                          .split(";", QString::SkipEmptyParts));
 
     connect(pushButton_DOWN, SIGNAL(clicked()), this, SLOT(slotDown()));
@@ -39,7 +40,7 @@ void PublicHubsList::slotAccepted(){
     for (int i = 0; i < listWidget->count(); i++)
         hubs += (hubs.isEmpty()? "" : ";") + listWidget->item(i)->text();
 
-    SettingsManager::getInstance()->set(SettingsManager::HUBLIST_SERVERS, _tq(hubs));
+    dcpp::getContext()->getSettingsManager()->set(SettingsManager::HUBLIST_SERVERS, _tq(hubs));
 }
 
 void PublicHubsList::slotDown(){

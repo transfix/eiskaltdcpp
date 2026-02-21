@@ -37,6 +37,7 @@
 #include "dcpp/HashManager.h"
 #include "dcpp/Util.h"
 #include "dcpp/ChatMessage.h"
+#include "dcpp/DCPlusPlus.h"
 
 #if HAVE_MALLOC_TRIM
 #include <malloc.h>
@@ -350,16 +351,16 @@ HubFrame::Menu::Action HubFrame::Menu::execUserMenu(Client *client, const QStrin
         int id = res->data().toInt();
 
         UserCommand uc;
-        if (id == -1 || !FavoriteManager::getInstance()->getUserCommand(id, uc))
+        if (id == -1 || !dcpp::getContext()->getFavoriteManager()->getUserCommand(id, uc))
             return None;
 
         StringMap params;
 
         if (WulforUtil::getInstance()->getUserCommandParams(uc, params)) {
-            UserPtr user = ClientManager::getInstance()->findUser(CID(cid.toStdString()));
+            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid.toStdString()));
 
             if (user)
-                ClientManager::getInstance()->userCommand(HintedUser(user, client->getHubUrl()), uc, params, true);
+                dcpp::getContext()->getClientManager()->userCommand(HintedUser(user, client->getHubUrl()), uc, params, true);
 
             return UserCommands;
         }
@@ -437,16 +438,16 @@ HubFrame::Menu::Action HubFrame::Menu::execChatMenu(Client *client, const QStrin
         int id = res->data().toInt();
 
         UserCommand uc;
-        if (id == -1 || !FavoriteManager::getInstance()->getUserCommand(id, uc))
+        if (id == -1 || !dcpp::getContext()->getFavoriteManager()->getUserCommand(id, uc))
             return None;
 
         StringMap params;
 
         if (WulforUtil::getInstance()->getUserCommandParams(uc, params)){
-            UserPtr user = ClientManager::getInstance()->findUser(CID(cid.toStdString()));
+            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid.toStdString()));
 
             if (user)
-                ClientManager::getInstance()->userCommand(HintedUser(user, client->getHubUrl()), uc, params, true);
+                dcpp::getContext()->getClientManager()->userCommand(HintedUser(user, client->getHubUrl()), uc, params, true);
 
             return UserCommands;
         }
@@ -791,7 +792,7 @@ void HubFrame::LinkParser::parseForMagnetAlias(QString &output){
         if (!rx.cap(2).isEmpty())
             name = rx.cap(2);
 
-        const TTHValue *tth = HashManager::getInstance()->getFileTTHif(_tq(fi.absoluteFilePath()));
+        const TTHValue *tth = dcpp::getContext()->getHashManager()->getFileTTHif(_tq(fi.absoluteFilePath()));
         if (tth) {
             QString urlStr = WulforUtil::getInstance()->makeMagnet(name, fi.size(), _q(tth->toBase32()));
             output.replace(pos, rx.cap(1).length(), urlStr);
@@ -819,7 +820,7 @@ HubFrame::HubFrame(QWidget *parent, QString hub="", QString encoding="")
 
     Menu::newInstance();
 
-    d->client = ClientManager::getInstance()->getClient(hub.toStdString());
+    d->client = dcpp::getContext()->getClientManager()->getClient(hub.toStdString());
     d->client->addListener(this);
 
     QString enc = WulforUtil::getInstance()->qtEnc2DcEnc(encoding);
@@ -838,7 +839,7 @@ HubFrame::HubFrame(QWidget *parent, QString hub="", QString encoding="")
 
     init();
 
-    FavoriteHubEntry* entry = FavoriteManager::getInstance()->getFavoriteHubEntry(_tq(hub));
+    FavoriteHubEntry* entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(_tq(hub));
 
     if (entry && entry->getDisableChat())
         disableChat();
@@ -850,7 +851,7 @@ HubFrame::HubFrame(QWidget *parent, QString hub="", QString encoding="")
     d->out_messages_index = 0;
     d->out_messages_unsent = false;
 
-    FavoriteManager::getInstance()->addListener(this);
+    dcpp::getContext()->getFavoriteManager()->addListener(this);
 }
 
 
@@ -1093,13 +1094,13 @@ void HubFrame::closeEvent(QCloseEvent *e){
 
     QObject::disconnect(this, nullptr, this, nullptr);
 
-    FavoriteManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getFavoriteManager()->removeListener(this);
 
     HubManager::getInstance()->unregisterHubUrl(_q(d->client->getHubUrl()));
 
     d->client->removeListener(this);
     d->client->disconnect(true);
-    ClientManager::getInstance()->putClient(d->client);
+    dcpp::getContext()->getClientManager()->putClient(d->client);
 
     save();
 
@@ -1774,11 +1775,11 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
         }
     }
     else if (cmd == "/rebuild") {
-        HashManager::getInstance()->rebuild();
+        dcpp::getContext()->getHashManager()->rebuild();
     }
     else if (cmd == "/refresh") {
-        ShareManager::getInstance()->setDirty();
-        ShareManager::getInstance()->refresh(true);
+        dcpp::getContext()->getShareManager()->setDirty();
+        dcpp::getContext()->getShareManager()->refresh(true);
     }
 #ifdef USE_ASPELL
     else if (cmd == "/aspell" && !emptyParam){
@@ -1928,7 +1929,7 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
     }
     else if (cmd == "/dcpps" && !emptyParam) {
         line = line.remove(0,7);
-        QString out = _q(SettingsManager::getInstance()->parseCoreCmd (_tq(line)));
+        QString out = _q(dcpp::getContext()->getSettingsManager()->parseCoreCmd (_tq(line)));
         if (fr == this)
             addStatus(out);
         else if (pm)
@@ -2138,7 +2139,7 @@ void HubFrame::userUpdated(const UserPtr &user, const dcpp::Identity &id){
     static WulforSettings *WS       = WulforSettings::getInstance();
     static bool showFavJoinsOnly    = WS->getBool(WB_CHAT_SHOW_JOINS_FAV);
     static bool showJoins           = WS->getBool(WB_CHAT_SHOW_JOINS);
-    const  bool isFavorite          = FavoriteManager::getInstance()->isFavoriteUser(user);
+    const  bool isFavorite          = dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user);
 
     if (!d->model)
         return;
@@ -2217,14 +2218,14 @@ void HubFrame::userRemoved(const UserPtr &user, const dcpp::Identity &id){
     if (WulforSettings::getInstance()->getBool(WB_CHAT_SHOW_JOINS)){
         do {
             if (WulforSettings::getInstance()->getBool(WB_CHAT_SHOW_JOINS_FAV) &&
-                !FavoriteManager::getInstance()->isFavoriteUser(user))
+                !dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user))
                 break;
 
             addStatus(nick + tr(" left the chat"));
         } while (false);
     }
 
-    if (FavoriteManager::getInstance()->isFavoriteUser(user))
+    if (dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user))
         Notification::getInstance()->showMessage(Notification::FAVORITE, tr("Favorites"), tr("%1 is now offline").arg(nick));
 
     d->model->removeUser(user);
@@ -2251,17 +2252,17 @@ void HubFrame::browseUserFiles(const QString& id, bool match){
 
     if (!cid.empty()){
         try{
-            UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
             if (user){
                 Q_D(HubFrame);
 
-                if (user == ClientManager::getInstance()->getMe())
+                if (user == dcpp::getContext()->getClientManager()->getMe())
                     MainWindow::getInstance()->browseOwnFiles();
                 else if (match)
-                    QueueManager::getInstance()->addList(HintedUser(user, d->client->getHubUrl()), QueueItem::FLAG_MATCH_QUEUE, "");
+                    dcpp::getContext()->getQueueManager()->addList(HintedUser(user, d->client->getHubUrl()), QueueItem::FLAG_MATCH_QUEUE, "");
                 else
-                    QueueManager::getInstance()->addList(HintedUser(user, d->client->getHubUrl()), QueueItem::FLAG_CLIENT_VIEW, "");
+                    dcpp::getContext()->getQueueManager()->addList(HintedUser(user, d->client->getHubUrl()), QueueItem::FLAG_CLIENT_VIEW, "");
             }
             else {
                 message = QString(tr("User not found")).toStdString();
@@ -2270,7 +2271,7 @@ void HubFrame::browseUserFiles(const QString& id, bool match){
         catch (const Exception &e){
             message = e.getError();
 
-            LogManager::getInstance()->message(message);
+            dcpp::getContext()->getLogManager()->message(message);
         }
     }
 }
@@ -2281,10 +2282,10 @@ void HubFrame::grantSlot(const QString& id){
     QString message = tr("User not found");
 
     if (!id.isEmpty()){
-        UserPtr user = ClientManager::getInstance()->findUser(CID(id.toStdString()));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(id.toStdString()));
 
         if (user){
-            UploadManager::getInstance()->reserveSlot(HintedUser(user, d->client->getHubUrl()));
+            dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, d->client->getHubUrl()));
             message = tr("Slot granted to ") + WulforUtil::getInstance()->getNicks(user->getCID(), _q(d->client->getHubUrl()));
         }
     }
@@ -2298,11 +2299,11 @@ void HubFrame::addUserToFav(const QString& id){
 
     string cid = id.toStdString();
 
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
     if (user){
-        if (user != ClientManager::getInstance()->getMe() && !FavoriteManager::getInstance()->isFavoriteUser(user))
-            FavoriteManager::getInstance()->addFavoriteUser(user);
+        if (user != dcpp::getContext()->getClientManager()->getMe() && !dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user))
+            dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
     }
 }
 
@@ -2312,11 +2313,11 @@ void HubFrame::delUserFromFav(const QString& id){
 
     string cid = id.toStdString();
 
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
     if (user){
-        if (user != ClientManager::getInstance()->getMe() && FavoriteManager::getInstance()->isFavoriteUser(user))
-            FavoriteManager::getInstance()->removeFavoriteUser(user);
+        if (user != dcpp::getContext()->getClientManager()->getMe() && dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user))
+            dcpp::getContext()->getFavoriteManager()->removeFavoriteUser(user);
     }
 }
 
@@ -2324,7 +2325,7 @@ void HubFrame::changeFavStatus(const QString &id) {
     if (id.isEmpty())
         return;
 
-    UserPtr user = ClientManager::getInstance()->findUser(CID(id.toStdString()));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(id.toStdString()));
 
     if (user) {
         Q_D(HubFrame);
@@ -2334,7 +2335,7 @@ void HubFrame::changeFavStatus(const QString &id) {
         if (d->model)
             item = d->model->itemForPtr(user);
 
-        bool bFav = FavoriteManager::getInstance()->isFavoriteUser(user);
+        bool bFav = dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user);
 
         if (item) {
             QModelIndex ixb = d->model->index(item->row(), COLUMN_NICK);
@@ -2352,16 +2353,16 @@ void HubFrame::changeFavStatus(const QString &id) {
 
 void HubFrame::delUserFromQueue(const QString& id){
     if (!id.isEmpty()){
-        UserPtr user = ClientManager::getInstance()->findUser(CID(id.toStdString()));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(id.toStdString()));
 
         if (user)
-            QueueManager::getInstance()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+            dcpp::getContext()->getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
     }
 }
 
 void HubFrame::addAsFavorite(){
     Q_D(HubFrame);
-    FavoriteHubEntry *existingHub = FavoriteManager::getInstance()->getFavoriteHubEntry(d->client->getHubUrl());
+    FavoriteHubEntry *existingHub = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(d->client->getHubUrl());
 
     if (!existingHub){
         FavoriteHubEntry aEntry;
@@ -2373,8 +2374,8 @@ void HubFrame::addAsFavorite(){
         aEntry.setNick(d->client->getMyNick());
         aEntry.setEncoding(d->client->getEncoding());
 
-        FavoriteManager::getInstance()->addFavorite(aEntry);
-        FavoriteManager::getInstance()->save();
+        dcpp::getContext()->getFavoriteManager()->addFavorite(aEntry);
+        dcpp::getContext()->getFavoriteManager()->save();
 
         addStatus(tr("Favorite hub added."));
     }
@@ -2663,7 +2664,7 @@ void HubFrame::getPassword(){
 
 void HubFrame::follow(QString redirect){
     if(!redirect.isEmpty()) {
-        if(ClientManager::getInstance()->isConnected(_tq(redirect))) {
+        if(dcpp::getContext()->getClientManager()->isConnected(_tq(redirect))) {
             addStatus(tr("Redirect request received to a hub that's already connected"));
             return;
         }
@@ -2674,9 +2675,9 @@ void HubFrame::follow(QString redirect){
         // the client is dead, long live the client!
         d->client->removeListener(this);
         HubManager::getInstance()->unregisterHubUrl(_q(d->client->getHubUrl()));
-        ClientManager::getInstance()->putClient(d->client);
+        dcpp::getContext()->getClientManager()->putClient(d->client);
         clearUsers();
-        d->client = ClientManager::getInstance()->getClient(url);
+        d->client = dcpp::getContext()->getClientManager()->getClient(url);
 
         d->client->addListener(this);
         d->client->connect();
@@ -3643,7 +3644,7 @@ void HubFrame::slotHubMenu(QAction *res) {
         const int id = res->data().toInt();
 
         UserCommand uc;
-        if (id == -1 || !FavoriteManager::getInstance()->getUserCommand(id, uc))
+        if (id == -1 || !dcpp::getContext()->getFavoriteManager()->getUserCommand(id, uc))
             return;
 
         StringMap params;
@@ -3807,7 +3808,7 @@ void HubFrame::on(ClientListener::UserRemoved, Client*, const OnlineUser &user) 
 }
 
 void HubFrame::on(ClientListener::Redirect, Client*, const string &link) noexcept{
-    if(ClientManager::getInstance()->isConnected(link)) {
+    if(dcpp::getContext()->getClientManager()->isConnected(link)) {
         emit coreStatusMsg(tr("Redirect request received to a hub that's already connected"));
 
         return;
@@ -3856,7 +3857,7 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
     if(message.to && message.replyTo)
     {
         //private message
-        const OnlineUser *user = (message.replyTo->getUser() == ClientManager::getInstance()->getMe())?
+        const OnlineUser *user = (message.replyTo->getUser() == dcpp::getContext()->getClientManager()->getMe())?
                                  message.to : message.replyTo;
 
         bool isBot = user->getIdentity().isBot() || user->getUser()->isSet(User::BOT);
@@ -3871,7 +3872,7 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
         CID id           = user->getUser()->getCID();
         QString nick     =  _q(message.from->getIdentity().getNick());
         bool isInSandBox = false;
-        bool isEcho      = (message.from->getUser() == ClientManager::getInstance()->getMe());
+        bool isEcho      = (message.from->getUser() == dcpp::getContext()->getClientManager()->getMe());
         bool hasPMWindow = d->pm.contains(_q(id.toBase32()));//PMWindow is created
 
         if (AntiSpam::getInstance())
@@ -3923,8 +3924,8 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
         else
             emit corePrivateMsg(map);
 
-        if (!(isBot || isHub) && (message.from->getUser() != ClientManager::getInstance()->getMe()) && Util::getAway() && !hasPMWindow)
-            ClientManager::getInstance()->privateMessage(HintedUser(user->getUser(), d->client->getHubUrl()), Util::getAwayMessage(), false);
+        if (!(isBot || isHub) && (message.from->getUser() != dcpp::getContext()->getClientManager()->getMe()) && Util::getAway() && !hasPMWindow)
+            dcpp::getContext()->getClientManager()->privateMessage(HintedUser(user->getUser(), d->client->getHubUrl()), Util::getAwayMessage(), false);
 
         if (BOOLSETTING(LOG_PRIVATE_CHAT)){
             string info = Util::formatAdditionalInfo(map["I4"].toString().toStdString(),BOOLSETTING(USE_IP),BOOLSETTING(GET_USER_COUNTRY));
@@ -3936,7 +3937,7 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
             params["hubURL"] = d->client->getHubUrl();
             params["userCID"] = id.toBase32();
             params["userNI"] = user->getIdentity().getNick();
-            params["myCID"] = ClientManager::getInstance()->getMe()->getCID().toBase32();
+            params["myCID"] = dcpp::getContext()->getClientManager()->getMe()->getCID().toBase32();
             params["userI4"] = message.from->getIdentity().getIp();
             LOG(LogManager::PM, params);
         }
@@ -3967,7 +3968,7 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
         else if (user->getIdentity().isBot())
             color = WS_CHAT_BOT_COLOR;
 
-        if (FavoriteManager::getInstance()->isFavoriteUser(user->getUser()))
+        if (dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user->getUser()))
             color = WS_CHAT_FAVUSER_COLOR;
 
         map["CLR"] = color;

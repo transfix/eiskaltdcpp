@@ -8,6 +8,7 @@
 ***************************************************************************/
 
 #include "PublicHubs.h"
+#include "dcpp/DCPlusPlus.h"
 #include "MainWindow.h"
 #include "WulforSettings.h"
 #include "AutoToolTip.h"
@@ -35,12 +36,12 @@ PublicHubs::PublicHubs(QWidget *parent) :
 
     lineEdit_FILTER->installEventFilter(this);
 
-    FavoriteManager::getInstance()->addListener(this);
+    dcpp::getContext()->getFavoriteManager()->addListener(this);
 
-    QString hubs = _q(SettingsManager::getInstance()->get(SettingsManager::HUBLIST_SERVERS));
+    QString hubs = _q(dcpp::getContext()->getSettingsManager()->get(SettingsManager::HUBLIST_SERVERS));
 
     comboBox_HUBS->addItems(hubs.split(";", QString::SkipEmptyParts));
-    comboBox_HUBS->setCurrentIndex(FavoriteManager::getInstance()->getSelectedHubList());
+    comboBox_HUBS->setCurrentIndex(dcpp::getContext()->getFavoriteManager()->getSelectedHubList());
 
     for (int i = 0; i < model->columnCount(); i++)
         comboBox_FILTER->addItem(model->headerData(i, Qt::Horizontal, Qt::DisplayRole).toString());
@@ -49,14 +50,14 @@ PublicHubs::PublicHubs(QWidget *parent) :
 
     frame->hide();
 
-    entries = FavoriteManager::getInstance()->getPublicHubs();
+    entries = dcpp::getContext()->getFavoriteManager()->getPublicHubs();
 
     updateList();
 
-    if(FavoriteManager::getInstance()->isDownloading()) {
+    if(dcpp::getContext()->getFavoriteManager()->isDownloading()) {
         label_STATUS->setText(tr("Downloading public hub list..."));
     } else if(entries.empty()) {
-        FavoriteManager::getInstance()->refresh();
+        dcpp::getContext()->getFavoriteManager()->refresh();
     }
 
     treeView->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -87,7 +88,7 @@ PublicHubs::~PublicHubs(){
     delete model;
     delete proxy;
 
-    FavoriteManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getFavoriteManager()->removeListener(this);
 }
 
 bool PublicHubs::eventFilter(QObject *obj, QEvent *e){
@@ -137,7 +138,7 @@ void PublicHubs::updateList(){
 void PublicHubs::onFinished(const QString &stat){
     setStatus(stat);
 
-    entries = FavoriteManager::getInstance()->getPublicHubs();
+    entries = dcpp::getContext()->getFavoriteManager()->getPublicHubs();
 
     updateList();
 }
@@ -186,7 +187,7 @@ void PublicHubs::slotContextMenu(){
 
             if (item && item->entry){
                 try{
-                    FavoriteManager::getInstance()->addFavorite(*item->entry);
+                    dcpp::getContext()->getFavoriteManager()->addFavorite(*item->entry);
                 }
                 catch (const std::exception&){}
             }
@@ -261,8 +262,8 @@ void PublicHubs::slotFilter(){
 }
 
 void PublicHubs::slotHubChanged(int pos){
-    FavoriteManager::getInstance()->setHubList(pos);
-    FavoriteManager::getInstance()->refresh();
+    dcpp::getContext()->getFavoriteManager()->setHubList(pos);
+    dcpp::getContext()->getFavoriteManager()->refresh();
 }
 
 void PublicHubs::slotFilterColumnChanged(){

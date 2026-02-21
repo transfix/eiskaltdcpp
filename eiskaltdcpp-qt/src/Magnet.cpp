@@ -22,6 +22,7 @@
 #include "dcpp/ClientManager.h"
 #include "dcpp/SettingsManager.h"
 #include "dcpp/QueueManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include "ArenaWidgetFactory.h"
 #include "SearchFrame.h"
@@ -276,7 +277,7 @@ void Magnet::download(const QString &name, const qulonglong &size, const QString
     if (tth.isEmpty())
         return;
     try {
-        QueueManager::getInstance()->add(_tq(name), size, TTHValue(_tq(tth)));
+        dcpp::getContext()->getQueueManager()->add(_tq(name), size, TTHValue(_tq(tth)));
     }
     catch (const std::exception& e){
         QMessageBox::critical(this, tr("Error"), tr("Some error ocurred when starting download:\n %1").arg(e.what()));

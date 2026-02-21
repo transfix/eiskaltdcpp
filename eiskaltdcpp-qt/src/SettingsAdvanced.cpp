@@ -8,6 +8,7 @@
 ***************************************************************************/
 
 #include "SettingsAdvanced.h"
+#include "dcpp/DCPlusPlus.h"
 #include "MainWindow.h"
 #include "WulforSettings.h"
 #include "WulforUtil.h"
@@ -27,7 +28,7 @@ SettingsAdvanced::~SettingsAdvanced() {
 }
 
 void SettingsAdvanced::ok() {
-    SettingsManager *SM = SettingsManager::getInstance();
+    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
 
     SM->set(SettingsManager::MIME_HANDLER, _tq(lineEdit_MIME->text()));
 }

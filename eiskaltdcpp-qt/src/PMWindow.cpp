@@ -22,6 +22,7 @@
 #include "dcpp/ClientManager.h"
 #include "dcpp/QueueManager.h"
 #include "dcpp/User.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include <QTextBlock>
 #include <QTextDocument>
@@ -441,7 +442,7 @@ void PMWindow::addUserData(const QString &nick){
 }
 
 void PMWindow::sendMessage(QString msg, const bool thirdPerson, const bool stripNewLines){
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid.toStdString()));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid.toStdString()));
 
     if (user && user->isOnline()){
 
@@ -451,7 +452,7 @@ void PMWindow::sendMessage(QString msg, const bool thirdPerson, const bool strip
         if (msg.isEmpty() || msg == "\n")
             return;
 
-        ClientManager::getInstance()->privateMessage(HintedUser(user, _tq(hubUrl)), _tq(msg), thirdPerson);
+        dcpp::getContext()->getClientManager()->privateMessage(HintedUser(user, _tq(hubUrl)), _tq(msg), thirdPerson);
     }
     else {
         addStatusMessage(tr("User went offline"));
@@ -542,13 +543,13 @@ void PMWindow::slotShare(){
 
     if (!cid.empty()){
         try{
-            UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
             if (user){
-                if (user == ClientManager::getInstance()->getMe())
+                if (user == dcpp::getContext()->getClientManager()->getMe())
                     MainWindow::getInstance()->browseOwnFiles();
                 else
-                    QueueManager::getInstance()->addList(HintedUser(user, _tq(hubUrl)), QueueItem::FLAG_CLIENT_VIEW, "");
+                    dcpp::getContext()->getQueueManager()->addList(HintedUser(user, _tq(hubUrl)), QueueItem::FLAG_CLIENT_VIEW, "");
             }
         }
         catch (const Exception &e){}

@@ -8,6 +8,7 @@
 ***************************************************************************/
 
 #include "SettingsGUI.h"
+#include "dcpp/DCPlusPlus.h"
 #include "WulforSettings.h"
 #include "WulforUtil.h"
 #include "MainWindow.h"
@@ -336,7 +337,7 @@ void SettingsGUI::init(){
 }
 
 void SettingsGUI::ok(){
-    SettingsManager *SM = SettingsManager::getInstance();
+    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
     {//Basic tab
         if (custom_style && comboBox_THEMES->currentIndex() > 0)
             WSSET(WS_APP_THEME, comboBox_THEMES->currentText());

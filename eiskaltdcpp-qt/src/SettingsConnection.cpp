@@ -15,6 +15,7 @@
 #include "dcpp/stdinc.h"
 #include "dcpp/SettingsManager.h"
 #include "dcpp/Socket.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include <QLineEdit>
 #include <QRadioButton>
@@ -65,7 +66,7 @@ bool SettingsConnection::eventFilter(QObject *obj, QEvent *e){
 void SettingsConnection::ok(){
 
     bool active = !radioButton_PASSIVE->isChecked();
-    SettingsManager *SM = SettingsManager::getInstance();
+    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
 
     int old_mode = SETTING(INCOMING_CONNECTIONS);
     SM->set(SettingsManager::AUTO_DETECT_CONNECTION, checkBox_AUTO_DETECT_CONNECTION->isChecked());

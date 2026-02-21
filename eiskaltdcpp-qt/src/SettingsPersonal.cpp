@@ -13,6 +13,7 @@
 
 #include "dcpp/stdinc.h"
 #include "dcpp/SettingsManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include "WulforUtil.h"
 #include "WulforSettings.h"
@@ -32,7 +33,7 @@ SettingsPersonal::~SettingsPersonal(){
 }
 
 void SettingsPersonal::ok(){
-    SettingsManager *SM = SettingsManager::getInstance();
+    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
 
     SM->set(SettingsManager::NICK, lineEdit_NICK->text().toStdString());
     SM->set(SettingsManager::EMAIL, lineEdit_EMAIL->text().toStdString());

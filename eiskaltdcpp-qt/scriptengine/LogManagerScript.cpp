@@ -13,15 +13,16 @@
 #include <QDateTime>
 
 #include "dcpp/Util.h"
+#include "dcpp/DCPlusPlus.h"
 
 LogManagerScript::LogManagerScript(QObject *parent) :
     QObject(parent)
 {
-    dcpp::LogManager::getInstance()->addListener(this);
+    dcpp::getContext()->getLogManager()->addListener(this);
 }
 
 LogManagerScript::~LogManagerScript(){
-    dcpp::LogManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getLogManager()->removeListener(this);
 }
 
 void LogManagerScript::on(Message, time_t t, const dcpp::string &msg) throw(){

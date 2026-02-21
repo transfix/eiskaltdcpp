@@ -12,6 +12,7 @@
 
 #include "dcpp/UploadManager.h"
 #include "dcpp/ClientManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include <QAbstractItemModel>
 #include <QMenu>
@@ -34,13 +35,13 @@ QueuedUsers::QueuedUsers(){
     connect(this, SIGNAL(coreWaitingRemoved(VarMap)), this, SLOT(slotWaitingRemoved(VarMap)), Qt::QueuedConnection);
     connect(treeView_USERS, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu()));
 
-    UploadManager::getInstance()->addListener(this);
+    dcpp::getContext()->getUploadManager()->addListener(this);
     
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
 }
 
 QueuedUsers::~QueuedUsers(){
-    UploadManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getUploadManager()->removeListener(this);
 }
 
 void QueuedUsers::closeEvent(QCloseEvent *e){
@@ -81,10 +82,10 @@ void QueuedUsers::slotContextMenu(){
             QString id = item->cid;
 
             if (!id.isEmpty()){
-                UserPtr user = ClientManager::getInstance()->findUser(CID(id.toStdString()));
+                UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(id.toStdString()));
 
                 if (user){
-                    try { UploadManager::getInstance()->reserveSlot(HintedUser(user, _tq(item->hub))); }
+                    try { dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, _tq(item->hub))); }
                     catch ( ... ) {}
                 }
             }

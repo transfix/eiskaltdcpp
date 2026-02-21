@@ -150,9 +150,9 @@ int main(int argc, char *argv[])
 #endif
 
     dcpp::startup(callBack, nullptr);
-    dcpp::TimerManager::getInstance()->start();
+    dcpp::getContext()->getTimerManager()->start();
 
-    HashManager::getInstance()->setPriority(Thread::IDLE);
+    dcpp::getContext()->getHashManager()->setPriority(Thread::IDLE);
 #if QT_VERSION < 0x050000
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
 #endif

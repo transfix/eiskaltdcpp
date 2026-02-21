@@ -13,6 +13,7 @@
 #include "WulforSettings.h"
 #include "dcpp/stdinc.h"
 #include "dcpp/ADLSearch.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include <QTreeView>
 #include <QHeaderView>
@@ -36,7 +37,7 @@ ADLS::ADLS(QWidget *parent):
 ADLS::~ADLS(){
     save();
 
-    ADLSearchManager::getInstance()->save();
+    dcpp::getContext()->getADLSearchManager()->save();
 
     delete model;
 }
@@ -75,7 +76,7 @@ void ADLS::init(){
 
     treeView->setModel(model);
 
-    ADLSearchManager::SearchCollection& collection = ADLSearchManager::getInstance()->collection;
+    ADLSearchManager::SearchCollection& collection = dcpp::getContext()->getADLSearchManager()->collection;
 
     for (const ADLSearch &search : collection) {
         addItem(search);
@@ -189,7 +190,7 @@ void ADLS::slotClicked(const QModelIndex &index){
         return;
 
     ADLSItem *item = reinterpret_cast<ADLSItem*>(index.internalPointer());
-    ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+    ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
     StrMap mapcheck;
     mapcheck["SSTRING"] = item->data(COLUMN_SSTRING).toString();
     mapcheck["DIRECTORY"] = item->data(COLUMN_DIRECTORY).toString();
@@ -204,7 +205,7 @@ void ADLS::slotClicked(const QModelIndex &index){
             collection[i] = entry;
         model->repaint();
 
-        ADLSearchManager::getInstance()->save();
+        dcpp::getContext()->getADLSearchManager()->save();
 }
 
 void ADLS::initEditor(ADLSEditor &editor){
@@ -213,7 +214,7 @@ void ADLS::initEditor(ADLSEditor &editor){
 
 void ADLS::slotAdd_newButtonClicked(){
     ADLSEditor editor;
-    ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+    ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
     ADLSearch search;
 
     initEditor(editor);
@@ -224,7 +225,7 @@ void ADLS::slotAdd_newButtonClicked(){
         getParams(editor, map);
         updateEntry(search, map);
         collection.push_back(search);
-        ADLSearchManager::getInstance()->save();
+        dcpp::getContext()->getADLSearchManager()->save();
         addItem(search);
     }
 }
@@ -240,7 +241,7 @@ void ADLS::slotChangeButtonClicked(){
     mapcheck["DIRECTORY"] = item->data(COLUMN_DIRECTORY).toString();
     VectorSize i = findEntry(mapcheck);
     ADLSEditor editor;
-    ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+    ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
     ADLSearch search = collection[i];
 
         StrMap map;
@@ -269,7 +270,7 @@ void ADLS::slotRemoveButtonClicked(){
     mapcheck["SSTRING"] = item->data(COLUMN_SSTRING).toString();
     mapcheck["DIRECTORY"] = item->data(COLUMN_DIRECTORY).toString();
     VectorSize i = findEntry(mapcheck);
-    ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+    ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
 
     if (i < collection.size()) {
         collection.erase(collection.begin() + i);
@@ -402,7 +403,7 @@ void ADLS::slotSettingsChanged(const QString &key, const QString &value){
 }
 
 /*ADLS::VectorSize*/int ADLS::findEntry(StrMap &map){
-    ADLSearchManager::SearchCollection& collection = ADLSearchManager::getInstance()->collection;
+    ADLSearchManager::SearchCollection& collection = dcpp::getContext()->getADLSearchManager()->collection;
     int j = 0;
     for (const ADLSearch &search : collection) {
         if (_q(search.searchString) == map["SSTRING"] &&

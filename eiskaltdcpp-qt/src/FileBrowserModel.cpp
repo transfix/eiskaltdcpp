@@ -29,6 +29,7 @@
 
 #include "dcpp/ShareManager.h"
 #include "dcpp/UploadManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 using namespace dcpp;
 
@@ -68,7 +69,7 @@ FileBrowserModel::~FileBrowserModel()
 
             f.close();
 
-            dcpp::UploadManager::getInstance()->reloadRestrictions();
+            dcpp::getContext()->getUploadManager()->reloadRestrictions();
         }
     }
 }
@@ -132,7 +133,7 @@ QVariant FileBrowserModel::data(const QModelIndex &index, int role) const
 
             TTHValue t(_tq(item->data(COLUMN_FILEBROWSER_TTH).toString()));
 
-            if (ShareManager::getInstance()->isTTHShared(t)){
+            if (dcpp::getContext()->getShareManager()->isTTHShared(t)){
                 static QColor c;
 
                 c.setNamedColor(WSGET(WS_APP_SHARED_FILES_COLOR));
@@ -201,7 +202,7 @@ QVariant FileBrowserModel::data(const QModelIndex &index, int role) const
             }
 
             TTHValue t(_tq(item->data(COLUMN_FILEBROWSER_TTH).toString()));
-            ShareManager *SM = ShareManager::getInstance();
+            ShareManager *SM = dcpp::getContext()->getShareManager();
 
             if (!ownList){
                 try{

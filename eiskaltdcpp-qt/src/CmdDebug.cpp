@@ -8,6 +8,7 @@
 ***************************************************************************/
 
 #include <QScrollBar>
+#include "dcpp/DCPlusPlus.h"
 #include <QStringList>
 #include <QTextCursor>
 #include <QTextEdit>
@@ -42,7 +43,7 @@ CmdDebug::CmdDebug(QWidget *parent)
     connect(toolButton_HIDE, SIGNAL(clicked()), this, SLOT(slotHideSearchBar()));
     connect(lineEdit_FIND, SIGNAL(textEdited(QString)), this, SLOT(slotFindTextEdited(QString)));
     connect(toolButton_ALL, SIGNAL(clicked()), this, SLOT(slotFindAll()));
-    DebugManager::getInstance()->addListener(this);
+    dcpp::getContext()->getDebugManager()->addListener(this);
 
     connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
 
@@ -53,7 +54,7 @@ CmdDebug::~CmdDebug()
 {
     Q_D(CmdDebug);
 
-    DebugManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getDebugManager()->removeListener(this);
     delete d;
 }
 

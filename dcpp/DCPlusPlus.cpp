@@ -45,4 +45,8 @@ void shutdown() {
     }
 }
 
+DCContext* getContext() noexcept {
+    return g_context.get();
+}
+
 } // namespace dcpp

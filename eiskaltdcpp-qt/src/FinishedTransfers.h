@@ -29,6 +29,7 @@
 #include "dcpp/FinishedItem.h"
 #include "dcpp/User.h"
 #include "dcpp/Singleton.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include "ui_UIFinishedTransfers.h"
 #include "ArenaWidget.h"
@@ -133,7 +134,7 @@ private:
 
         loadList();
 
-        FinishedManager::getInstance()->addListener(this);
+        dcpp::getContext()->getFinishedManager()->addListener(this);
 
         setUnload(false);
 
@@ -165,7 +166,7 @@ private:
         QString key = (comboBox->currentIndex() == 0)? WS_FTRANSFERS_FILES_STATE : WS_FTRANSFERS_USERS_STATE;
         WVSET(key, treeView->header()->saveState());
 
-        FinishedManager::getInstance()->removeListener(this);
+        dcpp::getContext()->getFinishedManager()->removeListener(this);
 
         model->clearModel();
 
@@ -180,9 +181,9 @@ private:
     void loadList(){
         VarMap params;
 
-        auto lock = FinishedManager::getInstance()->lock();
-        const FinishedManager::MapByFile &list = FinishedManager::getInstance()->getMapByFile(isUpload);
-        const FinishedManager::MapByUser &user = FinishedManager::getInstance()->getMapByUser(isUpload);
+        auto lock = dcpp::getContext()->getFinishedManager()->lock();
+        const FinishedManager::MapByFile &list = dcpp::getContext()->getFinishedManager()->getMapByFile(isUpload);
+        const FinishedManager::MapByUser &user = dcpp::getContext()->getFinishedManager()->getMapByUser(isUpload);
 
         for (auto it = list.begin(); it != list.end(); ++it) {
             params.clear();
@@ -368,7 +369,7 @@ private:
         model->clearModel();
 
         try {
-            FinishedManager::getInstance()->removeAll(isUpload);
+            dcpp::getContext()->getFinishedManager()->removeAll(isUpload);
         }
         catch (const std::exception&){}
 
@@ -558,7 +559,7 @@ private:
 
     void on(FinishedManagerListener::UpdatedUser, bool upload, const dcpp::HintedUser &user) noexcept{
         if (isUpload == upload){
-            const FinishedManager::MapByUser &umap = FinishedManager::getInstance()->getMapByUser(isUpload);
+            const FinishedManager::MapByUser &umap = dcpp::getContext()->getFinishedManager()->getMapByUser(isUpload);
             auto userit = umap.find(user);
             if (userit == umap.end())
                 return;

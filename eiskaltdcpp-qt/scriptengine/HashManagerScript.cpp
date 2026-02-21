@@ -11,17 +11,18 @@
 #include "WulforUtil.h"
 
 #include "dcpp/MerkleTree.h"
+#include "dcpp/DCPlusPlus.h"
 
 HashManagerScript::HashManagerScript(QObject *parent) :
     QObject(parent)
 {
-    HM = dcpp::HashManager::getInstance();
+    HM = dcpp::getContext()->getHashManager();
     HM->addListener(this);
 }
 
 HashManagerScript::HashManagerScript(const HashManagerScript &)
 {
-    HM = dcpp::HashManager::getInstance();
+    HM = dcpp::getContext()->getHashManager();
     HM->addListener(this);
 }
 
@@ -32,7 +33,7 @@ HashManagerScript::~HashManagerScript()
 
 HashManagerScript &HashManagerScript::operator=(const HashManagerScript &)
 {
-    HM = dcpp::HashManager::getInstance();
+    HM = dcpp::getContext()->getHashManager();
     HM->addListener(this);
 
     return *this;

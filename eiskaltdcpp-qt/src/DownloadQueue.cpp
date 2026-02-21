@@ -29,6 +29,7 @@
 #include "Magnet.h"
 #include "dcpp/ClientManager.h"
 #include "dcpp/User.h"
+#include "dcpp/DCPlusPlus.h"
 
 #if _DEBUG_QT_UI
 #include <QtDebug>
@@ -210,7 +211,7 @@ DownloadQueue::DownloadQueue(QWidget *parent):
 
     init();
 
-    QueueManager::getInstance()->addListener(this);
+    dcpp::getContext()->getQueueManager()->addListener(this);
 
     setUnload(false);
 }
@@ -218,7 +219,7 @@ DownloadQueue::DownloadQueue(QWidget *parent):
 DownloadQueue::~DownloadQueue(){
     save();
 
-    QueueManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getQueueManager()->removeListener(this);
     Q_D(DownloadQueue);
 
     delete d->menu;
@@ -252,7 +253,7 @@ void DownloadQueue::requestDelete(){
             items.push_front(item);
     }
 
-    QueueManager *QM = QueueManager::getInstance();
+    QueueManager *QM = dcpp::getContext()->getQueueManager();
     for (const auto &i : items){
         QString target = i->data(COLUMN_DOWNLOADQUEUE_PATH).toString() + i->data(COLUMN_DOWNLOADQUEUE_NAME).toString();
 
@@ -432,7 +433,7 @@ QStringList DownloadQueue::getSources(){
 }
 
 void DownloadQueue::removeTarget(const QString &target){
-    QueueManager *QM = QueueManager::getInstance();
+    QueueManager *QM = dcpp::getContext()->getQueueManager();
 
     try {
         QM->remove(target.toStdString());
@@ -441,11 +442,11 @@ void DownloadQueue::removeTarget(const QString &target){
 }
 
 void DownloadQueue::removeSource(const QString &cid, const QString &target){
-    QueueManager *QM = QueueManager::getInstance();
+    QueueManager *QM = dcpp::getContext()->getQueueManager();
     Q_D(DownloadQueue);
 
     if (d->sources.contains(target) && !cid.isEmpty()){
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid.toStdString()));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid.toStdString()));
 
         if (user){
             try {
@@ -459,7 +460,7 @@ void DownloadQueue::removeSource(const QString &cid, const QString &target){
 void DownloadQueue::loadList(){
     VarMap params;
 
-    const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
+    const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
 
     for (const auto &k : ll) {
         getParams(params, k.second);
@@ -467,7 +468,7 @@ void DownloadQueue::loadList(){
         addFile(params);
     }
 
-    QueueManager::getInstance()->unlockQueue();
+    dcpp::getContext()->getQueueManager()->unlockQueue();
 
     Q_D(DownloadQueue);
 
@@ -563,7 +564,7 @@ void DownloadQueue::slotContextMenu(const QPoint &){
     Q_D(DownloadQueue);
 
     Menu::Action act = d->menu->exec(d->sources, target, items.size() > 1);
-    QueueManager *QM = QueueManager::getInstance();
+    QueueManager *QM = dcpp::getContext()->getQueueManager();
     QVariant arg = d->menu->getArg();
     VarMap rmap;
 
@@ -672,7 +673,7 @@ void DownloadQueue::slotContextMenu(const QPoint &){
             QString cid = getCID(rmap);
 
             if (d->sources.contains(target) && !cid.isEmpty()){
-                UserPtr user = ClientManager::getInstance()->findUser(CID(cid.toStdString()));
+                UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid.toStdString()));
 
                 if (user){
                     try {
@@ -713,7 +714,7 @@ void DownloadQueue::slotContextMenu(const QPoint &){
             QString cid = getCID(rmap);
 
             if (d->sources.contains(target) && !cid.isEmpty()){
-                UserPtr user = ClientManager::getInstance()->findUser(CID(cid.toStdString()));
+                UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid.toStdString()));
 
                 if (user){
                     try {
@@ -731,7 +732,7 @@ void DownloadQueue::slotContextMenu(const QPoint &){
             QString cid = getCID(rmap);
 
             if (d->sources.contains(target) && !cid.isEmpty()){
-                UserPtr user = ClientManager::getInstance()->findUser(CID(cid.toStdString()));
+                UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid.toStdString()));
 
                 if (user){
                     try {

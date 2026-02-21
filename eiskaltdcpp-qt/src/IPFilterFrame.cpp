@@ -8,6 +8,7 @@
 ***************************************************************************/
 
 #include "IPFilterFrame.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -89,7 +90,7 @@ void IPFilterFrame::slotCheckBoxClick() {
         }
     }
 
-    SettingsManager *SM = SettingsManager::getInstance();
+    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
     SM->set(SettingsManager::IPFILTER, b);
 }
 

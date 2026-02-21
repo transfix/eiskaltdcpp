@@ -23,6 +23,7 @@
 #include "dcpp/HashManager.h"
 #include "dcpp/CID.h"
 #include "dcpp/File.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include "ArenaWidgetFactory.h"
 #include "SearchFrame.h"
@@ -80,7 +81,7 @@ void FileHasher::slotStart(){
         return;
 
     pushButton_RUN->setEnabled(false);
-    HashManager *HM = HashManager::getInstance();
+    HashManager *HM = dcpp::getContext()->getHashManager();
     const TTHValue *tth_val= HM->getFileTTHif(_tq(file));
     if (tth_val) {
         lineEdit_TTH->setText(_q(tth_val->toBase32()));

@@ -8,6 +8,7 @@
 ***************************************************************************/
 
 #include "Settings.h"
+#include "dcpp/DCPlusPlus.h"
 #include "SettingsPersonal.h"
 #include "SettingsConnection.h"
 #include "SettingsDownloads.h"
@@ -41,7 +42,7 @@ Settings::Settings(): is_dirty(false)
 Settings::~Settings(){
     if (is_dirty){
         WulforSettings::getInstance()->save();
-        SettingsManager::getInstance()->save();
+        dcpp::getContext()->getSettingsManager()->save();
     }
 }
 

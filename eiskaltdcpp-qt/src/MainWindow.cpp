@@ -85,6 +85,7 @@
 #include "dcpp/ConnectivityManager.h"
 #include "dcpp/Singleton.h"
 #include "dcpp/SettingsManager.h"
+#include "dcpp/DCPlusPlus.h"
 #include "WulforSettings.h"
 #include "WulforUtil.h"
 
@@ -259,9 +260,9 @@ MainWindow::MainWindow (QWidget *parent):
 
     retranslateUi();
 
-    LogManager::getInstance()->addListener(this);
-    TimerManager::getInstance()->addListener(this);
-    QueueManager::getInstance()->addListener(this);
+    dcpp::getContext()->getLogManager()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
+    dcpp::getContext()->getQueueManager()->addListener(this);
 
     startSocket(false);
 
@@ -276,13 +277,13 @@ MainWindow::MainWindow (QWidget *parent):
         qApp->setStyle(WSGET(WS_APP_THEME));
 
     if (WBGET(WB_APP_REMOVE_NOT_EX_DIRS)){
-        StringPairList directories = ShareManager::getInstance()->getDirectories();
+        StringPairList directories = dcpp::getContext()->getShareManager()->getDirectories();
         for (const auto &it : directories){
             QDir dir(_q(it.second));
 
             if (!dir.exists()){
                 try {
-                    ShareManager::getInstance()->removeDirectory(it.second);
+                    dcpp::getContext()->getShareManager()->removeDirectory(it.second);
                 }
                 catch (const std::exception&){}
             }
@@ -301,9 +302,9 @@ HashProgress* MainWindow::progress_dialog() {
 }
 
 MainWindow::~MainWindow(){
-    LogManager::getInstance()->removeListener(this);
-    TimerManager::getInstance()->removeListener(this);
-    QueueManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getLogManager()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
+    dcpp::getContext()->getQueueManager()->removeListener(this);
 
     if (AntiSpam::getInstance()){
         AntiSpam::getInstance()->saveLists();
@@ -386,11 +387,11 @@ void MainWindow::closeEvent(QCloseEvent *c_e){
         TransferView::deleteInstance();
     }
 
-    if (SearchManager::getInstance())
-        SearchManager::getInstance()->disconnect();
+    if (dcpp::getContext()->getSearchManager())
+        dcpp::getContext()->getSearchManager()->disconnect();
 
-    if (ConnectionManager::getInstance())
-        ConnectionManager::getInstance()->disconnect();
+    if (dcpp::getContext()->getConnectionManager())
+        dcpp::getContext()->getConnectionManager()->disconnect();
 
     if (Notification::getInstance()){
         Notification::deleteInstance();
@@ -462,7 +463,7 @@ void MainWindow::showEvent(QShowEvent *e){
         QString new_nick = QInputDialog::getText(this, tr("Enter user nick"), tr("Nick"), QLineEdit::Normal, tr("User"), &ok);
 
         if (ok && !new_nick.isEmpty()){
-            SettingsManager::getInstance()->set(SettingsManager::NICK, _tq(new_nick));
+            dcpp::getContext()->getSettingsManager()->set(SettingsManager::NICK, _tq(new_nick));
 
             ok = (QMessageBox::question(this, "EiskaltDC++", tr("Would you like to change other settings?"), QMessageBox::Yes, QMessageBox::No) == QMessageBox::No);
         }
@@ -1859,7 +1860,7 @@ void MainWindow::setStatusMessage(QString msg){
 }
 
 void MainWindow::autoconnect(){
-    const FavoriteHubEntryList& fl = FavoriteManager::getInstance()->getFavoriteHubs();
+    const FavoriteHubEntryList& fl = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
 
     for (const auto &i : fl) {
         FavoriteHubEntry* entry = i;
@@ -1928,7 +1929,7 @@ void MainWindow::slotFileBrowseFilelist(){
 }
 
 void MainWindow::slotFileMatchAllList(){
-    QueueManager::getInstance()->matchAllListings();
+    dcpp::getContext()->getQueueManager()->matchAllListings();
 }
 
 void MainWindow::redrawToolPanel(){
@@ -2130,13 +2131,13 @@ void MainWindow::toggleMainMenu(bool showMenu){
 
 void MainWindow::startSocket(bool changed){
     if (changed)
-        ConnectivityManager::getInstance()->updateLast();
+        dcpp::getContext()->getConnectivityManager()->updateLast();
     try {
-        ConnectivityManager::getInstance()->setup(true);
+        dcpp::getContext()->getConnectivityManager()->setup(true);
     } catch (const Exception& e) {
         showPortsError(e.getError());
     }
-    ClientManager::getInstance()->infoUpdated();
+    dcpp::getContext()->getClientManager()->infoUpdated();
 }
 void MainWindow::showPortsError(const string& port) {
     QString msg = tr("Unable to open %1 port. Searching or file transfers will not work correctly until you change settings or turn off any application that might be using that port.").arg(_q(port));
@@ -2183,8 +2184,8 @@ void MainWindow::slotFileOpenDownloadDirectory(){
 }
 
 void MainWindow::slotFileBrowseOwnFilelist(){
-    UserPtr user = ClientManager::getInstance()->getMe();
-    QString file = QString::fromStdString(ShareManager::getInstance()->getOwnListFile());
+    UserPtr user = dcpp::getContext()->getClientManager()->getMe();
+    QString file = QString::fromStdString(dcpp::getContext()->getShareManager()->getOwnListFile());
 
     ArenaWidgetFactory().create<ShareBrowser, UserPtr, QString, QString>(user, file, "");
 }
@@ -2205,7 +2206,7 @@ void MainWindow::slotFileRefreshShareHashProgress(){
     switch( HashProgress::getHashStatus() ) {
     case HashProgress::IDLE:
     {
-        ShareManager *SM = ShareManager::getInstance();
+        ShareManager *SM = dcpp::getContext()->getShareManager();
 
         SM->setDirty();
         SM->refresh(true);
@@ -2472,7 +2473,7 @@ void MainWindow::slotToolsSwitchSpeedLimit(){
     static WulforUtil *WU = WulforUtil::getInstance();
     Q_D(MainWindow);
 
-    SettingsManager::getInstance()->set(SettingsManager::THROTTLE_ENABLE, d->toolsSwitchSpeedLimit->isChecked());
+    dcpp::getContext()->getSettingsManager()->set(SettingsManager::THROTTLE_ENABLE, d->toolsSwitchSpeedLimit->isChecked());
     d->toolsSwitchSpeedLimit->setIcon(BOOLSETTING(THROTTLE_ENABLE)? WU->getPixmap(WulforUtil::eiSPEED_LIMIT_ON) : WU->getPixmap(WulforUtil::eiSPEED_LIMIT_OFF));
 }
 
@@ -2978,7 +2979,7 @@ void MainWindow::slotUpdateFavHubMenu() {
 
     d->favHubMenu->clear();
 
-    const FavoriteHubEntryList& fl = FavoriteManager::getInstance()->getFavoriteHubs();
+    const FavoriteHubEntryList& fl = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
 
     for (auto &i : fl) {
         const FavoriteHubEntry &entry = *i;
@@ -3069,8 +3070,8 @@ void MainWindow::on(dcpp::QueueManagerListener::Finished, QueueItem *item, const
         emit coreOpenShare(user, listName, _q(dir));
     }
 
-    const int qsize = QueueManager::getInstance()->lockQueue().size();
-    QueueManager::getInstance()->unlockQueue();
+    const int qsize = dcpp::getContext()->getQueueManager()->lockQueue().size();
+    dcpp::getContext()->getQueueManager()->unlockQueue();
 
     if (qsize == 1)
         emit notifyMessage(Notification::TRANSFER, tr("Download Queue"), tr("All downloads complete"));
@@ -3107,7 +3108,7 @@ void MainWindow::on(dcpp::TimerManagerListener::Second, uint64_t ticks) noexcept
     lastUp     = Socket::getTotalUp();
     lastDown   = Socket::getTotalDown();
 
-    SettingsManager *SM = SettingsManager::getInstance();
+    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
     SM->set(SettingsManager::TOTAL_UPLOAD,   SETTING(TOTAL_UPLOAD)   + upDiff);
     SM->set(SettingsManager::TOTAL_DOWNLOAD, SETTING(TOTAL_DOWNLOAD) + downDiff);
 

@@ -22,9 +22,13 @@
 
 namespace dcpp {
 
+class DCContext;
 using std::string;
 
 extern void startup(void (*f)(void*, const string&), void* p);
 extern void shutdown();
+
+/// Returns the global DCContext created by startup(). nullptr before startup / after shutdown.
+[[nodiscard]] extern DCContext* getContext() noexcept;
 
 } // namespace dcpp

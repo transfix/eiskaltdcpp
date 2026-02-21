@@ -18,6 +18,7 @@
 #include "dcpp/ClientManager.h"
 #include "dcpp/FavoriteManager.h"
 #include "dcpp/CID.h"
+#include "dcpp/DCPlusPlus.h"
 
 
 FavoriteUsersModel::FavoriteUsersModel(QObject *parent)
@@ -56,7 +57,7 @@ QVariant FavoriteUsersModel::data(const QModelIndex &index, int role) const
         case Qt::DecorationRole: // icon
         {
             if (!index.column()){
-                FavoriteManager::FavoriteMap ul = FavoriteManager::getInstance()->getFavoriteUsers();
+                FavoriteManager::FavoriteMap ul = dcpp::getContext()->getFavoriteManager()->getFavoriteUsers();
 
                 for (const auto &i : ul) {
                     const dcpp::FavoriteUser &u = i.second;

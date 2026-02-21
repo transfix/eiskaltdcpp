@@ -12,6 +12,7 @@
 
 #include "dcpp/CID.h"
 #include "dcpp/User.h"
+#include "dcpp/DCPlusPlus.h"
 
 static QStringList toQStringList(const dcpp::StringList &list){
     QStringList ret;
@@ -25,13 +26,13 @@ static QStringList toQStringList(const dcpp::StringList &list){
 ClientManagerScript::ClientManagerScript(QObject *parent) :
     QObject(parent)
 {
-    CM = dcpp::ClientManager::getInstance();
+    CM = dcpp::getContext()->getClientManager();
     CM->addListener(this);
 }
 
 ClientManagerScript::ClientManagerScript(const ClientManagerScript &)
 {
-    CM = dcpp::ClientManager::getInstance();
+    CM = dcpp::getContext()->getClientManager();
     CM->addListener(this);
 }
 
@@ -43,7 +44,7 @@ ClientManagerScript::~ClientManagerScript()
 
 ClientManagerScript &ClientManagerScript::operator=(const ClientManagerScript &)
 {
-    CM = dcpp::ClientManager::getInstance();
+    CM = dcpp::getContext()->getClientManager();
     CM->addListener(this);
 
     return *this;
@@ -79,7 +80,7 @@ QStringList ClientManagerScript::getHubNames(const QString& cid) const{
 }
 
 QStringList ClientManagerScript::getHubNames(const QString& cid, const QString& hubUrl) const{
-    StringList hubs = ClientManager::getInstance()->getHubNames(dcpp::CID(_tq(cid)), _tq(hubUrl));
+    StringList hubs = dcpp::getContext()->getClientManager()->getHubNames(dcpp::CID(_tq(cid)), _tq(hubUrl));
     
     if (hubs.empty())
         return QStringList();

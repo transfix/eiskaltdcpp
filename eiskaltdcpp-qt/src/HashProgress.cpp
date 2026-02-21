@@ -16,12 +16,13 @@
 #include "dcpp/HashManager.h"
 #include "dcpp/ShareManager.h"
 #include "dcpp/TimerManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 using namespace dcpp;
 
 unsigned HashProgress::getHashStatus() {
-    ShareManager *SM = ShareManager::getInstance();
-    HashManager  *HM = HashManager::getInstance();
+    ShareManager *SM = dcpp::getContext()->getShareManager();
+    HashManager  *HM = dcpp::getContext()->getHashManager();
     if( SM->isRefreshing() )
         return LISTUPDATE;
 
@@ -59,7 +60,7 @@ HashProgress::HashProgress(QWidget *parent):
     progress->setFormat(QString());
 #endif
 
-    HashManager::getInstance()->setPriority(Thread::NORMAL);
+    dcpp::getContext()->getHashManager()->setPriority(Thread::NORMAL);
 
     timer = new QTimer();
     timer->setInterval(250);
@@ -82,7 +83,7 @@ HashProgress::~HashProgress(){
 
     delete timer;
 
-    HashManager::getInstance()->setPriority(Thread::LOW);
+    dcpp::getContext()->getHashManager()->setPriority(Thread::LOW);
 }
 
 float HashProgress::getProgress() {
@@ -97,8 +98,8 @@ void HashProgress::timerTick(){
 
     stateButton();
 
-    HashManager::getInstance()->getStats(path, bytes, files);
-    if(ShareManager::getInstance()->isRefreshing()) {
+    dcpp::getContext()->getHashManager()->getStats(path, bytes, files);
+    if(dcpp::getContext()->getShareManager()->isRefreshing()) {
         file->setText(tr("Refreshing file list"));
         return;
     }
@@ -119,7 +120,7 @@ void HashProgress::timerTick(){
     }
 
     const double diff = tick - startTime;
-    const bool paused = HashManager::getInstance()->isHashingPaused();
+    const bool paused = dcpp::getContext()->getHashManager()->isHashingPaused();
 
     QString eta;
 
@@ -148,7 +149,7 @@ void HashProgress::timerTick(){
         status->setText(tr("%1 files/h, %2 files left").arg(filestat).arg((uint32_t)files));
         speed->setText(tr("%1/s, %2 left, %3 shared").arg(WulforUtil::formatBytes((int64_t)speedStat))
                                                      .arg(WulforUtil::formatBytes(bytes))
-                                                     .arg(WulforUtil::formatBytes(ShareManager::getInstance()->getShareSize())));
+                                                     .arg(WulforUtil::formatBytes(dcpp::getContext()->getShareManager()->getShareSize())));
 
         if(/*filestat == 0 ||*/ speedStat == 0) {
             eta = tr("-:--:--");
@@ -206,8 +207,8 @@ void HashProgress::timerTick(){
 }
 
 void HashProgress::slotStart(){
-    ShareManager *SM = ShareManager::getInstance();
-    HashManager  *HM = HashManager::getInstance();
+    ShareManager *SM = dcpp::getContext()->getShareManager();
+    HashManager  *HM = dcpp::getContext()->getHashManager();
     switch( getHashStatus() ) {
     case IDLE:
             SM->setDirty();

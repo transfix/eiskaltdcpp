@@ -11,6 +11,7 @@
 #include "WulforUtil.h"
 
 #include "dcpp/SettingsManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include <QDir>
 #include <QFileDialog>
@@ -67,7 +68,7 @@ void SettingsLog::init(){
 }
 
 void SettingsLog::ok(){
-    SettingsManager *sm = SettingsManager::getInstance();
+    SettingsManager *sm = dcpp::getContext()->getSettingsManager();
 
     QString path = lineEdit_LOGDIR->text();
     if (!path.isEmpty() && !path.endsWith(QDir::separator()))

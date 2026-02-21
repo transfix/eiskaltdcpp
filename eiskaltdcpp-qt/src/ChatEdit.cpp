@@ -11,6 +11,7 @@
 #include "WulforUtil.h"
 
 #include "dcpp/HashManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include <QCompleter>
 #include <QKeyEvent>
@@ -260,10 +261,10 @@ void ChatEdit::dropEvent(QDropEvent *e)
                 QString str = QDir::toNativeSeparators( fi.absoluteFilePath() );
 
                 if ( fi.exists() && fi.isFile() && !str.isEmpty() ) {
-                    const TTHValue *tth = HashManager::getInstance()->getFileTTHif(str.toStdString());
+                    const TTHValue *tth = dcpp::getContext()->getHashManager()->getFileTTHif(str.toStdString());
                     if ( !tth ) {
                         str = QDir::toNativeSeparators( fi.canonicalFilePath() ); // try to follow symlinks
-                        tth = HashManager::getInstance()->getFileTTHif(str.toStdString());
+                        tth = dcpp::getContext()->getHashManager()->getFileTTHif(str.toStdString());
                     }
                     if (tth)
                         urlStr = WulforUtil::getInstance()->makeMagnet(fi.fileName(), fi.size(), _q(tth->toBase32()));

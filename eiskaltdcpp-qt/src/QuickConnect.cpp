@@ -8,6 +8,7 @@
 ***************************************************************************/
 
 #include <QList>
+#include "dcpp/DCPlusPlus.h"
 
 #include "QuickConnect.h"
 #include "HubFrame.h"
@@ -45,7 +46,7 @@ void QuickConnect::slotAccept() {
         encoding = "UTF-8";
     if (!hub.isEmpty()) {
         if (encoding.isEmpty()){//Has favorite entry for hub?
-            FavoriteHubEntry* entry = FavoriteManager::getInstance()->getFavoriteHubEntry(_tq(hub));
+            FavoriteHubEntry* entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(_tq(hub));
 
             if (entry)
                 encoding = WulforUtil::getInstance()->dcEnc2QtEnc(_q(entry->getEncoding()));

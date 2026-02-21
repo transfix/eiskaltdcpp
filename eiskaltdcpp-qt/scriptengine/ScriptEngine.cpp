@@ -8,6 +8,7 @@
 ***************************************************************************/
 
 #include "ScriptEngine.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include "ArenaWidget.h"
 #include "ArenaWidgetFactory.h"
@@ -350,7 +351,7 @@ static QScriptValue getMagnets(QScriptContext *ctx, QScriptEngine *engine){
         if (!file.exists())
             continue;
 
-        const dcpp::TTHValue *tth = dcpp::HashManager::getInstance()->getFileTTHif(_tq(f));
+        const dcpp::TTHValue *tth = dcpp::getContext()->getHashManager()->getFileTTHif(_tq(f));
 
         if (tth)
             magnets.push_back(WulforUtil::getInstance()->makeMagnet(f.split(QDir::separator(), QString::SkipEmptyParts).last(),

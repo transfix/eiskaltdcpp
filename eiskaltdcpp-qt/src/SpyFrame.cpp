@@ -8,6 +8,7 @@
 ***************************************************************************/
 
 #include "SpyFrame.h"
+#include "dcpp/DCPlusPlus.h"
 #include "SpyModel.h"
 #include "WulforUtil.h"
 #include "SearchFrame.h"
@@ -43,7 +44,7 @@ SpyFrame::SpyFrame(QWidget *parent)
 SpyFrame::~SpyFrame(){
     WVSET("spyframe-header-state", treeView->header()->saveState());
     
-    ClientManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getClientManager()->removeListener(this);
 }
 
 void SpyFrame::closeEvent(QCloseEvent *e){
@@ -75,12 +76,12 @@ void SpyFrame::slotStartStop(){
     if (!started){
         pushButton->setText(tr("Stop"));
 
-        ClientManager::getInstance()->addListener(this);
+        dcpp::getContext()->getClientManager()->addListener(this);
     }
     else {
         pushButton->setText(tr("Start"));
 
-        ClientManager::getInstance()->removeListener(this);
+        dcpp::getContext()->getClientManager()->removeListener(this);
     }
 
     started = !started;
