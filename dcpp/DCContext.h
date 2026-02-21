@@ -19,6 +19,28 @@
 
 namespace dcpp {
 
+class DCContext;  // forward declaration for ContextAware
+
+/**
+ * Mixin base for classes that hold a back-pointer to their owning DCContext.
+ *
+ * All manager classes will inherit from ContextAware (in addition to their
+ * existing bases). During the migration period ctx() may return nullptr when
+ * managers are still created via the Singleton path.
+ */
+class ContextAware {
+public:
+    DCContext* ctx() const noexcept { return ctx_; }
+    void setContext(DCContext* ctx) noexcept { ctx_ = ctx; }
+
+protected:
+    ContextAware() noexcept : ctx_(nullptr) {}
+    ~ContextAware() = default;
+
+private:
+    DCContext* ctx_;
+};
+
 /**
  * Application context that owns all manager instances.
  *

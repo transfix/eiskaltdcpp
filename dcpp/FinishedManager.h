@@ -24,6 +24,7 @@
 #include "Speaker.h"
 #include "CriticalSection.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "FinishedManagerListener.h"
 #include "Util.h"
 #include "User.h"
@@ -63,7 +64,7 @@ private:
 };
 /**/
 class FinishedManager : public Singleton<FinishedManager>,
-        public Speaker<FinishedManagerListener>, private DownloadManagerListener, private UploadManagerListener, private QueueManagerListener
+        public Speaker<FinishedManagerListener>, private DownloadManagerListener, private UploadManagerListener, private QueueManagerListener, public ContextAware
 {
 public:
     typedef unordered_map<string, FinishedFileItemPtr> MapByFile;

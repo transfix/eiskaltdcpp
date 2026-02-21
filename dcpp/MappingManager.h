@@ -24,6 +24,7 @@
 #include "Atomic.h"
 #include "forward.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "Thread.h"
 #include "UPnP.h"
 
@@ -36,7 +37,7 @@ using std::vector;
 
 class MappingManager :
         public Singleton<MappingManager>,
-        private Thread
+        private Thread, public ContextAware
 {
 public:
     /**

@@ -37,6 +37,7 @@
 
 #include "StringSearch.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "BloomFilter.h"
 #include "FastAlloc.h"
 #include "MerkleTree.h"
@@ -67,7 +68,7 @@ class MemoryInputStream;
 
 struct ShareLoader;
 class ShareManager : public Singleton<ShareManager>, private SettingsManagerListener, private Thread, private TimerManagerListener,
-        private HashManagerListener, private QueueManagerListener
+        private HashManagerListener, private QueueManagerListener, public ContextAware
 {
 public:
     /**

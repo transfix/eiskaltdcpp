@@ -28,6 +28,7 @@
 #include "HintedUser.h"
 #include "NonCopyable.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "TimerManager.h"
 #include "UserConnectionListener.h"
 
@@ -99,7 +100,7 @@ inline bool operator==(ConnectionQueueItem::Ptr ptr, const UserPtr& aUser) { ret
 
 class ConnectionManager : public Speaker<ConnectionManagerListener>,
         public UserConnectionListener, TimerManagerListener,
-        public Singleton<ConnectionManager>
+        public Singleton<ConnectionManager>, public ContextAware
 {
 public:
     void nmdcExpect(const string& aNick, const string& aMyNick, const string& aHubUrl) {

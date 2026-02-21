@@ -18,6 +18,7 @@
 #pragma once
 
 #include "Singleton.h"
+#include "DCContext.h"
 #include "User.h"
 #include "Socket.h"
 #include "TimerManager.h"
@@ -105,7 +106,7 @@ public:
     void EvaluateChunk(const string& chunk);
 };
 
-class ScriptManager: public ScriptInstance, public Singleton<ScriptManager>, public Speaker<ScriptManagerListener>, private ClientManagerListener, private TimerManagerListener
+class ScriptManager: public ScriptInstance, public Singleton<ScriptManager>, public Speaker<ScriptManagerListener>, private ClientManagerListener, private TimerManagerListener, public ContextAware
 {
     Socket s;
 

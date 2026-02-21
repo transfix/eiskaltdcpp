@@ -23,6 +23,7 @@
 #include "UserCommand.h"
 #include "FavoriteUser.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "ClientManagerListener.h"
 #include "FavoriteManagerListener.h"
 #include "HubEntry.h"
@@ -37,7 +38,7 @@ class SimpleXML;
  * Public hub list, favorites (hub&user). Assumed to be called only by UI thread.
  */
 class FavoriteManager : public Speaker<FavoriteManagerListener>, private HttpConnectionListener, public Singleton<FavoriteManager>,
-        private SettingsManagerListener, private ClientManagerListener
+        private SettingsManagerListener, private ClientManagerListener, public ContextAware
 {
 public:
     // Public Hubs

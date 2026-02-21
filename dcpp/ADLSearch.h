@@ -25,6 +25,7 @@
 #include "DirectoryListing.h"
 #include "SettingsManager.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "StringSearch.h"
 #include "Util.h"
 
@@ -102,7 +103,7 @@ private:
 };
 
 ///  Class that holds all active searches
-class ADLSearchManager : public Singleton<ADLSearchManager>
+class ADLSearchManager : public Singleton<ADLSearchManager>, public ContextAware
 {
 public:
     // Destination directory indexing

@@ -18,11 +18,12 @@
 #include "dcpp/stdinc.h"
 #include "dcpp/HttpConnection.h"
 #include "dcpp/Singleton.h"
+#include "dcpp/DCContext.h"
 #include "dcpp/TimerManager.h"
 
 namespace dcpp {
 
-class DynDNS : public Singleton<DynDNS>, private HttpConnectionListener
+class DynDNS : public Singleton<DynDNS>, private HttpConnectionListener, public ContextAware
 {
 public:
     DynDNS();

@@ -20,6 +20,7 @@
 #include "Util.h"
 #include "Speaker.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "Exception.h"
 
 namespace dcpp {
@@ -42,7 +43,7 @@ public:
     virtual void on(SearchTypesChanged) noexcept { }
 };
 
-class SettingsManager : public Singleton<SettingsManager>, public Speaker<SettingsManagerListener>
+class SettingsManager : public Singleton<SettingsManager>, public Speaker<SettingsManagerListener>, public ContextAware
 {
 public:
     typedef std::unordered_map<string, StringList> SearchTypes;

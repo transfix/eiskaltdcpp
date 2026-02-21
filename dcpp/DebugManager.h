@@ -18,6 +18,7 @@
 #pragma once
 
 #include "Singleton.h"
+#include "DCContext.h"
 #include "TimerManager.h"
 #include "LogManager.h"
 #include "SettingsManager.h"
@@ -35,7 +36,7 @@ public:
     virtual void on(DebugCommand, const string&, int, const string&) noexcept { }
 };
 
-class DebugManager : public Singleton<DebugManager>, public Speaker<DebugManagerListener> {
+class DebugManager : public Singleton<DebugManager>, public Speaker<DebugManagerListener>, public ContextAware {
 public:
     void SendCommandMessage(const string& mess, int typeDir, const string& ip) {
         fire(DebugManagerListener::DebugCommand(), mess, typeDir, ip);

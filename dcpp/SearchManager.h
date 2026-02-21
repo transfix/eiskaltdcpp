@@ -24,6 +24,7 @@
 #include "Thread.h"
 #include "Client.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "Semaphore.h"
 #include "SearchManagerListener.h"
 #include "TimerManager.h"
@@ -35,7 +36,7 @@ namespace dcpp {
 class SearchManager;
 class SocketException;
 
-class SearchManager : public Speaker<SearchManagerListener>, public Singleton<SearchManager>, public Thread
+class SearchManager : public Speaker<SearchManagerListener>, public Singleton<SearchManager>, public Thread, public ContextAware
 {
 public:
     enum SizeModes {

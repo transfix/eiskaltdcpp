@@ -25,6 +25,7 @@
 #include "OnlineUser.h"
 #include "SettingsManager.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "Socket.h"
 #include "TimerManager.h"
 
@@ -34,7 +35,7 @@ class UserCommand;
 
 class ClientManager : public Speaker<ClientManagerListener>,
         private ClientListener, public Singleton<ClientManager>,
-        private TimerManagerListener
+        private TimerManagerListener, public ContextAware
 {
 public:
     Client* getClient(const string& aHubURL);

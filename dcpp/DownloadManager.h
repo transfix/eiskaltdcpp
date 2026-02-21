@@ -23,6 +23,7 @@
 #include "QueueItem.h"
 #include "TimerManager.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "MerkleTree.h"
 #include "Speaker.h"
 
@@ -34,7 +35,7 @@ namespace dcpp {
  */
 class DownloadManager : public Speaker<DownloadManagerListener>,
         private UserConnectionListener, private TimerManagerListener,
-        public Singleton<DownloadManager>
+        public Singleton<DownloadManager>, public ContextAware
 {
 public:
 

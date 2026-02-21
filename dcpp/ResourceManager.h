@@ -18,10 +18,11 @@
 #pragma once
 
 #include "Singleton.h"
+#include "DCContext.h"
 
 namespace dcpp {
 
-class ResourceManager : public Singleton<ResourceManager> {
+class ResourceManager : public Singleton<ResourceManager>, public ContextAware {
 public:
 
     bool isRTL() { return rtl; }

@@ -22,6 +22,7 @@
 #include "SettingsManager.h"
 #include "Exception.h"
 #include "Singleton.h"
+#include "DCContext.h"
 
 #include "SSLSocket.h"
 #include "SSL.h"
@@ -33,7 +34,7 @@ using std::string;
 
 STANDARD_EXCEPTION(CryptoException);
 
-class CryptoManager : public Singleton<CryptoManager>
+class CryptoManager : public Singleton<CryptoManager>, public ContextAware
 {
 public:
     string makeKey(const string& aLock);

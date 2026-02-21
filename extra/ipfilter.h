@@ -13,6 +13,7 @@
 
 #include "dcpp/stdinc.h"
 #include "dcpp/Singleton.h"
+#include "dcpp/DCContext.h"
 
 enum eDIRECTION {
     eDIRECTION_IN = 0,
@@ -37,7 +38,7 @@ typedef std::unordered_map<uint32_t, IPFilterElem*> IPHash;
 typedef std::vector<IPFilterElem*> IPList;
 
 class IPFilter :
-        public dcpp::Singleton<IPFilter>
+        public dcpp::Singleton<IPFilter>, public dcpp::ContextAware
 {
     friend class dcpp::Singleton<IPFilter>;
 

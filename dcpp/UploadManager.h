@@ -25,6 +25,7 @@
 #include "forward.h"
 #include "UserConnectionListener.h"
 #include "Singleton.h"
+#include "DCContext.h"
 #include "UploadManagerListener.h"
 #include "Client.h"
 #include "ClientManagerListener.h"
@@ -39,7 +40,7 @@
 
 namespace dcpp {
 
-class UploadManager : private ClientManagerListener, private UserConnectionListener, public Speaker<UploadManagerListener>, private TimerManagerListener, public Singleton<UploadManager>
+class UploadManager : private ClientManagerListener, private UserConnectionListener, public Speaker<UploadManagerListener>, private TimerManagerListener, public Singleton<UploadManager>, public ContextAware
 {
 public:
     /** @return Number of uploads. */

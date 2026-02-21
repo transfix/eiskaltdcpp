@@ -21,6 +21,7 @@
 #include "Thread.h"
 #include "Speaker.h"
 #include "Singleton.h"
+#include "DCContext.h"
 
 #include <mutex>
 #include <climits>
@@ -43,7 +44,7 @@ public:
     virtual void on(Minute, uint64_t) noexcept { }
 };
 
-class TimerManager : public Speaker<TimerManagerListener>, public Singleton<TimerManager>, public Thread
+class TimerManager : public Speaker<TimerManagerListener>, public Singleton<TimerManager>, public Thread, public ContextAware
 {
 public:
     void shutdown();
