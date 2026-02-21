@@ -531,7 +531,7 @@ void WulforUtil::registerIcons()
 {
     // Holds a mapping of custom icon names -> stock icon names.
     // Not all icons have stock representations.
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
     map<string, string> icons;
     icons["eiskaltdcpp"] = "eiskaltdcpp";
     icons["icon_msg"] = wsm->getString("icon_msg");

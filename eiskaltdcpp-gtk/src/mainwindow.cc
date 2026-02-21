@@ -2353,9 +2353,9 @@ void MainWindow::autoConnect_client()
 
 void MainWindow::startSocket_client(bool changed){
     if (changed)
-        ConnectivityManager::getInstance()->updateLast();
+        dcpp::getContext()->getConnectivityManager()->updateLast();
     try {
-        ConnectivityManager::getInstance()->setup(true);
+        dcpp::getContext()->getConnectivityManager()->setup(true);
     } catch (const Exception& e) {
         showPortsError(e.getError());
     }

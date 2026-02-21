@@ -1264,7 +1264,7 @@ void Hub::updateCursor_gui(GtkWidget *widget)
 
 void Hub::preferences_gui()
 {
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
     string fore, back;
     bool bold = false, italic = false;
 
@@ -1397,7 +1397,7 @@ void Hub::getSettingTag_gui(WulforSettingsManager *wsm, const Tag::TypeTag type,
 
 GtkTextTag* Hub::createTag_gui(const string &tagname, Tag::TypeTag type)
 {
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
     GtkTextTag *tag = gtk_text_tag_table_lookup(gtk_text_buffer_get_tag_table(chatBuffer), tagname.c_str());
 
     if (!tag)

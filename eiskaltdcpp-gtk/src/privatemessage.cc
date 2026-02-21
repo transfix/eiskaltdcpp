@@ -250,7 +250,7 @@ void PrivateMessage::addStatusMessage_gui(string message, Msg::TypeMsg typemsg)
 
 void PrivateMessage::preferences_gui()
 {
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
     string fore, back;
     bool bold = false, italic = false;
 
@@ -763,7 +763,7 @@ void PrivateMessage::getSettingTag_gui(WulforSettingsManager *wsm, const Tag::Ty
 
 GtkTextTag* PrivateMessage::createTag_gui(const string &tagname, Tag::TypeTag type)
 {
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
     GtkTextTag *tag = gtk_text_tag_table_lookup(gtk_text_buffer_get_tag_table(messageBuffer), tagname.c_str());
 
     if (!tag)

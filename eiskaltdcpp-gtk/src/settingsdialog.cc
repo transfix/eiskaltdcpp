@@ -171,7 +171,7 @@ void Settings::response_gui()
 void Settings::saveSettings_client()
 {
     SettingsManager *sm = dcpp::getContext()->getSettingsManager();
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
     string path;
 
     { // Personal
@@ -939,7 +939,7 @@ void Settings::initDownloads_gui()
         gtk_widget_set_sensitive(getWidget("previewRemoveButton"), true);
         gtk_widget_set_sensitive(getWidget("previewApplyButton"), true);
 
-        WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+        WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
         const PreviewApp::List &Apps = wsm->getPreviewApps();
 
         // add default applications players
@@ -1049,7 +1049,7 @@ void Settings::initSharing_gui()
 
 void Settings::initAppearance_gui()
 {
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
 
     { // Appearance
         vectorLangFullNames.push_back(_("System default"));
@@ -2424,7 +2424,7 @@ void Settings::onNotifyDefaultButton_gui(GtkWidget *widget, gpointer data)
     if (gtk_tree_selection_get_selected(selection, NULL, &iter))
     {
         GdkPixbuf *icon = NULL;
-        WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+        WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
         string title = wsm->getString(s->notifyView.getString(&iter, "keyTitle"), true);
         string path = wsm->getString(s->notifyView.getString(&iter, "keyIcon"), true);
 
@@ -2577,7 +2577,7 @@ void Settings::onDefaultColorsSPButton_gui(GtkWidget *widget, gpointer data)
 #define g_c_p(a,b) gdk_color_parse(a,b)
 #endif
 
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
 
     if (g_c_p(wsm->getString("search-spy-a-color", true).c_str(), &color))
         g_c_b_s(G_C_B(s->getWidget("aSPColorButton")), &color);
@@ -2605,7 +2605,7 @@ void Settings::onDefaultFrameSPButton_gui(GtkWidget *widget, gpointer data)
     (void)widget;
     Settings *s = (Settings *)data;
 
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(s->getWidget("frameSPSpinButton")), double(wsm->getInt("search-spy-frame", true)));
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(s->getWidget("waitingSPSpinButton")), double(wsm->getInt("search-spy-waiting", true)));
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(s->getWidget("topSPSpinButton")), double(wsm->getInt("search-spy-top", true)));
@@ -2935,7 +2935,7 @@ void Settings::onSoundPlayButton_gui(GtkWidget*, gpointer data)
     GtkTreeIter iter;
     GtkTreeSelection *selection = gtk_tree_view_get_selection(s->soundView.get());
 
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
     wsm->set("sound-command", string(gtk_entry_get_text(GTK_ENTRY(s->getWidget("soundCommandEntry")))));
 
     if (gtk_tree_selection_get_selected(selection, NULL, &iter))
@@ -2989,7 +2989,7 @@ void Settings::onPreviewAdd_gui(GtkWidget*, gpointer data)
         return;
     }
 
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
 
     if (wsm->getPreviewApp(name))
     {
@@ -3020,7 +3020,7 @@ void Settings::onPreviewRemove_gui(GtkWidget*, gpointer data)
     {
         string name = s->previewAppView.getString(&iter, _("Name"));
 
-        if (Wulfordcpp::getContext()->getSettingsManager()->removePreviewApp(name))
+        if (WulforSettingsManager::getInstance()->removePreviewApp(name))
             gtk_list_store_remove(s->previewAppToStore, &iter);
     }
 }
@@ -3082,7 +3082,7 @@ void Settings::onPreviewApply_gui(GtkWidget*, gpointer data)
     {
         string oldName = s->previewAppView.getString(&iter, _("Name"));
 
-        if (Wulfordcpp::getContext()->getSettingsManager()->applyPreviewApp(oldName, name, app, ext))
+        if (WulforSettingsManager::getInstance()->applyPreviewApp(oldName, name, app, ext))
         {
             gtk_list_store_set(s->previewAppToStore, &iter,
                                s->previewAppView.col(_("Name")), name.c_str(),
@@ -3254,7 +3254,7 @@ void Settings::selectTextStyle_gui(const int select)
     GtkTextTag *tag = NULL;
     string style = "";
 
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
 
     if (select == 1)
     {

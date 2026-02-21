@@ -138,7 +138,7 @@ void Notify::setCurrIconSize(const int size)
 
 void Notify::showNotify(const string &head, const string &body, TypeNotify notify)
 {
-    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
 
     switch (notify)
     {
