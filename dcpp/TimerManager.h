@@ -20,7 +20,6 @@
 
 #include "Thread.h"
 #include "Speaker.h"
-#include "Singleton.h"
 #include "DCContext.h"
 
 #include <mutex>
@@ -44,7 +43,7 @@ public:
     virtual void on(Minute, uint64_t) noexcept { }
 };
 
-class TimerManager : public Speaker<TimerManagerListener>, public Singleton<TimerManager>, public Thread, public ContextAware
+class TimerManager : public Speaker<TimerManagerListener>, public Thread, public ContextAware
 {
 public:
     void shutdown();
@@ -56,7 +55,6 @@ public:
     virtual ~TimerManager();
 
 private:
-    friend class Singleton<TimerManager>;
 
     std::timed_mutex mtx;
 

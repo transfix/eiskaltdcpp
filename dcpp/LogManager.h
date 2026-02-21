@@ -20,7 +20,6 @@
 
 #include "typedefs.h"
 #include "CriticalSection.h"
-#include "Singleton.h"
 #include "DCContext.h"
 #include "Speaker.h"
 #include "LogManagerListener.h"
@@ -28,7 +27,7 @@
 
 namespace dcpp {
 
-class LogManager : public Singleton<LogManager>, public Speaker<LogManagerListener>, public ContextAware
+class LogManager : public Speaker<LogManagerListener>, public ContextAware
 {
 public:
     typedef pair<time_t, string> Pair;
@@ -50,7 +49,6 @@ public:
 private:
     void log(const string& area, const string& msg) noexcept;
 
-    friend class Singleton<LogManager>;
 
 public:
     LogManager();

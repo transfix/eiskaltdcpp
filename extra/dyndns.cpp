@@ -17,6 +17,7 @@
 #include "dyndns.h"
 #include "dcpp/SettingsManager.h"
 #include "dcpp/ClientManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -90,8 +91,8 @@ void DynDNS::on(HttpConnectionListener::Complete, HttpConnection*, string const&
     }
 
     if (!internetIP.empty()) {
-        SettingsManager::getInstance()->set(SettingsManager::INTERNETIP, internetIP);
-        Client::List clients = ClientManager::getInstance()->getClients();
+        dcpp::getContext()->getSettingsManager()->set(SettingsManager::INTERNETIP, internetIP);
+        Client::List clients = dcpp::getContext()->getClientManager()->getClients();
 
         for(auto c : clients) {
             if(c->isConnected()) {

@@ -26,6 +26,7 @@
 #include "dcpp/HttpConnection.h"
 #include "dcpp/LogManager.h"
 #include <zlib.h>
+#include "dcpp/DCPlusPlus.h"
 
 namespace dht
 {
@@ -47,13 +48,13 @@ namespace dht
     {
         if(bootstrapNodes.empty())
         {
-            LogManager::getInstance()->message(_("DHT bootstrapping started"));
+            dcpp::getContext()->getLogManager()->message(_("DHT bootstrapping started"));
             string dhturl = dhtservers[Util::rand(dhtservers.size())];
             // TODO: make URL settable
-            string url = dhturl  + "?cid=" + ClientManager::getInstance()->getMe()->getCID().toBase32() + "&encryption=1";
+            string url = dhturl  + "?cid=" + dcpp::getContext()->getClientManager()->getMe()->getCID().toBase32() + "&encryption=1";
 
             // store only active nodes to database
-            if(ClientManager::getInstance()->isActive(Util::emptyString))
+            if(dcpp::getContext()->getClientManager()->isActive(Util::emptyString))
             {
                 url += "&u4=" + DHT::getInstance()->getPort();
             }
@@ -110,18 +111,18 @@ namespace dht
 
                 remoteXml.stepOut();
 
-                LogManager::getInstance()->message(_("DHT bootstrapping is finished successfully."));
+                dcpp::getContext()->getLogManager()->message(_("DHT bootstrapping is finished successfully."));
             }
             catch(Exception& e)
             {
-                LogManager::getInstance()->message(_("DHT bootstrap error: ") + e.getError());
+                dcpp::getContext()->getLogManager()->message(_("DHT bootstrap error: ") + e.getError());
             }
         }
     }
 
     void BootstrapManager::on(HttpConnectionListener::Failed, HttpConnection*, const string& aLine) throw()
     {
-        LogManager::getInstance()->message(_("DHT bootstrap error: ") + aLine);
+        dcpp::getContext()->getLogManager()->message(_("DHT bootstrap error: ") + aLine);
     }
 
     void BootstrapManager::addBootstrapNode(const string& ip, const string& udpPort, const CID& targetCID, const UDPKey& udpKey)

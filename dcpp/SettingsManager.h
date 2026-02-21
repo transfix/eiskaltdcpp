@@ -19,7 +19,6 @@
 
 #include "Util.h"
 #include "Speaker.h"
-#include "Singleton.h"
 #include "DCContext.h"
 #include "Exception.h"
 #include "DCPlusPlus.h"
@@ -44,7 +43,7 @@ public:
     virtual void on(SearchTypesChanged) noexcept { }
 };
 
-class SettingsManager : public Singleton<SettingsManager>, public Speaker<SettingsManagerListener>, public ContextAware
+class SettingsManager : public Speaker<SettingsManagerListener>, public ContextAware
 {
 public:
     typedef std::unordered_map<string, StringList> SearchTypes;
@@ -287,7 +286,6 @@ public:
     virtual ~SettingsManager() { }
 
 private:
-    friend class Singleton<SettingsManager>;
 
     static const string settingTags[SETTINGS_LAST+1];
 

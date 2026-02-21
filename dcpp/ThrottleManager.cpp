@@ -20,7 +20,6 @@
 #include "ThrottleManager.h"
 
 #include "DownloadManager.h"
-#include "Singleton.h"
 #include "Socket.h"
 #include "Thread.h"
 #include "TimerManager.h"

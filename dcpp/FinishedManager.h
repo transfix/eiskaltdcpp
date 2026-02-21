@@ -23,7 +23,6 @@
 #include "QueueManagerListener.h"
 #include "Speaker.h"
 #include "CriticalSection.h"
-#include "Singleton.h"
 #include "DCContext.h"
 #include "FinishedManagerListener.h"
 #include "Util.h"
@@ -63,7 +62,7 @@ private:
 
 };
 /**/
-class FinishedManager : public Singleton<FinishedManager>,
+class FinishedManager :
         public Speaker<FinishedManagerListener>, private DownloadManagerListener, private UploadManagerListener, private QueueManagerListener, public ContextAware
 {
 public:
@@ -90,7 +89,6 @@ public:
     virtual ~FinishedManager();
 
 private:
-    friend class Singleton<FinishedManager>;
 
     CriticalSection cs;
     MapByFile DLByFile, ULByFile;

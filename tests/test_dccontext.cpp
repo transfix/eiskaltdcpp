@@ -50,39 +50,27 @@ TEST_CASE("Multiple DCContext instances can coexist", "[DCContext]") {
     REQUIRE_FALSE(ctx2.isRunning());
 }
 
-// ── Singleton::setInstance bridging tests ────────────────────────────────
+// ── Singleton::newInstance / deleteInstance tests ────────────────────────
 
 namespace {
 // Minimal singleton-compatible type for isolated testing.
-struct FakeMgr : public Singleton<FakeMgr>, public ContextAware {
+struct FakeMgr : public Singleton<FakeMgr> {
     int value = 42;
 };
 template<> FakeMgr* Singleton<FakeMgr>::instance = nullptr;
 } // anonymous namespace
 
-TEST_CASE("Singleton::setInstance registers and unregisters a pointer", "[Singleton]") {
-    FakeMgr mgr;
-    REQUIRE(Singleton<FakeMgr>::getInstance() == nullptr);  // dcassert would fire, but tests build without NDEBUG dasserts disabled
-
-    Singleton<FakeMgr>::setInstance(&mgr);
-    REQUIRE(FakeMgr::getInstance() == &mgr);
+TEST_CASE("Singleton newInstance creates and deleteInstance destroys", "[Singleton]") {
+    REQUIRE(FakeMgr::getInstance() == nullptr);
+    FakeMgr::newInstance();
+    REQUIRE(FakeMgr::getInstance() != nullptr);
     REQUIRE(FakeMgr::getInstance()->value == 42);
-
-    Singleton<FakeMgr>::setInstance(nullptr);
-    // After clearing, getInstance() returns nullptr.
-    // (dcassert fires in debug builds, but we test the pointer value.)
+    FakeMgr::deleteInstance();
+    REQUIRE(FakeMgr::getInstance() == nullptr);
 }
 
-TEST_CASE("setInstance does not transfer ownership", "[Singleton]") {
-    auto mgr = std::make_unique<FakeMgr>();
-    FakeMgr* raw = mgr.get();
-
-    Singleton<FakeMgr>::setInstance(raw);
-    REQUIRE(FakeMgr::getInstance() == raw);
-
-    // Destroying the unique_ptr should NOT be done by Singleton.
-    // Clearing the pointer first simulates DCContext::teardown().
-    Singleton<FakeMgr>::setInstance(nullptr);
-    mgr.reset();  // Actual destruction — no double-free
+TEST_CASE("Singleton deleteInstance is safe when already null", "[Singleton]") {
+    REQUIRE(FakeMgr::getInstance() == nullptr);
+    FakeMgr::deleteInstance(); // Should not crash
     SUCCEED();
 }

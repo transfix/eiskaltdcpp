@@ -17,12 +17,11 @@
 
 #pragma once
 
-#include "Singleton.h"
 #include "DCContext.h"
 
 namespace dcpp {
 
-class ResourceManager : public Singleton<ResourceManager>, public ContextAware {
+class ResourceManager : public ContextAware {
 public:
 
     bool isRTL() { return rtl; }
@@ -32,7 +31,6 @@ public:
     virtual ~ResourceManager() { }
 
 private:
-    friend class Singleton<ResourceManager>;
 
     bool rtl;
 };

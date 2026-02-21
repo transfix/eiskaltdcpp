@@ -23,7 +23,6 @@
 #include "User.h"
 #include "Thread.h"
 #include "Client.h"
-#include "Singleton.h"
 #include "DCContext.h"
 #include "Semaphore.h"
 #include "SearchManagerListener.h"
@@ -36,7 +35,7 @@ namespace dcpp {
 class SearchManager;
 class SocketException;
 
-class SearchManager : public Speaker<SearchManagerListener>, public Singleton<SearchManager>, public Thread, public ContextAware
+class SearchManager : public Speaker<SearchManagerListener>, public Thread, public ContextAware
 {
 public:
     enum SizeModes {
@@ -128,7 +127,6 @@ public:
     virtual ~SearchManager();
 
 private:
-    friend class Singleton<SearchManager>;
 
     static std::string normalizeWhitespace(const std::string& aString);
     int run();

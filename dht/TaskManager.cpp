@@ -26,6 +26,7 @@
 #include "dcpp/SettingsManager.h"
 #include "dcpp/ShareManager.h"
 #include "dcpp/TimerManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 namespace dht
 {
@@ -34,12 +35,12 @@ namespace dht
         nextPublishTime(GET_TICK()), nextSearchTime(GET_TICK()), nextSelfLookup(GET_TICK() + 3*60*1000),
         nextFirewallCheck(GET_TICK() + FWCHECK_TIME), lastBootstrap(0)
     {
-        TimerManager::getInstance()->addListener(this);
+        dcpp::getContext()->getTimerManager()->addListener(this);
     }
 
     TaskManager::~TaskManager(void)
     {
-        TimerManager::getInstance()->removeListener(this);
+        dcpp::getContext()->getTimerManager()->removeListener(this);
     }
 
     // TimerManagerListener
@@ -73,7 +74,7 @@ namespace dht
         if(aTick >= nextSelfLookup)
         {
             // find myself in the network
-            SearchManager::getInstance()->findNode(ClientManager::getInstance()->getMe()->getCID());
+            SearchManager::getInstance()->findNode(dcpp::getContext()->getClientManager()->getMe()->getCID());
             nextSelfLookup = aTick + SELF_LOOKUP_TIMER;
         }
 

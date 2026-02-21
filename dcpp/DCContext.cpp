@@ -55,23 +55,12 @@ namespace dcpp {
 
 namespace {
 
-/// Construct a manager, wire its context pointer, register with the
-/// Singleton shim so that existing getInstance() calls keep working.
+/// Construct a manager and wire its context pointer.
 template<typename T, typename... Args>
 std::unique_ptr<T> makeManager(DCContext* ctx, Args&&... args) {
     auto ptr = std::make_unique<T>(std::forward<Args>(args)...);
     ptr->setContext(ctx);
-    Singleton<T>::setInstance(ptr.get());
     return ptr;
-}
-
-/// Clear the Singleton pointer and destroy the manager.
-template<typename Ptr>
-void teardown(Ptr& ptr) {
-    if (!ptr) return;
-    using T = typename std::remove_reference_t<decltype(ptr)>::element_type;
-    Singleton<T>::setInstance(nullptr);
-    ptr.reset();
 }
 
 } // anonymous namespace
@@ -184,7 +173,7 @@ void DCContext::shutdown() {
     running_ = false;
 
     // ── Phase 1: tear down debug & conditional singletons ───────────────
-    teardown(debugManager_);
+    debugManager_.reset();
 
     DynDNS::deleteInstance();
 #ifdef WITH_DHT
@@ -213,25 +202,25 @@ void DCContext::shutdown() {
 
     // ── Phase 4: destroy managers in dependency-safe order ──────────────
     // Matches the deleteInstance() sequence in dcpp::shutdown() exactly.
-    teardown(mappingManager_);
-    teardown(connectivityManager_);
-    teardown(adlSearchManager_);
-    teardown(finishedManager_);
-    teardown(shareManager_);
-    teardown(cryptoManager_);
-    teardown(throttleManager_);
-    teardown(downloadManager_);
-    teardown(uploadManager_);
-    teardown(queueManager_);
-    teardown(connectionManager_);
-    teardown(searchManager_);
-    teardown(favoriteManager_);
-    teardown(clientManager_);
-    teardown(hashManager_);
-    teardown(logManager_);
-    teardown(settingsManager_);
-    teardown(timerManager_);
-    teardown(resourceManager_);
+    mappingManager_.reset();
+    connectivityManager_.reset();
+    adlSearchManager_.reset();
+    finishedManager_.reset();
+    shareManager_.reset();
+    cryptoManager_.reset();
+    throttleManager_.reset();
+    downloadManager_.reset();
+    uploadManager_.reset();
+    queueManager_.reset();
+    connectionManager_.reset();
+    searchManager_.reset();
+    favoriteManager_.reset();
+    clientManager_.reset();
+    hashManager_.reset();
+    logManager_.reset();
+    settingsManager_.reset();
+    timerManager_.reset();
+    resourceManager_.reset();
 
     Util::uninitialize();
 

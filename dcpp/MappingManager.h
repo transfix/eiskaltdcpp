@@ -23,7 +23,6 @@
 
 #include "Atomic.h"
 #include "forward.h"
-#include "Singleton.h"
 #include "DCContext.h"
 #include "Thread.h"
 #include "UPnP.h"
@@ -36,7 +35,6 @@ using std::unique_ptr;
 using std::vector;
 
 class MappingManager :
-        public Singleton<MappingManager>,
         private Thread, public ContextAware
 {
 public:
@@ -58,7 +56,6 @@ public:
     virtual ~MappingManager() noexcept { join(); }
 
 private:
-    friend class Singleton<MappingManager>;
 
     typedef std::vector<std::unique_ptr<UPnP>> Impls;
     Impls impls;

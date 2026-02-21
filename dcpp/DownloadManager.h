@@ -22,7 +22,6 @@
 #include "UserConnectionListener.h"
 #include "QueueItem.h"
 #include "TimerManager.h"
-#include "Singleton.h"
 #include "DCContext.h"
 #include "MerkleTree.h"
 #include "Speaker.h"
@@ -35,7 +34,7 @@ namespace dcpp {
  */
 class DownloadManager : public Speaker<DownloadManagerListener>,
         private UserConnectionListener, private TimerManagerListener,
-        public Singleton<DownloadManager>, public ContextAware
+        public ContextAware
 {
 public:
 
@@ -74,7 +73,6 @@ public:
     virtual ~DownloadManager();
 
 private:
-    friend class Singleton<DownloadManager>;
 
     void checkDownloads(UserConnection* aConn);
     void startData(UserConnection* aSource, int64_t start, int64_t newSize, bool z);

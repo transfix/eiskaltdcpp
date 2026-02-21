@@ -31,6 +31,7 @@
 #include <miniupnpc/miniupnpc.h>
 #include <miniupnpc/upnpcommands.h>
 #include <miniupnpc/upnperrors.h>
+#include "dcpp/DCPlusPlus.h"
 
 static UPNPUrls urls;
 static IGDdatas data;
@@ -42,7 +43,7 @@ using namespace dcpp;
 bool UPnPc::init()
 {
     const string bind_address = SETTING(BIND_ADDRESS);
-    const char *multicast_interface = SettingsManager::getInstance()->isDefault(SettingsManager::BIND_ADDRESS) ? nullptr : bind_address.c_str();
+    const char *multicast_interface = dcpp::getContext()->getSettingsManager()->isDefault(SettingsManager::BIND_ADDRESS) ? nullptr : bind_address.c_str();
 
 #if (MINIUPNPC_API_VERSION >= 14)
     UPNPDev *devices = upnpDiscover(5000, multicast_interface, nullptr, 0, 0, 2, nullptr);

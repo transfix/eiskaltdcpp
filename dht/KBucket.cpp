@@ -22,6 +22,7 @@
 #include "KBucket.h"
 #include "Utils.h"
 #include "dcpp/ClientManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 namespace dht
 {
@@ -90,7 +91,7 @@ namespace dht
             Node::Ptr& node = *it;
             if(node->isOnline())
             {
-                ClientManager::getInstance()->putOffline(node.get());
+                dcpp::getContext()->getClientManager()->putOffline(node.get());
                 node->dec();
             }
         }
@@ -124,7 +125,7 @@ namespace dht
             {
                 // try to get node from ClientManager (user can be online but not in our routing table)
                 // this fixes the bug with DHT node online twice
-                node = (Node*)ClientManager::getInstance()->findDHTNode(u->getCID());
+                node = (Node*)dcpp::getContext()->getClientManager()->findDHTNode(u->getCID());
                 node = node.get();
             }
 
@@ -258,7 +259,7 @@ namespace dht
 
                     if(node->isOnline())
                     {
-                        ClientManager::getInstance()->putOffline(node.get());
+                        dcpp::getContext()->getClientManager()->putOffline(node.get());
                         node->dec();
                     }
 

@@ -24,6 +24,7 @@
 #include "dcpp/ConnectionManager.h"
 #include "dcpp/CryptoManager.h"
 #include "dcpp/ClientManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 namespace dht
 {
@@ -41,7 +42,7 @@ namespace dht
      */
     void ConnectionManager::connect(const Node::Ptr& node, const string& token)
     {
-        ConnectionManager::connect(node, token, CryptoManager::getInstance()->TLSOk() && node->getUser()->isSet(User::TLS));
+        ConnectionManager::connect(node, token, dcpp::getContext()->getCryptoManager()->TLSOk() && node->getUser()->isSet(User::TLS));
     }
 
     void ConnectionManager::connect(const Node::Ptr& node, const string& token, bool secure)
@@ -55,7 +56,7 @@ namespace dht
             return;
         }
 
-        bool active = ClientManager::getInstance()->isActive();
+        bool active = dcpp::getContext()->getClientManager()->isActive();
 
         // if I am not active, send reverse connect to me request
         AdcCommand cmd(active ? AdcCommand::CMD_CTM : AdcCommand::CMD_RCM, AdcCommand::TYPE_UDP);
@@ -63,7 +64,7 @@ namespace dht
 
         if(active)
         {
-            string port = secure ? dcpp::ConnectionManager::getInstance()->getSecurePort() : dcpp::ConnectionManager::getInstance()->getPort();
+            string port = secure ? dcpp::getContext()->getConnectionManager()->getSecurePort() : dcpp::getContext()->getConnectionManager()->getPort();
             cmd.addParam(port);
         }
 
@@ -96,7 +97,7 @@ namespace dht
         {
             // Nothing special
         }
-        else if(protocol == SECURE_CLIENT_PROTOCOL_TEST && CryptoManager::getInstance()->TLSOk())
+        else if(protocol == SECURE_CLIENT_PROTOCOL_TEST && dcpp::getContext()->getCryptoManager()->TLSOk())
         {
             secure = true;
         }
@@ -119,7 +120,7 @@ namespace dht
             return;
         }
 
-        dcpp::ConnectionManager::getInstance()->adcConnect(*node, port, token, secure);
+        dcpp::getContext()->getConnectionManager()->adcConnect(*node, port, token, secure);
     }
 
     /*
@@ -132,7 +133,7 @@ namespace dht
         //  return;
 
         // this is valid for active-passive connections only
-        if(!ClientManager::getInstance()->isActive())
+        if(!dcpp::getContext()->getClientManager()->isActive())
             return;
 
         const string& protocol = cmd.getParam(1);
@@ -143,7 +144,7 @@ namespace dht
         {
             secure = false;
         }
-        else if(protocol == SECURE_CLIENT_PROTOCOL_TEST && CryptoManager::getInstance()->TLSOk())
+        else if(protocol == SECURE_CLIENT_PROTOCOL_TEST && dcpp::getContext()->getCryptoManager()->TLSOk())
         {
             secure = true;
         }

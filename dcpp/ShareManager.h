@@ -36,7 +36,6 @@
 #include "CriticalSection.h"
 
 #include "StringSearch.h"
-#include "Singleton.h"
 #include "DCContext.h"
 #include "BloomFilter.h"
 #include "FastAlloc.h"
@@ -67,7 +66,7 @@ class OutputStream;
 class MemoryInputStream;
 
 struct ShareLoader;
-class ShareManager : public Singleton<ShareManager>, private SettingsManagerListener, private Thread, private TimerManagerListener,
+class ShareManager : private SettingsManagerListener, private Thread, private TimerManagerListener,
         private HashManagerListener, private QueueManagerListener, public ContextAware
 {
 public:
@@ -238,7 +237,6 @@ private:
     friend class Directory;
     friend struct ShareLoader;
 
-    friend class Singleton<ShareManager>;
 
 public:
     ShareManager();

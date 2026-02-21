@@ -28,7 +28,6 @@
 #include "QueueItem.h"
 #include "QueueManagerListener.h"
 #include "SearchManagerListener.h"
-#include "Singleton.h"
 #include "DCContext.h"
 #include "TimerManager.h"
 #include "User.h"
@@ -69,7 +68,7 @@ private:
 class ConnectionQueueItem;
 class QueueLoader;
 
-class QueueManager : public Singleton<QueueManager>, public Speaker<QueueManagerListener>, private TimerManagerListener,
+class QueueManager : public Speaker<QueueManagerListener>, private TimerManagerListener,
         private SearchManagerListener, private ClientManagerListener, public ContextAware
 {
 public:
@@ -256,7 +255,6 @@ public:
 
 private:
     friend class QueueLoader;
-    friend class Singleton<QueueManager>;
 
     mutable CriticalSection cs;
 

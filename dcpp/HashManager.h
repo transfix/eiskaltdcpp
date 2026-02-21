@@ -21,7 +21,6 @@
 #include <functional>
 #include <map>
 
-#include "Singleton.h"
 #include "DCContext.h"
 #include "MerkleTree.h"
 #include "Thread.h"
@@ -52,7 +51,7 @@ class File;
 class HashLoader;
 class FileException;
 
-class HashManager : public Singleton<HashManager>, public Speaker<HashManagerListener>,
+class HashManager : public Speaker<HashManagerListener>,
         private TimerManagerListener, public ContextAware
 {
 public:

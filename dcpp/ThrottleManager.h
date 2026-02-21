@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include "Singleton.h"
 #include "DCContext.h"
 #include "Socket.h"
 #include "TimerManager.h"
@@ -31,7 +30,7 @@ namespace dcpp
  * Inspired by Token Bucket algorithm: https://en.wikipedia.org/wiki/Token_bucket
  */
 class ThrottleManager :
-        public Singleton<ThrottleManager>, private TimerManagerListener, public ContextAware
+        private TimerManagerListener, public ContextAware
 {
 public:
 
@@ -87,7 +86,6 @@ public:
     virtual ~ThrottleManager();
 
 private:
-    friend class Singleton<ThrottleManager>;
 
     bool getCurThrottling();
     void waitToken();

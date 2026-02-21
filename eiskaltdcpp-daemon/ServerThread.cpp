@@ -505,9 +505,9 @@ void ServerThread::on(SearchManagerListener::SR, const SearchResultPtr& result) 
 
 void ServerThread::startSocket(bool changed) {
     if (changed)
-        ConnectivityManager::getInstance()->updateLast();
+        dcpp::getContext()->getConnectivityManager()->updateLast();
     try {
-        ConnectivityManager::getInstance()->setup(true);
+        dcpp::getContext()->getConnectivityManager()->setup(true);
     } catch (const Exception& e) {
         showPortsError(e.getError());
     }
@@ -1560,7 +1560,6 @@ void ServerThread::ipFilterUpDownRule(bool up, const string& rule) {
 bool ServerThread::configReload()
 {
     if (dcpp::getContext()->getSettingsManager()) {
-        SettingsManager::newInstance();
         dcpp::getContext()->getSettingsManager()->load();
         return true;
     } else 

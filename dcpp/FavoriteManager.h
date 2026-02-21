@@ -22,7 +22,6 @@
 #include "HttpConnection.h"
 #include "UserCommand.h"
 #include "FavoriteUser.h"
-#include "Singleton.h"
 #include "DCContext.h"
 #include "ClientManagerListener.h"
 #include "FavoriteManagerListener.h"
@@ -37,7 +36,7 @@ class SimpleXML;
 /**
  * Public hub list, favorites (hub&user). Assumed to be called only by UI thread.
  */
-class FavoriteManager : public Speaker<FavoriteManagerListener>, private HttpConnectionListener, public Singleton<FavoriteManager>,
+class FavoriteManager : public Speaker<FavoriteManagerListener>, private HttpConnectionListener,
         private SettingsManagerListener, private ClientManagerListener, public ContextAware
 {
 public:
@@ -140,7 +139,6 @@ public:
     virtual ~FavoriteManager();
 
 private:
-    friend class Singleton<FavoriteManager>;
 
     FavoriteHubEntryList::iterator getFavoriteHub(const string& aServer);
 

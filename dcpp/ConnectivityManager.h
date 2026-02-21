@@ -19,7 +19,6 @@
 
 #include "CriticalSection.h"
 #include "SettingsManager.h"
-#include "Singleton.h"
 #include "DCContext.h"
 #include "Speaker.h"
 #include "Util.h"
@@ -44,7 +43,7 @@ public:
     virtual void on(Finished) noexcept { }
 };
 
-class ConnectivityManager : public Singleton<ConnectivityManager>, public Speaker<ConnectivityManagerListener>, public ContextAware
+class ConnectivityManager : public Speaker<ConnectivityManagerListener>, public ContextAware
 {
 public:
     void detectConnection();
@@ -57,7 +56,6 @@ public:
     virtual ~ConnectivityManager() { }
 
 private:
-    friend class Singleton<ConnectivityManager>;
     friend class MappingManager;
 
     void mappingFinished(bool success);
