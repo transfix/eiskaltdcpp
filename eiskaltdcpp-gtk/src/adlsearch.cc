@@ -21,6 +21,7 @@
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 #include "adlsearch.hh"
+#include "dcpp/DCPlusPlus.h"
 
 using namespace std;
 using namespace dcpp;
@@ -84,7 +85,7 @@ SearchADL::SearchADL():
 
 SearchADL::~SearchADL()
 {
-    ADLSearchManager::getInstance()->save();
+    dcpp::getContext()->getADLSearchManager()->save();
     gtk_widget_destroy(getWidget("ADLSearchDialog"));
     g_object_unref(getWidget("menu"));
 }
@@ -93,7 +94,7 @@ void SearchADL::show()
 {
     // initialize searches list
     string minSize, maxSize;
-    ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+    ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
     for (ADLSearch &search : collection)
     {
         GtkTreeIter iter;
@@ -129,7 +130,7 @@ void SearchADL::onRemoveClicked_gui(GtkWidget*, gpointer data)
         g_autofree gchar *p = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(s->searchADLStore), &iter);
         SearchType i = (SearchType)Util::toInt(p);
 
-        ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+        ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
         if (i < collection.size())
         {
             collection.erase(collection.begin() + i);
@@ -147,7 +148,7 @@ void SearchADL::onAddClicked_gui(GtkWidget*, gpointer data)
     if (showPropertiesDialog_gui(search, false, s))
     {
         GtkTreeIter iter;
-        ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+        ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
 
         if (gtk_tree_selection_get_selected(s->searchADLSelection, NULL, &iter))
         {
@@ -184,7 +185,7 @@ void SearchADL::onPropertiesClicked_gui(GtkWidget*, gpointer data)
             g_autofree gchar *p = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(s->searchADLStore), &iter);
             SearchType i = (SearchType)Util::toInt(p);
 
-            ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+            ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
             if (i < collection.size())
             {
                 collection[i] = search;
@@ -320,7 +321,7 @@ void SearchADL::onMoveUpClicked_gui(GtkWidget*, gpointer data)
         g_autofree gchar *p = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(s->searchADLStore), &current);
         SearchType i = (SearchType)Util::toInt(p);
 
-        ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+        ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
         if (i == 0 || !(i < collection.size()))
             return;
 
@@ -350,7 +351,7 @@ void SearchADL::onMoveDownClicked_gui(GtkWidget*, gpointer data)
         g_autofree gchar *p = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(s->searchADLStore), &current);
         SearchType i = (SearchType)Util::toInt(p);
 
-        ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+        ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
         if (collection.empty() || !(i < collection.size() - 1))
             return;
 
@@ -377,7 +378,7 @@ void SearchADL::onActiveToggled_gui(GtkCellRendererToggle*, gchar *path, gpointe
         g_autofree gchar *p = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(s->searchADLStore), &iter);
         SearchType i = (SearchType)Util::toInt(p);
 
-        ADLSearchManager::SearchCollection &collection = ADLSearchManager::getInstance()->collection;
+        ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
         if (i < collection.size())
         {
             gboolean active = s->searchADLView.getValue<gboolean>(&iter, _("Enabled"));

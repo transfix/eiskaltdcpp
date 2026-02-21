@@ -38,6 +38,7 @@
 #include "WulforUtil.hh"
 #include "settingsmanager.hh"
 #include <dcpp/Text.h>
+#include "dcpp/DCPlusPlus.h"
 #include "notify.hh"
 
 #ifndef NOTIFY_CHECK_VERSION
@@ -137,7 +138,7 @@ void Notify::setCurrIconSize(const int size)
 
 void Notify::showNotify(const string &head, const string &body, TypeNotify notify)
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
 
     switch (notify)
     {

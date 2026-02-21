@@ -20,6 +20,7 @@
 
 #include "favoriteusers.hh"
 #include <dcpp/ClientManager.h>
+#include "dcpp/DCPlusPlus.h"
 #include "settingsmanager.hh"
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
@@ -84,7 +85,7 @@ FavoriteUsers::FavoriteUsers():
 
 FavoriteUsers::~FavoriteUsers()
 {
-    FavoriteManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getFavoriteManager()->removeListener(this);
 
     gtk_widget_destroy(getWidget("DescriptionDialog"));
     g_object_unref(getWidget("menu"));
@@ -93,7 +94,7 @@ FavoriteUsers::~FavoriteUsers()
 void FavoriteUsers::show()
 {
     // Initialize favorite users list
-    FavoriteManager::FavoriteMap map = FavoriteManager::getInstance()->getFavoriteUsers();
+    FavoriteManager::FavoriteMap map = dcpp::getContext()->getFavoriteManager()->getFavoriteUsers();
 
     for (FavoriteManager::FavoriteMap::const_iterator it = map.begin(); it != map.end(); ++it)
     {
@@ -118,7 +119,7 @@ void FavoriteUsers::show()
 
         userIters.insert(UserIters::value_type(cid, iter));
     }
-    FavoriteManager::getInstance()->addListener(this);
+    dcpp::getContext()->getFavoriteManager()->addListener(this);
 }
 
 gboolean FavoriteUsers::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
@@ -502,15 +503,15 @@ void FavoriteUsers::getFileList_client(const string cid, const string hubUrl, bo
 {
     try
     {
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
         if (user)
         {
             const HintedUser hintedUser(user, hubUrl);
             if (match)
-                QueueManager::getInstance()->addList(hintedUser, QueueItem::FLAG_MATCH_QUEUE);
+                dcpp::getContext()->getQueueManager()->addList(hintedUser, QueueItem::FLAG_MATCH_QUEUE);
             else
-                QueueManager::getInstance()->addList(hintedUser, QueueItem::FLAG_CLIENT_VIEW);
+                dcpp::getContext()->getQueueManager()->addList(hintedUser, QueueItem::FLAG_CLIENT_VIEW);
         }
     }
     catch (const Exception& e)
@@ -523,10 +524,10 @@ void FavoriteUsers::getFileList_client(const string cid, const string hubUrl, bo
 
 void FavoriteUsers::grantSlot_client(const string cid, const string hubUrl)
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
     if (user)
     {
-        UploadManager::getInstance()->reserveSlot(HintedUser(user, hubUrl));
+        dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
         typedef Func1<FavoriteUsers, string> F1;
         F1 *func = new F1(this, &FavoriteUsers::setStatus_gui, _("Slot granted to ") + WulforUtil::getNicks(user, hubUrl));
         WulforManager::get()->dispatchGuiFunc(func);
@@ -537,39 +538,39 @@ void FavoriteUsers::removeUserFromQueue_client(const string cid)
 {
     if (!cid.empty())
     {
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
         if (user)
-            QueueManager::getInstance()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+            dcpp::getContext()->getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
     }
 }
 
 void FavoriteUsers::setAutoGrantSlot_client(const string cid, bool grant)
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
     if (user)
     {
-        FavoriteManager::getInstance()->setAutoGrant(user, grant);
+        dcpp::getContext()->getFavoriteManager()->setAutoGrant(user, grant);
     }
 }
 
 void FavoriteUsers::removeFavoriteUser_client(const string cid)
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
     if (user)
     {
-        FavoriteManager::getInstance()->removeFavoriteUser(user);
+        dcpp::getContext()->getFavoriteManager()->removeFavoriteUser(user);
     }
 }
 
 void FavoriteUsers::setUserDescription_client(const string cid, const string description)
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
     if (user)
     {
-        FavoriteManager::getInstance()->setUserDescription(user, description);
+        dcpp::getContext()->getFavoriteManager()->setUserDescription(user, description);
     }
 }
 

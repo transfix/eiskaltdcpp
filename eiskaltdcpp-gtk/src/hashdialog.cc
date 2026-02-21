@@ -20,6 +20,7 @@
 
 #include "hashdialog.hh"
 #include <dcpp/HashManager.h>
+#include "dcpp/DCPlusPlus.h"
 #include "wulformanager.hh"
 
 using namespace std;
@@ -30,21 +31,21 @@ Hash::Hash(GtkWindow* parent):
 {
     string stmp;
     startTime = GET_TICK();
-    HashManager::getInstance()->getStats(stmp, startBytes, startFiles);
-    HashManager::getInstance()->setPriority(Thread::NORMAL);
+    dcpp::getContext()->getHashManager()->getStats(stmp, startBytes, startFiles);
+    dcpp::getContext()->getHashManager()->setPriority(Thread::NORMAL);
     updateStats_gui("", 0, 0, 0);
-    //    bool paused = HashManager::getInstance()->isHashingPaused();
+    //    bool paused = dcpp::getContext()->getHashManager()->isHashingPaused();
     //    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("pauseHashingToggleButton")), paused);
     //    gtk_window_set_title(GTK_WINDOW(getContainer()),
     //    paused ? _("Paused...") : _("Indexing files..."));
     handler_id = g_signal_connect(getWidget("pauseHashingToggleButton"), "toggled", G_CALLBACK(onPauseHashing_gui), (gpointer)this);
-    TimerManager::getInstance()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
 }
 
 Hash::~Hash()
 {
-    HashManager::getInstance()->setPriority(Thread::IDLE);
-    TimerManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getHashManager()->setPriority(Thread::IDLE);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
 }
 
 void Hash::updateStats_gui(string file, uint64_t bytes, size_t files, uint64_t tick)
@@ -56,7 +57,7 @@ void Hash::updateStats_gui(string file, uint64_t bytes, size_t files, uint64_t t
         startFiles = files;
 
     double diff = tick - startTime;
-    bool paused = HashManager::getInstance()->isHashingPaused();
+    bool paused = dcpp::getContext()->getHashManager()->isHashingPaused();
 
     if (diff < 1000 || files == 0 || bytes == 0 || paused)
     {
@@ -114,13 +115,13 @@ void Hash::onPauseHashing_gui(GtkWidget *widget, gpointer data)
     (void)data;
 
     //    Hash *h = (Hash *)data;
-    bool paused = HashManager::getInstance()->isHashingPaused();
+    bool paused = dcpp::getContext()->getHashManager()->isHashingPaused();
     if (paused) {
         //        gtk_window_set_title(GTK_WINDOW(h->getContainer()), _("Indexing files..."));
-        HashManager::getInstance()->resumeHashing();
+        dcpp::getContext()->getHashManager()->resumeHashing();
     } else {
         //        gtk_window_set_title(GTK_WINDOW(h->getContainer()), _("Paused..."));
-        HashManager::getInstance()->pauseHashing();
+        dcpp::getContext()->getHashManager()->pauseHashing();
     }
 }
 
@@ -131,7 +132,7 @@ void Hash::on(TimerManagerListener::Second, uint64_t tics) noexcept
     string file;
     uint64_t bytes = 0;
     size_t files = 0;
-    bool paused = HashManager::getInstance()->isHashingPaused();
+    bool paused = dcpp::getContext()->getHashManager()->isHashingPaused();
     gtk_window_set_title(GTK_WINDOW(getContainer()),
                          paused ? _("Paused...") : _("Indexing files..."));
 
@@ -139,7 +140,7 @@ void Hash::on(TimerManagerListener::Second, uint64_t tics) noexcept
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("pauseHashingToggleButton")), paused);
     g_signal_handler_unblock(GTK_TOGGLE_BUTTON(getWidget("pauseHashingToggleButton")), handler_id);
 
-    HashManager::getInstance()->getStats(file, bytes, files);
+    dcpp::getContext()->getHashManager()->getStats(file, bytes, files);
 
     typedef Func4<Hash, string, uint64_t, size_t, uint64_t> F4;
     F4 *func = new F4(this, &Hash::updateStats_gui, file, bytes, files, GET_TICK());

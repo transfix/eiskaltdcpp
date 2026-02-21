@@ -14,6 +14,7 @@
 #pragma once
 
 #include "dcpp/stdinc.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include <libintl.h>
 #include <iostream>

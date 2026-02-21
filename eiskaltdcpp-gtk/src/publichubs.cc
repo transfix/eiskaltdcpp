@@ -20,6 +20,7 @@
 
 #include "publichubs.hh"
 #include "wulformanager.hh"
+#include "dcpp/DCPlusPlus.h"
 
 using namespace std;
 using namespace dcpp;
@@ -101,7 +102,7 @@ PublicHubs::PublicHubs():
 
 PublicHubs::~PublicHubs()
 {
-    FavoriteManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getFavoriteManager()->removeListener(this);
     gtk_widget_destroy(getWidget("configureDialog"));
     g_object_unref(getWidget("menu"));
 }
@@ -110,7 +111,7 @@ void PublicHubs::show()
 {
     buildHubList_gui();
 
-    FavoriteManager::getInstance()->addListener(this);
+    dcpp::getContext()->getFavoriteManager()->addListener(this);
     Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::downloadList_client);
     WulforManager::get()->dispatchClientFunc(func);
 }
@@ -118,8 +119,8 @@ void PublicHubs::show()
 // Populate the public hubs list
 void PublicHubs::buildHubList_gui()
 {
-    StringList list = FavoriteManager::getInstance()->getHubLists();
-    int selected = FavoriteManager::getInstance()->getSelectedHubList();
+    StringList list = dcpp::getContext()->getFavoriteManager()->getHubLists();
+    int selected = dcpp::getContext()->getFavoriteManager()->getSelectedHubList();
 
     for (auto &it : list)
     {
@@ -357,7 +358,7 @@ void PublicHubs::onConfigure_gui(GtkWidget*, gpointer data)
         if (!lists.empty())
             lists.erase(lists.size() - 1);
 
-        SettingsManager::getInstance()->set(SettingsManager::HUBLIST_SERVERS, lists);
+        dcpp::getContext()->getSettingsManager()->set(SettingsManager::HUBLIST_SERVERS, lists);
     }
 }
 
@@ -424,12 +425,12 @@ void PublicHubs::onCellEdited_gui(GtkCellRendererText*, char *path, char *text, 
 
 void PublicHubs::downloadList_client()
 {
-    hubs = FavoriteManager::getInstance()->getPublicHubs();
+    hubs = dcpp::getContext()->getFavoriteManager()->getPublicHubs();
 
     if (hubs.empty())
-        FavoriteManager::getInstance()->refresh();
+        dcpp::getContext()->getFavoriteManager()->refresh();
 
-    FavoriteManager::getInstance()->save();
+    dcpp::getContext()->getFavoriteManager()->save();
 
     Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
     WulforManager::get()->dispatchGuiFunc(func);
@@ -437,13 +438,13 @@ void PublicHubs::downloadList_client()
 
 void PublicHubs::refresh_client(int pos)
 {
-    FavoriteManager::getInstance()->setHubList(pos);
-    FavoriteManager::getInstance()->refresh();
+    dcpp::getContext()->getFavoriteManager()->setHubList(pos);
+    dcpp::getContext()->getFavoriteManager()->refresh();
 }
 
 void PublicHubs::addFav_client(FavoriteHubEntry entry)
 {
-    FavoriteManager::getInstance()->addFavorite(entry);
+    dcpp::getContext()->getFavoriteManager()->addFavorite(entry);
 }
 
 void PublicHubs::on(FavoriteManagerListener::DownloadStarting, const string &file) noexcept
@@ -469,7 +470,7 @@ void PublicHubs::on(FavoriteManagerListener::DownloadFinished, const string &fil
     Func *f2 = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
     WulforManager::get()->dispatchGuiFunc(f2);
 
-    hubs = FavoriteManager::getInstance()->getPublicHubs();
+    hubs = dcpp::getContext()->getFavoriteManager()->getPublicHubs();
 
     Func0<PublicHubs> *f0 = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
     WulforManager::get()->dispatchGuiFunc(f0);
@@ -482,7 +483,7 @@ void PublicHubs::on(FavoriteManagerListener::LoadedFromCache, const string &file
     Func *func = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
     WulforManager::get()->dispatchGuiFunc(func);
 
-    hubs = FavoriteManager::getInstance()->getPublicHubs();
+    hubs = dcpp::getContext()->getFavoriteManager()->getPublicHubs();
 
     Func0<PublicHubs> *f0 = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
     WulforManager::get()->dispatchGuiFunc(f0);

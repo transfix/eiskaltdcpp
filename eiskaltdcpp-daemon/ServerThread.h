@@ -26,6 +26,7 @@
 #include "dcpp/Socket.h"
 #include "dcpp/TimerManager.h"
 #include "dcpp/Thread.h"
+#include "dcpp/DCPlusPlus.h"
 
 class ServerThread :
         private TimerManagerListener,

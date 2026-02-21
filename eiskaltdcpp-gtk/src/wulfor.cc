@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
     // Start the DC++ client core
     dcpp::startup(callBack, NULL);
 
-    dcpp::TimerManager::getInstance()->start();
+    dcpp::getContext()->getTimerManager()->start();
 
 #if !GLIB_CHECK_VERSION(2,32,0)
     g_thread_init(NULL);

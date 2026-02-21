@@ -22,6 +22,7 @@
 #include "WulforUtil.hh"
 #include <glib/gi18n.h>
 #include "previewmenu.hh"
+#include "dcpp/DCPlusPlus.h"
 
 using namespace std;
 using namespace dcpp;
@@ -60,7 +61,7 @@ bool PreviewMenu::buildMenu_gui(const string &target)
     string appExtensions = "";
     ext = Text::toLower(ext);
 
-    const PreviewApp::List &Apps = WulforSettingsManager::getInstance()->getPreviewApps();
+    const PreviewApp::List &Apps = Wulfordcpp::getContext()->getSettingsManager()->getPreviewApps();
 
     for (PreviewApp::Iter item = Apps.begin(); item != Apps.end(); ++item)
     {

@@ -22,6 +22,7 @@
 #include <dcpp/version.h>
 #include <dcpp/ClientManager.h>
 #include <dcpp/FavoriteManager.h>
+#include "dcpp/DCPlusPlus.h"
 #include "settingsmanager.hh"
 #include "emoticonsdialog.hh"
 #include "emoticons.hh"
@@ -146,7 +147,7 @@ PrivateMessage::PrivateMessage(const string &_cid, const string &_hubUrl):
 
     gtk_widget_grab_focus(getWidget("entry"));
     history.push_back("");
-    const UserPtr user = ClientManager::getInstance()->findUser(CID(_cid));
+    const UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(_cid));
     isBot = user ? user->isSet(User::BOT) : false;
 
     setLabel_gui(WulforUtil::getNicks(_cid, _hubUrl) + " [" + WulforUtil::getHubNames(_cid, _hubUrl) + "]");
@@ -170,7 +171,7 @@ PrivateMessage::PrivateMessage(const string &_cid, const string &_hubUrl):
 
 PrivateMessage::~PrivateMessage()
 {
-    ClientManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getClientManager()->removeListener(this);
 
     if (handCursor)
     {
@@ -192,7 +193,7 @@ PrivateMessage::~PrivateMessage()
 
 void PrivateMessage::show()
 {
-    ClientManager::getInstance()->addListener(this);
+    dcpp::getContext()->getClientManager()->addListener(this);
 }
 
 void PrivateMessage::addMessage_gui(string message, Msg::TypeMsg typemsg)
@@ -206,8 +207,8 @@ void PrivateMessage::addMessage_gui(string message, Msg::TypeMsg typemsg)
         params["hubNI"] = WulforUtil::getHubNames(cid, hubUrl);
         params["hubURL"] = hubUrl;
         params["userCID"] = cid;
-        params["userNI"] = ClientManager::getInstance()->getNicks(CID(cid), hubUrl)[0];
-        params["myCID"] = ClientManager::getInstance()->getMe()->getCID().toBase32();
+        params["userNI"] = dcpp::getContext()->getClientManager()->getNicks(CID(cid), hubUrl)[0];
+        params["myCID"] = dcpp::getContext()->getClientManager()->getMe()->getCID().toBase32();
         LOG(LogManager::PM, params);
     }
 
@@ -249,7 +250,7 @@ void PrivateMessage::addStatusMessage_gui(string message, Msg::TypeMsg typemsg)
 
 void PrivateMessage::preferences_gui()
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
     string fore, back;
     bool bold = false, italic = false;
 
@@ -762,7 +763,7 @@ void PrivateMessage::getSettingTag_gui(WulforSettingsManager *wsm, const Tag::Ty
 
 GtkTextTag* PrivateMessage::createTag_gui(const string &tagname, Tag::TypeTag type)
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
     GtkTextTag *tag = gtk_text_tag_table_lookup(gtk_text_buffer_get_tag_table(messageBuffer), tagname.c_str());
 
     if (!tag)
@@ -1026,7 +1027,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
         else if (command == "dcpps" && !param.empty())
         {
-            string msg = SettingsManager::getInstance()->parseCoreCmd (param);
+            string msg = dcpp::getContext()->getSettingsManager()->parseCoreCmd (param);
             pm->addStatusMessage_gui(msg, Msg::SYSTEM);
         }
         else if (command == "help")
@@ -1401,11 +1402,11 @@ void PrivateMessage::updateOnlineStatus_gui(bool online)
 
 void PrivateMessage::sendMessage_client(string message)
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
     if (user && user->isOnline())
     {
         // FIXME: WTF does the 3rd param (bool thirdPerson) do? A: Used for /me stuff
-        ClientManager::getInstance()->privateMessage(HintedUser(user, hubUrl), message, false);
+        dcpp::getContext()->getClientManager()->privateMessage(HintedUser(user, hubUrl), message, false);
     }
     else
     {
@@ -1417,9 +1418,9 @@ void PrivateMessage::sendMessage_client(string message)
 
 void PrivateMessage::addFavoriteUser_client()
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
-    if (user && FavoriteManager::getInstance()->isFavoriteUser(user))
+    if (user && dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user))
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
         F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(user, hubUrl) + _(" is favorite user"),
@@ -1428,17 +1429,17 @@ void PrivateMessage::addFavoriteUser_client()
     }
     else
     {
-        FavoriteManager::getInstance()->addFavoriteUser(user);
+        dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
     }
 }
 
 void PrivateMessage::removeFavoriteUser_client()
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
-    if (user && FavoriteManager::getInstance()->isFavoriteUser(user))
+    if (user && dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user))
     {
-        FavoriteManager::getInstance()->removeFavoriteUser(user);
+        dcpp::getContext()->getFavoriteManager()->removeFavoriteUser(user);
     }
     else
     {
@@ -1453,9 +1454,9 @@ void PrivateMessage::getFileList_client()
 {
     try
     {
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
         if (user)
-            QueueManager::getInstance()->addList(HintedUser(user, hubUrl), QueueItem::FLAG_CLIENT_VIEW);
+            dcpp::getContext()->getQueueManager()->addList(HintedUser(user, hubUrl), QueueItem::FLAG_CLIENT_VIEW);
     }
     catch (const Exception& e)
     {
@@ -1467,10 +1468,10 @@ void PrivateMessage::getFileList_client()
 
 void PrivateMessage::grantSlot_client()
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
     if (user)
     {
-        UploadManager::getInstance()->reserveSlot(HintedUser(user, hubUrl));
+        dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
     }
     else
     {

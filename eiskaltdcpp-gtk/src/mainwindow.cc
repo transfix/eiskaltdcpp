@@ -32,6 +32,7 @@
 #include <dcpp/ConnectivityManager.h>
 #include <dcpp/version.h>
 #include <dcpp/HashManager.h>
+#include "dcpp/DCPlusPlus.h"
 #include "downloadqueue.hh"
 #include "favoritehubs.hh"
 #include "favoriteusers.hh"
@@ -150,7 +151,7 @@ MainWindow::MainWindow():
 
     GtkWidget *menu = gtk_menu_new();
     gtk_menu_tool_button_set_menu(GTK_MENU_TOOL_BUTTON(getWidget("favHubs")), menu);
-    const FavoriteHubEntryList &fh = FavoriteManager::getInstance()->getFavoriteHubs();
+    const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
     gtk_container_foreach(GTK_CONTAINER(menu), (GtkCallback)gtk_widget_destroy, NULL);
 
     for (auto it = fh.begin(); it != fh.end(); ++it)
@@ -451,9 +452,9 @@ MainWindow::MainWindow():
 
 MainWindow::~MainWindow()
 {
-    QueueManager::getInstance()->removeListener(this);
-    TimerManager::getInstance()->removeListener(this);
-    LogManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getQueueManager()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
+    dcpp::getContext()->getLogManager()->removeListener(this);
 
     GList *list = (GList *)g_object_get_data(G_OBJECT(getWidget("book")), "page-rotation-list");
     g_list_free(list);
@@ -499,9 +500,9 @@ GtkWidget *MainWindow::getContainer()
 
 void MainWindow::show()
 {
-    QueueManager::getInstance()->addListener(this);
-    TimerManager::getInstance()->addListener(this);
-    LogManager::getInstance()->addListener(this);
+    dcpp::getContext()->getQueueManager()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
+    dcpp::getContext()->getLogManager()->addListener(this);
 
     typedef Func1<MainWindow, bool> F1;
     typedef Func0<MainWindow> F0;
@@ -1505,11 +1506,11 @@ void MainWindow::addFileDownloadQueue_client(string name, int64_t size, string t
     {
         if (!tth.empty())
         {
-            QueueManager::getInstance()->add(name, size, TTHValue(tth));
+            dcpp::getContext()->getQueueManager()->add(name, size, TTHValue(tth));
 
             // automatically search for alternative download locations
             if (BOOLSETTING(AUTO_SEARCH))
-                SearchManager::getInstance()->search(tth, 0, SearchManager::TYPE_TTH, SearchManager::SIZE_DONTCARE,
+                dcpp::getContext()->getSearchManager()->search(tth, 0, SearchManager::TYPE_TTH, SearchManager::SIZE_DONTCARE,
                                                      Util::emptyString);
         }
     }
@@ -2318,7 +2319,7 @@ void MainWindow::onDebugCMD(GtkWidget *widget, gpointer data)
 
 void MainWindow::autoConnect_client()
 {
-    FavoriteHubEntryList &l = FavoriteManager::getInstance()->getFavoriteHubs();
+    FavoriteHubEntryList &l = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
     typedef Func2<MainWindow, string, string> F2;
     F2 *func;
 
@@ -2358,7 +2359,7 @@ void MainWindow::startSocket_client(bool changed){
     } catch (const Exception& e) {
         showPortsError(e.getError());
     }
-    ClientManager::getInstance()->infoUpdated();
+    dcpp::getContext()->getClientManager()->infoUpdated();
 }
 void MainWindow::showPortsError(const string& port) {
     string msg = str(dcpp_fmt(dgettext("eiskaltdcpp-gtk", "Unable to open %1% port. Searching or file transfers will not work correctly until you change settings or turn off any application that might be using that port.")) % port);
@@ -2370,8 +2371,8 @@ void MainWindow::refreshFileList_client()
 {
     try
     {
-        ShareManager::getInstance()->setDirty();
-        ShareManager::getInstance()->refresh(true, true, false);
+        dcpp::getContext()->getShareManager()->setDirty();
+        dcpp::getContext()->getShareManager()->refresh(true, true, false);
     }
     catch (const ShareException&)
     {
@@ -2380,8 +2381,8 @@ void MainWindow::refreshFileList_client()
 
 void MainWindow::openOwnList_client(bool useSetting)
 {
-    UserPtr user = ClientManager::getInstance()->getMe();
-    string path = ShareManager::getInstance()->getOwnListFile();
+    UserPtr user = dcpp::getContext()->getClientManager()->getMe();
+    string path = dcpp::getContext()->getShareManager()->getOwnListFile();
 
     typedef Func4<MainWindow, UserPtr, string, string, bool> F4;
     F4 *func = new F4(this, &MainWindow::showShareBrowser_gui, user, path, "", useSetting);
@@ -2390,7 +2391,7 @@ void MainWindow::openOwnList_client(bool useSetting)
 
 void MainWindow::matchAllList_client()
 {
-    QueueManager::getInstance()->matchAllListings();
+    dcpp::getContext()->getQueueManager()->matchAllListings();
 }
 
 void MainWindow::on(LogManagerListener::Message, time_t t, const string &message) noexcept
@@ -2449,7 +2450,7 @@ void MainWindow::on(TimerManagerListener::Second, uint64_t ticks) noexcept
     string uploadSpeed = Util::formatBytes(upBytes) + "/" + _("s");
     string uploaded = Util::formatBytes(Socket::getTotalUp());
 
-    SettingsManager *sm = SettingsManager::getInstance();
+    SettingsManager *sm = dcpp::getContext()->getSettingsManager();
     sm->set(SettingsManager::TOTAL_UPLOAD,   SETTING(TOTAL_UPLOAD)   + upDiff);
     sm->set(SettingsManager::TOTAL_DOWNLOAD, SETTING(TOTAL_DOWNLOAD) + downDiff);
 
@@ -2524,7 +2525,7 @@ void MainWindow::onTTHFileButton_gui(GtkWidget *widget , gpointer data)
         g_autofree gchar *cptemp = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser));
         string TTH;
         File f(Text::fromT(string(cptemp)),File::READ, File::OPEN);
-        HashManager  *HM = HashManager::getInstance();
+        HashManager  *HM = dcpp::getContext()->getHashManager();
         const TTHValue *tth= HM->getFileTTHif(string(cptemp));
         if (tth) {
             TTH = tth->toBase32();
@@ -2658,9 +2659,9 @@ void MainWindow::parsePartial_gui(HintedUser user, string txt)
 {
     bool raise = !WGETB("popunder-filelist");
     BookEntry *entry = findBookEntry(Entry::SHARE_BROWSER, user.user->getCID().toBase32());
-    StringList nicks = ClientManager::getInstance()->getNicks(user);
+    StringList nicks = dcpp::getContext()->getClientManager()->getNicks(user);
     string nick = nicks.empty() ? Util::emptyString : Util::cleanPathChars(nicks[0]) + ".";
-    //string path = QueueManager::getInstance()->getListPath(aUser) + ".xml.bz2";
+    //string path = dcpp::getContext()->getQueueManager()->getListPath(aUser) + ".xml.bz2";
     string path = Util::getListPath() + nick + user.user->getCID().toBase32() + ".xml.bz2";
 
     if (entry)

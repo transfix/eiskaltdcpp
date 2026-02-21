@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include "settingsmanager.hh"
 #include "dcpp/StringTokenizer.h"
+#include "dcpp/DCPlusPlus.h"
 #ifdef HAVE_IFADDRS_H
 #include <ifaddrs.h>
 #include <net/if.h>
@@ -138,7 +139,7 @@ string WulforUtil::getNicks(const string &cid, const string& hintUrl)
 
 string WulforUtil::getNicks(const CID& cid, const string& hintUrl)
 {
-    return Util::toString(ClientManager::getInstance()->getNicks(cid, hintUrl));
+    return Util::toString(dcpp::getContext()->getClientManager()->getNicks(cid, hintUrl));
 }
 
 string WulforUtil::getNicks(const UserPtr& user, const string& hintUrl)
@@ -153,7 +154,7 @@ string WulforUtil::getHubNames(const string &cid, const string& hintUrl)
 
 string WulforUtil::getHubNames(const CID& cid, const string& hintUrl)
 {
-    StringList hubs = ClientManager::getInstance()->getHubNames(cid, hintUrl);
+    StringList hubs = dcpp::getContext()->getClientManager()->getHubNames(cid, hintUrl);
     if (hubs.empty())
         return _("Offline");
     else
@@ -167,7 +168,7 @@ string WulforUtil::getHubNames(const UserPtr& user, const string& hintUrl)
 
 StringList WulforUtil::getHubAddress(const CID& cid, const string& hintUrl)
 {
-    return ClientManager::getInstance()->getHubs(cid, hintUrl);
+    return dcpp::getContext()->getClientManager()->getHubs(cid, hintUrl);
 }
 
 StringList WulforUtil::getHubAddress(const UserPtr& user, const string& hintUrl)
@@ -530,7 +531,7 @@ void WulforUtil::registerIcons()
 {
     // Holds a mapping of custom icon names -> stock icon names.
     // Not all icons have stock representations.
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
     map<string, string> icons;
     icons["eiskaltdcpp"] = "eiskaltdcpp";
     icons["icon_msg"] = wsm->getString("icon_msg");

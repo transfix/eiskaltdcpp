@@ -22,6 +22,7 @@
 #include "previewmenu.hh"
 #include <dcpp/Text.h>
 #include <dcpp/ClientManager.h>
+#include "dcpp/DCPlusPlus.h"
 #include "wulformanager.hh"
 #include "settingsmanager.hh"
 #include "WulforUtil.hh"
@@ -122,11 +123,11 @@ FinishedTransfers::FinishedTransfers(const EntryType type, const string &title, 
 
 FinishedTransfers::~FinishedTransfers()
 {
-    FinishedManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getFinishedManager()->removeListener(this);
     g_object_unref(getWidget("menu"));
     delete appsPreviewMenu;
     int active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("showOnlyFullFilesCheckButton")));
-    SettingsManager::getInstance()->set(SettingsManager::FINISHED_DL_ONLY_FULL, active);
+    dcpp::getContext()->getSettingsManager()->set(SettingsManager::FINISHED_DL_ONLY_FULL, active);
 }
 
 void FinishedTransfers::show()
@@ -134,7 +135,7 @@ void FinishedTransfers::show()
     initializeList_client();
     //Func0<FinishedTransfers> *func = new Func0<FinishedTransfers>(this, &FinishedTransfers::initializeList_client);
     //WulforManager::get()->dispatchClientFunc(func);
-    FinishedManager::getInstance()->addListener(this);
+    dcpp::getContext()->getFinishedManager()->addListener(this);
 }
 
 bool FinishedTransfers::findUser_gui(GtkTreeIter* iter, const string& cid)
@@ -456,9 +457,9 @@ void FinishedTransfers::onShowOnlyFullFilesToggled_gui(GtkWidget *widget, gpoint
     StringMap params;
     gtk_list_store_clear(ft->fileStore);
 
-    auto lock = FinishedManager::getInstance()->lock();
+    auto lock = dcpp::getContext()->getFinishedManager()->lock();
 
-    const FinishedManager::MapByFile &list = FinishedManager::getInstance()->getMapByFile(ft->isUpload);
+    const FinishedManager::MapByFile &list = dcpp::getContext()->getFinishedManager()->getMapByFile(ft->isUpload);
 
     for (auto it = list.begin(); it != list.end(); ++it)
     {
@@ -643,9 +644,9 @@ void FinishedTransfers::onRemoveAll_gui(GtkMenuItem *item, gpointer data)
 void FinishedTransfers::initializeList_client()
 {
     StringMap params;
-    auto lock = FinishedManager::getInstance()->lock();
-    const FinishedManager::MapByFile &list = FinishedManager::getInstance()->getMapByFile(isUpload);
-    const FinishedManager::MapByUser &user = FinishedManager::getInstance()->getMapByUser(isUpload);
+    auto lock = dcpp::getContext()->getFinishedManager()->lock();
+    const FinishedManager::MapByFile &list = dcpp::getContext()->getFinishedManager()->getMapByFile(isUpload);
+    const FinishedManager::MapByUser &user = dcpp::getContext()->getFinishedManager()->getMapByUser(isUpload);
 
     for (auto it = list.begin(); it != list.end(); ++it)
     {
@@ -709,11 +710,11 @@ void FinishedTransfers::getFinishedParams_client(const FinishedUserItemPtr &item
 
 void FinishedTransfers::removeUser_client(string cid)
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
     if (user)
         // ignore the hint url user...
-        FinishedManager::getInstance()->remove(isUpload, HintedUser(user, ""));
+        dcpp::getContext()->getFinishedManager()->remove(isUpload, HintedUser(user, ""));
 
 }
 
@@ -721,13 +722,13 @@ void FinishedTransfers::removeFile_client(string target)
 {
 
     if (!target.empty())
-        FinishedManager::getInstance()->remove(isUpload, target);
+        dcpp::getContext()->getFinishedManager()->remove(isUpload, target);
 
 }
 
 void FinishedTransfers::removeAll_client()
 {
-    FinishedManager::getInstance()->removeAll(isUpload);
+    dcpp::getContext()->getFinishedManager()->removeAll(isUpload);
 }
 
 void FinishedTransfers::on(FinishedManagerListener::AddedFile, bool upload, const string& file, const FinishedFileItemPtr& item) noexcept
@@ -774,7 +775,7 @@ void FinishedTransfers::on(FinishedManagerListener::UpdatedUser, bool upload, co
 {
     if (isUpload == upload)
     {
-        const FinishedManager::MapByUser &umap = FinishedManager::getInstance()->getMapByUser(isUpload);
+        const FinishedManager::MapByUser &umap = dcpp::getContext()->getFinishedManager()->getMapByUser(isUpload);
         auto userit = umap.find(user);
         if (userit == umap.end())
             return;

@@ -22,6 +22,7 @@
 
 #include "utility.h"
 #include "ServerManager.h"
+#include "dcpp/DCPlusPlus.h"
 
 using namespace std;
 
@@ -314,8 +315,8 @@ public:
     execute(xmlrpc_c::paramList const& paramList,
             xmlrpc_c::value *   const  retvalP) {
 
-        ShareManager::getInstance()->setDirty();
-        ShareManager::getInstance()->refresh(true);
+        dcpp::getContext()->getShareManager()->setDirty();
+        dcpp::getContext()->getShareManager()->refresh(true);
         *retvalP = xmlrpc_c::value_int(0);
     }
 };

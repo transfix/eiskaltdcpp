@@ -24,12 +24,13 @@
 #include <map>
 #include <dcpp/stdinc.h>
 #include <dcpp/Singleton.h>
+#include "dcpp/DCPlusPlus.h"
 
-#define WSET(key, value) WulforSettingsManager::getInstance()->set(key, value)
-#define WGETI(key) WulforSettingsManager::getInstance()->getInt(key)
-#define WGETS(key) WulforSettingsManager::getInstance()->getString(key)
-#define WGETB(key) WulforSettingsManager::getInstance()->getBool(key)
-#define WSCMD(cmd) WulforSettingsManager::getInstance()->parseCmd(cmd);
+#define WSET(key, value) Wulfordcpp::getContext()->getSettingsManager()->set(key, value)
+#define WGETI(key) Wulfordcpp::getContext()->getSettingsManager()->getInt(key)
+#define WGETS(key) Wulfordcpp::getContext()->getSettingsManager()->getString(key)
+#define WGETB(key) Wulfordcpp::getContext()->getSettingsManager()->getBool(key)
+#define WSCMD(cmd) Wulfordcpp::getContext()->getSettingsManager()->parseCmd(cmd);
 
 /* default font theme */
 #define TEXT_WEIGHT_NORMAL PANGO_WEIGHT_NORMAL

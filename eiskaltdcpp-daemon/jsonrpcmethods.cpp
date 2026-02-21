@@ -16,6 +16,7 @@
 #include "ServerThread.h"
 #include "VersionGlobal.h"
 #include "dcpp/format.h"
+#include "dcpp/DCPlusPlus.h"
 #include "json/jsonrpc-cpp/jsonrpc_common.h"
 
 using namespace std;
@@ -280,8 +281,8 @@ bool JsonRpcMethods::RefreshShare(const Json::Value& root, Json::Value& response
     if (isDebug) std::cout << "RefreshShare (root): " << root << std::endl;
     response["jsonrpc"] = "2.0";
     response["id"] = root["id"];
-    ShareManager::getInstance()->setDirty();
-    ShareManager::getInstance()->refresh(true);
+    dcpp::getContext()->getShareManager()->setDirty();
+    dcpp::getContext()->getShareManager()->refresh(true);
     response["result"] = 0;
     if (isDebug) std::cout << "RefreshShare (response): " << response << std::endl;
     return true;

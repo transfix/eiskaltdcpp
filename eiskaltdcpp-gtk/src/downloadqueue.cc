@@ -20,6 +20,7 @@
 
 #include "downloadqueue.hh"
 #include <dcpp/ResourceManager.h>
+#include "dcpp/DCPlusPlus.h"
 #include "search.hh"
 #include "settingsmanager.hh"
 #include "wulformanager.hh"
@@ -130,7 +131,7 @@ DownloadQueue::DownloadQueue():
 
 DownloadQueue::~DownloadQueue()
 {
-    QueueManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getQueueManager()->removeListener(this);
 
     // Save the pane position
     int panePosition = gtk_paned_get_position(GTK_PANED(getWidget("pane")));
@@ -145,7 +146,7 @@ DownloadQueue::~DownloadQueue()
 void DownloadQueue::show()
 {
     buildList_client();
-    QueueManager::getInstance()->addListener(this);
+    dcpp::getContext()->getQueueManager()->addListener(this);
 }
 
 void DownloadQueue::buildDynamicMenu_gui()
@@ -1076,7 +1077,7 @@ void DownloadQueue::onFileRemoveClicked_gui(GtkMenuItem*, gpointer data)
 void DownloadQueue::buildList_client()
 {
     StringMap params;
-    const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
+    const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
 
     for (auto it = ll.begin(); it != ll.end(); ++it)
     {
@@ -1086,13 +1087,13 @@ void DownloadQueue::buildList_client()
         addFile_gui(params, true);
     }
 
-    QueueManager::getInstance()->unlockQueue();
+    dcpp::getContext()->getQueueManager()->unlockQueue();
 }
 
 void DownloadQueue::move_client(string source, string target)
 {
     if (!source.empty() && !target.empty())
-        QueueManager::getInstance()->move(source, target);
+        dcpp::getContext()->getQueueManager()->move(source, target);
 }
 
 void DownloadQueue::moveDir_client(string source, string target)
@@ -1102,7 +1103,7 @@ void DownloadQueue::moveDir_client(string source, string target)
         // Can't modify QueueItem::StringMap in the loop, so we have to queue them.
         vector<string> targets;
         string *file;
-        const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
+        const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
 
         for (auto it = ll.begin(); it != ll.end(); ++it)
         {
@@ -1110,17 +1111,17 @@ void DownloadQueue::moveDir_client(string source, string target)
             if (file->length() >= source.length() && file->substr(0, source.length()) == source)
                 targets.push_back(*file);
         }
-        QueueManager::getInstance()->unlockQueue();
+        dcpp::getContext()->getQueueManager()->unlockQueue();
 
         for (auto it = targets.begin(); it != targets.end(); ++it)
-            QueueManager::getInstance()->move(*it, target + it->substr(source.length()));
+            dcpp::getContext()->getQueueManager()->move(*it, target + it->substr(source.length()));
     }
 }
 
 void DownloadQueue::setPriority_client(string target, QueueItem::Priority p)
 {
     if (!target.empty())
-        QueueManager::getInstance()->setPriority(target, p);
+        dcpp::getContext()->getQueueManager()->setPriority(target, p);
 }
 
 void DownloadQueue::setPriorityDir_client(string path, QueueItem::Priority p)
@@ -1128,15 +1129,15 @@ void DownloadQueue::setPriorityDir_client(string path, QueueItem::Priority p)
     if (!path.empty() && path[path.length() - 1] == PATH_SEPARATOR)
     {
         string *file;
-        const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
+        const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
 
         for (auto it = ll.begin(); it != ll.end(); ++it)
         {
             file = it->first;
             if (file->length() >= path.length() && file->substr(0, path.length()) == path)
-                QueueManager::getInstance()->setPriority(*file, p);
+                dcpp::getContext()->getQueueManager()->setPriority(*file, p);
         }
-        QueueManager::getInstance()->unlockQueue();
+        dcpp::getContext()->getQueueManager()->unlockQueue();
     }
 }
 
@@ -1149,9 +1150,9 @@ void DownloadQueue::addList_client(string target, string nick)
             SourceIter it = sources[target].find(nick);
             if (it != sources[target].end())
             {
-                UserPtr user = ClientManager::getInstance()->findUser(CID(it->second));
+                UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(it->second));
                 if (user)
-                    QueueManager::getInstance()->addList(HintedUser(user, ""), QueueItem::FLAG_CLIENT_VIEW);
+                    dcpp::getContext()->getQueueManager()->addList(HintedUser(user, ""), QueueItem::FLAG_CLIENT_VIEW);
             }
         }
     }
@@ -1186,9 +1187,9 @@ void DownloadQueue::reAddSource_client(string target, string nick)
             SourceIter it = badSources[target].find(nick);
             if (it != badSources[target].end())
             {
-                UserPtr user = ClientManager::getInstance()->findUser(CID(it->second));
+                UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(it->second));
                 if (user)
-                    QueueManager::getInstance()->readd(target, HintedUser(user, ""));
+                    dcpp::getContext()->getQueueManager()->readd(target, HintedUser(user, ""));
             }
         }
     }
@@ -1207,9 +1208,9 @@ void DownloadQueue::removeSource_client(string target, string nick)
         SourceIter it = sources[target].find(nick);
         if (it != sources[target].end())
         {
-            UserPtr user = ClientManager::getInstance()->findUser(CID(it->second));
+            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(it->second));
             if (user)
-                QueueManager::getInstance()->removeSource(target, user, QueueItem::Source::FLAG_REMOVED);
+                dcpp::getContext()->getQueueManager()->removeSource(target, user, QueueItem::Source::FLAG_REMOVED);
         }
     }
 }
@@ -1221,9 +1222,9 @@ void DownloadQueue::removeSources_client(string target, string nick)
         SourceIter it = sources[target].find(nick);
         if (it != sources[target].end())
         {
-            UserPtr user = ClientManager::getInstance()->findUser(CID(it->second));
+            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(it->second));
             if (user)
-                QueueManager::getInstance()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+                dcpp::getContext()->getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
         }
     }
 }
@@ -1231,7 +1232,7 @@ void DownloadQueue::removeSources_client(string target, string nick)
 void DownloadQueue::remove_client(string target)
 {
     if (!target.empty())
-        QueueManager::getInstance()->remove(target);
+        dcpp::getContext()->getQueueManager()->remove(target);
 }
 
 void DownloadQueue::removeDir_client(string path)
@@ -1240,7 +1241,7 @@ void DownloadQueue::removeDir_client(string path)
     {
         string *file;
         vector<string> targets;
-        const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
+        const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
 
         for (auto it = ll.begin(); it != ll.end(); ++it)
         {
@@ -1248,10 +1249,10 @@ void DownloadQueue::removeDir_client(string path)
             if (file->length() >= path.length() && file->substr(0, path.length()) == path)
                 targets.push_back(*file);
         }
-        QueueManager::getInstance()->unlockQueue();
+        dcpp::getContext()->getQueueManager()->unlockQueue();
 
         for (auto it = targets.begin(); it != targets.end(); ++it)
-            QueueManager::getInstance()->remove(*it);
+            dcpp::getContext()->getQueueManager()->remove(*it);
     }
 }
 
@@ -1260,7 +1261,7 @@ void DownloadQueue::updateFileView_client(string path)
     if (!path.empty())
     {
         vector<StringMap> files;
-        const QueueItem::StringMap &ll = QueueManager::getInstance()->lockQueue();
+        const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
 
         for (auto it = ll.begin(); it != ll.end(); ++it)
         {
@@ -1271,7 +1272,7 @@ void DownloadQueue::updateFileView_client(string path)
                 files.push_back(params);
             }
         }
-        QueueManager::getInstance()->unlockQueue();
+        dcpp::getContext()->getQueueManager()->unlockQueue();
 
         // Updating gui is smoother if we do it in large chunks.
         typedef Func2<DownloadQueue, vector<StringMap>, bool> F2;

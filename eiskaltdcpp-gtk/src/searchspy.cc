@@ -22,6 +22,7 @@
 #include <dcpp/SearchManager.h>
 #include <dcpp/TimerManager.h>
 #include <dcpp/Util.h>
+#include "dcpp/DCPlusPlus.h"
 #include "settingsmanager.hh"
 #include "search.hh"
 #include "wulformanager.hh"
@@ -114,14 +115,14 @@ SearchSpy::~SearchSpy()
     gtk_widget_destroy(getWidget("TopSearchDialog"));
     g_object_unref(getWidget("menu"));
 
-    TimerManager::getInstance()->removeListener(this);
-    ClientManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
+    dcpp::getContext()->getClientManager()->removeListener(this);
 }
 
 void SearchSpy::show()
 {
-    ClientManager::getInstance()->addListener(this);
-    TimerManager::getInstance()->addListener(this);
+    dcpp::getContext()->getClientManager()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
 }
 
 void SearchSpy::preferences_gui()

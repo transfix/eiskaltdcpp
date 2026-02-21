@@ -23,6 +23,7 @@
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 #include <dcpp/DebugManager.h>
+#include "dcpp/DCPlusPlus.h"
 
 using namespace std;
 using namespace dcpp;
@@ -45,7 +46,7 @@ cmddebug::cmddebug():
 
 cmddebug::~cmddebug()
 {
-    DebugManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getDebugManager()->removeListener(this);
 }
 
 void cmddebug::add_gui(string file)
@@ -76,7 +77,7 @@ void cmddebug::add_gui(string file)
 void cmddebug::init()
 {
     start();
-    DebugManager::getInstance()->addListener(this);
+    dcpp::getContext()->getDebugManager()->addListener(this);
 }
 
 void cmddebug::show()

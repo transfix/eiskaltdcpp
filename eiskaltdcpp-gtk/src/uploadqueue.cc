@@ -24,6 +24,7 @@
 #include <dcpp/FavoriteManager.h>
 #include <dcpp/QueueManager.h>
 #include <dcpp/UploadManager.h>
+#include "dcpp/DCPlusPlus.h"
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 
@@ -63,22 +64,22 @@ UploadQueue::UploadQueue():
 }
 UploadQueue::~UploadQueue()
 {
-    UploadManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getUploadManager()->removeListener(this);
     gtk_list_store_clear(store);
     g_object_unref(store);
 }
 
 void UploadQueue::show()
 {
-    UploadManager::getInstance()->addListener(this);
+    dcpp::getContext()->getUploadManager()->addListener(this);
     intilaize_client();
 }
 
 void UploadQueue::intilaize_client()
 {
     // Load queue
-    const dcpp::HintedUserList _users = UploadManager::getInstance()->getWaitingUsers();
-    UploadManager *up = UploadManager::getInstance();
+    const dcpp::HintedUserList _users = dcpp::getContext()->getUploadManager()->getWaitingUsers();
+    UploadManager *up = dcpp::getContext()->getUploadManager();
     for (auto& uit :_users)
     {
         const UploadManager::FileSet f = up->getWaitingUserFiles((uit.user));
@@ -345,30 +346,30 @@ gboolean UploadQueue::onButtonReleased_gui(GtkWidget *widget, GdkEventButton *ev
 
 void UploadQueue::grantSlot_client(const string &cid)
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
     if (user)
     {
-        UploadManager::getInstance()->reserveSlot(HintedUser(user, Util::emptyString));
+        dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, Util::emptyString));
     }
 }
 
 void UploadQueue::removeUploadFromQueue(const string &cid)
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
     if (user)
     {
-        UploadManager::getInstance()->clearUserFiles(user);
+        dcpp::getContext()->getUploadManager()->clearUserFiles(user);
     }
 }
 
 void UploadQueue::getFileList_client(const string &cid)
 {
     try {
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
         if(user)
         {
             HintedUser hintedUser(user, Util::emptyString);
-            QueueManager::getInstance()->addList(hintedUser, QueueItem::FLAG_CLIENT_VIEW);
+            dcpp::getContext()->getQueueManager()->addList(hintedUser, QueueItem::FLAG_CLIENT_VIEW);
         }
     }catch(...)
     {
@@ -379,11 +380,11 @@ void UploadQueue::getFileList_client(const string &cid)
 
 void UploadQueue::addFavoriteUser_client(const string &cid)
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
 
     if (user)
     {
-        FavoriteManager::getInstance()->addFavoriteUser(user);
+        dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
     }
 }
 

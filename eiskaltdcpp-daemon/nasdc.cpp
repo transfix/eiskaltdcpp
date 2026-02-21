@@ -14,6 +14,7 @@
 #include "dcpp/Util.h"
 #include "dcpp/File.h"
 #include "dcpp/Thread.h"
+#include "dcpp/DCPlusPlus.h"
 
 #include "utility.h"
 #include "ServerManager.h"

@@ -22,6 +22,7 @@
 #include "settingsmanager.hh"
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
+#include "dcpp/DCPlusPlus.h"
 
 using namespace std;
 using namespace dcpp;
@@ -101,7 +102,7 @@ FavoriteHubs::FavoriteHubs():
 
 FavoriteHubs::~FavoriteHubs()
 {
-    FavoriteManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getFavoriteManager()->removeListener(this);
 
     gtk_widget_destroy(getWidget("favoriteHubsDialog"));
     g_object_unref(getWidget("menu"));
@@ -111,7 +112,7 @@ void FavoriteHubs::show()
 {
     initializeList_client();
     //WulforManager::get()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
-    FavoriteManager::getInstance()->addListener(this);
+    dcpp::getContext()->getFavoriteManager()->addListener(this);
 }
 
 void FavoriteHubs::addEntry_gui(StringMap params)
@@ -527,7 +528,7 @@ void FavoriteHubs::onCheckButtonToggled_gui(GtkToggleButton *button, gpointer da
 void FavoriteHubs::initializeList_client()
 {
     StringMap params;
-    const FavoriteHubEntryList& fl = FavoriteManager::getInstance()->getFavoriteHubs();
+    const FavoriteHubEntryList& fl = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
 
     for (auto it = fl.begin(); it != fl.end(); ++it)
     {
@@ -571,15 +572,15 @@ void FavoriteHubs::addEntry_client(StringMap params)
     entry.setDisableChat(Util::toInt(params["Disable Chat"]));
     entry.setExternalIP(params["External IP"]);
     entry.setUseInternetIP(Util::toInt(params["Internet IP"]));
-    FavoriteManager::getInstance()->addFavorite(entry);
+    dcpp::getContext()->getFavoriteManager()->addFavorite(entry);
 
-    const FavoriteHubEntryList &fh = FavoriteManager::getInstance()->getFavoriteHubs();
+    const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
     WulforManager::get()->getMainWindow()->updateFavoriteHubMenu_client(fh);
 }
 
 void FavoriteHubs::editEntry_client(string address, StringMap params)
 {
-    FavoriteHubEntry *entry = FavoriteManager::getInstance()->getFavoriteHubEntry(address);
+    FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address);
 
     if (entry)
     {
@@ -596,34 +597,34 @@ void FavoriteHubs::editEntry_client(string address, StringMap params)
         entry->setDisableChat(Util::toInt(params["Disable Chat"]));
         entry->setExternalIP(params["External IP"]);
         entry->setUseInternetIP(Util::toInt(params["Internet IP"]));
-        FavoriteManager::getInstance()->save();
+        dcpp::getContext()->getFavoriteManager()->save();
 
-        const FavoriteHubEntryList &fh = FavoriteManager::getInstance()->getFavoriteHubs();
+        const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
         WulforManager::get()->getMainWindow()->updateFavoriteHubMenu_client(fh);
     }
 }
 
 void FavoriteHubs::removeEntry_client(string address)
 {
-    FavoriteHubEntry *entry = FavoriteManager::getInstance()->getFavoriteHubEntry(address);
+    FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address);
 
     if (entry)
     {
-        FavoriteManager::getInstance()->removeFavorite(entry);
+        dcpp::getContext()->getFavoriteManager()->removeFavorite(entry);
 
-        const FavoriteHubEntryList &fh = FavoriteManager::getInstance()->getFavoriteHubs();
+        const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
         WulforManager::get()->getMainWindow()->updateFavoriteHubMenu_client(fh);
     }
 }
 
 void FavoriteHubs::setConnect_client(string address, bool active)
 {
-    FavoriteHubEntry *entry = FavoriteManager::getInstance()->getFavoriteHubEntry(address);
+    FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address);
 
     if (entry)
     {
         entry->setConnect(active);
-        FavoriteManager::getInstance()->save();
+        dcpp::getContext()->getFavoriteManager()->save();
     }
 }
 

@@ -27,6 +27,7 @@
 #include <dcpp/ShareManager.h>
 #include <dcpp/StringTokenizer.h>
 #include <dcpp/ThrottleManager.h>
+#include "dcpp/DCPlusPlus.h"
 #include "settingsmanager.hh"
 #include "sound.hh"
 #include "notify.hh"
@@ -169,8 +170,8 @@ void Settings::response_gui()
 
 void Settings::saveSettings_client()
 {
-    SettingsManager *sm = SettingsManager::getInstance();
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    SettingsManager *sm = dcpp::getContext()->getSettingsManager();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
     string path;
 
     { // Personal
@@ -330,7 +331,7 @@ void Settings::saveSettings_client()
         }
         if (!lists.empty())
             lists.erase(lists.size() - 1);
-        SettingsManager::getInstance()->set(SettingsManager::SKIPLIST_SHARE, lists);
+        dcpp::getContext()->getSettingsManager()->set(SettingsManager::SKIPLIST_SHARE, lists);
 
         sm->set(SettingsManager::SHARE_SKIP_ZERO_BYTE, (int)gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("skipZeroSizedFilesCheckButton"))));
     }
@@ -543,7 +544,7 @@ void Settings::addOption_gui(GtkListStore *store, const string &name, SettingsMa
     GtkTreeIter iter;
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter,
-                       0, SettingsManager::getInstance()->get(setting),
+                       0, dcpp::getContext()->getSettingsManager()->get(setting),
                        1, name.c_str(),
                        2, setting,
                        3, "",
@@ -907,7 +908,7 @@ void Settings::initDownloads_gui()
         g_signal_connect(downloadToView.get(), "button-release-event", G_CALLBACK(onFavoriteButtonReleased_gui), (gpointer)this);
         gtk_widget_set_sensitive(getWidget("favoriteRemoveButton"), false);
 
-        for (auto& j : FavoriteManager::getInstance()->getFavoriteDirs())
+        for (auto& j : dcpp::getContext()->getFavoriteManager()->getFavoriteDirs())
         {
             gtk_list_store_append(downloadToStore, &iter);
             gtk_list_store_set(downloadToStore, &iter,
@@ -938,7 +939,7 @@ void Settings::initDownloads_gui()
         gtk_widget_set_sensitive(getWidget("previewRemoveButton"), true);
         gtk_widget_set_sensitive(getWidget("previewApplyButton"), true);
 
-        WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+        WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
         const PreviewApp::List &Apps = wsm->getPreviewApps();
 
         // add default applications players
@@ -1048,7 +1049,7 @@ void Settings::initSharing_gui()
 
 void Settings::initAppearance_gui()
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
 
     { // Appearance
         vectorLangFullNames.push_back(_("System default"));
@@ -1756,7 +1757,7 @@ void Settings::initSearchTypes_gui()
     g_object_unref(extensionStore);
 
     // search types
-    for (auto& i : SettingsManager::getInstance()->getSearchTypes())
+    for (auto& i : dcpp::getContext()->getSettingsManager()->getSearchTypes())
     {
         string type = i.first;
         bool predefined = false;
@@ -1860,7 +1861,7 @@ void Settings::onAddSTButton_gui(GtkWidget*, gpointer data)
         gtk_widget_hide(dialog);
         try
         {
-            SettingsManager::getInstance()->validateSearchTypeName(name);
+            dcpp::getContext()->getSettingsManager()->validateSearchTypeName(name);
         }
         catch (const SearchTypeException& e)
         {
@@ -1917,7 +1918,7 @@ void Settings::addSearchType_gui()
 
     try
     {
-        SettingsManager::getInstance()->addSearchType(name, extensions);
+        dcpp::getContext()->getSettingsManager()->addSearchType(name, extensions);
     }
     catch (const SearchTypeException& e)
     {
@@ -1967,12 +1968,12 @@ void Settings::modSearchType_gui()
         if (key == SearchManager::TYPE_ANY)
         {
             // Custom searchtype
-            SettingsManager::getInstance()->modSearchType(name, extensions);
+            dcpp::getContext()->getSettingsManager()->modSearchType(name, extensions);
         }
         else if (key > SearchManager::TYPE_ANY && key < SearchManager::TYPE_DIRECTORY)
         {
             // Predefined searchtype
-            SettingsManager::getInstance()->modSearchType(string(1, '0' + key), extensions);
+            dcpp::getContext()->getSettingsManager()->modSearchType(string(1, '0' + key), extensions);
         }
         else
             return;
@@ -2059,12 +2060,12 @@ void Settings::onModifySTButton_gui(GtkWidget*, gpointer data)
         if (key == SearchManager::TYPE_ANY)
         {
             // Custom searchtype
-            list = SettingsManager::getInstance()->getExtensions(name);
+            list = dcpp::getContext()->getSettingsManager()->getExtensions(name);
         }
         else if (key > SearchManager::TYPE_ANY && key < SearchManager::TYPE_DIRECTORY)
         {
             // Predefined searchtype
-            list = SettingsManager::getInstance()->getExtensions(string(1, '0' + key));
+            list = dcpp::getContext()->getSettingsManager()->getExtensions(string(1, '0' + key));
         }
         else
             return;
@@ -2116,7 +2117,7 @@ void Settings::onRenameSTButton_gui(GtkWidget*, gpointer data)
         gtk_widget_hide(dialog);
         try
         {
-            SettingsManager::getInstance()->renameSearchType(old_name, new_name);
+            dcpp::getContext()->getSettingsManager()->renameSearchType(old_name, new_name);
         }
         catch (const SearchTypeException& e)
         {
@@ -2152,7 +2153,7 @@ void Settings::onRemoveSTButton_gui(GtkWidget*, gpointer data)
 
     try
     {
-        SettingsManager::getInstance()->delSearchType(name);
+        dcpp::getContext()->getSettingsManager()->delSearchType(name);
     }
     catch (const SearchTypeException& e)
     {
@@ -2167,10 +2168,10 @@ void Settings::onDefaultSTButton_gui(GtkWidget*, gpointer data)
     Settings *s = (Settings *)data;
 
     gtk_list_store_clear(s->searchTypeStore);
-    SettingsManager::getInstance()->setSearchTypeDefaults();
+    dcpp::getContext()->getSettingsManager()->setSearchTypeDefaults();
 
     // search types
-    for (auto& i : SettingsManager::getInstance()->getSearchTypes())
+    for (auto& i : dcpp::getContext()->getSettingsManager()->getSearchTypes())
     {
         string type = i.first;
         bool predefined = false;
@@ -2423,7 +2424,7 @@ void Settings::onNotifyDefaultButton_gui(GtkWidget *widget, gpointer data)
     if (gtk_tree_selection_get_selected(selection, NULL, &iter))
     {
         GdkPixbuf *icon = NULL;
-        WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+        WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
         string title = wsm->getString(s->notifyView.getString(&iter, "keyTitle"), true);
         string path = wsm->getString(s->notifyView.getString(&iter, "keyIcon"), true);
 
@@ -2576,7 +2577,7 @@ void Settings::onDefaultColorsSPButton_gui(GtkWidget *widget, gpointer data)
 #define g_c_p(a,b) gdk_color_parse(a,b)
 #endif
 
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
 
     if (g_c_p(wsm->getString("search-spy-a-color", true).c_str(), &color))
         g_c_b_s(G_C_B(s->getWidget("aSPColorButton")), &color);
@@ -2604,7 +2605,7 @@ void Settings::onDefaultFrameSPButton_gui(GtkWidget *widget, gpointer data)
     (void)widget;
     Settings *s = (Settings *)data;
 
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(s->getWidget("frameSPSpinButton")), double(wsm->getInt("search-spy-frame", true)));
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(s->getWidget("waitingSPSpinButton")), double(wsm->getInt("search-spy-waiting", true)));
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(s->getWidget("topSPSpinButton")), double(wsm->getInt("search-spy-top", true)));
@@ -2934,7 +2935,7 @@ void Settings::onSoundPlayButton_gui(GtkWidget*, gpointer data)
     GtkTreeIter iter;
     GtkTreeSelection *selection = gtk_tree_view_get_selection(s->soundView.get());
 
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
     wsm->set("sound-command", string(gtk_entry_get_text(GTK_ENTRY(s->getWidget("soundCommandEntry")))));
 
     if (gtk_tree_selection_get_selected(selection, NULL, &iter))
@@ -2988,7 +2989,7 @@ void Settings::onPreviewAdd_gui(GtkWidget*, gpointer data)
         return;
     }
 
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
 
     if (wsm->getPreviewApp(name))
     {
@@ -3019,7 +3020,7 @@ void Settings::onPreviewRemove_gui(GtkWidget*, gpointer data)
     {
         string name = s->previewAppView.getString(&iter, _("Name"));
 
-        if (WulforSettingsManager::getInstance()->removePreviewApp(name))
+        if (Wulfordcpp::getContext()->getSettingsManager()->removePreviewApp(name))
             gtk_list_store_remove(s->previewAppToStore, &iter);
     }
 }
@@ -3081,7 +3082,7 @@ void Settings::onPreviewApply_gui(GtkWidget*, gpointer data)
     {
         string oldName = s->previewAppView.getString(&iter, _("Name"));
 
-        if (WulforSettingsManager::getInstance()->applyPreviewApp(oldName, name, app, ext))
+        if (Wulfordcpp::getContext()->getSettingsManager()->applyPreviewApp(oldName, name, app, ext))
         {
             gtk_list_store_set(s->previewAppToStore, &iter,
                                s->previewAppView.col(_("Name")), name.c_str(),
@@ -3253,7 +3254,7 @@ void Settings::selectTextStyle_gui(const int select)
     GtkTextTag *tag = NULL;
     string style = "";
 
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = Wulfordcpp::getContext()->getSettingsManager();
 
     if (select == 1)
     {
@@ -3353,7 +3354,7 @@ void Settings::loadUserCommands_gui()
     GtkTreeIter iter;
     gtk_list_store_clear(userCommandStore);
 
-    for (auto &uc : FavoriteManager::getInstance()->getUserCommands())
+    for (auto &uc : dcpp::getContext()->getFavoriteManager()->getUserCommands())
     {
         if (!uc.isSet(UserCommand::FLAG_NOSAVE))
         {
@@ -3415,7 +3416,7 @@ void Settings::saveUserCommand(UserCommand *uc)
 
     if (!uc)
     {
-        FavoriteManager::getInstance()->addUserCommand(type, ctx, 0, name, command, ""/*to*/, hub);
+        dcpp::getContext()->getFavoriteManager()->addUserCommand(type, ctx, 0, name, command, ""/*to*/, hub);
         gtk_list_store_append(userCommandStore, &iter);
     }
     else
@@ -3425,7 +3426,7 @@ void Settings::saveUserCommand(UserCommand *uc)
         uc->setName(name);
         uc->setCommand(command);
         uc->setHub(hub);
-        FavoriteManager::getInstance()->updateUserCommand(*uc);
+        dcpp::getContext()->getFavoriteManager()->updateUserCommand(*uc);
 
         GtkTreeSelection *selection = gtk_tree_view_get_selection(userCommandView.get());
         if (!gtk_tree_selection_get_selected(selection, NULL, &iter))
@@ -3477,13 +3478,13 @@ bool Settings::validateUserCommandInput(const string &oldName)
             return false;
         }
 
-        if (name != oldName && FavoriteManager::getInstance()->findUserCommand(name, hub) != -1)
+        if (name != oldName && dcpp::getContext()->getFavoriteManager()->findUserCommand(name, hub) != -1)
         {
             showErrorDialog(_("Command name already exists"));
             return false;
         }
     }
-    else if (FavoriteManager::getInstance()->findUserCommand(_("Separator"), "") != -1)
+    else if (dcpp::getContext()->getFavoriteManager()->findUserCommand(_("Separator"), "") != -1)
     {
         showErrorDialog(_("Command name already exists"));
         return false;
@@ -3644,7 +3645,7 @@ void Settings::onPublicHubs_gui(GtkWidget*, gpointer data)
     GtkTreeIter iter;
 
     gtk_list_store_clear(s->publicListStore);
-    for (auto& idx : FavoriteManager::getInstance()->getHubLists())
+    for (auto& idx : dcpp::getContext()->getFavoriteManager()->getHubLists())
     {
         gtk_list_store_append(s->publicListStore, &iter);
         gtk_list_store_set(s->publicListStore, &iter, s->publicListView.col(_("List")), idx.c_str(), -1);
@@ -3665,7 +3666,7 @@ void Settings::onPublicHubs_gui(GtkWidget*, gpointer data)
         }
         if (!lists.empty())
             lists.erase(lists.size() - 1);
-        SettingsManager::getInstance()->set(SettingsManager::HUBLIST_SERVERS, lists);
+        dcpp::getContext()->getSettingsManager()->set(SettingsManager::HUBLIST_SERVERS, lists);
     }
 }
 
@@ -3761,7 +3762,7 @@ void Settings::onAddFavorite_gui(GtkWidget*, gpointer data)
                 if (path[path.length() - 1] != PATH_SEPARATOR)
                     path += PATH_SEPARATOR;
 
-                if (!name.empty() && FavoriteManager::getInstance()->addFavoriteDir(path, name))
+                if (!name.empty() && dcpp::getContext()->getFavoriteManager()->addFavoriteDir(path, name))
                 {
                     GtkTreeIter iter;
                     gtk_list_store_append(s->downloadToStore, &iter);
@@ -3788,7 +3789,7 @@ void Settings::onRemoveFavorite_gui(GtkWidget*, gpointer data)
     if (gtk_tree_selection_get_selected(selection, NULL, &iter))
     {
         string path = s->downloadToView.getString(&iter, _("Directory"));
-        if (FavoriteManager::getInstance()->removeFavoriteDir(path))
+        if (dcpp::getContext()->getFavoriteManager()->removeFavoriteDir(path))
         {
             gtk_list_store_remove(s->downloadToStore, &iter);
             gtk_widget_set_sensitive(s->getWidget("favoriteRemoveButton"), false);
@@ -3834,7 +3835,7 @@ void Settings::onRemoveShare_gui(GtkWidget*, gpointer data)
         gtk_list_store_remove(s->shareStore, &iter);
         gtk_widget_set_sensitive(s->getWidget("sharedRemoveButton"), false);
 
-        ShareManager::getInstance()->removeDirectory(path);
+        dcpp::getContext()->getShareManager()->removeDirectory(path);
     }
 }
 
@@ -3870,9 +3871,9 @@ void Settings::updateShares_gui()
     string vname;
 
     gtk_list_store_clear(shareStore);
-    for (auto& it : ShareManager::getInstance()->getDirectories())
+    for (auto& it : dcpp::getContext()->getShareManager()->getDirectories())
     {
-        size = ShareManager::getInstance()->getShareSize(it.second);
+        size = dcpp::getContext()->getShareManager()->getShareSize(it.second);
 
         if (size == -1 && !BOOLSETTING(SHARE_HIDDEN))
         {
@@ -3890,7 +3891,7 @@ void Settings::updateShares_gui()
                            -1);
     }
 
-    string text = _("Total size: ") + Util::formatBytes(ShareManager::getInstance()->getShareSize());
+    string text = _("Total size: ") + Util::formatBytes(dcpp::getContext()->getShareManager()->getShareSize());
     gtk_label_set_text(GTK_LABEL(getWidget("sharedSizeLabel")), text.c_str());
 }
 
@@ -4007,13 +4008,13 @@ void Settings::onUserCommandEdit_gui(GtkWidget*, gpointer data)
     {
         string name = s->userCommandView.getString(&iter, _("Name"));
         string hubStr = s->userCommandView.getString(&iter, _("Hub"));
-        int cid = FavoriteManager::getInstance()->findUserCommand(name, hubStr);
+        int cid = dcpp::getContext()->getFavoriteManager()->findUserCommand(name, hubStr);
         if (cid < 0)
             return;
 
         UserCommand uc;
         string command, nick;
-        FavoriteManager::getInstance()->getUserCommand(cid, uc);
+        dcpp::getContext()->getFavoriteManager()->getUserCommand(cid, uc);
         bool hub = uc.getCtx() & UserCommand::CONTEXT_HUB;
         bool user = uc.getCtx() & UserCommand::CONTEXT_USER;
         bool search = uc.getCtx() & UserCommand::CONTEXT_SEARCH;
@@ -4287,9 +4288,9 @@ void Settings::onGenerateCertificatesClicked_gui(GtkWidget*, gpointer data)
 
 void Settings::shareHidden_client(bool show)
 {
-    SettingsManager::getInstance()->set(SettingsManager::SHARE_HIDDEN, show);
-    ShareManager::getInstance()->setDirty();
-    ShareManager::getInstance()->refresh(true, false, true);
+    dcpp::getContext()->getSettingsManager()->set(SettingsManager::SHARE_HIDDEN, show);
+    dcpp::getContext()->getShareManager()->setDirty();
+    dcpp::getContext()->getShareManager()->refresh(true, false, true);
 
     Func0<Settings> *func = new Func0<Settings>(this, &Settings::updateShares_gui);
     WulforManager::get()->dispatchGuiFunc(func);
@@ -4301,8 +4302,8 @@ void Settings::addShare_client(string path, string name)
 
     try
     {
-        ShareManager::getInstance()->addDirectory(path, name);
-        size = ShareManager::getInstance()->getShareSize(path);
+        dcpp::getContext()->getShareManager()->addDirectory(path, name);
+        size = dcpp::getContext()->getShareManager()->getShareSize(path);
     }
     catch (const ShareException &e)
     {
@@ -4320,7 +4321,7 @@ void Settings::removeUserCommand_client(string name, string hub)
 {
     if (!name.empty())
     {
-        FavoriteManager *fm = FavoriteManager::getInstance();
+        FavoriteManager *fm = dcpp::getContext()->getFavoriteManager();
         fm->removeUserCommand(fm->findUserCommand(name, hub));
     }
 }
@@ -4329,7 +4330,7 @@ void Settings::moveUserCommand_client(string name, string hub, int pos)
 {
     if (!name.empty())
     {
-        FavoriteManager *fm = FavoriteManager::getInstance();
+        FavoriteManager *fm = dcpp::getContext()->getFavoriteManager();
         fm->moveUserCommand(fm->findUserCommand(name, hub), pos);
         fm->save();
     }
@@ -4339,7 +4340,7 @@ void Settings::generateCertificates_client()
 {
     try
     {
-        CryptoManager::getInstance()->generateCertificate();
+        dcpp::getContext()->getCryptoManager()->generateCertificate();
     }
     catch (const CryptoException &e)
     {

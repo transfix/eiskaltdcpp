@@ -26,6 +26,7 @@
 #include <dcpp/StringTokenizer.h>
 #include <dcpp/Text.h>
 #include <dcpp/UserCommand.h>
+#include "dcpp/DCPlusPlus.h"
 #include "UserCommandMenu.hh"
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
@@ -142,7 +143,7 @@ Search::Search():
     GtkComboBox *combo_box = GTK_COMBO_BOX(getWidget("comboboxFile"));
     GtkTreeModel *model = gtk_combo_box_get_model(combo_box);
     GtkListStore *store = GTK_LIST_STORE(model);
-    const SettingsManager::SearchTypes &searchTypes = SettingsManager::getInstance()->getSearchTypes();
+    const SettingsManager::SearchTypes &searchTypes = dcpp::getContext()->getSettingsManager()->getSearchTypes();
 
     // Predefined
     for (int i = SearchManager::TYPE_ANY; i < SearchManager::TYPE_LAST; ++i)
@@ -202,9 +203,9 @@ Search::Search():
 
 Search::~Search()
 {
-    ClientManager::getInstance()->removeListener(this);
-    SearchManager::getInstance()->removeListener(this);
-    TimerManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getClientManager()->removeListener(this);
+    dcpp::getContext()->getSearchManager()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
 
     gtk_widget_destroy(getWidget("dirChooserDialog"));
     g_object_unref(getWidget("mainMenu"));
@@ -213,9 +214,9 @@ Search::~Search()
 void Search::show()
 {
     initHubs_gui();
-    ClientManager::getInstance()->addListener(this);
-    SearchManager::getInstance()->addListener(this);
-    TimerManager::getInstance()->addListener(this);
+    dcpp::getContext()->getClientManager()->addListener(this);
+    dcpp::getContext()->getSearchManager()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
 }
 
 void Search::putValue_gui(const string &str, int64_t size, SearchManager::SizeModes mode, SearchManager::TypeModes type)
@@ -230,9 +231,9 @@ void Search::putValue_gui(const string &str, int64_t size, SearchManager::SizeMo
 
 void Search::initHubs_gui()
 {
-    auto lock = ClientManager::getInstance()->lock();
+    auto lock = dcpp::getContext()->getClientManager()->lock();
 
-    const Client::List clients = ClientManager::getInstance()->getClients();
+    const Client::List clients = dcpp::getContext()->getClientManager()->getClients();
 
     Client *client = nullptr;
     for (auto it = clients.begin(); it != clients.end(); ++it)
@@ -331,7 +332,7 @@ void Search::popupMenu_gui()
     // Build "Download to..." submenu
 
     // Add favorite download directories
-    StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
+    StringPairList spl = dcpp::getContext()->getFavoriteManager()->getFavoriteDirs();
     if (!spl.empty())
     {
         for (auto& i : spl)
@@ -384,7 +385,7 @@ void Search::popupMenu_gui()
 
     if (hasTTH)
     {
-        StringList targets = QueueManager::getInstance()->getTargets(TTHValue(tth));
+        StringList targets = dcpp::getContext()->getQueueManager()->getTargets(TTHValue(tth));
 
         if (!targets.empty())
         {
@@ -402,7 +403,7 @@ void Search::popupMenu_gui()
     // Build "Download whole directory to..." submenu
 
     spl.clear();
-    spl = FavoriteManager::getInstance()->getFavoriteDirs();
+    spl = dcpp::getContext()->getFavoriteManager()->getFavoriteDirs();
     if (!spl.empty())
     {
         for (auto& i : spl)
@@ -510,7 +511,7 @@ void Search::search_gui()
     string ftypeStr;
     if (ftype > SearchManager::TYPE_ANY && ftype < SearchManager::TYPE_LAST)
     {
-        ftypeStr = SearchManager::getInstance()->getTypeStr(ftype);
+        ftypeStr = dcpp::getContext()->getSearchManager()->getTypeStr(ftype);
     }
     else
     {
@@ -527,12 +528,12 @@ void Search::search_gui()
         if (ftype == SearchManager::TYPE_ANY)
         {
             // Custom searchtype
-            exts = SettingsManager::getInstance()->getExtensions(ftypeStr);
+            exts = dcpp::getContext()->getSettingsManager()->getExtensions(ftypeStr);
         }
         else if (ftype > SearchManager::TYPE_ANY && ftype < SearchManager::TYPE_DIRECTORY)
         {
             // Predefined searchtype
-            exts = SettingsManager::getInstance()->getExtensions(string(1, '0' + ftype));
+            exts = dcpp::getContext()->getSettingsManager()->getExtensions(string(1, '0' + ftype));
         }
     }
     catch (const SearchTypeException&)
@@ -577,7 +578,7 @@ void Search::search_gui()
     target = text;
 
     dcdebug(_("Sent ADC extensions : %s\n"), Util::toString(";", exts).c_str());
-    uint64_t maxDelayBeforeSearch = SearchManager::getInstance()->search(clients, text, llsize, (SearchManager::TypeModes)ftype, mode, "manual", exts, (void*)this);
+    uint64_t maxDelayBeforeSearch = dcpp::getContext()->getSearchManager()->search(clients, text, llsize, (SearchManager::TypeModes)ftype, mode, "manual", exts, (void*)this);
     uint64_t waitingResultsTime = 20000; // just assumption that user receives most of results in 20 seconds
 
     searchEndTime = searchStartTime + maxDelayBeforeSearch + waitingResultsTime;
@@ -1114,7 +1115,7 @@ void Search::onSlotsButtonToggled_gui(GtkToggleButton *button, gpointer data)
 
     s->onlyFree = gtk_toggle_button_get_active(button);
     if (s->onlyFree != BOOLSETTING(SEARCH_ONLY_FREE_SLOTS))
-        SettingsManager::getInstance()->set(SettingsManager::SEARCH_ONLY_FREE_SLOTS, s->onlyFree);
+        dcpp::getContext()->getSettingsManager()->set(SettingsManager::SEARCH_ONLY_FREE_SLOTS, s->onlyFree);
 
     // Refilter current view only if "Search within local results" is enabled
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(s->getWidget("checkbuttonFilter"))))
@@ -1760,7 +1761,7 @@ void Search::parseSearchResult_gui(SearchResultPtr result, StringMap &resultMap)
         resultMap["Size"] = Util::formatBytes(result->getSize());
         resultMap["Exact Size"] = Util::formatExactSize(result->getSize());
         resultMap["Icon"] = "icon-file";
-        resultMap["Shared"] = Util::toString(ShareManager::getInstance()->isTTHShared(result->getTTH()));
+        resultMap["Shared"] = Util::toString(dcpp::getContext()->getShareManager()->isTTHShared(result->getTTH()));
     }
     else
     {
@@ -1783,7 +1784,7 @@ void Search::parseSearchResult_gui(SearchResultPtr result, StringMap &resultMap)
     resultMap["Nick"] = WulforUtil::getNicks(result->getUser(), result->getHubURL());
     resultMap["CID"] = result->getUser()->getCID().toBase32();
     resultMap["Slots"] = result->getSlotString();
-    resultMap["Connection"] = ClientManager::getInstance()->getConnection(result->getUser()->getCID());
+    resultMap["Connection"] = dcpp::getContext()->getClientManager()->getConnection(result->getUser()->getCID());
     resultMap["Hub"] = result->getHubName().empty() ? result->getHubURL().c_str() : result->getHubName().c_str();
     resultMap["Hub URL"] = result->getHubURL();
     resultMap["IP"] = result->getIP();
@@ -1800,7 +1801,7 @@ void Search::download_client(string target, string cid, string filename, int64_t
 {
     try
     {
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
         if (!user)
             return;
 
@@ -1808,12 +1809,12 @@ void Search::download_client(string target, string cid, string filename, int64_t
         if (!tth.empty())
         {
             string subdir = Util::getFileName(filename);
-            QueueManager::getInstance()->add(target + subdir, size, TTHValue(tth), HintedUser(user, hubUrl));
+            dcpp::getContext()->getQueueManager()->add(target + subdir, size, TTHValue(tth), HintedUser(user, hubUrl));
         }
         else
         {
             string dir = WulforUtil::windowsSeparator(filename);
-            QueueManager::getInstance()->addDirectory(dir, HintedUser(user, hubUrl), target);
+            dcpp::getContext()->getQueueManager()->addDirectory(dir, HintedUser(user, hubUrl), target);
         }
     }
     catch (const Exception&)
@@ -1837,10 +1838,10 @@ void Search::downloadDir_client(string target, string cid, string filename, stri
             dir = WulforUtil::windowsSeparator(filename);
         }
 
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
         if (user)
         {
-            QueueManager::getInstance()->addDirectory(dir, HintedUser(user, hubUrl), target);
+            dcpp::getContext()->getQueueManager()->addDirectory(dir, HintedUser(user, hubUrl), target);
         }
     }
     catch (const Exception&)
@@ -1852,10 +1853,10 @@ void Search::addSource_client(string source, string cid, int64_t size, string tt
 {
     try
     {
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
         if (!tth.empty() && user)
         {
-            QueueManager::getInstance()->add(source, size, TTHValue(tth), HintedUser(user, hubUrl));
+            dcpp::getContext()->getQueueManager()->add(source, size, TTHValue(tth), HintedUser(user, hubUrl));
         }
     }
     catch (const Exception&)
@@ -1869,7 +1870,7 @@ void Search::getFileList_client(string cid, string dir, bool match, string hubUr
     {
         try
         {
-            UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
             if (user)
             {
                 int flags = 0;
@@ -1882,7 +1883,7 @@ void Search::getFileList_client(string cid, string dir, bool match, string hubUr
                 if (!full)
                     flags = QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_PARTIAL_LIST;
 
-                QueueManager::getInstance()->addList(HintedUser(user, hubUrl), flags, dir);
+                dcpp::getContext()->getQueueManager()->addList(HintedUser(user, hubUrl), flags, dir);
             }
         }
         catch (const Exception&)
@@ -1895,10 +1896,10 @@ void Search::grantSlot_client(string cid, string hubUrl)
 {
     if (!cid.empty())
     {
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
         if (user)
         {
-            UploadManager::getInstance()->reserveSlot(HintedUser(user, hubUrl));
+            dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
         }
     }
 }
@@ -1907,9 +1908,9 @@ void Search::addFavUser_client(string cid)
 {
     if (!cid.empty())
     {
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
         if (user)
-            FavoriteManager::getInstance()->addFavoriteUser(user);
+            dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
     }
 }
 
@@ -1917,9 +1918,9 @@ void Search::removeSource_client(string cid)
 {
     if (!cid.empty())
     {
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
         if (user)
-            QueueManager::getInstance()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+            dcpp::getContext()->getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
     }
 }
 
@@ -2118,7 +2119,7 @@ gboolean Search::searchFilterFunc_gui(GtkTreeModel *model, GtkTreeIter *iter, gp
     }
 
     int type = gtk_combo_box_get_active(GTK_COMBO_BOX(s->getWidget("comboboxFile")));
-    if (type != SearchManager::TYPE_ANY && type != ShareManager::getInstance()->getType(filename))
+    if (type != SearchManager::TYPE_ANY && type != dcpp::getContext()->getShareManager()->getType(filename))
         return false;
 
     return true;

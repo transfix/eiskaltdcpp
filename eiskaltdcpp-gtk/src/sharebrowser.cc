@@ -24,6 +24,7 @@
 #include <dcpp/ShareManager.h>
 #include <dcpp/Text.h>
 #include <dcpp/ADLSearch.h>
+#include "dcpp/DCPlusPlus.h"
 #include "search.hh"
 #include "settingsmanager.hh"
 #include "UserCommandMenu.hh"
@@ -201,7 +202,7 @@ bool ShareBrowser::buildList_gui()
             listing.loadFile(file);
 
             // Search ADL
-            ADLSearchManager::getInstance()->matchListing(listing);
+            dcpp::getContext()->getADLSearchManager()->matchListing(listing);
         }
         // Add entries to dir tree view starting with the root entry.
         buildDirs_gui(listing.getRoot(), NULL);
@@ -514,7 +515,7 @@ void ShareBrowser::popupFileMenu_gui()
     fileUserCommandMenu->cleanMenu_gui();
 
     // Build file download menu
-    StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
+    StringPairList spl = dcpp::getContext()->getFavoriteManager()->getFavoriteDirs();
     if (!spl.empty())
     {
         for (StringPairIter i = spl.begin(); i != spl.end(); ++i)
@@ -586,7 +587,7 @@ void ShareBrowser::popupDirMenu_gui()
     gtk_container_foreach(GTK_CONTAINER(getWidget("dirDownloadMenu")), (GtkCallback)gtk_widget_destroy, NULL);
     dirUserCommandMenu->cleanMenu_gui();
 
-    StringPairList spl = FavoriteManager::getInstance()->getFavoriteDirs();
+    StringPairList spl = dcpp::getContext()->getFavoriteManager()->getFavoriteDirs();
     if (!spl.empty())
     {
         for (StringPairIter i = spl.begin(); i != spl.end(); ++i)
@@ -1136,7 +1137,7 @@ void ShareBrowser::downloadDir_client(DirectoryListing::Directory *dir, string t
 
 void ShareBrowser::matchQueue_client()
 {
-    int matched = QueueManager::getInstance()->matchListing(listing);
+    int matched = dcpp::getContext()->getQueueManager()->matchListing(listing);
     string message = _("Matched ") + Util::toString(matched) + _(" files");
 
     typedef Func2<ShareBrowser, string, string> F2;
@@ -1229,7 +1230,7 @@ void ShareBrowser::load(string xml)
         path2 = dirList->getName();
         treepath = gtk_tree_path_copy(gtk_tree_model_get_path (GTK_TREE_MODEL(dirStore), gtk_tree_iter_copy(&iter)));
 
-        //path = QueueManager::getInstance()->getListPath(listing.getUser()) + ".xml";
+        //path = dcpp::getContext()->getQueueManager()->getListPath(listing.getUser()) + ".xml";
         path = Util::getListPath() + nick + user->getCID().toBase32() + ".xml.bz2";
         if(File::getSize(path) != -1) {
             // load the cached list.
@@ -1237,7 +1238,7 @@ void ShareBrowser::load(string xml)
         }
         auto base = listing.updateXML(xml);
         //listing.save(path);
-        ADLSearchManager::getInstance()->matchListing(listing);
+        dcpp::getContext()->getADLSearchManager()->matchListing(listing);
         gtk_tree_store_clear(dirStore);
         gtk_list_store_clear(fileStore);
         buildDirs_gui(listing.getRoot(),NULL);
@@ -1267,7 +1268,7 @@ void ShareBrowser::downloadChangedDir(DirectoryListing::Directory* d) {
         dcdebug("Directory %s incomplete, downloading...\n", d->getName().c_str());
         if(listing.getUser().user->isOnline()) {
             try {
-                QueueManager::getInstance()->addList(listing.getUser(), QueueItem::FLAG_PARTIAL_LIST, listing.getPath(d));
+                dcpp::getContext()->getQueueManager()->addList(listing.getUser(), QueueItem::FLAG_PARTIAL_LIST, listing.getPath(d));
             } catch(const QueueException& e) { }
         } else {
             setStatus_gui("mainStatus","User went offline");

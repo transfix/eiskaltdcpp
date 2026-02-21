@@ -22,6 +22,7 @@
 #include <dcpp/FavoriteManager.h>
 #include <dcpp/UserCommand.h>
 #include <dcpp/ClientManager.h>
+#include "dcpp/DCPlusPlus.h"
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 
@@ -78,7 +79,7 @@ void UserCommandMenu::cleanMenu_gui()
 
 void UserCommandMenu::buildMenu_gui()
 {
-    UserCommand::List userCommandList = FavoriteManager::getInstance()->getUserCommands(ctx, hubs);
+    UserCommand::List userCommandList = dcpp::getContext()->getFavoriteManager()->getUserCommands(ctx, hubs);
 
     GtkWidget *menuItem;
     GtkWidget *menu = userCommandMenu;
@@ -190,14 +191,14 @@ void UserCommandMenu::sendUserCommand_client(string cid, string commandName, str
 {
     if (!cid.empty() && !commandName.empty())
     {
-        int id = FavoriteManager::getInstance()->findUserCommand(commandName, hub);
+        int id = dcpp::getContext()->getFavoriteManager()->findUserCommand(commandName, hub);
         UserCommand uc;
 
-        if (id == -1 || !FavoriteManager::getInstance()->getUserCommand(id, uc))
+        if (id == -1 || !dcpp::getContext()->getFavoriteManager()->getUserCommand(id, uc))
             return;
 
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
         if (user)
-            ClientManager::getInstance()->userCommand(HintedUser(user, hub), uc, params, true);
+            dcpp::getContext()->getClientManager()->userCommand(HintedUser(user, hub), uc, params, true);
     }
 }
