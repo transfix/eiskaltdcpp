@@ -17,109 +17,59 @@
 
 #pragma once
 
-#ifdef _WIN32
-#include "w.h"
-#else
-#include <pthread.h>
-#include <sched.h>
-#include <sys/resource.h>
-#include <unistd.h>
-#endif
-
+#include <chrono>
 #include <cstdint>
+#include <thread>
 
-#include "NonCopyable.h"
 #include "Exception.h"
 
 namespace dcpp {
 
 STANDARD_EXCEPTION(ThreadException);
 
-class Thread : private NonCopyable
-{
+/**
+ * Base class for objects that run work on a background thread.
+ *
+ * Subclasses override `run()` and call `start()` to launch. The thread
+ * is stored as a std::jthread which auto-joins on destruction — no more
+ * accidental detach of a running thread.
+ */
+class Thread {
 public:
-#ifdef _WIN32
-    enum Priority {
-        IDLE = THREAD_PRIORITY_IDLE,
-        LOW = THREAD_PRIORITY_BELOW_NORMAL,
-        NORMAL = THREAD_PRIORITY_NORMAL,
-        HIGH = THREAD_PRIORITY_ABOVE_NORMAL
-    };
+    enum Priority { IDLE = 1, LOW = 1, NORMAL = 0, HIGH = -1 };
 
-    Thread(): threadHandle(INVALID_HANDLE_VALUE), threadId(0){ }
-    virtual ~Thread() {
-        if(threadHandle != INVALID_HANDLE_VALUE)
-            CloseHandle(threadHandle);
-    }
+    Thread() = default;
+    virtual ~Thread() = default;   // jthread auto-joins
+
+    // Non-copyable
+    Thread(const Thread&) = delete;
+    Thread& operator=(const Thread&) = delete;
 
     void start();
+
     void join() {
-        if(threadHandle == INVALID_HANDLE_VALUE) {
-            return;
-        }
-
-        WaitForSingleObject(threadHandle, INFINITE);
-        CloseHandle(threadHandle);
-        threadHandle = INVALID_HANDLE_VALUE;
-    }
-
-    void setThreadPriority(Priority p) { ::SetThreadPriority(threadHandle, p); }
-
-    static void sleep(uint32_t millis) { ::Sleep(millis); }
-    static void yield() { ::Sleep(0); }
-
-#else
-
-    enum Priority {
-        IDLE = 1,
-        LOW = 1,
-        NORMAL = 0,
-        HIGH = -1
-    };
-    Thread(): threadHandle(0) { }
-    virtual ~Thread() {
-        if(threadHandle != 0) {
-            pthread_detach(threadHandle);
-        }
-    }
-    void start();
-    void join() {
-        if (threadHandle) {
-            pthread_join(threadHandle, 0);
-            threadHandle = 0;
+        if (thread_.joinable()) {
+            thread_.join();
         }
     }
 
-#ifndef __HAIKU__
-    void setThreadPriority(Priority p) { setpriority(PRIO_PROCESS, 0, p); }
-#else
-    void setThreadPriority(Priority p) { }
-#endif
+    [[nodiscard]] bool joinable() const noexcept { return thread_.joinable(); }
 
-    static void sleep(uint32_t millis) { ::usleep(millis*1000); }
-    static void yield() { ::sched_yield(); }
+    void setThreadPriority([[maybe_unused]] Priority p) {
+        // Platform-specific priority setting can be added if needed.
+        // On POSIX: setpriority(PRIO_PROCESS, 0, p);
+    }
 
-#endif
+    static void sleep(uint32_t millis) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(millis));
+    }
+
+    static void yield() { std::this_thread::yield(); }
 
 protected:
     virtual int run() = 0;
 
-#ifdef _WIN32
-    HANDLE threadHandle;
-    DWORD threadId;
-    static DWORD WINAPI starter(void* p) {
-        Thread* t = (Thread*)p;
-        t->run();
-        return 0;
-    }
-#else
-    pthread_t threadHandle;
-    static void* starter(void* p) {
-        Thread* t = (Thread*)p;
-        t->run();
-        return NULL;
-    }
-#endif
+    std::jthread thread_;
 };
 
 } // namespace dcpp

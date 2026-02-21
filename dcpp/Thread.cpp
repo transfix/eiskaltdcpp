@@ -22,21 +22,9 @@
 
 namespace dcpp {
 
-#ifdef _WIN32
 void Thread::start() {
-    join();
-    if( (threadHandle = CreateThread(NULL, 0, &starter, this, 0, &threadId)) == NULL) {
-        throw ThreadException(_("Unable to create thread"));
-    }
+    join();  // join any previous thread first
+    thread_ = std::jthread([this] { run(); });
 }
-
-#else
-void Thread::start() {
-    join();
-    if(pthread_create(&threadHandle, NULL, &starter, this) != 0) {
-        throw ThreadException(_("Unable to create thread"));
-    }
-}
-#endif
 
 } // namespace dcpp

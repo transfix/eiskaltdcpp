@@ -17,45 +17,39 @@
 
 #pragma once
 
-#include <utility>
+#include <algorithm>
+#include <ranges>
 #include <vector>
 
 #include "CriticalSection.h"
 
 namespace dcpp {
 
-using std::forward;
-using std::vector;
-using std::find;
-
 template<typename Listener>
 class Speaker {
-    typedef vector<Listener*> ListenerList;
-
 public:
-    Speaker() noexcept { }
-    virtual ~Speaker() { }
+    Speaker() noexcept = default;
+    virtual ~Speaker() = default;
 
-    template<typename... T>
-    void fire(T&&... type) noexcept {
+    /// Fire an event to all registered listeners (snapshot under lock).
+    template<typename... Args>
+    void fire(Args&&... args) noexcept {
         Lock l(listenerCS);
-        tmp = listeners;
-        for(auto i: tmp) {
-            i->on(std::forward<T>(type)...);
+        auto snapshot = listeners;  // snapshot so listeners can self-remove
+        for (auto* listener : snapshot) {
+            listener->on(std::forward<Args>(args)...);
         }
     }
 
     void addListener(Listener* aListener) {
         Lock l(listenerCS);
-        if(find(listeners.begin(), listeners.end(), aListener) == listeners.end())
+        if (std::ranges::find(listeners, aListener) == listeners.end())
             listeners.push_back(aListener);
     }
 
     void removeListener(Listener* aListener) {
         Lock l(listenerCS);
-        auto it = find(listeners.begin(), listeners.end(), aListener);
-        if(it != listeners.end())
-            listeners.erase(it);
+        std::erase(listeners, aListener);
     }
 
     void removeListeners() {
@@ -64,8 +58,7 @@ public:
     }
 
 protected:
-    ListenerList listeners;
-    ListenerList tmp;
+    std::vector<Listener*> listeners;
     CriticalSection listenerCS;
 };
 

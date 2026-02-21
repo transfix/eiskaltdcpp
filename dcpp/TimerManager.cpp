@@ -33,7 +33,7 @@ TimerManager::TimerManager() {
 
 TimerManager::~TimerManager() {
     // Safety net: if shutdown() was not called, join the thread now
-    if (threadHandle != 0) {
+    if (thread_.joinable()) {
         mtx.unlock();
         join();
     }
