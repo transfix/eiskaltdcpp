@@ -61,6 +61,12 @@ public:
         instance = nullptr;
     }
 
+    /// Allow DCContext to register/unregister externally-owned instances.
+    /// The caller retains ownership — do NOT delete through this pointer.
+    static void setInstance(T* ptr) noexcept {
+        instance = ptr;
+    }
+
     virtual void release() {
         deleteInstance();
     }
