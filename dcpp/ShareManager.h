@@ -238,10 +238,12 @@ private:
     friend struct ShareLoader;
 
     friend class Singleton<ShareManager>;
-    ShareManager();
 
+public:
+    ShareManager();
     virtual ~ShareManager();
 
+private:
     struct AdcSearch {
         AdcSearch(const StringList& adcParams);
 

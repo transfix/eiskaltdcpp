@@ -50,13 +50,14 @@ public:
 
     static time_t getTime() { return (time_t)time(NULL); }
     static uint64_t getTick();
+public:
+    TimerManager();
+    virtual ~TimerManager();
+
 private:
     friend class Singleton<TimerManager>;
 
     std::timed_mutex mtx;
-
-    TimerManager();
-    virtual ~TimerManager();
 
     virtual int run();
 };

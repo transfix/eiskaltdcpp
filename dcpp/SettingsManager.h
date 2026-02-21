@@ -280,10 +280,12 @@ public:
     const string parseCoreCmd(const string& cmd);
     bool parseCoreCmd(string& ret, const string& key, const string& value);
 
-private:
-    friend class Singleton<SettingsManager>;
+public:
     SettingsManager();
     virtual ~SettingsManager() { }
+
+private:
+    friend class Singleton<SettingsManager>;
 
     static const string settingTags[SETTINGS_LAST+1];
 

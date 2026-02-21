@@ -83,6 +83,11 @@ public:
 
     bool handlePartialRequest(const TTHValue& tth, vector<uint16_t>& outPartialInfo);
     //end
+
+public:
+    FinishedManager();
+    virtual ~FinishedManager();
+
 private:
     friend class Singleton<FinishedManager>;
 
@@ -91,9 +96,6 @@ private:
     MapByUser DLByUser, ULByUser;
     //Partial
     FinishedItem::FinishedItemList downloads, uploads;
-
-    FinishedManager();
-    virtual ~FinishedManager();
 
     void clearDLs();
     void clearULs();

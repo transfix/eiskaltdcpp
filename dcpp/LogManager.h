@@ -49,13 +49,16 @@ private:
     void log(const string& area, const string& msg) noexcept;
 
     friend class Singleton<LogManager>;
+
+public:
+    LogManager();
+    virtual ~LogManager();
+
+private:
     CriticalSection cs;
     List lastLogs;
 
     int options[LAST][2];
-
-    LogManager();
-    virtual ~LogManager();
 };
 
 #define LOG(area, msg) LogManager::getInstance()->log(area, msg)

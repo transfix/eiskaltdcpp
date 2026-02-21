@@ -52,6 +52,10 @@ public:
 
     bool getOpened() const { return opened; }
 
+public:
+    MappingManager() : opened(false), portMapping(false) { }
+    virtual ~MappingManager() noexcept { join(); }
+
 private:
     friend class Singleton<MappingManager>;
 
@@ -60,9 +64,6 @@ private:
 
     bool opened;
     Atomic<bool,memory_ordering_strong> portMapping;
-
-    MappingManager() : opened(false), portMapping(false) { }
-    virtual ~MappingManager() noexcept { join(); }
 
     int run();
 

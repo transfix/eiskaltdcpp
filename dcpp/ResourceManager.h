@@ -26,13 +26,12 @@ public:
 
     bool isRTL() { return rtl; }
 
+public:
+    ResourceManager() : rtl(false) { }
+    virtual ~ResourceManager() { }
+
 private:
     friend class Singleton<ResourceManager>;
-
-    ResourceManager() : rtl(false) {
-    }
-
-    virtual ~ResourceManager() { }
 
     bool rtl;
 };

@@ -134,10 +134,12 @@ private:
     /** Used during loading to prevent saving. */
     bool dontSave;
 
-    friend class Singleton<FavoriteManager>;
-
+public:
     FavoriteManager();
     virtual ~FavoriteManager();
+
+private:
+    friend class Singleton<FavoriteManager>;
 
     FavoriteHubEntryList::iterator getFavoriteHub(const string& aServer);
 

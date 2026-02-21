@@ -73,8 +73,7 @@ private:
     CriticalSection upCS;
     int64_t         upTokens;
 
-    friend class Singleton<ThrottleManager>;
-
+public:
     ThrottleManager() : activeWaiter(-1), downTokens(0), upTokens(0)
     {
 #ifndef _WIN32
@@ -84,6 +83,9 @@ private:
     }
 
     virtual ~ThrottleManager();
+
+private:
+    friend class Singleton<ThrottleManager>;
 
     bool getCurThrottling();
     void waitToken();

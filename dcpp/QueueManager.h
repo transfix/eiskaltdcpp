@@ -249,11 +249,13 @@ private:
         QueueItem::UserMap running;
     };
 
-    friend class QueueLoader;
-    friend class Singleton<QueueManager>;
-
+public:
     QueueManager();
     virtual ~QueueManager();
+
+private:
+    friend class QueueLoader;
+    friend class Singleton<QueueManager>;
 
     mutable CriticalSection cs;
 

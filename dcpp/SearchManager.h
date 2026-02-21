@@ -122,14 +122,15 @@ private:
     std::unique_ptr<Socket> socket;
     string port;
     bool stop;
-    friend class Singleton<SearchManager>;
-
+public:
     SearchManager();
+    ~SearchManager();
+
+private:
+    friend class Singleton<SearchManager>;
 
     static std::string normalizeWhitespace(const std::string& aString);
     int run();
-
-    ~SearchManager();
     void onData(const uint8_t* buf, size_t aLen, const string& address);
 
     string getPartsString(const PartsInfo& partsInfo) const;

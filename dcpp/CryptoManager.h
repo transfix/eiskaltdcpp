@@ -52,12 +52,12 @@ public:
     const ByteVector& getKeyprint() const noexcept;
 
     bool TLSOk() const noexcept;
-private:
-
-    friend class Singleton<CryptoManager>;
-
+public:
     CryptoManager();
     virtual ~CryptoManager();
+
+private:
+    friend class Singleton<CryptoManager>;
 
     ssl::SSL_CTX clientContext;
     ssl::SSL_CTX clientVerContext;

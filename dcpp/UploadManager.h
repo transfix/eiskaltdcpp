@@ -106,9 +106,12 @@ private:
     FilesMap waitingFiles;      //set of files which this user has asked for
     void addFailedUpload(const UserConnection& source, string filename);
 
-    friend class Singleton<UploadManager>;
+public:
     UploadManager() noexcept;
     virtual ~UploadManager();
+
+private:
+    friend class Singleton<UploadManager>;
 
     bool hasUpload(UserConnection& aSource);
     bool getAutoSlot();

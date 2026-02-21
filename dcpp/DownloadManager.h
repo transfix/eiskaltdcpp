@@ -68,10 +68,12 @@ private:
 
     void failDownload(UserConnection* aSource, const string& reason);
 
-    friend class Singleton<DownloadManager>;
-
+public:
     DownloadManager();
     virtual ~DownloadManager();
+
+private:
+    friend class Singleton<DownloadManager>;
 
     void checkDownloads(UserConnection* aConn);
     void startData(UserConnection* aSource, int64_t start, int64_t newSize, bool z);

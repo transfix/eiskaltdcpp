@@ -57,10 +57,12 @@ public:
 #endif
     };
 
+public:
+    DebugManager() noexcept { };
+    virtual ~DebugManager() noexcept { };
+
 private:
     friend class Singleton<DebugManager>;
-    DebugManager() noexcept { };
-    ~DebugManager() noexcept { };
     static string typeDirToString(int typeDir);
 };
 #define COMMAND_DEBUG(a,b,c) if (DebugManager::getInstance()) DebugManager::getInstance()->SendCommandMessage(a,b,c);

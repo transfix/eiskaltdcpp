@@ -186,10 +186,12 @@ private:
 
     CID pid;
 
-    friend class Singleton<ClientManager>;
-
+public:
     ClientManager();
     virtual ~ClientManager();
+
+private:
+    friend class Singleton<ClientManager>;
 
     void updateUser(const OnlineUser& user) noexcept;
 

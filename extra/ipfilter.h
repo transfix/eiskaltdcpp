@@ -42,6 +42,9 @@ class IPFilter :
     friend class dcpp::Singleton<IPFilter>;
 
 public:
+    IPFilter();
+    virtual ~IPFilter();
+
     static uint32_t StringToUint32(const std::string&);
     static std::string Uint32ToString(uint32_t);
     static uint32_t MaskToCIDR(uint32_t);
@@ -72,10 +75,6 @@ public:
     void step(uint32_t, eTableAction, bool down = true);
 
 private:
-    IPFilter();
-    virtual ~IPFilter();
-
-
     IPHash list_ip;
     IPList rules;
 };

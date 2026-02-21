@@ -51,12 +51,13 @@ public:
     bool isRunning() const { return running; }
     void updateLast();
 
+public:
+    ConnectivityManager();
+    virtual ~ConnectivityManager() { }
+
 private:
     friend class Singleton<ConnectivityManager>;
     friend class MappingManager;
-
-    ConnectivityManager();
-    virtual ~ConnectivityManager() { }
 
     void mappingFinished(bool success);
     void log(const string& msg);

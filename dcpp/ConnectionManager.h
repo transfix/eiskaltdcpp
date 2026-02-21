@@ -169,10 +169,12 @@ private:
 
     bool shuttingDown;
 
-    friend class Singleton<ConnectionManager>;
+public:
     ConnectionManager();
-
     virtual ~ConnectionManager() { shutdown(); }
+
+private:
+    friend class Singleton<ConnectionManager>;
 
     UserConnection* getConnection(bool aNmdc, bool secure) noexcept;
     void putConnection(UserConnection* aConn);
