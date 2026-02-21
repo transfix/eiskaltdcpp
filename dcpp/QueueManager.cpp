@@ -582,7 +582,7 @@ void QueueManager::on(TimerManagerListener::Minute, uint64_t aTick) noexcept {
 
             PartsInfoReqParam* param = new PartsInfoReqParam;
 
-            int64_t blockSize = HashManager::getInstance()->getBlockSize(qi->getTTH());
+            int64_t blockSize = ctx()->getHashManager()->getBlockSize(qi->getTTH());
             if(blockSize == 0)
                 blockSize = qi->getSize();
             qi->getPartialInfo(param->parts, blockSize);
@@ -616,7 +616,7 @@ void QueueManager::on(TimerManagerListener::Minute, uint64_t aTick) noexcept {
                 recent.push_back(qi->getTarget());
                 nextSearch = aTick + (SETTING(AUTO_SEARCH_TIME) * 60000);
                 if (BOOLSETTING(REPORT_ALTERNATES))
-                    LogManager::getInstance()->message(str(F_("Searching TTH alternates for: %1%")%Util::getFileName(qi->getTargetFileName())));
+                    ctx()->getLogManager()->message(str(F_("Searching TTH alternates for: %1%")%Util::getFileName(qi->getTargetFileName())));
             }
         }
     }
@@ -625,9 +625,9 @@ void QueueManager::on(TimerManagerListener::Minute, uint64_t aTick) noexcept {
         const PartsInfoReqParam* param = *i;
 
         try {
-            AdcCommand cmd = SearchManager::getInstance()->toPSR(true, param->myNick, param->hubIpPort, param->tth, param->parts);
+            AdcCommand cmd = ctx()->getSearchManager()->toPSR(true, param->myNick, param->hubIpPort, param->tth, param->parts);
             Socket s;
-            s.writeTo(param->ip, param->udpPort, cmd.toString(ClientManager::getInstance()->getMyCID()));
+            s.writeTo(param->ip, param->udpPort, cmd.toString(ctx()->getClientManager()->getMyCID()));
         } catch(...) {
             dcdebug("Partial search caught error\n");
         }
@@ -645,7 +645,7 @@ void QueueManager::on(TimerManagerListener::Minute, uint64_t aTick) noexcept {
     }
 
     if(!searchString.empty()) {
-        SearchManager::getInstance()->search(searchString, 0, SearchManager::TYPE_TTH, SearchManager::SIZE_DONTCARE, "auto");
+        ctx()->getSearchManager()->search(searchString, 0, SearchManager::TYPE_TTH, SearchManager::SIZE_DONTCARE, "auto");
     }
 }
 
@@ -654,7 +654,7 @@ void QueueManager::addList(const HintedUser& aUser, int aFlags, const string& aI
 }
 
 string QueueManager::getListPath(const HintedUser& user) {
-    StringList nicks = ClientManager::getInstance()->getNicks(user);
+    StringList nicks = ctx()->getClientManager()->getNicks(user);
     string nick = nicks.empty() ? Util::emptyString : Util::cleanPathChars(nicks[0]) + ".";
     return checkTarget(Util::getListPath() + nick + user.user->getCID().toBase32(), /*checkExistence*/ false);
 }
@@ -665,7 +665,7 @@ void QueueManager::add(const string& aTarget, int64_t aSize, const TTHValue& roo
     // Check if we're not downloading something already in our share
     if (BOOLSETTING(DONT_DL_ALREADY_SHARED))
     {
-        if (ShareManager::getInstance()->isTTHShared(root))
+        if (ctx()->getShareManager()->isTTHShared(root))
         {
             throw QueueException(_("A file with the same hash already exists in your share"));
         }
@@ -721,13 +721,13 @@ void QueueManager::add(const string& aTarget, int64_t aSize, const TTHValue& roo
     bool wantConnection = true;
 
     // Check that we're not downloading from ourselves...
-    if(aUser == ClientManager::getInstance()->getMe()) {
+    if(aUser == ctx()->getClientManager()->getMe()) {
         throw QueueException(_("You're trying to download from yourself!"));
     }
 
     // Check if we're not downloading something already in our share
     if(BOOLSETTING(DONT_DL_ALREADY_SHARED)){
-        if (ShareManager::getInstance()->isTTHShared(root)){
+        if (ctx()->getShareManager()->isTTHShared(root)){
             throw QueueException(_("A file with the same hash already exists in your share"));
         }
     }
@@ -799,7 +799,7 @@ void QueueManager::add(const string& aTarget, int64_t aSize, const TTHValue& roo
 
 connect:
     if(wantConnection && aUser.user->isOnline())
-        ConnectionManager::getInstance()->getDownloadConnection(aUser);
+        ctx()->getConnectionManager()->getDownloadConnection(aUser);
 }
 
 void QueueManager::readd(const string& target, const HintedUser& aUser) {
@@ -812,7 +812,7 @@ void QueueManager::readd(const string& target, const HintedUser& aUser) {
         }
     }
     if(wantConnection && aUser.user->isOnline())
-        ConnectionManager::getInstance()->getDownloadConnection(aUser);
+        ctx()->getConnectionManager()->getDownloadConnection(aUser);
 }
 
 void QueueManager::setDirty() {
@@ -868,7 +868,7 @@ bool QueueManager::addSource(QueueItem* qi, const HintedUser& aUser, Flags::Mask
 
     qi->addSource(aUser);
 
-    if(aUser.user->isSet(User::PASSIVE) && !ClientManager::getInstance()->isActive() ) {
+    if(aUser.user->isSet(User::PASSIVE) && !ctx()->getClientManager()->isActive() ) {
         qi->removeSource(aUser, QueueItem::Source::FLAG_PASSIVE);
         wantConnection = false;
     } else if(qi->isFinished()) {
@@ -960,7 +960,7 @@ int QueueManager::matchListing(const DirectoryListing& dl) noexcept {
         }
     }
     if(matches > 0)
-        ConnectionManager::getInstance()->getDownloadConnection(dl.getUser());
+        ctx()->getConnectionManager()->getDownloadConnection(dl.getUser());
     return matches;
 }
 
@@ -1296,7 +1296,7 @@ void QueueManager::putDownload(Download* aDownload, bool finished) noexcept {
                     if(d->getType() == Transfer::TYPE_TREE) {
                         // Got a full tree, now add it to the HashManager
                         dcassert(d->getTreeValid());
-                        HashManager::getInstance()->addTree(d->getTigerTree());
+                        ctx()->getHashManager()->addTree(d->getTigerTree());
 
                         userQueue.removeDownload(q, d->getUser());
                         fire(QueueManagerListener::StatusUpdated(), q);
@@ -1386,7 +1386,7 @@ void QueueManager::putDownload(Download* aDownload, bool finished) noexcept {
     }
 
     for(auto& i: getConn) {
-        ConnectionManager::getInstance()->getDownloadConnection(i);
+        ctx()->getConnectionManager()->getDownloadConnection(i);
     }
 
     if(!fl_fname.empty()) {
@@ -1399,7 +1399,7 @@ void QueueManager::processList(const string& name, const HintedUser& user, int f
     try {
         dirList.loadFile(name);
     } catch(const Exception&) {
-        LogManager::getInstance()->message(str(F_("Unable to open filelist: %1%") % Util::addBrackets(name)));
+        ctx()->getLogManager()->message(str(F_("Unable to open filelist: %1%") % Util::addBrackets(name)));
         return;
     }
 
@@ -1421,8 +1421,8 @@ void QueueManager::processList(const string& name, const HintedUser& user, int f
     }
     if(flags & QueueItem::FLAG_MATCH_QUEUE) {
         size_t files = matchListing(dirList);
-        LogManager::getInstance()->message(str(FN_("%1%: Matched %2% file", "%1%: Matched %2% files", files) %
-                                               Util::toString(ClientManager::getInstance()->getNicks(user)) % files));
+        ctx()->getLogManager()->message(str(FN_("%1%: Matched %2% file", "%1%: Matched %2% files", files) %
+                                               Util::toString(ctx()->getClientManager()->getNicks(user)) % files));
     }
 }
 
@@ -1467,7 +1467,7 @@ void QueueManager::remove(const string& aTarget) noexcept {
     }
 
     for(auto& i: x) {
-        ConnectionManager::getInstance()->disconnect(i, true);
+        ctx()->getConnectionManager()->disconnect(i, true);
     }
 }
 
@@ -1513,7 +1513,7 @@ void QueueManager::removeSource(const string& aTarget, const UserPtr& aUser, int
     }
 endCheck:
     if(isRunning && removeConn) {
-        ConnectionManager::getInstance()->disconnect(aUser, true);
+        ctx()->getConnectionManager()->disconnect(aUser, true);
     }
     if(removeCompletely) {
         remove(aTarget);
@@ -1560,7 +1560,7 @@ void QueueManager::removeSource(const UserPtr& aUser, int reason) noexcept {
     }
 
     if(isRunning) {
-        ConnectionManager::getInstance()->disconnect(aUser, true);
+        ctx()->getConnectionManager()->disconnect(aUser, true);
     }
     if(!removeRunning.empty()) {
         remove(removeRunning);
@@ -1586,7 +1586,7 @@ void QueueManager::setPriority(const string& aTarget, QueueItem::Priority p) noe
     }
 
     for(auto& i: getConn) {
-        ConnectionManager::getInstance()->getDownloadConnection(i);
+        ctx()->getConnectionManager()->getDownloadConnection(i);
     }
 }
 
@@ -1689,7 +1689,7 @@ void QueueManager::saveQueue(bool force) noexcept {
     lastSave = GET_TICK();
 
     for(auto& cid : cids) {
-        ClientManager::getInstance()->saveUser(cid);
+        ctx()->getClientManager()->saveUser(cid);
     }
 }
 
@@ -1860,7 +1860,7 @@ void QueueManager::on(SearchManagerListener::SR, const SearchResultPtr& sr) noex
         }
     }
     if(added && sr->getUser()->isOnline() && wantConnection) {
-        ConnectionManager::getInstance()->getDownloadConnection(HintedUser(sr->getUser(), sr->getHubURL()));
+        ctx()->getConnectionManager()->getDownloadConnection(HintedUser(sr->getUser(), sr->getHubURL()));
     }
 
 }
@@ -1883,7 +1883,7 @@ void QueueManager::on(ClientManagerListener::UserConnected, const UserPtr& aUser
 
     if(hasDown) {
         // the user just came on, so there's only 1 possible hub, no need for a hint
-        ConnectionManager::getInstance()->getDownloadConnection(HintedUser(aUser, Util::emptyString));
+        ctx()->getConnectionManager()->getDownloadConnection(HintedUser(aUser, Util::emptyString));
     }
 }
 
@@ -1932,7 +1932,7 @@ bool QueueManager::handlePartialResult(const UserPtr& aUser, const string& hubHi
         }
 
         // Get my parts info
-        int64_t blockSize = HashManager::getInstance()->getBlockSize(qi->getTTH());
+        int64_t blockSize = ctx()->getHashManager()->getBlockSize(qi->getTTH());
         if(blockSize == 0)
             blockSize = qi->getSize();
         qi->getPartialInfo(outPartialInfo, blockSize);
@@ -1975,7 +1975,7 @@ bool QueueManager::handlePartialResult(const UserPtr& aUser, const string& hubHi
 
     // Connect to this user
     if(wantConnection)
-        ConnectionManager::getInstance()->getDownloadConnection(HintedUser(aUser, hubHint));
+        ctx()->getConnectionManager()->getDownloadConnection(HintedUser(aUser, hubHint));
 
     return true;
 }
@@ -1996,7 +1996,7 @@ bool QueueManager::handlePartialSearch(const TTHValue& tth, PartsInfo& _outParts
             return false;
         }
 
-        int64_t blockSize = HashManager::getInstance()->getBlockSize(qi->getTTH());
+        int64_t blockSize = ctx()->getHashManager()->getBlockSize(qi->getTTH());
         if(blockSize == 0)
             blockSize = qi->getSize();
         qi->getPartialInfo(_outPartsInfo, blockSize);
@@ -2024,7 +2024,7 @@ bool QueueManager::checkSfv(QueueItem* qi, Download* d) {
             File::deleteFile(qi->getTempTarget());
             qi->resetDownloaded();
             dcdebug("QueueManager: CRC32 mismatch for %s\n", qi->getTarget().c_str());
-            LogManager::getInstance()->message(_("CRC32 inconsistency (SFV-Check)") + string(" ") + Util::addBrackets(qi->getTarget()));
+            ctx()->getLogManager()->message(_("CRC32 inconsistency (SFV-Check)") + string(" ") + Util::addBrackets(qi->getTarget()));
 
             setPriority(qi->getTarget(), QueueItem::PAUSED);
 
@@ -2111,7 +2111,7 @@ TTHValue* QueueManager::FileQueue::findPFSPubTTH()
         {
             if(cand == NULL || cand->getNextPublishingTime() > qi->getNextPublishingTime() || (cand->getNextPublishingTime() == qi->getNextPublishingTime() && cand->getPriority() < qi->getPriority()) )
             {
-                if(qi->getDownloadedBytes() > (int64_t)HashManager::getInstance()->getBlockSize(qi->getTTH()))
+                if(qi->getDownloadedBytes() > (int64_t)ctx()->getHashManager()->getBlockSize(qi->getTTH()))
                     cand = qi;
             }
         }
@@ -2135,8 +2135,8 @@ void QueueManager::logFinishedDownload(QueueItem* qi, Download*, bool crcChecked
     params["sfv"] = Util::toString(crcChecked ? 1 : 0);
 
     {
-        auto lock = FinishedManager::getInstance()->lock();
-        const FinishedManager::MapByFile& map = FinishedManager::getInstance()->getMapByFile(false);
+        auto lock = ctx()->getFinishedManager()->lock();
+        const FinishedManager::MapByFile& map = ctx()->getFinishedManager()->getMapByFile(false);
         FinishedManager::MapByFile::const_iterator it = map.find(qi->getTarget());
         if(it != map.end()) {
             FinishedFileItemPtr entry = it->second;
@@ -2145,12 +2145,12 @@ void QueueManager::logFinishedDownload(QueueItem* qi, Download*, bool crcChecked
                 string ip;
                 for(HintedUserList::const_iterator i = entry->getUsers().begin(), iend = entry->getUsers().end(); i != iend; ++i) {
 
-                    nicks.push_back(Util::toString(ClientManager::getInstance()->getNicks(*i)));
+                    nicks.push_back(Util::toString(ctx()->getClientManager()->getNicks(*i)));
                     cids.push_back(i->user->getCID().toBase32());
 
                     ip.clear();
                     if (i->user->isOnline()) {
-                        OnlineUser* u = ClientManager::getInstance()->findOnlineUser(*i, false);
+                        OnlineUser* u = ctx()->getClientManager()->findOnlineUser(*i, false);
                         if (u) {
                             ip = u->getIdentity().getIp();
                         }
@@ -2160,13 +2160,13 @@ void QueueManager::logFinishedDownload(QueueItem* qi, Download*, bool crcChecked
                     }
                     ips.push_back(ip);
 
-                    temp = ClientManager::getInstance()->getHubNames(*i);
+                    temp = ctx()->getClientManager()->getHubNames(*i);
                     if(temp.empty()) {
                         temp.push_back(_("Offline"));
                     }
                     hubNames.push_back(Util::toString(temp));
 
-                    temp = ClientManager::getInstance()->getHubs(*i);
+                    temp = ctx()->getClientManager()->getHubs(*i);
                     if(temp.empty()) {
                         temp.push_back(_("Offline"));
                     }

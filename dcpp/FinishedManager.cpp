@@ -118,12 +118,12 @@ void FinishedManager::getParams(const string & target, ParamMap& params) {
         string ip;
         for(auto& i: entry->getUsers()) {
 
-            nicks.push_back(Util::toString(ClientManager::getInstance()->getNicks(i)));
+            nicks.push_back(Util::toString(ctx()->getClientManager()->getNicks(i)));
             cids.push_back(i.user->getCID().toBase32());
 
             ip.clear();
             if (i.user->isOnline()) {
-                OnlineUser* u = ClientManager::getInstance()->findOnlineUser(i, false);
+                OnlineUser* u = ctx()->getClientManager()->findOnlineUser(i, false);
                 if (u) {
                     ip = u->getIdentity().getIp();
                 }
@@ -133,13 +133,13 @@ void FinishedManager::getParams(const string & target, ParamMap& params) {
             }
             ips.push_back(ip);
 
-            temp = ClientManager::getInstance()->getHubNames(i);
+            temp = ctx()->getClientManager()->getHubNames(i);
             if(temp.empty()) {
                 temp.push_back(_("Offline"));
             }
             hubNames.push_back(Util::toString(temp));
 
-            temp = ClientManager::getInstance()->getHubUrls(i);
+            temp = ctx()->getClientManager()->getHubUrls(i);
             if(temp.empty()) {
                 temp.push_back(_("Offline"));
             }
@@ -185,7 +185,7 @@ void FinishedManager::onComplete(Transfer* t, bool upload, bool crc32Checked) {
                 }
                 size = t->getSize();
             } else {
-                QueueManager::getInstance()->getSizeInfo(size, pos, file);
+                ctx()->getQueueManager()->getSizeInfo(size, pos, file);
                 if (size == -1) {
                     // not in the queue anymore?
                     return;

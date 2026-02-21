@@ -39,7 +39,7 @@ namespace dcpp {
 int ThrottleManager::read(Socket* sock, void* buffer, size_t len)
 {
     int64_t readSize = -1;
-    size_t downs = DownloadManager::getInstance()->getDownloadCount();
+    size_t downs = ctx()->getDownloadManager()->getDownloadCount();
     auto downLimit = getDownLimit(); // avoid even intra-function races
     if(!BOOLSETTING(THROTTLE_ENABLE) || !getCurThrottling() || downLimit == 0 || downs == 0)
         return sock->read(buffer, len);
@@ -77,7 +77,7 @@ int ThrottleManager::read(Socket* sock, void* buffer, size_t len)
 int ThrottleManager::write(Socket* sock, void* buffer, size_t& len)
 {
     bool gotToken = false;
-    size_t ups = UploadManager::getInstance()->getUploadCount();
+    size_t ups = ctx()->getUploadManager()->getUploadCount();
     auto upLimit = getUpLimit(); // avoid even intra-function races
     if(!BOOLSETTING(THROTTLE_ENABLE) || !getCurThrottling() || upLimit == 0 || ups == 0)
         return sock->write(buffer, len);
@@ -216,7 +216,7 @@ void ThrottleManager::shutdown()
 // TimerManagerListener
 void ThrottleManager::on(TimerManagerListener::Second, uint64_t /* aTick */) noexcept
 {
-    int newSlots = SettingsManager::getInstance()->get(getCurSetting(SettingsManager::SLOTS));
+    int newSlots = ctx()->getSettingsManager()->get(getCurSetting(SettingsManager::SLOTS));
     if(newSlots != SETTING(SLOTS)) {
         setSetting(SettingsManager::SLOTS, newSlots);
     }

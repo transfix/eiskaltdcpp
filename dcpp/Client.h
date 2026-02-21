@@ -26,6 +26,7 @@
 #include "forward.h"
 #include "OnlineUser.h"
 #include "SearchQueue.h"
+#include "DCContext.h"
 #include "Socket.h"
 #include "Speaker.h"
 #include "TimerManager.h"
@@ -61,6 +62,7 @@ public:
 };
 /** Yes, this should probably be called a Hub */
 class Client : public ClientBase, public Speaker<ClientListener>, public BufferedSocketListener, protected TimerManagerListener
+        , public ContextAware
         #ifdef LUA_SCRIPT
         , public ClientScriptInstance
         #endif

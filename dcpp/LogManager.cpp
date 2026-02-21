@@ -61,11 +61,11 @@ string LogManager::getPath(Area area) const {
 }
 
 const string& LogManager::getSetting(int area, int sel) const {
-    return SettingsManager::getInstance()->get(static_cast<SettingsManager::StrSetting>(options[area][sel]), true);
+    return ctx()->getSettingsManager()->get(static_cast<SettingsManager::StrSetting>(options[area][sel]), true);
 }
 
 void LogManager::saveSetting(int area, int sel, const string& setting) {
-    SettingsManager::getInstance()->set(static_cast<SettingsManager::StrSetting>(options[area][sel]), setting);
+    ctx()->getSettingsManager()->set(static_cast<SettingsManager::StrSetting>(options[area][sel]), setting);
 }
 
 void LogManager::log(const string& area, const string& msg) noexcept {

@@ -59,6 +59,8 @@ Client* ClientManager::getClient(const string& aHubURL) {
         c = new NmdcHub(aHubURL, false);
     }
 
+    c->setContext(ctx());
+
     {
         Lock l(cs);
         clients.push_back(c);
@@ -87,11 +89,11 @@ size_t ClientManager::getUserCount() const {
 }
 
 StringList ClientManager::getHubs(const CID& cid, const string& hintUrl) {
-    return getHubs(cid, hintUrl, FavoriteManager::getInstance()->isPrivate(hintUrl));
+    return getHubs(cid, hintUrl, ctx()->getFavoriteManager()->isPrivate(hintUrl));
 }
 
 StringList ClientManager::getHubNames(const CID& cid, const string& hintUrl) {
-    return getHubNames(cid, hintUrl, FavoriteManager::getInstance()->isPrivate(hintUrl));
+    return getHubNames(cid, hintUrl, ctx()->getFavoriteManager()->isPrivate(hintUrl));
 }
 
 StringList ClientManager::getHubUrls(const CID& cid) const {
@@ -105,7 +107,7 @@ StringList ClientManager::getHubUrls(const CID& cid) const {
 }
 
 StringList ClientManager::getNicks(const CID& cid, const string& hintUrl) {
-    return getNicks(cid, hintUrl, FavoriteManager::getInstance()->isPrivate(hintUrl));
+    return getNicks(cid, hintUrl, ctx()->getFavoriteManager()->isPrivate(hintUrl));
 }
 
 StringList ClientManager::getHubs(const CID& cid, const string& hintUrl, bool priv) {
@@ -365,7 +367,7 @@ void ClientManager::putOffline(OnlineUser* ou, bool disconnect) noexcept {
         UserPtr& u = ou->getUser();
         u->unsetFlag(User::ONLINE);
         if(disconnect)
-            ConnectionManager::getInstance()->disconnect(u);
+            ctx()->getConnectionManager()->disconnect(u);
         fire(ClientManagerListener::UserDisconnected(), u);
     } else if(diff > 1) {
         fire(ClientManagerListener::UserUpdated(), *ou);
@@ -411,7 +413,7 @@ OnlineUser* ClientManager::findOnlineUser(const CID& cid, const string& hintUrl,
 }
 
 void ClientManager::connect(const HintedUser& user, const string& token) {
-    bool priv = FavoriteManager::getInstance()->isPrivate(user.hint);
+    bool priv = ctx()->getFavoriteManager()->isPrivate(user.hint);
 
     Lock l(cs);
     OnlineUser* u = findOnlineUser(user, priv);
@@ -422,7 +424,7 @@ void ClientManager::connect(const HintedUser& user, const string& token) {
 }
 
 void ClientManager::privateMessage(const HintedUser& user, const string& msg, bool thirdPerson) {
-    bool priv = FavoriteManager::getInstance()->isPrivate(user.hint);
+    bool priv = ctx()->getFavoriteManager()->isPrivate(user.hint);
 
     Lock l(cs);
     OnlineUser* u = findOnlineUser(user, priv);
@@ -497,12 +499,12 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
     bool isTTHSearch = ((aFileType == SearchManager::TYPE_TTH) && (aString.compare(0, 4, "TTH:") == 0));
 
     // We don't wan't to answer passive searches if we're in passive mode...
-    if(isPassive && !ClientManager::getInstance()->isActive(aClient->getHubUrl())) {
+    if(isPassive && !ctx()->getClientManager()->isActive(aClient->getHubUrl())) {
         return;
     }
 
     SearchResultList l;
-    ShareManager::getInstance()->search(l, aString, aSearchType, aSize, aFileType, aClient, isPassive ? 5 : 10);
+    ctx()->getShareManager()->search(l, aString, aSearchType, aSize, aFileType, aClient, isPassive ? 5 : 10);
     //      dcdebug("Found %d items (%s)\n", l.size(), aString.c_str());
     if(!l.empty()) {
         if(isPassive) {
@@ -536,9 +538,9 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
     } else if(!isPassive && isTTHSearch) {
         PartsInfo partialInfo;
         TTHValue aTTH(aString.substr(4));
-        if(!QueueManager::getInstance()->handlePartialSearch(aTTH, partialInfo)) {
+        if(!ctx()->getQueueManager()->handlePartialSearch(aTTH, partialInfo)) {
             // if not found, try to find in finished list
-            if(!FinishedManager::getInstance()->handlePartialRequest(aTTH, partialInfo)) {
+            if(!ctx()->getFinishedManager()->handlePartialRequest(aTTH, partialInfo)) {
                 return;
             }
         }
@@ -551,9 +553,9 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
         }
 
         try {
-            AdcCommand cmd = SearchManager::getInstance()->toPSR(true, aClient->getMyNick(), aClient->getIpPort(), aTTH.toBase32(), partialInfo);
+            AdcCommand cmd = ctx()->getSearchManager()->toPSR(true, aClient->getMyNick(), aClient->getIpPort(), aTTH.toBase32(), partialInfo);
             Socket s;
-            s.writeTo(ip, port, cmd.toString(ClientManager::getInstance()->getMe()->getCID()));
+            s.writeTo(ip, port, cmd.toString(ctx()->getClientManager()->getMe()->getCID()));
         } catch(...) {
             dcdebug("Partial search caught error\n");
         }
@@ -572,7 +574,7 @@ void ClientManager::on(AdcSearch, Client* c, const AdcCommand& adc, const CID& f
         }
 
     }
-    SearchManager::getInstance()->respond(adc, from, isUdpActive, c->getIpPort());
+    ctx()->getSearchManager()->respond(adc, from, isUdpActive, c->getIpPort());
 
     Speaker<ClientManagerListener>::fire(ClientManagerListener::IncomingSearch(), [&adc]() -> string
     {
@@ -782,7 +784,7 @@ int ClientManager::getMode(const string& aHubUrl) const {
         return SETTING(INCOMING_CONNECTIONS);
 
     int mode = 0;
-    const FavoriteHubEntry* hub = FavoriteManager::getInstance()->getFavoriteHubEntry(aHubUrl);
+    const FavoriteHubEntry* hub = ctx()->getFavoriteManager()->getFavoriteHubEntry(aHubUrl);
     if(hub) {
         switch(hub->getMode()) {
         case 1 :

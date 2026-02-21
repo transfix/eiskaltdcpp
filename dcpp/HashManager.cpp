@@ -227,20 +227,20 @@ void HashManager::hashDone(const string& aFileName, uint32_t aTimeStamp, const T
         store.addFile(aFileName, aTimeStamp, tth, true);
         m_streamstore.saveTree(aFileName, tth);
     } catch (const Exception& e) {
-        LogManager::getInstance()->message(str(F_("Hashing failed: %1%") % e.getError()));
+        ctx()->getLogManager()->message(str(F_("Hashing failed: %1%") % e.getError()));
         return;
     }
 
     fire(HashManagerListener::TTHDone(), aFileName, tth.getRoot());
 
     if (speed > 0) {
-        LogManager::getInstance()->message(str(F_("Finished hashing: %1% (%2% at %3%/s)") % Util::addBrackets(aFileName) %
+        ctx()->getLogManager()->message(str(F_("Finished hashing: %1% (%2% at %3%/s)") % Util::addBrackets(aFileName) %
                                                Util::formatBytes(size) % Util::formatBytes(speed)));
     } else if(size >= 0) {
-        LogManager::getInstance()->message(str(F_("Finished hashing: %1% (%2%)") % Util::addBrackets(aFileName) %
+        ctx()->getLogManager()->message(str(F_("Finished hashing: %1% (%2%)") % Util::addBrackets(aFileName) %
                                                Util::formatBytes(size)));
     } else {
-        LogManager::getInstance()->message(str(F_("Finished hashing: %1%") % Util::addBrackets(aFileName)));
+        ctx()->getLogManager()->message(str(F_("Finished hashing: %1%") % Util::addBrackets(aFileName)));
     }
 }
 
@@ -1116,13 +1116,13 @@ void HashManager::on(TimerManagerListener::Second, uint64_t tick) noexcept {
     static bool firstcycle = true;
     if (firstcycle){
         int delay = SETTING(HASHING_START_DELAY);
-        SettingsManager *SM = SettingsManager::getInstance();
+        SettingsManager *SM = ctx()->getSettingsManager();
         if (delay > 1800){
             delay = 1800;
             SM->set(SettingsManager::HASHING_START_DELAY, delay);
         }
 
-        if (!ShareManager::getInstance()->isRefreshing()){
+        if (!ctx()->getShareManager()->isRefreshing()){
             string  curFile;
             uint64_t bytesLeft;
             size_t  filesLeft = -1;

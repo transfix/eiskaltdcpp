@@ -35,7 +35,7 @@ Client::Counts Client::counts;
 uint32_t idCounter = 0;
 
 Client::Client(const string& hubURL, char separator_, bool secure_, Socket::Protocol proto_) :
-    myIdentity(ClientManager::getInstance()->getMe(), 0), uniqueId(++idCounter),
+    myIdentity(ctx()->getClientManager()->getMe(), 0), uniqueId(++idCounter),
     reconnDelay(120), lastActivity(GET_TICK()), registered(false), autoReconnect(false),
     encoding(Text::hubDefaultCharset), state(STATE_DISCONNECTED), sock(0),
     hubUrl(hubURL), separator(separator_), proto(proto_),
@@ -53,7 +53,7 @@ Client::~Client() {
     dcassert(!sock);
 
     // In case we were deleted before we Failed
-    FavoriteManager::getInstance()->removeUserCommand(getHubUrl());
+    ctx()->getFavoriteManager()->removeUserCommand(getHubUrl());
     TimerManager::getInstance()->removeListener(this);
     updateCounts(true);
 }
@@ -72,7 +72,7 @@ void Client::shutdown() {
 }
 
 void Client::reloadSettings(bool updateNick) {
-    auto fav = FavoriteManager::getInstance()->getFavoriteHubEntry(getHubUrl());
+    auto fav = ctx()->getFavoriteManager()->getFavoriteHubEntry(getHubUrl());
 
     string ClientId;
     if (::strncmp(getHubUrl().c_str(),"adc://", 6) == 0 ||
@@ -117,7 +117,7 @@ void Client::reloadSettings(bool updateNick) {
 }
 
 bool Client::isActive() const {
-    return ClientManager::getInstance()->isActive(hubUrl);
+    return ctx()->getClientManager()->isActive(hubUrl);
 }
 
 void Client::connect() {
@@ -130,7 +130,7 @@ void Client::connect() {
     setReconnDelay(SETTING(RECONNECT_DELAY));
     reloadSettings(true);
     setRegistered(false);
-    setMyIdentity(Identity(ClientManager::getInstance()->getMe(), 0));
+    setMyIdentity(Identity(ctx()->getClientManager()->getMe(), 0));
     setHubIdentity(Identity());
 
     state = STATE_CONNECTING;
@@ -180,7 +180,7 @@ void Client::on(Connected) noexcept {
 
 void Client::on(Failed, const string& aLine) noexcept {
     state = STATE_DISCONNECTED;
-    FavoriteManager::getInstance()->removeUserCommand(getHubUrl());
+    ctx()->getFavoriteManager()->removeUserCommand(getHubUrl());
     sock->removeListener(this);
     fire(ClientListener::Failed(), this, aLine);
 }

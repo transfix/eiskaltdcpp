@@ -365,7 +365,7 @@ void ADLSearchManager::matchesFile(DestDirList& destDirVector, DirectoryListing:
 
             if(is.isAutoQueue){
                 try {
-                    QueueManager::getInstance()->add(SETTING(DOWNLOAD_DIRECTORY) + currentFile->getName(),
+                    ctx()->getQueueManager()->add(SETTING(DOWNLOAD_DIRECTORY) + currentFile->getName(),
                                                      currentFile->getSize(), currentFile->getTTH(), getUser());
                 } catch(const Exception&) { }
             }
@@ -479,10 +479,10 @@ void ADLSearchManager::finalizeDestinationDirectories(DestDirList& destDirs, Dir
 
 void ADLSearchManager::matchListing(DirectoryListing& aDirList) {
     StringMap params;
-    params["userNI"] = ClientManager::getInstance()->getNicks(aDirList.getUser())[0];
+    params["userNI"] = ctx()->getClientManager()->getNicks(aDirList.getUser())[0];
     params["userCID"] = aDirList.getUser().user->getCID().toBase32();
 
-    if (BOOLSETTING(USE_ADL_ONLY_OWN_LIST) && params["userCID"] != ClientManager::getInstance()->getMe()->getCID().toBase32())
+    if (BOOLSETTING(USE_ADL_ONLY_OWN_LIST) && params["userCID"] != ctx()->getClientManager()->getMe()->getCID().toBase32())
         return;
 
     setUser(aDirList.getUser());

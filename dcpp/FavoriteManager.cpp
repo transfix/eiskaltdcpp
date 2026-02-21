@@ -136,8 +136,8 @@ void FavoriteManager::removeHubUserCommands(int ctx, const string& hub) {
 void FavoriteManager::addFavoriteUser(const UserPtr& aUser) {
     Lock l(cs);
     if(users.find(aUser->getCID()) == users.end()) {
-        StringList urls = ClientManager::getInstance()->getHubs(aUser->getCID(), Util::emptyString);
-        StringList nicks = ClientManager::getInstance()->getNicks(aUser->getCID(), Util::emptyString);
+        StringList urls = ctx()->getClientManager()->getHubs(aUser->getCID(), Util::emptyString);
+        StringList nicks = ctx()->getClientManager()->getNicks(aUser->getCID(), Util::emptyString);
 
         /// @todo make this an error probably...
         if(urls.empty())
@@ -504,9 +504,9 @@ void FavoriteManager::load(SimpleXML& aXml) {
             if(cid.length() != 39) {
                 if(nick.empty() || hubUrl.empty())
                     continue;
-                u = ClientManager::getInstance()->getUser(nick, hubUrl);
+                u = ctx()->getClientManager()->getUser(nick, hubUrl);
             } else {
-                u = ClientManager::getInstance()->getUser(CID(cid));
+                u = ctx()->getClientManager()->getUser(CID(cid));
             }
             auto i = users.emplace(u->getCID(), FavoriteUser(u, nick, hubUrl)).first;
 
@@ -541,7 +541,7 @@ void FavoriteManager::load(SimpleXML& aXml) {
         while(aXml.findChild("Directory")) {
             string virt = aXml.getChildAttrib("Name");
             string d(aXml.getChildData());
-            FavoriteManager::getInstance()->addFavoriteDir(d, virt);
+            ctx()->getFavoriteManager()->addFavoriteDir(d, virt);
         }
         try {
             aXml.stepOut();
