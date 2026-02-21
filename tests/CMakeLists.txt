@@ -18,7 +18,13 @@ add_executable(eiskaltdcpp-tests
     test_main.cpp
     test_cid.cpp
     test_util.cpp
+    test_util_extended.cpp
     test_dccontext.cpp
+    test_encoder.cpp
+    test_string_tokenizer.cpp
+    test_text.cpp
+    test_adccommand.cpp
+    test_simplexml.cpp
 )
 
 target_include_directories(eiskaltdcpp-tests PRIVATE
