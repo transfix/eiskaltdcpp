@@ -49,6 +49,7 @@
 #if !defined(_WIN32) && !defined(PATH_MAX) // Extra PATH_MAX check for macOS
 #if defined(__linux)
 #include <sys/syslimits.h>
+#include "DCPlusPlus.h"
 #elif defined(__GNU__)
 // Fix for GNU/Hurd, see:
 // https://www.gnu.org/software/hurd/community/gsoc/project_ideas/maxpath.html
@@ -219,7 +220,7 @@ QueueItem* QueueManager::UserQueue::getNext(const UserPtr& aUser, QueueItem::Pri
                 QueueItem::SourceConstIter source = qi->getSource(aUser);
                 if(source->isSet(QueueItem::Source::FLAG_PARTIAL)) {
                     // check partial source
-                    auto blockSize = HashManager::getInstance()->getBlockSize(qi->getTTH());
+                    auto blockSize = dcpp::getContext()->getHashManager()->getBlockSize(qi->getTTH());
                     if(blockSize == 0)
                         blockSize = qi->getSize();
 
@@ -242,7 +243,7 @@ QueueItem* QueueManager::UserQueue::getNext(const UserPtr& aUser, QueueItem::Pri
                     continue;
                 }
                 if(!qi->isSet(QueueItem::FLAG_USER_LIST)) {
-                    auto blockSize = HashManager::getInstance()->getBlockSize(qi->getTTH());
+                    auto blockSize = dcpp::getContext()->getHashManager()->getBlockSize(qi->getTTH());
                     if(blockSize == 0)
                         blockSize = qi->getSize();
                     if(qi->getNextSegment(blockSize, wantedSize,lastSpeed, source->getPartialSource()).getSize() == 0) {
@@ -422,7 +423,7 @@ int QueueManager::Rechecker::run() {
         }
 
         TigerTree tt;
-        bool gotTree = HashManager::getInstance()->getTree(tth, tt);
+        bool gotTree = dcpp::getContext()->getHashManager()->getTree(tth, tt);
 
         string tempTarget;
 
@@ -516,17 +517,17 @@ QueueManager::QueueManager() :
     dirty(true),
     nextSearch(0)
 {
-    TimerManager::getInstance()->addListener(this);
-    SearchManager::getInstance()->addListener(this);
-    ClientManager::getInstance()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
+    dcpp::getContext()->getSearchManager()->addListener(this);
+    dcpp::getContext()->getClientManager()->addListener(this);
 
     File::ensureDirectory(Util::getListPath());
 }
 
 QueueManager::~QueueManager() {
-    SearchManager::getInstance()->removeListener(this);
-    TimerManager::getInstance()->removeListener(this);
-    ClientManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getSearchManager()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
+    dcpp::getContext()->getClientManager()->removeListener(this);
 
     if(!BOOLSETTING(KEEP_LISTS)) {
         string path = Util::getListPath();
@@ -1198,10 +1199,10 @@ void QueueManager::moveFile_(const string& source, const string& target) {
         string newTarget = Util::getFilePath(source) + Util::getFileName(target);
         try {
             File::renameFile(source, newTarget);
-            LogManager::getInstance()->message(str(F_("Unable to move %1% to %2% (%3%); renamed to %4%") %
+            dcpp::getContext()->getLogManager()->message(str(F_("Unable to move %1% to %2% (%3%); renamed to %4%") %
                                                    Util::addBrackets(source) % Util::addBrackets(target) % e1.getError() % Util::addBrackets(newTarget)));
         } catch(const FileException& e2) {
-            LogManager::getInstance()->message(str(F_("Unable to move %1% to %2% (%3%) nor to rename to %4% (%5%)") %
+            dcpp::getContext()->getLogManager()->message(str(F_("Unable to move %1% to %2% (%3%) nor to rename to %4% (%5%)") %
                                                    Util::addBrackets(source) % Util::addBrackets(target) % e1.getError() % Util::addBrackets(newTarget) % e2.getError()));
         }
     }
@@ -1740,7 +1741,7 @@ static const string sSegment = "Segment";
 static const string sStart = "Start";
 
 void QueueLoader::startTag(const string& name, StringPairList& attribs, bool simple) {
-    QueueManager* qm = QueueManager::getInstance();
+    QueueManager* qm = dcpp::getContext()->getQueueManager();
     if(!inDownloads && name == sDownloads) {
         inDownloads = true;
     } else if(inDownloads) {
@@ -1790,21 +1791,21 @@ void QueueLoader::startTag(const string& name, StringPairList& attribs, bool sim
                 cur->addSegment(Segment(start, size));
             }
         } else if (cur && !Util::fileExists(Util::getFilePath(cur->getTarget())) && BOOLSETTING(CHECK_TARGETS_PATHS_ON_START)) {
-            QueueManager::getInstance()->setPriority(cur->getTarget(), QueueItem::PAUSED);
-            LogManager::getInstance()->message(str(F_("Target path for this item is not available: %1%; pause this queue item.") % Util::addBrackets(cur->getTarget())));
+            dcpp::getContext()->getQueueManager()->setPriority(cur->getTarget(), QueueItem::PAUSED);
+            dcpp::getContext()->getLogManager()->message(str(F_("Target path for this item is not available: %1%; pause this queue item.") % Util::addBrackets(cur->getTarget())));
         } else if(cur && name == sSource) {
             const string& cid = getAttrib(attribs, sCID, 0);
             if(cid.length() != 39) {
                 // Skip loading this source - sorry old users
                 return;
             }
-            UserPtr user = ClientManager::getInstance()->getUser(CID(cid));
+            UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(cid));
 
             try {
                 const string& hubHint = getAttrib(attribs, sHubHint, 1);
                 HintedUser hintedUser(user, hubHint);
                 if(qm->addSource(cur, hintedUser, 0) && user->isOnline())
-                    ConnectionManager::getInstance()->getDownloadConnection(hintedUser);
+                    dcpp::getContext()->getConnectionManager()->getDownloadConnection(hintedUser);
             } catch(const Exception&) {
                 return;
             }
@@ -2207,7 +2208,7 @@ public:
             DirectoryListing dl(user);
             try {
                 dl.loadFile(*i);
-                LogManager::getInstance()->message(str(F_("%1% : Matched %2% files") % Util::toString(ClientManager::getInstance()->getNicks(user)) % QueueManager::getInstance()->matchListing(dl)));
+                dcpp::getContext()->getLogManager()->message(str(F_("%1% : Matched %2% files") % Util::toString(dcpp::getContext()->getClientManager()->getNicks(user)) % dcpp::getContext()->getQueueManager()->matchListing(dl)));
             } catch (const Exception&) { }
         }
         delete this;// Cleanup the thread object

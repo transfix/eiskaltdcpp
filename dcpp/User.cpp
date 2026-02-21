@@ -24,6 +24,7 @@
 #include "FavoriteUser.h"
 #include "format.h"
 #include "StringTokenizer.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -34,7 +35,7 @@ OnlineUser::OnlineUser(const UserPtr& ptr, ClientBase& client_, uint32_t sid_) :
 }
 
 bool Identity::isTcpActive(const Client* c) const {
-    if(c != NULL && user == ClientManager::getInstance()->getMe()) {
+    if(c != NULL && user == dcpp::getContext()->getClientManager()->getMe()) {
         return c->isActive(); // userlist should display our real mode
     } else {
         return (!user->isSet(User::NMDC)) ?

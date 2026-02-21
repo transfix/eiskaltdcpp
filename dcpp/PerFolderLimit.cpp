@@ -23,6 +23,7 @@
 #include "ClientManager.h"
 #include "LogManager.h"
 #include "FavoriteManager.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -43,8 +44,8 @@ CPerfolderLimit::~CPerfolderLimit()
 bool CPerfolderLimit::IsUserAllowed(string const& request, const UserPtr user, string *message)
 {
     bool found=false;
-    FavoriteManager *FM = FavoriteManager::getInstance();
-    Identity id=ClientManager::getInstance()->getOnlineUserIdentity(user);
+    FavoriteManager *FM = dcpp::getContext()->getFavoriteManager();
+    Identity id=dcpp::getContext()->getClientManager()->getOnlineUserIdentity(user);
     int64_t user_share=id.getBytesShared();
 
     if ( NULL != message )
@@ -86,7 +87,7 @@ bool CPerfolderLimit::IsUserAllowed(string const& request, const UserPtr user, s
             sprintf(buf_user, "%i", (int)(user_share/(1024*1024*1024)));
             *message=_("Too small share to download from ") + pos->m_folder + ": " + buf_user + "/" + buf_need + " " + _("GiB");
 
-            LogManager::getInstance()->message(_("Denied to send file") + string(" '") + request + string("' ") +
+            dcpp::getContext()->getLogManager()->message(_("Denied to send file") + string(" '") + request + string("' ") +
                                                _(" to ") + id.getNick() + string(" (") + id.getIp() + string("): ") +
                                                *message);
 

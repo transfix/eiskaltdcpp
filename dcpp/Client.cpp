@@ -27,6 +27,7 @@
 #include "FavoriteManager.h"
 #include "TimerManager.h"
 #include "version.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -46,7 +47,7 @@ Client::Client(const string& hubURL, char separator_, bool secure_, Socket::Prot
 
     keyprint = Util::decodeQuery(query)["kp"];
 
-    TimerManager::getInstance()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
 }
 
 Client::~Client() {
@@ -54,7 +55,7 @@ Client::~Client() {
 
     // In case we were deleted before we Failed
     ctx()->getFavoriteManager()->removeUserCommand(getHubUrl());
-    TimerManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
     updateCounts(true);
 }
 

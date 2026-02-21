@@ -49,6 +49,7 @@
 #endif
 
 #include <limits>
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -58,17 +59,17 @@ ShareManager::ShareManager() : hits(0), xmlListLen(0), bzXmlListLen(0),
     xmlDirty(true), forceXmlRefresh(false), refreshDirs(false), update(false), initial(true), listN(0), refreshing(false),
     lastXmlUpdate(0), lastFullUpdate(GET_TICK()), bloom(1<<20)
 {
-    SettingsManager::getInstance()->addListener(this);
-    TimerManager::getInstance()->addListener(this);
-    QueueManager::getInstance()->addListener(this);
-    HashManager::getInstance()->addListener(this);
+    dcpp::getContext()->getSettingsManager()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
+    dcpp::getContext()->getQueueManager()->addListener(this);
+    dcpp::getContext()->getHashManager()->addListener(this);
 }
 
 ShareManager::~ShareManager() {
-    SettingsManager::getInstance()->removeListener(this);
-    TimerManager::getInstance()->removeListener(this);
-    QueueManager::getInstance()->removeListener(this);
-    HashManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getSettingsManager()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
+    dcpp::getContext()->getQueueManager()->removeListener(this);
+    dcpp::getContext()->getHashManager()->removeListener(this);
 
     join();
 
@@ -110,7 +111,7 @@ string ShareManager::Directory::getRealPath(const std::string& path) const {
     if(getParent()) {
         return getParent()->getRealPath(getName() + PATH_SEPARATOR_STR + path);
     } else {
-        return ShareManager::getInstance()->findRealRoot(getName(), path);
+        return dcpp::getContext()->getShareManager()->findRealRoot(getName(), path);
     }
 }
 
@@ -1218,7 +1219,7 @@ void ShareManager::Directory::search(SearchResultList& aResults, StringSearch::L
         // We satisfied all the search words! Add the directory...(NMDC searches don't support directory size)
         SearchResultPtr sr(new SearchResult(SearchResult::TYPE_DIRECTORY, 0, getFullName(), TTHValue()));
         aResults.push_back(sr);
-        ShareManager::getInstance()->setHits(ShareManager::getInstance()->getHits()+1);
+        dcpp::getContext()->getShareManager()->setHits(dcpp::getContext()->getShareManager()->getHits()+1);
     }
 
     if(aFileType != SearchManager::TYPE_DIRECTORY) {
@@ -1240,7 +1241,7 @@ void ShareManager::Directory::search(SearchResultList& aResults, StringSearch::L
             if(checkType(i.getName(), aFileType)) {
                 SearchResultPtr sr(new SearchResult(SearchResult::TYPE_FILE, i.getSize(), getFullName() + i.getName(), i.getTTH()));
                 aResults.push_back(sr);
-                ShareManager::getInstance()->setHits(ShareManager::getInstance()->getHits()+1);
+                dcpp::getContext()->getShareManager()->setHits(dcpp::getContext()->getShareManager()->getHits()+1);
                 if(aResults.size() >= maxResults) {
                     break;
                 }
@@ -1264,7 +1265,7 @@ void ShareManager::search(SearchResultList& results, const string& aString, int 
                                                     i->second->getParent()->getFullName() + i->second->getName(), i->second->getTTH()));
 
                 results.push_back(sr);
-                ShareManager::getInstance()->addHits(1);
+                dcpp::getContext()->getShareManager()->addHits(1);
             }
         }
         return;
@@ -1378,7 +1379,7 @@ void ShareManager::Directory::search(SearchResultList& aResults, AdcSearch& aStr
         // We satisfied all the search words! Add the directory...
         SearchResultPtr sr(new SearchResult(SearchResult::TYPE_DIRECTORY, getSize(), getFullName(), TTHValue()));
         aResults.push_back(sr);
-        ShareManager::getInstance()->setHits(ShareManager::getInstance()->getHits()+1);
+        dcpp::getContext()->getShareManager()->setHits(dcpp::getContext()->getShareManager()->getHits()+1);
     }
 
     if(!aStrings.isDirectory) {
@@ -1406,7 +1407,7 @@ void ShareManager::Directory::search(SearchResultList& aResults, AdcSearch& aStr
                 SearchResultPtr sr(new SearchResult(SearchResult::TYPE_FILE,
                                                     i.getSize(), getFullName() + i.getName(), i.getTTH()));
                 aResults.push_back(sr);
-                ShareManager::getInstance()->addHits(1);
+                dcpp::getContext()->getShareManager()->addHits(1);
                 if(aResults.size() >= maxResults) {
                     return;
                 }

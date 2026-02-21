@@ -24,6 +24,7 @@
 #include "DCContext.h"
 #include "Speaker.h"
 #include "LogManagerListener.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -62,6 +63,6 @@ private:
     int options[LAST][2];
 };
 
-#define LOG(area, msg) LogManager::getInstance()->log(area, msg)
+#define LOG(area, msg) dcpp::getContext()->getLogManager()->log(area, msg)
 
 } // namespace dcpp

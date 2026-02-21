@@ -27,6 +27,7 @@
 #include "File.h"
 #include "FilteredFile.h"
 #include "ZUtils.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -44,7 +45,7 @@ Download::Download(UserConnection& conn, QueueItem& qi, const string& path, bool
     }
 
     if(getType() == TYPE_FILE && qi.getSize() != -1) {
-        if(HashManager::getInstance()->getTree(getTTH(), getTigerTree())) {
+        if(dcpp::getContext()->getHashManager()->getTree(getTTH(), getTigerTree())) {
             setTreeValid(true);
             setSegment(qi.getNextSegment(getTigerTree().getBlockSize(), conn.getChunkSize(),conn.getSpeed(), source->getPartialSource()));
         } else if(supportsTrees && conn.isSet(UserConnection::FLAG_SUPPORTS_TTHL) && !qi.getSource(conn.getUser())->isSet(QueueItem::Source::FLAG_NO_TREE) && qi.getSize() > HashManager::MIN_BLOCK_SIZE) {

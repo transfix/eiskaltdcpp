@@ -31,6 +31,7 @@
 #include "Transfer.h"
 #ifdef LUA_SCRIPT
 #include "ScriptManager.h"
+#include "DCPlusPlus.h"
 #endif
 
 namespace dcpp {
@@ -178,7 +179,7 @@ void UserConnection::accept(const Socket& aServer) {
 
 void UserConnection::inf(bool withToken) {
     AdcCommand c(AdcCommand::CMD_INF);
-    c.addParam("ID", ClientManager::getInstance()->getMyCID().toBase32());
+    c.addParam("ID", dcpp::getContext()->getClientManager()->getMyCID().toBase32());
     if(withToken) {
         c.addParam("TO", getToken());
     }

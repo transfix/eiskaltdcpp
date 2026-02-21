@@ -36,6 +36,7 @@
 #include "version.h"
 
 #include <cmath>
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -62,11 +63,11 @@ const vector<StringList> AdcHub::searchExts;
 
 AdcHub::AdcHub(const string& aHubURL, bool secure) :
     Client(aHubURL, '\n', secure, Socket::PROTO_ADC), oldPassword(false), sid(0) {
-    TimerManager::getInstance()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
 }
 
 AdcHub::~AdcHub() {
-    TimerManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
     clearUsers();
 }
 

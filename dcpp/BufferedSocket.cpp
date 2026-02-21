@@ -31,6 +31,7 @@
 #include "ThrottleManager.h"
 #include "TimerManager.h"
 #include "ZUtils.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -90,7 +91,7 @@ void BufferedSocket::setSocket(std::unique_ptr<Socket> s) {
 void BufferedSocket::accept(const Socket& srv, bool secure, bool allowUntrusted) {
     dcdebug("BufferedSocket::accept() %p\n", (void*)this);
 
-    std::unique_ptr<Socket> s(secure ? CryptoManager::getInstance()->getServerSocket(allowUntrusted) : new Socket);
+    std::unique_ptr<Socket> s(secure ? dcpp::getContext()->getCryptoManager()->getServerSocket(allowUntrusted) : new Socket);
 
     s->accept(srv);
 
@@ -107,7 +108,7 @@ void BufferedSocket::connect(const string& aAddress, const string& aPort, bool s
 void BufferedSocket::connect(const string& aAddress, const string& aPort, const string& localPort, NatRoles natRole, bool secure, bool allowUntrusted, bool proxy, Socket::Protocol proto, const string& expKP) {
     (void)expKP;
     dcdebug("BufferedSocket::connect() %p\n", (void*)this);
-    std::unique_ptr<Socket> s(secure ? (natRole == NAT_SERVER ? CryptoManager::getInstance()->getServerSocket(allowUntrusted) : CryptoManager::getInstance()->getClientSocket(allowUntrusted, proto)) : new Socket);
+    std::unique_ptr<Socket> s(secure ? (natRole == NAT_SERVER ? dcpp::getContext()->getCryptoManager()->getServerSocket(allowUntrusted) : dcpp::getContext()->getCryptoManager()->getClientSocket(allowUntrusted, proto)) : new Socket);
 
     s->create();
     setSocket(move(s));
@@ -181,7 +182,7 @@ void BufferedSocket::threadRead() {
     if(state != RUNNING)
         return;
 
-    int left = (mode == MODE_DATA) ? ThrottleManager::getInstance()->read(sock.get(), &inbuf[0], (int)inbuf.size()) : sock->read(&inbuf[0], (int)inbuf.size());
+    int left = (mode == MODE_DATA) ? dcpp::getContext()->getThrottleManager()->read(sock.get(), &inbuf[0], (int)inbuf.size()) : sock->read(&inbuf[0], (int)inbuf.size());
     if(left == -1) {
         // EWOULDBLOCK, no data received...
         return;
@@ -347,7 +348,7 @@ void BufferedSocket::threadSendFile(InputStream* file) {
                 }
             } else {
                 writeSize = min(sockSize / 2, writeBuf.size() - writePos);
-                written = ThrottleManager::getInstance()->write(sock.get(), &writeBuf[writePos], writeSize);
+                written = dcpp::getContext()->getThrottleManager()->write(sock.get(), &writeBuf[writePos], writeSize);
             }
 
             if(written > 0) {

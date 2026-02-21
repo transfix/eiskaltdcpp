@@ -22,6 +22,7 @@
 #include "Socket.h"
 #include "TimerManager.h"
 #include "SettingsManager.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp
 {
@@ -80,7 +81,7 @@ public:
 #ifndef _WIN32
         n_lock = halt = 0;
 #endif
-        TimerManager::getInstance()->addListener(this);
+        dcpp::getContext()->getTimerManager()->addListener(this);
     }
 
     virtual ~ThrottleManager();

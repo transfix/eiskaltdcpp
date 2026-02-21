@@ -22,6 +22,7 @@
 #include "TimerManager.h"
 #include "LogManager.h"
 #include "SettingsManager.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -66,7 +67,7 @@ private:
     friend class Singleton<DebugManager>;
     static string typeDirToString(int typeDir);
 };
-#define COMMAND_DEBUG(a,b,c) if (DebugManager::getInstance()) DebugManager::getInstance()->SendCommandMessage(a,b,c);
-#define DETECTION_DEBUG(m) if (DebugManager::getInstance()) DebugManager::getInstance()->SendDetectionMessage(m);
+#define COMMAND_DEBUG(a,b,c) if (dcpp::getContext()->getDebugManager()) dcpp::getContext()->getDebugManager()->SendCommandMessage(a,b,c);
+#define DETECTION_DEBUG(m) if (dcpp::getContext()->getDebugManager()) dcpp::getContext()->getDebugManager()->SendDetectionMessage(m);
 
 } // namespace dcpp

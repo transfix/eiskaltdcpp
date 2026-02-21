@@ -36,6 +36,7 @@
 
 #ifdef USE_XATTR
 #include "attr/attributes.h"
+#include "DCPlusPlus.h"
 #else
 #define ATTR_MAX_VALUELEN 128
 #endif
@@ -60,10 +61,10 @@ public:
     static const int64_t MIN_BLOCK_SIZE;
 
     HashManager() {
-        TimerManager::getInstance()->addListener(this);
+        dcpp::getContext()->getTimerManager()->addListener(this);
     }
     virtual ~HashManager() {
-        TimerManager::getInstance()->removeListener(this);
+        dcpp::getContext()->getTimerManager()->removeListener(this);
         hasher.join();
     }
 

@@ -37,6 +37,7 @@
 #include "FinishedManager.h"
 #include "File.h"
 #include "extra/ipfilter.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -44,13 +45,13 @@ static const string UPLOAD_AREA = "Uploads";
 
 
 UploadManager::UploadManager() noexcept : extra(0), lastGrant(0), running(0), limits(NULL), lastFreeSlots(-1) {
-    ClientManager::getInstance()->addListener(this);
-    TimerManager::getInstance()->addListener(this);
+    dcpp::getContext()->getClientManager()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
 }
 
 UploadManager::~UploadManager() {
-    TimerManager::getInstance()->removeListener(this);
-    ClientManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
+    dcpp::getContext()->getClientManager()->removeListener(this);
     while(true) {
         {
             Lock l(cs);

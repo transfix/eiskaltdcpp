@@ -28,6 +28,7 @@
 #include "QueueManager.h"
 #include "UploadManager.h"
 #include "UserConnection.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -37,7 +38,7 @@ ConnectionManager::ConnectionManager() :
     secureServer(0),
     shuttingDown(false)
 {
-    TimerManager::getInstance()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
 
     features = {
         UserConnection::FEATURE_MINISLOTS,
@@ -260,7 +261,7 @@ int ConnectionManager::Server::run() noexcept {
         try {
             while(!die) {
                 if(sock.wait(POLL_TIMEOUT, Socket::WAIT_READ) == Socket::WAIT_READ) {
-                    ConnectionManager::getInstance()->accept(sock, secure);
+                    dcpp::getContext()->getConnectionManager()->accept(sock, secure);
                 }
             }
         } catch(const Exception& e) {
@@ -275,7 +276,7 @@ int ConnectionManager::Server::run() noexcept {
                 sock.bind(port, ip);
                 sock.listen();
                 if(failed) {
-                    LogManager::getInstance()->message(_("Connectivity restored"));
+                    dcpp::getContext()->getLogManager()->message(_("Connectivity restored"));
                     failed = false;
                 }
                 break;
@@ -283,7 +284,7 @@ int ConnectionManager::Server::run() noexcept {
                 dcdebug("ConnectionManager::Server::run Stopped listening: %s\n", e.getError().c_str());
 
                 if(!failed) {
-                    LogManager::getInstance()->message(str(F_("Connectivity error: %1%") % e.getError()));
+                    dcpp::getContext()->getLogManager()->message(str(F_("Connectivity error: %1%") % e.getError()));
                     failed = true;
                 }
 
@@ -857,7 +858,7 @@ void ConnectionManager::disconnect(const UserPtr& user, int isDownload) {
 }
 
 void ConnectionManager::shutdown() {
-    TimerManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
     shuttingDown = true;
     disconnect();
     {

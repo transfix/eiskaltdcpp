@@ -28,19 +28,20 @@
 #include "QueueManager.h"
 #include "UploadManager.h"
 #include "ClientManager.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
 FinishedManager::FinishedManager() {
-    DownloadManager::getInstance()->addListener(this);
-    UploadManager::getInstance()->addListener(this);
-    QueueManager::getInstance()->addListener(this);
+    dcpp::getContext()->getDownloadManager()->addListener(this);
+    dcpp::getContext()->getUploadManager()->addListener(this);
+    dcpp::getContext()->getQueueManager()->addListener(this);
 }
 
 FinishedManager::~FinishedManager() {
-    DownloadManager::getInstance()->removeListener(this);
-    UploadManager::getInstance()->removeListener(this);
-    QueueManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getDownloadManager()->removeListener(this);
+    dcpp::getContext()->getUploadManager()->removeListener(this);
+    dcpp::getContext()->getQueueManager()->removeListener(this);
 
     clearDLs();
     clearULs();

@@ -35,16 +35,17 @@
 #include "UserCommand.h"
 #ifdef WITH_DHT
 #include "dht/DHT.h"
+#include "DCPlusPlus.h"
 #endif
 
 namespace dcpp {
 
 ClientManager::ClientManager() {
-    TimerManager::getInstance()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
 }
 
 ClientManager::~ClientManager() {
-    TimerManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
 }
 
 Client* ClientManager::getClient(const string& aHubURL) {
@@ -768,13 +769,13 @@ void ClientManager::on(Failed, Client* client, const string&) noexcept {
 void ClientManager::on(HubUserCommand, Client* client, int aType, int ctx, const string& name, const string& command) noexcept {
     if(BOOLSETTING(HUB_USER_COMMANDS)) {
         if(aType == UserCommand::TYPE_REMOVE) {
-            int cmd = FavoriteManager::getInstance()->findUserCommand(name, client->getHubUrl());
+            int cmd = dcpp::getContext()->getFavoriteManager()->findUserCommand(name, client->getHubUrl());
             if(cmd != -1)
-                FavoriteManager::getInstance()->removeUserCommand(cmd);
+                dcpp::getContext()->getFavoriteManager()->removeUserCommand(cmd);
         } else if(aType == UserCommand::TYPE_CLEAR) {
-            FavoriteManager::getInstance()->removeHubUserCommands(ctx, client->getHubUrl());
+            dcpp::getContext()->getFavoriteManager()->removeHubUserCommands(ctx, client->getHubUrl());
         } else {
-            FavoriteManager::getInstance()->addUserCommand(aType, ctx, UserCommand::FLAG_NOSAVE, name, command, "", client->getHubUrl());
+            dcpp::getContext()->getFavoriteManager()->addUserCommand(aType, ctx, UserCommand::FLAG_NOSAVE, name, command, "", client->getHubUrl());
         }
     }
 }

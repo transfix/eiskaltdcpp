@@ -26,6 +26,7 @@
 #include "TimerManager.h"
 #include "UploadManager.h"
 #include "ClientManager.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 /**
@@ -141,16 +142,16 @@ SettingsManager::IntSetting ThrottleManager::getCurSetting(SettingsManager::IntS
 }
 
 int ThrottleManager::getUpLimit() {
-    return SettingsManager::getInstance()->get(getCurSetting(SettingsManager::MAX_UPLOAD_SPEED_MAIN));
+    return dcpp::getContext()->getSettingsManager()->get(getCurSetting(SettingsManager::MAX_UPLOAD_SPEED_MAIN));
 }
 
 int ThrottleManager::getDownLimit() {
-    return SettingsManager::getInstance()->get(getCurSetting(SettingsManager::MAX_DOWNLOAD_SPEED_MAIN));
+    return dcpp::getContext()->getSettingsManager()->get(getCurSetting(SettingsManager::MAX_DOWNLOAD_SPEED_MAIN));
 }
 
 void ThrottleManager::setSetting(SettingsManager::IntSetting setting, int value) {
-    SettingsManager::getInstance()->set(setting, value);
-    ClientManager::getInstance()->infoUpdated();
+    dcpp::getContext()->getSettingsManager()->set(setting, value);
+    dcpp::getContext()->getClientManager()->infoUpdated();
 }
 
 bool ThrottleManager::getCurThrottling() {
@@ -177,7 +178,7 @@ void ThrottleManager::waitToken() {
 ThrottleManager::~ThrottleManager()
 {
     shutdown();
-    TimerManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
 }
 
 #ifdef _WIN32

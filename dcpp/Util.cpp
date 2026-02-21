@@ -74,6 +74,7 @@
 
 #if defined(__APPLE__) && defined(__MACH__)
 #include <mach-o/dyld.h> // _NSGetExecutablePath()
+#include "DCPlusPlus.h"
 #endif
 
 namespace dcpp {
@@ -1289,7 +1290,7 @@ string Util::getIpCountry (string IP) {
 void Util::setLang(const string &lang)
 {
     if(!lang.empty()) {
-        if (SettingsManager *SM = SettingsManager::getInstance()) {
+        if (SettingsManager *SM = dcpp::getContext()->getSettingsManager()) {
             SM->set(SettingsManager::LANGUAGE, lang);
         }
 #ifdef _WIN32
@@ -1399,7 +1400,7 @@ void Util::setAway(bool b) {
         awayTime = time(NULL);
 
     if(changed)
-        ClientManager::getInstance()->infoUpdated();
+        dcpp::getContext()->getClientManager()->infoUpdated();
 }
 
 void Util::switchAway() {

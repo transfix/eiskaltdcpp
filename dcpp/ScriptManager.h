@@ -25,6 +25,7 @@
 #include "ClientManagerListener.h"
 #include "CriticalSection.h"
 #include "extra/lunar.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -112,7 +113,7 @@ class ScriptManager: public ScriptInstance, public Singleton<ScriptManager>, pub
 
 public:
     ScriptManager();
-    virtual ~ScriptManager() noexcept { if (L) lua_close(L); if(timerEnabled) TimerManager::getInstance()->removeListener(this); }
+    virtual ~ScriptManager() noexcept { if (L) lua_close(L); if(timerEnabled) dcpp::getContext()->getTimerManager()->removeListener(this); }
 
     void load();
     void  SendDebugMessage(const string& s);

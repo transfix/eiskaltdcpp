@@ -22,6 +22,7 @@
 #include "Singleton.h"
 #include "DCContext.h"
 #include "Exception.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -311,7 +312,7 @@ private:
 };
 
 // Shorthand accessor macros
-#define SETTING(k) (SettingsManager::getInstance()->get(SettingsManager::k, true))
-#define BOOLSETTING(k) (SettingsManager::getInstance()->getBool(SettingsManager::k, true))
+#define SETTING(k) (dcpp::getContext()->getSettingsManager()->get(SettingsManager::k, true))
+#define BOOLSETTING(k) (dcpp::getContext()->getSettingsManager()->getBool(SettingsManager::k, true))
 
 } // namespace dcpp

@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/xattr.h>
+#include "DCPlusPlus.h"
 #endif
 
 namespace dcpp {
@@ -268,7 +269,7 @@ void HashManager::HashStore::addTree(const TigerTree& tt) noexcept {
             treeIndex.emplace(tt.getRoot(), TreeInfo(tt.getFileSize(), index, tt.getBlockSize()));
             dirty = true;
         } catch (const FileException& e) {
-            LogManager::getInstance()->message(str(F_("Error saving hash data: %1%") % e.getError()));
+            dcpp::getContext()->getLogManager()->message(str(F_("Error saving hash data: %1%") % e.getError()));
         }
     }
 }
@@ -425,7 +426,7 @@ void HashManager::HashStore::rebuild() {
         dirty = true;
         save();
     } catch (const Exception& e) {
-        LogManager::getInstance()->message(str(F_("Hashing failed: %1%") % e.getError()));
+        dcpp::getContext()->getLogManager()->message(str(F_("Hashing failed: %1%") % e.getError()));
     }
 }
 
@@ -480,7 +481,7 @@ void HashManager::HashStore::save() {
 
             dirty = false;
         } catch (const FileException& e) {
-            LogManager::getInstance()->message(str(F_("Error saving hash data: %1%") % e.getError()));
+            dcpp::getContext()->getLogManager()->message(str(F_("Error saving hash data: %1%") % e.getError()));
         }
     }
 }
@@ -613,7 +614,7 @@ void HashManager::HashStore::createDataFile(const string& name) {
         dat.write(&start, sizeof(start));
 
     } catch (const FileException& e) {
-        LogManager::getInstance()->message(str(F_("Error creating hash data file: %1%") % e.getError()));
+        dcpp::getContext()->getLogManager()->message(str(F_("Error creating hash data file: %1%") % e.getError()));
     }
 }
 
@@ -962,9 +963,9 @@ int HashManager::Hasher::run() {
         if(stop)
             break;
         if(rebuild) {
-            HashManager::getInstance()->doRebuild();
+            dcpp::getContext()->getHashManager()->doRebuild();
             rebuild = false;
-            LogManager::getInstance()->message(_("Hash database rebuilt"));
+            dcpp::getContext()->getLogManager()->message(_("Hash database rebuilt"));
             continue;
         }
         {
@@ -1058,12 +1059,12 @@ int HashManager::Hasher::run() {
                     speed = size * _LL(1000) / (end - start);
                 }
                 if(xcrc32 && xcrc32->getValue() != sfv.getCRC()) {
-                    LogManager::getInstance()->message(str(F_("%1% not shared; calculated CRC32 does not match the one found in SFV file.") % Util::addBrackets(fname)));
+                    dcpp::getContext()->getLogManager()->message(str(F_("%1% not shared; calculated CRC32 does not match the one found in SFV file.") % Util::addBrackets(fname)));
                 } else {
-                    HashManager::getInstance()->hashDone(fname, timestamp, *tth, speed, size);
+                    dcpp::getContext()->getHashManager()->hashDone(fname, timestamp, *tth, speed, size);
                 }
             } catch(const FileException& e) {
-                LogManager::getInstance()->message(str(F_("Error hashing %1%: %2%") % Util::addBrackets(fname) % e.getError()));
+                dcpp::getContext()->getLogManager()->message(str(F_("Error hashing %1%: %2%") % Util::addBrackets(fname) % e.getError()));
             }
         }
         {
@@ -1087,12 +1088,12 @@ int HashManager::Hasher::run() {
 }
 
 HashManager::HashPauser::HashPauser() {
-    resume = !HashManager::getInstance()->isHashingPaused();
+    resume = !dcpp::getContext()->getHashManager()->isHashingPaused();
 }
 
 HashManager::HashPauser::~HashPauser() {
     if(resume)
-        HashManager::getInstance()->resumeHashing();
+        dcpp::getContext()->getHashManager()->resumeHashing();
 }
 
 bool HashManager::pauseHashing() noexcept {

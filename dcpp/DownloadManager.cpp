@@ -31,6 +31,7 @@
 #include "extra/ipfilter.h"
 #include <limits>
 #include <cmath>
+#include "DCPlusPlus.h"
 
 // some strange mac definition
 #ifdef ff
@@ -42,11 +43,11 @@ namespace dcpp {
 static const string DOWNLOAD_AREA = "Downloads";
 
 DownloadManager::DownloadManager() {
-    TimerManager::getInstance()->addListener(this);
+    dcpp::getContext()->getTimerManager()->addListener(this);
 }
 
 DownloadManager::~DownloadManager() {
-    TimerManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getTimerManager()->removeListener(this);
     while(true) {
         {
             Lock l(cs);

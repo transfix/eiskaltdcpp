@@ -27,19 +27,20 @@
 #include "SimpleXML.h"
 #include "StringTokenizer.h"
 #include "UserCommand.h"
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
 FavoriteManager::FavoriteManager() : lastId(0), useHttp(false), running(false), c(nullptr), lastServer(0), listType(TYPE_NORMAL), dontSave(false) {
-    SettingsManager::getInstance()->addListener(this);
-    ClientManager::getInstance()->addListener(this);
+    dcpp::getContext()->getSettingsManager()->addListener(this);
+    dcpp::getContext()->getClientManager()->addListener(this);
 
     File::ensureDirectory(Util::getHubListsPath());
 }
 
 FavoriteManager::~FavoriteManager() {
-    ClientManager::getInstance()->removeListener(this);
-    SettingsManager::getInstance()->removeListener(this);
+    dcpp::getContext()->getClientManager()->removeListener(this);
+    dcpp::getContext()->getSettingsManager()->removeListener(this);
     if(c) {
         c->removeListener(this);
         delete c;
@@ -717,7 +718,7 @@ UserCommand::List FavoriteManager::getUserCommands(int ctx, const StringList& hu
     vector<bool> isOp(hubs.size());
 
     for(size_t i = 0; i < hubs.size(); ++i) {
-        if(ClientManager::getInstance()->isOp(ClientManager::getInstance()->getMe(), hubs[i])) {
+        if(dcpp::getContext()->getClientManager()->isOp(dcpp::getContext()->getClientManager()->getMe(), hubs[i])) {
             isOp[i] = true;
         }
     }

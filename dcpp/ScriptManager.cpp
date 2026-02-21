@@ -29,6 +29,7 @@
 #include "AdcHub.h"
 #include "Thread.h"
 #include <cstddef>
+#include "DCPlusPlus.h"
 
 namespace dcpp {
 
@@ -97,14 +98,14 @@ Lunar<LuaManager>::RegType LuaManager::methods[] = {
 int LuaManager::DeleteClient(lua_State* L){
     if (lua_gettop(L) == 1 && lua_islightuserdata(L, -1)){
         Client* client = (Client*) lua_touserdata(L, -1);
-        ClientManager::getInstance()->putClient(client);
+        dcpp::getContext()->getClientManager()->putClient(client);
     }
     return 0;
 }
 
 int LuaManager::CreateClient(lua_State* L) {
     if (lua_gettop(L) == 2 && lua_isstring(L, -2) && lua_isstring(L, -1)){
-        Client* client = ClientManager::getInstance()->getClient(lua_tostring(L, -2));
+        Client* client = dcpp::getContext()->getClientManager()->getClient(lua_tostring(L, -2));
         Identity ident;
         ident.setNick(lua_tostring(L, -1));
         client->setMyIdentity(ident);
@@ -199,15 +200,15 @@ int LuaManager::GetSetting(lua_State* L) {
     /* arguments: string */
     int n;
     SettingsManager::Types type;
-    if(lua_gettop(L) == 1 && lua_isstring(L, -1) && SettingsManager::getInstance()->getType(lua_tostring(L, -1), n, type)) {
+    if(lua_gettop(L) == 1 && lua_isstring(L, -1) && dcpp::getContext()->getSettingsManager()->getType(lua_tostring(L, -1), n, type)) {
         if(type == SettingsManager::TYPE_STRING) {
-            lua_pushstring(L, SettingsManager::getInstance()->get((SettingsManager::StrSetting)n).c_str());
+            lua_pushstring(L, dcpp::getContext()->getSettingsManager()->get((SettingsManager::StrSetting)n).c_str());
             return 1;
         } else if(type == SettingsManager::TYPE_INT) {
-            lua_pushnumber(L, SettingsManager::getInstance()->get((SettingsManager::IntSetting)n));
+            lua_pushnumber(L, dcpp::getContext()->getSettingsManager()->get((SettingsManager::IntSetting)n));
             return 1;
         } else if(type == SettingsManager::TYPE_INT64) {
-            lua_pushnumber(L, static_cast<lua_Number>(SettingsManager::getInstance()->get((SettingsManager::Int64Setting)n)));
+            lua_pushnumber(L, static_cast<lua_Number>(dcpp::getContext()->getSettingsManager()->get((SettingsManager::Int64Setting)n)));
             return 1;
         }
     }
@@ -313,9 +314,9 @@ int LuaManager::RunTimer(lua_State* L) {
         ScriptManager* sm = ScriptManager::getInstance();
         if(on != sm->getTimerEnabled()) {
             if(on)
-                TimerManager::getInstance()->addListener(sm);
+                dcpp::getContext()->getTimerManager()->addListener(sm);
             else
-                TimerManager::getInstance()->removeListener(sm);
+                dcpp::getContext()->getTimerManager()->removeListener(sm);
             sm->setTimerEnabled(on);
         }
     } else {
@@ -370,7 +371,7 @@ void ScriptManager::load() {
 
     s.create(Socket::TYPE_UDP);
 
-    ClientManager::getInstance()->addListener(this);
+    dcpp::getContext()->getClientManager()->addListener(this);
 }
 
 void ScriptInstance::EvaluateChunk(const string& chunk) {
@@ -395,7 +396,7 @@ void ScriptInstance::EvaluateFile(const string& fn) {
         else if(Util::fileExists(test_path_1))
             script_full_name = test_path_1;
         else {
-            LogManager::getInstance()->message("File '" + fn + "' not found!");
+            dcpp::getContext()->getLogManager()->message("File '" + fn + "' not found!");
             dcdebug("File '%s' not found!\n",fn.c_str()); // temporary
             return;
         }
@@ -421,7 +422,7 @@ void ScriptInstance::EvaluateFile(const string& fn) {
             script_full_name = test_path_2;
 #endif // __linux
         else {
-            LogManager::getInstance()->message("File '" + fn + "' not found!");
+            dcpp::getContext()->getLogManager()->message("File '" + fn + "' not found!");
             printf("File '%s' not found!\n",fn.c_str()); fflush(stdout);// temporary
             return;
         }
@@ -431,7 +432,7 @@ void ScriptInstance::EvaluateFile(const string& fn) {
 }
 
 void ScriptManager::SendDebugMessage(const string &mess) {
-    //LogManager::getInstance()->message(mess);
+    //dcpp::getContext()->getLogManager()->message(mess);
     dcdebug("%s\n", mess.c_str()); // temporary
 }
 
