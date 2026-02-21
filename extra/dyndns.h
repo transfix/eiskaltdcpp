@@ -26,7 +26,7 @@ class DynDNS : public Singleton<DynDNS>, private HttpConnectionListener
 {
 public:
     DynDNS();
-    ~DynDNS();
+    virtual ~DynDNS();
 
     void load();
     void stop();

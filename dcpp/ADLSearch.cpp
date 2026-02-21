@@ -217,7 +217,11 @@ ADLSearchManager::ADLSearchManager() : breakOnFirst(false), user(UserPtr(), Util
 }
 
 ADLSearchManager::~ADLSearchManager() {
-    save();
+    try {
+        save();
+    } catch (...) {
+        // Swallow exceptions — destructors must not throw
+    }
 }
 
 void ADLSearchManager::load() {

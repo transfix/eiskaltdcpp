@@ -124,7 +124,7 @@ private:
     bool stop;
 public:
     SearchManager();
-    ~SearchManager();
+    virtual ~SearchManager();
 
 private:
     friend class Singleton<SearchManager>;
