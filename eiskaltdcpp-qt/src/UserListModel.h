@@ -15,7 +15,7 @@
 #include <QPixmap>
 #include <QList>
 #include <QStringList>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QHash>
 
 #if !defined(Q_OS_WIN)
@@ -157,7 +157,7 @@ private:
 
     int sortColumn;
     Qt::SortOrder sortOrder;
-    QRegExp stripper;
+    QRegularExpression stripper;
 
     WulforUtil *WU;
 };

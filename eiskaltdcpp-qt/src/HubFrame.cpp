@@ -56,7 +56,7 @@
 #include <QUrl>
 #include <QCloseEvent>
 #include <QThread>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QScrollBar>
 #include <QShortcut>
 #include <QHeaderView>
@@ -658,24 +658,26 @@ QString HubFrame::LinkParser::parseForLinks(QString input, bool use_emot){
                 continue;
 
             if (input.startsWith("[color=") && input.indexOf("[/color]") > 8){
-                QRegExp exp("\\[color=(\\w+|#.{6,6})\\]((.*))\\[/color\\].*");
+                static const QRegularExpression exp("\\A\\[color=(\\w+|#.{6,6})\\]((.*))\\[/color\\].*\\z");
                 QString chunk = input.left(input.indexOf("[/color]")+8);
+                QRegularExpressionMatch m = exp.match(chunk);
 
-                if (exp.exactMatch(chunk)){
-                    if (exp.captureCount() == 3){
-                        output += "<font color=\"" + exp.cap(1) + "\">" + parseForLinks(exp.cap(2), false) + "</font>";
+                if (m.hasMatch()){
+                    if (m.lastCapturedIndex() == 3){
+                        output += "<font color=\"" + m.captured(1) + "\">" + parseForLinks(m.captured(2), false) + "</font>";
 
                         input.remove(0, chunk.length());
                     }
                 }
             }
             else if (input.startsWith(("[url")) && input.indexOf("[/url]") > 0){
-                QRegExp exp("\\[url=*((.+[^\\]\\[]))*\\]((.+))\\[/url\\]");
+                static const QRegularExpression exp("\\A\\[url=*((.+[^\\]\\[]))*\\]((.+))\\[/url\\]\\z");
                 QString chunk = input.left(input.indexOf("[/url]")+6);
+                QRegularExpressionMatch m = exp.match(chunk);
 
-                if (exp.exactMatch(chunk) && exp.captureCount() == 4){
-                    QString link = exp.cap(2);
-                    QString title = exp.cap(3);
+                if (m.hasMatch() && m.lastCapturedIndex() == 4){
+                    QString link = m.captured(2);
+                    QString title = m.captured(3);
 
                     link = link.isEmpty()? title : link;
 
@@ -683,11 +685,7 @@ QString HubFrame::LinkParser::parseForLinks(QString input, bool use_emot){
                         link.remove(0, 1);
 
                     if (!title.isEmpty()){
-#if QT_VERSION >= 0x050000
                             output += "<a href=\"" + link + "\" title=\"" + title.toHtmlEscaped() + "\">" + title.toHtmlEscaped() + "</a>";
-#else
-                            output += "<a href=\"" + link + "\" title=\"" + Qt::escape(title) + "\">" + Qt::escape(title) + "</a>";
-#endif
 
                         input.remove(0, chunk.length());
                     }
@@ -780,25 +778,30 @@ QString HubFrame::LinkParser::parseForLinks(QString input, bool use_emot){
 
 void HubFrame::LinkParser::parseForMagnetAlias(QString &output){
     int pos = 0;
-    QRegExp rx("(<magnet(?:\\s+show=([^>]+))?>(.+)</magnet>)");
-    rx.setMinimal(true);
-    while ((pos = output.indexOf(rx, pos)) >= 0) {
-        QFileInfo fi(rx.cap(3));
+    // InvertedGreedinessOption = non-greedy by default (equivalent to setMinimal(true))
+    static const QRegularExpression rx("(<magnet(?:\\s+show=([^>]+))?>(.+)</magnet>)",
+                                       QRegularExpression::InvertedGreedinessOption);
+    QRegularExpressionMatch m = rx.match(output, pos);
+    while (m.hasMatch()) {
+        pos = m.capturedStart();
+        QFileInfo fi(m.captured(3));
         if (fi.isDir() || !fi.exists()) {
             pos++;
+            m = rx.match(output, pos);
             continue;
         }
         QString name = fi.fileName();
-        if (!rx.cap(2).isEmpty())
-            name = rx.cap(2);
+        if (!m.captured(2).isEmpty())
+            name = m.captured(2);
 
         const TTHValue *tth = dcpp::getContext()->getHashManager()->getFileTTHif(_tq(fi.absoluteFilePath()));
         if (tth) {
             QString urlStr = WulforUtil::getInstance()->makeMagnet(name, fi.size(), _q(tth->toBase32()));
-            output.replace(pos, rx.cap(1).length(), urlStr);
+            output.replace(pos, m.captured(1).length(), urlStr);
         } else {
-            output.replace(pos, rx.cap(1).length(), tr("not shared"));
+            output.replace(pos, m.captured(1).length(), tr("not shared"));
         }
+        m = rx.match(output, pos);
     }
 }
 
@@ -2000,9 +2003,9 @@ void HubFrame::addStatus(QString msg){
 
     QString nick = " * ";
 
-    QStringList lines = msg.split(QRegExp("[\\n\\r\\f]+"), QString::SkipEmptyParts);
+    QStringList lines = msg.split(QRegularExpression("[\\n\\r\\f]+"), Qt::SkipEmptyParts);
     for (int i = 0; i < lines.size(); ++i) {
-        if (lines.at(i).contains(QRegExp("\\w+"))) {
+        if (lines.at(i).contains(QRegularExpression("\\w+"))) {
             short_msg = lines.at(i);
             break;
         }
@@ -2024,9 +2027,9 @@ void HubFrame::addStatus(QString msg){
 
     status   = time + "<font color=\"" + WSGET(WS_CHAT_STAT_COLOR) + "\"><b>" + nick + "</b> </font>";
 
-    QRegExp rot_msg = QRegExp("is(\\s+)kicking(\\s+)(\\S+)*(\\s+)because:");
+    static const QRegularExpression rot_msg("is(\\s+)kicking(\\s+)(\\S+)*(\\s+)because:");
 
-    bool isRotating = (msg.indexOf("is kicking because:") >= 0) || (rot_msg.indexIn(msg) >= 0);
+    bool isRotating = (msg.indexOf("is kicking because:") >= 0) || (rot_msg.match(msg).hasMatch());
 
     if (!(isRotating && WBGET(WB_CHAT_ROTATING_MSGS)))
         addOutput(status + msg);
@@ -3534,7 +3537,7 @@ void HubFrame::slotInputTextChanged(){
         return;
 
     SpellCheck *sp = SpellCheck::getInstance();
-    QStringList words = line.split(QRegExp("\\W+"), QString::SkipEmptyParts);
+    QStringList words = line.split(QRegularExpression("\\W+"), Qt::SkipEmptyParts);
 
     if (words.isEmpty())
         return;

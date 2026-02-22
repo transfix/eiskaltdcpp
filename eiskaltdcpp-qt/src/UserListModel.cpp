@@ -31,8 +31,7 @@ UserListModel::UserListModel(QObject * parent)
     , sortOrder(Qt::DescendingOrder)
     , WU(WulforUtil::getInstance())
 {
-    stripper.setPattern("\\[.*\\]");
-    stripper.setMinimal(true);
+    stripper.setPattern("\\[.*?\\]");
 }
 
 

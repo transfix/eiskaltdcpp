@@ -16,7 +16,6 @@
 #include <QList>
 #include <QHash>
 #include <QStringList>
-#include <QRegExp>
 
 #include "dcpp/stdinc.h"
 #include "dcpp/SearchResult.h"

@@ -83,9 +83,11 @@ bool SearchBlacklist::ok(const QString &exp, Argument type){
     const QList<QString> &l = (type == NAME)? list[NAME] : list[TTH];
 
     for (const QString &str : l){
-        QRegExp reg_exp(str, Qt::CaseInsensitive, QRegExp::Wildcard);
+        QRegularExpression reg_exp(
+            QRegularExpression::wildcardToRegularExpression(str),
+            QRegularExpression::CaseInsensitiveOption);
 
-        if (reg_exp.exactMatch(exp))
+        if (reg_exp.match(exp).hasMatch())
             return false;
     }
 

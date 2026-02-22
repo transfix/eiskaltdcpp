@@ -26,7 +26,6 @@
 #include <QKeyEvent>
 #include <QProgressBar>
 #include <QFileDialog>
-#include <QRegExp>
 #include <QDir>
 #include <QInputDialog>
 #include <QDockWidget>
@@ -34,7 +33,6 @@
 #include <QShortcut>
 #include <QKeySequence>
 #include <QToolButton>
-#include <QRegExp>
 #include <QTreeView>
 #include <QMetaType>
 #include <QTimer>

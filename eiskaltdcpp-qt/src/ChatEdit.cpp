@@ -21,6 +21,7 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QMimeData>
+#include <QRegularExpression>
 
 ChatEdit::ChatEdit(QWidget *parent) : QTextEdit(parent), cc(nullptr)
 {
@@ -111,7 +112,7 @@ QString ChatEdit::textUnderCursor() const
     int curpos = cursor.position();
     QString text = cursor.block().text().left(curpos);
 
-    QStringList wordList = text.split(QRegExp("\\s"));
+    QStringList wordList = text.split(QRegularExpression("\\s"));
 
     if (wordList.isEmpty())
         return QString();
@@ -207,7 +208,7 @@ void ChatEdit::complete()
     }
 
     if (!cc->popup()->isVisible() || completionPrefix.length() < cc->completionPrefix().length()) {
-        QString pattern = QString("(\\[.*\\])?%1.*").arg( QRegExp::escape(completionPrefix) );
+        QString pattern = QString("(\\[.*\\])?%1.*").arg( QRegularExpression::escape(completionPrefix) );
         QStringList nicks = cc_model->findItems(pattern, Qt::MatchRegExp, 0);
 
         if (nicks.isEmpty())

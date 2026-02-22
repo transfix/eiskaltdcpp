@@ -11,7 +11,7 @@
 
 #include <QObject>
 #include <QList>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QString>
 
 #include "dcpp/stdinc.h"

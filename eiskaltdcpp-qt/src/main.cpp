@@ -68,7 +68,7 @@ using namespace std;
 
 #include <QApplication>
 #include <QMainWindow>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QObject>
 #include <QTextCodec>
 
@@ -412,7 +412,7 @@ void migrateConfig(){
         QTextStream rstream(&orig);
         QTextStream wstream(&new_file);
 
-        QRegExp replace_str("/(\\S+)/\\.eiskaltdc\\+\\+/");
+        QRegularExpression replace_str("/(\\S+)/\\.eiskaltdc\\+\\+/");
         QString line = "";
 
         while (!rstream.atEnd()){

@@ -45,7 +45,7 @@
 #include <QPushButton>
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QProcess>
 
 #if QT_VERSION >= 0x050000
@@ -1216,5 +1216,6 @@ QMenu *WulforUtil::buildUserCmdMenu(const StringList& hub_list, int ctx, QWidget
 }
 
 bool WulforUtil::isTTH ( const QString& text ) {
-    return ((text.length() == 39) && (QRegExp("[A-Z0-9]+").exactMatch(text)));
+    static const QRegularExpression tthPattern("\\A[A-Z0-9]+\\z");
+    return ((text.length() == 39) && tthPattern.match(text).hasMatch());
 }

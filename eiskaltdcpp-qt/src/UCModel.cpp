@@ -11,8 +11,6 @@
 #include "MainWindow.h"
 #include "WulforUtil.h"
 
-#include <QRegExp>
-
 #include "dcpp/NmdcHub.h"
 #include "dcpp/DCPlusPlus.h"
 
