@@ -221,13 +221,13 @@ ShareBrowser::ShareBrowser(UserPtr _user, const QString &_file, const QString &_
             title = tr("Listing: ") + nick;
     }
 
-    connect(this, SIGNAL(die(QString)), this, SLOT(slotDie(QString)), Qt::QueuedConnection);
+    connect(this, &ShareBrowser::die, this, &ShareBrowser::slotDie, Qt::QueuedConnection);
 
     AsyncRunner *runner = new AsyncRunner(this);
 
     runner->setRunFunction([this]() { this->buildList(); });
-    connect(runner, SIGNAL(finished()), this, SLOT(init()), Qt::QueuedConnection);
-    connect(runner, SIGNAL(finished()), runner, SLOT(deleteLater()), Qt::QueuedConnection);
+    connect(runner, &QThread::finished, this, &ShareBrowser::init, Qt::QueuedConnection);
+    connect(runner, &QThread::finished, runner, &QObject::deleteLater, Qt::QueuedConnection);
 
     runner->start();
 
@@ -325,25 +325,25 @@ void ShareBrowser::init(){
     QAction *close_wnd = new QAction(WICON(WulforUtil::eiFILECLOSE), tr("Close"), arena_menu);
     arena_menu->addAction(close_wnd);
 
-    connect(treeView_LPANE, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotCustomContextMenu(QPoint)));
-    connect(treeView_LPANE->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-            this, SLOT(slotLeftPaneSelChanged(QItemSelection,QItemSelection)));
+    connect(treeView_LPANE, &QWidget::customContextMenuRequested, this, &ShareBrowser::slotCustomContextMenu);
+    connect(treeView_LPANE->selectionModel(), &QItemSelectionModel::selectionChanged,
+            this, &ShareBrowser::slotLeftPaneSelChanged);
 
-    connect(close_wnd, SIGNAL(triggered()), this, SLOT(slotClose()));
-    connect(toolButton_CLOSEFILTER, SIGNAL(clicked()), this, SLOT(slotFilter()));
+    connect(close_wnd, &QAction::triggered, this, &ShareBrowser::slotClose);
+    connect(toolButton_CLOSEFILTER, &QToolButton::clicked, this, &ShareBrowser::slotFilter);
 
-    connect(treeView_RPANE->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-            this, SLOT(slotRightPaneSelChanged(QItemSelection,QItemSelection)));
-    connect(treeView_RPANE, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotCustomContextMenu(QPoint)));
-    connect(treeView_RPANE->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu()));
-    connect(treeView_RPANE, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(slotRightPaneClicked(QModelIndex)));
-    connect(tree_model, SIGNAL(layoutChanged()), this, SLOT(slotLayoutUpdated()));
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
-    connect(toolButton_SEARCH, SIGNAL(clicked()), this, SLOT(slotStartSearch()));
-    connect(toolButton_BACK, SIGNAL(clicked()), this, SLOT(slotButtonBack()));
-    connect(toolButton_FORWARD, SIGNAL(clicked()), this, SLOT(slotButtonForward()));
-    connect(toolButton_UP, SIGNAL(clicked()), this, SLOT(slotButtonUp()));
-    connect(toolButton_MATCHLIST, SIGNAL(clicked()), this, SLOT(slotMatchList()));
+    connect(treeView_RPANE->selectionModel(), &QItemSelectionModel::selectionChanged,
+            this, &ShareBrowser::slotRightPaneSelChanged);
+    connect(treeView_RPANE, &QWidget::customContextMenuRequested, this, &ShareBrowser::slotCustomContextMenu);
+    connect(treeView_RPANE->header(), &QWidget::customContextMenuRequested, this, &ShareBrowser::slotHeaderMenu);
+    connect(treeView_RPANE, &QTreeView::doubleClicked, this, &ShareBrowser::slotRightPaneClicked);
+    connect(tree_model, &QAbstractItemModel::layoutChanged, this, &ShareBrowser::slotLayoutUpdated);
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &ShareBrowser::slotSettingsChanged);
+    connect(toolButton_SEARCH, &QToolButton::clicked, this, &ShareBrowser::slotStartSearch);
+    connect(toolButton_BACK, &QToolButton::clicked, this, &ShareBrowser::slotButtonBack);
+    connect(toolButton_FORWARD, &QToolButton::clicked, this, &ShareBrowser::slotButtonForward);
+    connect(toolButton_UP, &QToolButton::clicked, this, &ShareBrowser::slotButtonUp);
+    connect(toolButton_MATCHLIST, &QToolButton::clicked, this, &ShareBrowser::slotMatchList);
 
     continueInit();
 }
@@ -728,8 +728,8 @@ void ShareBrowser::slotButtonUp(){
 
         if (nullptr != item->parent()){
 
-            disconnect(treeView_LPANE->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-                    this, SLOT(slotLeftPaneSelChanged(QItemSelection,QItemSelection)));
+            disconnect(treeView_LPANE->selectionModel(), &QItemSelectionModel::selectionChanged,
+                    this, &ShareBrowser::slotLeftPaneSelChanged);
 
             SelPair sparent;
             sparent.index = index.parent();
@@ -745,8 +745,8 @@ void ShareBrowser::slotButtonUp(){
             pathHistory.append(sparent);
             pathHistory_iter = pathHistory.end();
 
-            connect(treeView_LPANE->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-                    this, SLOT(slotLeftPaneSelChanged(QItemSelection,QItemSelection)));
+            connect(treeView_LPANE->selectionModel(), &QItemSelectionModel::selectionChanged,
+                    this, &ShareBrowser::slotLeftPaneSelChanged);
         }
     }
 }
@@ -754,8 +754,8 @@ void ShareBrowser::slotButtonUp(){
 void ShareBrowser::slotButtonBack(){
     if (pathHistory_iter && !pathHistory.isEmpty()){
 
-        disconnect(treeView_LPANE->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-                this, SLOT(slotLeftPaneSelChanged(QItemSelection,QItemSelection)));
+        disconnect(treeView_LPANE->selectionModel(), &QItemSelectionModel::selectionChanged,
+                this, &ShareBrowser::slotLeftPaneSelChanged);
 
         if(pathHistory.end() == pathHistory_iter || pathHistory.begin() != pathHistory_iter)
             --pathHistory_iter;
@@ -766,16 +766,16 @@ void ShareBrowser::slotButtonBack(){
 
         slotRightPaneClicked(sp.index);
 
-        connect(treeView_LPANE->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-                this, SLOT(slotLeftPaneSelChanged(QItemSelection,QItemSelection)));
+        connect(treeView_LPANE->selectionModel(), &QItemSelectionModel::selectionChanged,
+                this, &ShareBrowser::slotLeftPaneSelChanged);
     }
 }
 
 void ShareBrowser::slotButtonForward(){
     if (pathHistory_iter && !pathHistory.isEmpty()){
 
-        disconnect(treeView_LPANE->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-                this, SLOT(slotLeftPaneSelChanged(QItemSelection,QItemSelection)));
+        disconnect(treeView_LPANE->selectionModel(), &QItemSelectionModel::selectionChanged,
+                this, &ShareBrowser::slotLeftPaneSelChanged);
 
         if (pathHistory.end() == pathHistory_iter)
             --pathHistory_iter;
@@ -788,8 +788,8 @@ void ShareBrowser::slotButtonForward(){
 
         slotRightPaneClicked(sp.index);
 
-        connect(treeView_LPANE->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-                this, SLOT(slotLeftPaneSelChanged(QItemSelection,QItemSelection)));
+        connect(treeView_LPANE->selectionModel(), &QItemSelectionModel::selectionChanged,
+                this, &ShareBrowser::slotLeftPaneSelChanged);
     }
 }
 
@@ -1055,7 +1055,7 @@ void ShareBrowser::slotFilter(){
     if (frame_FILTER->isVisible()){
         treeView_RPANE->setModel(list_model);
 
-        disconnect(lineEdit_FILTER, SIGNAL(textChanged(QString)), proxy, SLOT(setFilterFixedString(QString)));
+        disconnect(lineEdit_FILTER, &LineEdit::textChanged, proxy, &QSortFilterProxyModel::setFilterFixedString);
 
         delete proxy;
         proxy = nullptr;
@@ -1070,7 +1070,7 @@ void ShareBrowser::slotFilter(){
 
         treeView_RPANE->setModel(proxy);
 
-        connect(lineEdit_FILTER, SIGNAL(textChanged(QString)), proxy, SLOT(setFilterFixedString(QString)));
+        connect(lineEdit_FILTER, &LineEdit::textChanged, proxy, &QSortFilterProxyModel::setFilterFixedString);
 
         lineEdit_FILTER->setFocus();
 
@@ -1085,7 +1085,7 @@ void ShareBrowser::slotStartSearch(){
     ShareBrowserSearch *sb_search = new ShareBrowserSearch(tree_model, this);
 
     sb_search->setSearchRoot(tree_root);
-    connect(sb_search, SIGNAL(indexClicked(FileBrowserItem*)), this, SLOT(slotSearchJumpTo(FileBrowserItem*)));
+    connect(sb_search, &ShareBrowserSearch::indexClicked, this, &ShareBrowser::slotSearchJumpTo);
 }
 
 void ShareBrowser::slotSearchJumpTo(FileBrowserItem *tree_item){

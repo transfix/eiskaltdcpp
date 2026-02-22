@@ -69,7 +69,7 @@ PMWindow::PMWindow(const QString &cid_, const QString &hubUrl_):
         EmoticonFactory::getInstance()->fillLayout(frame_SMILES->layout(), sz);
 
     for (const auto &l : frame_SMILES->findChildren<EmoticonLabel*>())
-        connect(l, SIGNAL(clicked()), this, SLOT(slotSmileClicked()));
+        connect(l, &EmoticonLabel::clicked, this, &PMWindow::slotSmileClicked);
 
     setAttribute(Qt::WA_DeleteOnClose);
 
@@ -119,19 +119,19 @@ PMWindow::PMWindow(const QString &cid_, const QString &hubUrl_):
         }
     }
 
-    connect(close_wnd, SIGNAL(triggered()), this, SLOT(slotClose()));
-    connect(pushButton_HUB, SIGNAL(clicked()), this, SLOT(slotHub()));
-    connect(pushButton_SHARE, SIGNAL(clicked()), this, SLOT(slotShare()));
-    connect(toolButton_SMILE, SIGNAL(clicked()), this, SLOT(slotSmile()));
-    connect(toolButton_SMILE, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotSmileContextMenu()));
-    connect(plainTextEdit_INPUT, SIGNAL(textChanged()), this, SIGNAL(inputTextChanged()));
-    connect(plainTextEdit_INPUT, SIGNAL(customContextMenuRequested(QPoint)), this, SIGNAL(inputTextMenu()));
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingChanged(QString,QString)));
-    connect(lineEdit_FIND, SIGNAL(textChanged(QString)), this, SLOT(slotFindTextEdited(QString)));
-    connect(toolButton_HIDE, SIGNAL(clicked()), this, SLOT(slotHideSearchBar()));
-    connect(toolButton_BACK, SIGNAL(clicked()), this, SLOT(slotFindBackward()));
-    connect(toolButton_FORWARD, SIGNAL(clicked()), this, SLOT(slotFindForward()));
-    connect(toolButton_ALL, SIGNAL(clicked()), this, SLOT(slotFindAll()));
+    connect(close_wnd, &QAction::triggered, this, &PMWindow::slotClose);
+    connect(pushButton_HUB, &QPushButton::clicked, this, &PMWindow::slotHub);
+    connect(pushButton_SHARE, &QPushButton::clicked, this, &PMWindow::slotShare);
+    connect(toolButton_SMILE, &QToolButton::clicked, this, &PMWindow::slotSmile);
+    connect(toolButton_SMILE, &QToolButton::customContextMenuRequested, this, &PMWindow::slotSmileContextMenu);
+    connect(plainTextEdit_INPUT, &QTextEdit::textChanged, this, &PMWindow::inputTextChanged);
+    connect(plainTextEdit_INPUT, &QWidget::customContextMenuRequested, this, &PMWindow::inputTextMenu);
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &PMWindow::slotSettingChanged);
+    connect(lineEdit_FIND, &QLineEdit::textChanged, this, &PMWindow::slotFindTextEdited);
+    connect(toolButton_HIDE, &QToolButton::clicked, this, &PMWindow::slotHideSearchBar);
+    connect(toolButton_BACK, &QToolButton::clicked, this, &PMWindow::slotFindBackward);
+    connect(toolButton_FORWARD, &QToolButton::clicked, this, &PMWindow::slotFindForward);
+    connect(toolButton_ALL, &QToolButton::clicked, this, &PMWindow::slotFindAll);
 
     out_messages_index = 0;
     out_messages_unsent = false;
@@ -656,7 +656,7 @@ void PMWindow::slotSettingChanged(const QString &key, const QString &value){
             EmoticonFactory::getInstance()->fillLayout(frame_SMILES->layout(), sz);
 
             for (const auto &l : frame_SMILES->findChildren<EmoticonLabel*>())
-                connect(l, SIGNAL(clicked()), this, SLOT(slotSmileClicked()));
+                connect(l, &EmoticonLabel::clicked, this, &PMWindow::slotSmileClicked);
         }
 
         toolButton_SMILE->setVisible(!value.isEmpty() && WBGET(WB_APP_ENABLE_EMOTICON) && EmoticonFactory::getInstance());

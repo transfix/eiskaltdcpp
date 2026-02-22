@@ -42,15 +42,15 @@ Magnet::Magnet(QWidget *parent) :
     toolButton_COPY_SEARCH_LINK->setIcon(WICON(WulforUtil::eiMAGNET));
     toolButton_BROWSE->setIcon(WICON(WulforUtil::eiFOLDER_BLUE));
 
-    connect(pushButton_CANCEL,  SIGNAL(clicked()), this, SLOT(accept()));
-    connect(pushButton_SEARCH,  SIGNAL(clicked()), this, SLOT(search()));
-    connect(pushButton_DOWNLOAD,SIGNAL(clicked()), this, SLOT(download()));
-    connect(lineEdit_FNAME,     SIGNAL(returnPressed()), this, SLOT(download()));
-    connect(lineEdit_FPATH,     SIGNAL(returnPressed()), this, SLOT(download()));
-    connect(toolButton_COPY_MAGNET,      SIGNAL(clicked()), this, SLOT(slotCopyMagnet()));
-    connect(toolButton_COPY_SEARCH_LINK, SIGNAL(clicked()), this, SLOT(slotCopySearchString()));
-    connect(toolButton_BROWSE,  SIGNAL(clicked()), this, SLOT(slotBrowse()));
-    connect(this, SIGNAL(finished(int)), this, SLOT(saveWindowSize()));
+    connect(pushButton_CANCEL, &QPushButton::clicked, this, &QDialog::accept);
+    connect(pushButton_SEARCH, &QPushButton::clicked, this, qOverload<>(&Magnet::search));
+    connect(pushButton_DOWNLOAD, &QPushButton::clicked, this, qOverload<>(&Magnet::download));
+    connect(lineEdit_FNAME, &QLineEdit::returnPressed, this, qOverload<>(&Magnet::download));
+    connect(lineEdit_FPATH, &QLineEdit::returnPressed, this, qOverload<>(&Magnet::download));
+    connect(toolButton_COPY_MAGNET, &QToolButton::clicked, this, &Magnet::slotCopyMagnet);
+    connect(toolButton_COPY_SEARCH_LINK, &QToolButton::clicked, this, &Magnet::slotCopySearchString);
+    connect(toolButton_BROWSE, &QToolButton::clicked, this, &Magnet::slotBrowse);
+    connect(this, &QDialog::finished, this, &Magnet::saveWindowSize);
 
     if (!SETTING(AUTO_SEARCH)){
         pushButton_DOWNLOAD->setToolTip(tr("Run search alternatives manually."));

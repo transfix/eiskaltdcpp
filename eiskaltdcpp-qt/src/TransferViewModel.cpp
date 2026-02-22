@@ -744,7 +744,7 @@ TransferViewDelegate::TransferViewDelegate(QObject *parent):
     download_bar_color = qvariant_cast<QColor>(WVGET("transferview/download-bar-color", QColor()));
     upload_bar_color = qvariant_cast<QColor>(WVGET("transferview/upload-bar-color", QColor()));
 
-    connect(WulforSettings::getInstance(), SIGNAL(varValueChanged(QString,QVariant)), this, SLOT(wsVarValueChanged(QString,QVariant)));
+    connect(WulforSettings::getInstance(), &WulforSettings::varValueChanged, this, &TransferViewDelegate::wsVarValueChanged);
 }
 
 TransferViewDelegate::~TransferViewDelegate(){

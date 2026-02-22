@@ -32,9 +32,9 @@ ShareBrowserSearch::ShareBrowserSearch(FileBrowserModel *model, QWidget *parent)
 
     setAttribute(Qt::WA_DeleteOnClose, true);
 
-    connect(pushButton_SEARCH, SIGNAL(clicked()), this, SLOT(slotStartSearch()));
-    connect(this, SIGNAL(gotItem(QString,FileBrowserItem*)), this, SLOT(slotGotItem(QString,FileBrowserItem*)), Qt::QueuedConnection);
-    connect(treeWidget, SIGNAL(itemActivated(QTreeWidgetItem*,int)), this, SLOT(slotItemActivated(QTreeWidgetItem*,int)));
+    connect(pushButton_SEARCH, &QPushButton::clicked, this, &ShareBrowserSearch::slotStartSearch);
+    connect(this, &ShareBrowserSearch::gotItem, this, &ShareBrowserSearch::slotGotItem, Qt::QueuedConnection);
+    connect(treeWidget, &QTreeWidget::itemActivated, this, &ShareBrowserSearch::slotItemActivated);
 
     show();
 }
@@ -73,7 +73,7 @@ void ShareBrowserSearch::slotStartSearch(){
     AsyncRunner *runner = new AsyncRunner(this);
     runner->setRunFunction([this]() { this->findMatches(this->searchRoot); });
 
-    connect(runner, SIGNAL(finished()), runner, SLOT(deleteLater()));
+    connect(runner, &QThread::finished, runner, &QObject::deleteLater);
 
     regexp = QRegularExpression(
         QRegularExpression::wildcardToRegularExpression(lineEdit_SEARCHSTR->text()),

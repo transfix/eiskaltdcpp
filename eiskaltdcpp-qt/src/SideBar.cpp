@@ -84,8 +84,8 @@ SideBarModel::SideBarModel(QObject *parent) :
     //CREATE_ROOT_EL(rootItem, eiSERVER,    tr("Hub Manager"),      roots,  HubManager);
     CREATE_ROOT_EL(rootItem, eiGUI,         tr("Other Widgets"),    roots,  CustomWidget);
 
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)),
-            this, SLOT(slotSettingsChanged(QString,QString)));
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged,
+            this, &SideBarModel::slotSettingsChanged);
 }
 
 SideBarModel::~SideBarModel()
@@ -511,25 +511,25 @@ SideBarView::SideBarView ( QWidget* parent ) : QTreeView(parent), _model(nullptr
     setItemDelegate(new SideBarDelegate(this));
     expandAll();
 
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(activated(ArenaWidget*)), this,   SLOT(activated(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(added(ArenaWidget*)),     this,   SLOT(added(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(removed(ArenaWidget*)),   this,   SLOT(removed(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(activated(ArenaWidget*)), _model, SLOT(mapped(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(toggled(ArenaWidget*)),   _model, SLOT(toggled(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(updated(ArenaWidget*)),   _model, SLOT(updated(ArenaWidget*)));
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::activated, this,   &SideBarView::activated);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::added,     this,   &SideBarView::added);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::removed,   this,   &SideBarView::removed);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::activated, _model, &SideBarModel::mapped);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::toggled,   _model, &SideBarModel::toggled);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::updated,   _model, &SideBarModel::updated);
     
-    connect(this, SIGNAL(doubleClicked(QModelIndex)),           this,   SLOT(slotSideBarDblClicked(QModelIndex)));
-    connect(this, SIGNAL(customContextMenuRequested(QPoint)),   this,   SLOT(slotSidebarContextMenu()));
-    connect(this, SIGNAL(clicked(QModelIndex)),                 this,   SLOT(slotSidebarHook(QModelIndex)));
-    connect(this, SIGNAL(clicked(QModelIndex)),                 _model, SLOT(slotIndexClicked(QModelIndex)));
+    connect(this, &SideBarView::doubleClicked,           this,   &SideBarView::slotSideBarDblClicked);
+    connect(this, &SideBarView::customContextMenuRequested,   this,   &SideBarView::slotSidebarContextMenu);
+    connect(this, &SideBarView::clicked,                 this,   &SideBarView::slotSidebarHook);
+    connect(this, &SideBarView::clicked,                 _model, &SideBarModel::slotIndexClicked);
 
-    connect(GlobalTimer::getInstance(), SIGNAL(second()), _model, SLOT(redraw()));
+    connect(GlobalTimer::getInstance(), &GlobalTimer::second, _model, &SideBarModel::redraw);
 
-    connect(horizontalScrollBar(), SIGNAL(rangeChanged(int,int)), this, SLOT(slotUpdateHeaderSize()));
-    connect(verticalScrollBar(), SIGNAL(rangeChanged(int,int)), this, SLOT(slotUpdateHeaderSize()));
+    connect(horizontalScrollBar(), &QScrollBar::rangeChanged, this, &SideBarView::slotUpdateHeaderSize);
+    connect(verticalScrollBar(), &QScrollBar::rangeChanged, this, &SideBarView::slotUpdateHeaderSize);
 
-    connect(_model,    SIGNAL(mapWidget(ArenaWidget*)),     ArenaWidgetManager::getInstance(),  SLOT(activate(ArenaWidget*)));
-    connect(_model,    SIGNAL(selectIndex(QModelIndex)),    this,                               SLOT(slotWidgetActivated(QModelIndex)));
+    connect(_model,    &SideBarModel::mapWidget,     ArenaWidgetManager::getInstance(),  &ArenaWidgetManager::activate);
+    connect(_model,    &SideBarModel::selectIndex,    this,                               &SideBarView::slotWidgetActivated);
 }
 
 SideBarView::~SideBarView() {

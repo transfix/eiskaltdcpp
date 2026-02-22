@@ -31,7 +31,7 @@ ChatEdit::ChatEdit(QWidget *parent) : QTextEdit(parent), cc(nullptr)
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    connect(this, SIGNAL(textChanged()), this, SLOT(recalculateGeometry()));
+    connect(this, &QTextEdit::textChanged, this, &ChatEdit::recalculateGeometry);
 }
 
 ChatEdit::~ChatEdit()
@@ -54,8 +54,8 @@ void ChatEdit::setCompleter(QCompleter *completer, UserListModel *model)
 
     cc_model = model;
 
-    QObject::connect(cc, SIGNAL(activated(const QModelIndex&)),
-                     this, SLOT(insertCompletion(const QModelIndex&)));
+    QObject::connect(cc, qOverload<const QModelIndex &>(&QCompleter::activated),
+                     this, &ChatEdit::insertCompletion);
 }
 
 QSize ChatEdit::minimumSizeHint() const{

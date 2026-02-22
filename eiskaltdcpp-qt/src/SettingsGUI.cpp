@@ -315,25 +315,25 @@ void SettingsGUI::init(){
 
         tableView->horizontalHeader()->restoreState(QByteArray::fromBase64(WSGET(WS_SETTINGS_GUI_FONTS_STATE).toUtf8()));
 
-        connect(tableView, SIGNAL(doubleClicked(QModelIndex)), model, SLOT(itemDoubleClicked(QModelIndex)));
-        connect(this, SIGNAL(saveFonts()), model, SLOT(ok()));
+        connect(tableView, &QTableView::doubleClicked, model, &CustomFontModel::itemDoubleClicked);
+        connect(this, &SettingsGUI::saveFonts, model, &CustomFontModel::ok);
     }
 
-    connect(pushButton_TEST, SIGNAL(clicked()), this, SLOT(slotTestAppTheme()));
-    connect(comboBox_THEMES, SIGNAL(activated(int)), this, SLOT(slotThemeChanged()));
-    connect(listWidget_CHATCOLOR, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(slotChatColorItemClicked(QListWidgetItem*)));
-    connect(toolButton_LANGBROWSE, SIGNAL(clicked()), this, SLOT(slotBrowseLng()));
-    connect(comboBox_LANGS, SIGNAL(activated(int)), this, SLOT(slotLngIndexChanged(int)));
-    connect(comboBox_USERS, SIGNAL(activated(int)), this, SLOT(slotUsersChanged()));
-    connect(comboBox_ICONS, SIGNAL(activated(int)), this, SLOT(slotIconsChanged()));
-    connect(toolButton_H_COLOR, SIGNAL(clicked()), this, SLOT(slotGetColor()));
-    connect(toolButton_SHAREDFILES, SIGNAL(clicked()), this, SLOT(slotGetColor()));
-    connect(toolButton_CHAT_BACKGROUND_COLOR, SIGNAL(clicked()), this, SLOT(slotGetColor()));
-    connect(toolButton_DOWNLOADSCLR, SIGNAL(clicked()), this, SLOT(slotGetColor()));
-    connect(toolButton_UPLOADSCLR, SIGNAL(clicked()), this, SLOT(slotGetColor()));
-    connect(pushButton_RESET, SIGNAL(clicked()), this, SLOT(slotResetTransferColors()));
-    connect(horizontalSlider_H_COLOR, SIGNAL(valueChanged(int)), this, SLOT(slotSetTransparency(int)));
-    connect(horizontalSlider_SHAREDFILES, SIGNAL(valueChanged(int)), this, SLOT(slotSetTransparency(int)));
+    connect(pushButton_TEST, &QPushButton::clicked, this, &SettingsGUI::slotTestAppTheme);
+    connect(comboBox_THEMES, qOverload<int>(&QComboBox::activated), this, &SettingsGUI::slotThemeChanged);
+    connect(listWidget_CHATCOLOR, &QListWidget::itemDoubleClicked, this, &SettingsGUI::slotChatColorItemClicked);
+    connect(toolButton_LANGBROWSE, &QToolButton::clicked, this, &SettingsGUI::slotBrowseLng);
+    connect(comboBox_LANGS, qOverload<int>(&QComboBox::activated), this, &SettingsGUI::slotLngIndexChanged);
+    connect(comboBox_USERS, qOverload<int>(&QComboBox::activated), this, &SettingsGUI::slotUsersChanged);
+    connect(comboBox_ICONS, qOverload<int>(&QComboBox::activated), this, &SettingsGUI::slotIconsChanged);
+    connect(toolButton_H_COLOR, &QToolButton::clicked, this, &SettingsGUI::slotGetColor);
+    connect(toolButton_SHAREDFILES, &QToolButton::clicked, this, &SettingsGUI::slotGetColor);
+    connect(toolButton_CHAT_BACKGROUND_COLOR, &QToolButton::clicked, this, &SettingsGUI::slotGetColor);
+    connect(toolButton_DOWNLOADSCLR, &QToolButton::clicked, this, &SettingsGUI::slotGetColor);
+    connect(toolButton_UPLOADSCLR, &QToolButton::clicked, this, &SettingsGUI::slotGetColor);
+    connect(pushButton_RESET, &QPushButton::clicked, this, &SettingsGUI::slotResetTransferColors);
+    connect(horizontalSlider_H_COLOR, &QSlider::valueChanged, this, &SettingsGUI::slotSetTransparency);
+    connect(horizontalSlider_SHAREDFILES, &QSlider::valueChanged, this, &SettingsGUI::slotSetTransparency);
 }
 
 void SettingsGUI::ok(){

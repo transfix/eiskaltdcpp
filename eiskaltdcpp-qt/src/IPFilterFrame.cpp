@@ -50,16 +50,16 @@ void IPFilterFrame::InitDocument() {
 
     slotCheckBoxClick();
 
-    connect(checkBox_ENABLE, SIGNAL(clicked()), this, SLOT(slotCheckBoxClick()));
+    connect(checkBox_ENABLE, &QCheckBox::clicked, this, &IPFilterFrame::slotCheckBoxClick);
 
-    connect(pushButton_EXPORT, SIGNAL(clicked()), this, SLOT(slotExport()));
-    connect(pushButton_IMPORT, SIGNAL(clicked()), this, SLOT(slotImport()));
-    connect(pushButton_ADD, SIGNAL(clicked()), this, SLOT(slotAddRule()));
+    connect(pushButton_EXPORT, &QPushButton::clicked, this, &IPFilterFrame::slotExport);
+    connect(pushButton_IMPORT, &QPushButton::clicked, this, &IPFilterFrame::slotImport);
+    connect(pushButton_ADD, &QPushButton::clicked, this, &IPFilterFrame::slotAddRule);
 
-    connect(pushButton_UP, SIGNAL(clicked()), this, SLOT(slotUpDownClick()));
-    connect(pushButton_DOWN, SIGNAL(clicked()), this, SLOT(slotUpDownClick()));
+    connect(pushButton_UP, &QPushButton::clicked, this, &IPFilterFrame::slotUpDownClick);
+    connect(pushButton_DOWN, &QPushButton::clicked, this, &IPFilterFrame::slotUpDownClick);
 
-    connect(treeView_RULES, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotTreeViewContextMenu(QPoint)));
+    connect(treeView_RULES, &QWidget::customContextMenuRequested, this, &IPFilterFrame::slotTreeViewContextMenu);
 }
 
 void IPFilterFrame::slotCheckBoxClick() {

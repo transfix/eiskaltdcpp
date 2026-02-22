@@ -49,24 +49,24 @@ Secretary::Secretary(QWidget *parent)
         EmoticonFactory::getInstance()->addEmoticons(textEdit_MESSAGES->document());
 
 
-    connect(this, SIGNAL(coreStatusMsg(const QString, const QString, const QString, const QString)),
-            this, SLOT(addStatus(const QString, const QString, const QString, const QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreChatMessage(const QString, const QString, const QString, const QString)),
-            this, SLOT(newChatMsg(const QString, const QString, const QString, const QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(corePrivateMsg(const QString, const QString, const QString, const QString)),
-            this, SLOT(newPrivMsg(const QString, const QString, const QString, const QString)), Qt::QueuedConnection);
+    connect(this, &Secretary::coreStatusMsg,
+            this, &Secretary::addStatus, Qt::QueuedConnection);
+    connect(this, &Secretary::coreChatMessage,
+            this, &Secretary::newChatMsg, Qt::QueuedConnection);
+    connect(this, &Secretary::corePrivateMsg,
+            this, &Secretary::newPrivMsg, Qt::QueuedConnection);
 
-    connect(textEdit_MESSAGES, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotChatMenu(QPoint)));
-    connect(checkBox_MAGNETS, SIGNAL(toggled(bool)), this, SLOT(searchMagnetLinks(bool)));
-    connect(spinBoxLines, SIGNAL(valueChanged(int)), this, SLOT(maxLinesChanged(int)));
-    connect(pushButton_ClearLog, SIGNAL(clicked(bool)), this, SLOT(clearNotes()));
-    connect(toolButton_BACK, SIGNAL(clicked()), this, SLOT(slotFindBackward()));
-    connect(toolButton_FORWARD, SIGNAL(clicked()), this, SLOT(slotFindForward()));
-    connect(toolButton_HIDE, SIGNAL(clicked()), this, SLOT(slotHideSearchBar()));
-    connect(lineEdit_FIND, SIGNAL(textEdited(QString)), this, SLOT(slotFindTextEdited(QString)));
-    connect(toolButton_ALL, SIGNAL(clicked()), this, SLOT(slotFindAll()));
+    connect(textEdit_MESSAGES, &QTextEdit::customContextMenuRequested, this, &Secretary::slotChatMenu);
+    connect(checkBox_MAGNETS, &QCheckBox::toggled, this, &Secretary::searchMagnetLinks);
+    connect(spinBoxLines, qOverload<int>(&QSpinBox::valueChanged), this, &Secretary::maxLinesChanged);
+    connect(pushButton_ClearLog, &QPushButton::clicked, this, &Secretary::clearNotes);
+    connect(toolButton_BACK, &QToolButton::clicked, this, &Secretary::slotFindBackward);
+    connect(toolButton_FORWARD, &QToolButton::clicked, this, &Secretary::slotFindForward);
+    connect(toolButton_HIDE, &QToolButton::clicked, this, &Secretary::slotHideSearchBar);
+    connect(lineEdit_FIND, &QLineEdit::textEdited, this, &Secretary::slotFindTextEdited);
+    connect(toolButton_ALL, &QToolButton::clicked, this, &Secretary::slotFindAll);
 
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &Secretary::slotSettingsChanged);
 
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
     updateStyles();

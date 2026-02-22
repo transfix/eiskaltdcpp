@@ -30,7 +30,7 @@ LineEdit::LineEdit(QWidget *parent) :
     label->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
     label->installEventFilter(this);
 
-    connect(this, SIGNAL(textChanged(QString)), this, SLOT(slotTextChanged()));
+    connect(this, &QLineEdit::textChanged, this, &LineEdit::slotTextChanged);
 
     updateGeometry();
     updateStyles();

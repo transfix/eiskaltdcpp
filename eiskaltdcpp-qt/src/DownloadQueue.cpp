@@ -283,21 +283,21 @@ void DownloadQueue::init(){
     d->deleteShortcut = new QShortcut(QKeySequence(Qt::Key_Delete), this);
     d->deleteShortcut->setContext(Qt::WidgetWithChildrenShortcut);
 
-    connect(this, SIGNAL(coreAdded(VarMap)),            this, SLOT(addFile(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreRemoved(VarMap)),          this, SLOT(remFile(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreSourcesUpdated(VarMap)),   this, SLOT(updateFile(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreStatusUpdated(VarMap)),    this, SLOT(updateFile(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreMoved(VarMap)),            this, SLOT(remFile(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreMoved(VarMap)),            this, SLOT(addFile(VarMap)), Qt::QueuedConnection);
+    connect(this, &DownloadQueue::coreAdded,            this, &DownloadQueue::addFile, Qt::QueuedConnection);
+    connect(this, &DownloadQueue::coreRemoved,          this, &DownloadQueue::remFile, Qt::QueuedConnection);
+    connect(this, &DownloadQueue::coreSourcesUpdated,   this, &DownloadQueue::updateFile, Qt::QueuedConnection);
+    connect(this, &DownloadQueue::coreStatusUpdated,    this, &DownloadQueue::updateFile, Qt::QueuedConnection);
+    connect(this, &DownloadQueue::coreMoved,            this, &DownloadQueue::remFile, Qt::QueuedConnection);
+    connect(this, &DownloadQueue::coreMoved,            this, &DownloadQueue::addFile, Qt::QueuedConnection);
 
-    connect(d->deleteShortcut, SIGNAL(activated()), this, SLOT(requestDelete()));
-    connect(treeView_TARGET, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
-    connect(treeView_TARGET->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu(QPoint)));
-    connect(d->queue_model, SIGNAL(needExpand(QModelIndex)), treeView_TARGET, SLOT(expand(QModelIndex)));
-    connect(d->queue_model, SIGNAL(rowRemoved(QModelIndex)), this, SLOT(slotCollapseRow(QModelIndex)));
-    connect(d->queue_model, SIGNAL(updateStats(quint64,quint64)), this, SLOT(slotUpdateStats(quint64,quint64)));
-    connect(pushButton_EXPAND,      SIGNAL(clicked()), treeView_TARGET, SLOT(expandAll()));
-    connect(pushButton_COLLAPSE,    SIGNAL(clicked()), treeView_TARGET, SLOT(collapseAll()));
+    connect(d->deleteShortcut, &QShortcut::activated, this, &DownloadQueue::requestDelete);
+    connect(treeView_TARGET, &QTreeView::customContextMenuRequested, this, &DownloadQueue::slotContextMenu);
+    connect(treeView_TARGET->header(), &QHeaderView::customContextMenuRequested, this, &DownloadQueue::slotHeaderMenu);
+    connect(d->queue_model, &DownloadQueueModel::needExpand, treeView_TARGET, &QTreeView::expand);
+    connect(d->queue_model, &DownloadQueueModel::rowRemoved, this, &DownloadQueue::slotCollapseRow);
+    connect(d->queue_model, &DownloadQueueModel::updateStats, this, &DownloadQueue::slotUpdateStats);
+    connect(pushButton_EXPAND,      &QPushButton::clicked, treeView_TARGET, &QTreeView::expandAll);
+    connect(pushButton_COLLAPSE,    &QPushButton::clicked, treeView_TARGET, &QTreeView::collapseAll);
 
     d->menu = new Menu();
 

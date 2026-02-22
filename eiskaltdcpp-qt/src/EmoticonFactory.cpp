@@ -86,7 +86,7 @@ void EmoticonFactory::addEmoticons(QTextDocument *to){
     }
 
     if (!docs.contains(to)){
-        connect(to, SIGNAL(destroyed()), this, SLOT(slotDocDeleted()));
+        connect(to, &QTextDocument::destroyed, this, &EmoticonFactory::slotDocDeleted);
 
         docs << to;
     }

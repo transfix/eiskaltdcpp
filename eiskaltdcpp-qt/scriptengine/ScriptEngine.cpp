@@ -180,7 +180,7 @@ QJSValue ScriptBridge::createSearchFrame() {
 
 QJSValue ScriptBridge::createShellCommandRunner(const QString &cmd, const QStringList &args) {
     ShellCommandRunner *runner = new ShellCommandRunner(cmd, args, MainWindow::getInstance());
-    QObject::connect(runner, SIGNAL(finished(bool,QString)), runner, SLOT(deleteLater()));
+    QObject::connect(runner, qOverload<bool, const QString &>(&ShellCommandRunner::finished), runner, &QObject::deleteLater);
     return m_engine->newQObject(qobject_cast<QObject*>(runner));
 }
 
@@ -225,9 +225,9 @@ ScriptEngine::ScriptEngine() :
     qRegisterMetaType<ArenaWidget::Flags>("Flags");
     qRegisterMetaType<ArenaWidget::Flags>("ArenaWidget::Flags");
 
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotWSKeyChanged(QString,QString)));
-    connect(&watcher, SIGNAL(fileChanged(QString)), this, SLOT(slotScriptChanged(QString)));
-    connect(GlobalTimer::getInstance(), SIGNAL(second()), this ,SLOT(slotProcessChangedFiles()));
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &ScriptEngine::slotWSKeyChanged);
+    connect(&watcher, &QFileSystemWatcher::fileChanged, this, &ScriptEngine::slotScriptChanged);
+    connect(GlobalTimer::getInstance(), &GlobalTimer::second, this, &ScriptEngine::slotProcessChangedFiles);
 
     loadScripts();
 }
@@ -627,7 +627,7 @@ static QScriptValue shellExec(QScriptContext *ctx, QScriptEngine *engine){
         args.push_back(ctx->argument(i).toString());
 
     QProcess *process = new QProcess();
-    process->connect(process, SIGNAL(finished(int)), process, SLOT(deleteLater()));
+    process->connect(process, qOverload<int>(&QProcess::finished), process, &QObject::deleteLater);
     process->start(cmd, args);
 
     return QScriptValue();
@@ -777,7 +777,7 @@ static QScriptValue dynamicMemberConstructor(QScriptContext *context, QScriptEng
                 args.push_back(context->argument(i).toString());
 
             ShellCommandRunner *runner = new ShellCommandRunner(cmd, args, MainWindow::getInstance());
-            runner->connect(runner, SIGNAL(finished(bool,QString)), runner, SLOT(deleteLater()));
+            runner->connect(runner, qOverload<bool, const QString &>(&ShellCommandRunner::finished), runner, &QObject::deleteLater);
 
             obj = qobject_cast<QObject*>(runner);
         }

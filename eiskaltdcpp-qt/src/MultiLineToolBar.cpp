@@ -26,16 +26,16 @@ MultiLineToolBar::MultiLineToolBar(QWidget *parent) :
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
     setContextMenuPolicy(Qt::CustomContextMenu);
 
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(added(ArenaWidget*)),     frame, SLOT(insertWidget(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(removed(ArenaWidget*)),   frame, SLOT(removeWidget(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(updated(ArenaWidget*)),   frame, SLOT(updated(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(activated(ArenaWidget*)), frame, SLOT(mapped(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(toggled(ArenaWidget*)),   frame, SLOT(toggled(ArenaWidget*)));
-    connect(this, SIGNAL(nextTab()), frame, SLOT(nextTab()));
-    connect(this, SIGNAL(prevTab()), frame, SLOT(prevTab()));
-    connect(this, SIGNAL(moveTabLeft()), frame, SLOT(moveLeft()));
-    connect(this, SIGNAL(moveTabRight()), frame, SLOT(moveRight()));
-    connect(this, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu()));
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::added,     frame, &TabFrame::insertWidget);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::removed,   frame, &TabFrame::removeWidget);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::updated,   frame, &TabFrame::updated);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::activated, frame, &TabFrame::mapped);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::toggled,   frame, &TabFrame::toggled);
+    connect(this, &MultiLineToolBar::nextTab, frame, &TabFrame::nextTab);
+    connect(this, &MultiLineToolBar::prevTab, frame, &TabFrame::prevTab);
+    connect(this, &MultiLineToolBar::moveTabLeft, frame, &TabFrame::moveLeft);
+    connect(this, &MultiLineToolBar::moveTabRight, frame, &TabFrame::moveRight);
+    connect(this, &QWidget::customContextMenuRequested, this, &MultiLineToolBar::slotContextMenu);
 }
 
 MultiLineToolBar::~MultiLineToolBar(){

@@ -27,8 +27,8 @@ SearchBlackListDialog::SearchBlackListDialog(QWidget *parent): QDialog(parent){
     treeView_RULES->setSortingEnabled(true);
     treeView_RULES->sortByColumn(COLUMN_SBL_KEY, Qt::AscendingOrder);
 
-    connect(treeView_RULES, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu()));
-    connect(this, SIGNAL(accepted()), this, SLOT(ok()));
+    connect(treeView_RULES, &QWidget::customContextMenuRequested, this, &SearchBlackListDialog::slotContextMenu);
+    connect(this, &QDialog::accepted, this, &SearchBlackListDialog::ok);
 }
 
 SearchBlackListDialog::~SearchBlackListDialog(){

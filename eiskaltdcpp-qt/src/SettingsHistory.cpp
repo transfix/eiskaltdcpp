@@ -9,6 +9,8 @@
 
 #include "SettingsHistory.h"
 
+#include <QPushButton>
+
 #include "WulforSettings.h"
 #include "WulforUtil.h"
 #include "DownloadToHistory.h"
@@ -16,10 +18,10 @@
 SettingsHistory::SettingsHistory(QWidget *parent): QWidget(parent) {
     setupUi(this);
     
-    connect(pushButton_ClearSearchHistory, SIGNAL(clicked(bool)),
-            this, SLOT(slotClearSearchHistory()));
-    connect(pushButton_ClearDirectoriesHistory, SIGNAL(clicked(bool)),
-            this, SLOT(slotClearDirectoriesHistory()));
+    connect(pushButton_ClearSearchHistory, &QPushButton::clicked,
+            this, &SettingsHistory::slotClearSearchHistory);
+    connect(pushButton_ClearDirectoriesHistory, &QPushButton::clicked,
+            this, &SettingsHistory::slotClearDirectoriesHistory);
     
     checkBox_TTHSearchHistory->setChecked(WBGET("memorize-tth-search-phrases", false));
     checkBox_SearchHistory->setChecked(WBGET("app/clear-search-history-on-exit", false));

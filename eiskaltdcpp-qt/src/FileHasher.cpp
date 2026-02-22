@@ -45,13 +45,13 @@ FileHasher::FileHasher(QWidget *parent) :
     toolButton_COPY_SEARCH_LINK->setIcon(WICON(WulforUtil::eiMAGNET));
     toolButton_BROWSE->setIcon(WICON(WulforUtil::eiFOLDER_BLUE));
 
-    connect(hasher, SIGNAL(finished()), this, SLOT(slotDone()));
-    connect(pushButton_SEARCH, SIGNAL(clicked()), this, SLOT(search()));
-    connect(pushButton_RUN,    SIGNAL(clicked()), this, SLOT(slotStart()));
-    connect(toolButton_BROWSE, SIGNAL(clicked()), this, SLOT(slotBrowse()));
-    connect(toolButton_COPY_MAGNET,      SIGNAL(clicked()), this, SLOT(slotCopyMagnet()));
-    connect(toolButton_COPY_SEARCH_LINK, SIGNAL(clicked()), this, SLOT(slotCopySearchString()));
-    connect(this, SIGNAL(finished(int)), this, SLOT(saveWindowSize()));
+    connect(hasher, &QThread::finished, this, &FileHasher::slotDone);
+    connect(pushButton_SEARCH, &QPushButton::clicked, this, qOverload<>(&FileHasher::search));
+    connect(pushButton_RUN,    &QPushButton::clicked, this, &FileHasher::slotStart);
+    connect(toolButton_BROWSE, &QToolButton::clicked, this, &FileHasher::slotBrowse);
+    connect(toolButton_COPY_MAGNET,      &QToolButton::clicked, this, &FileHasher::slotCopyMagnet);
+    connect(toolButton_COPY_SEARCH_LINK, &QToolButton::clicked, this, &FileHasher::slotCopySearchString);
+    connect(this, &QDialog::finished, this, &FileHasher::saveWindowSize);
 
     if (WVGET(DIALOG_SIZE).isValid()) {
         resize(WVGET(DIALOG_SIZE).toSize());

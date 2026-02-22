@@ -30,7 +30,7 @@ SettingsShortcuts::SettingsShortcuts(QWidget *parent) :
     treeView->setModel(model);
     treeView->header()->restoreState(QByteArray::fromBase64(WSGET(TREEVIEW_STATE_KEY).toUtf8()));
 
-    connect(treeView, SIGNAL(clicked(QModelIndex)), this, SLOT(slotIndexClicked(QModelIndex)));
+    connect(treeView, &QTreeView::clicked, this, &SettingsShortcuts::slotIndexClicked);
 }
 
 SettingsShortcuts::~SettingsShortcuts(){

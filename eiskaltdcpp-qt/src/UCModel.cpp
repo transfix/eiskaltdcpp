@@ -365,16 +365,16 @@ UCDialog::UCDialog(QWidget *parent): QDialog(parent){
 
     setupUi(this);
 
-    connect(lineEdit_CMD,     SIGNAL(textChanged(QString)), this, SLOT(updateLines()));
-    connect(lineEdit_TO,      SIGNAL(textChanged(QString)), this, SLOT(updateLines()));
-    connect(radioButton_CHAT, SIGNAL(toggled(bool)),        this, SLOT(updateLines()));
-    connect(radioButton_PM,   SIGNAL(toggled(bool)),        this, SLOT(updateLines()));
-    connect(radioButton_RAW,  SIGNAL(toggled(bool)),        this, SLOT(updateLines()));
-    connect(radioButton_SEP,  SIGNAL(toggled(bool)),        this, SLOT(updateLines()));
-    connect(radioButton_CHAT, SIGNAL(toggled(bool)),        this, SLOT(updateType()));
-    connect(radioButton_PM,   SIGNAL(toggled(bool)),        this, SLOT(updateType()));
-    connect(radioButton_RAW,  SIGNAL(toggled(bool)),        this, SLOT(updateType()));
-    connect(radioButton_SEP,  SIGNAL(toggled(bool)),        this, SLOT(updateType()));
+    connect(lineEdit_CMD,     &QLineEdit::textChanged, this, &UCDialog::updateLines);
+    connect(lineEdit_TO,      &QLineEdit::textChanged, this, &UCDialog::updateLines);
+    connect(radioButton_CHAT, &QRadioButton::toggled,        this, &UCDialog::updateLines);
+    connect(radioButton_PM,   &QRadioButton::toggled,        this, &UCDialog::updateLines);
+    connect(radioButton_RAW,  &QRadioButton::toggled,        this, &UCDialog::updateLines);
+    connect(radioButton_SEP,  &QRadioButton::toggled,        this, &UCDialog::updateLines);
+    connect(radioButton_CHAT, &QRadioButton::toggled,        this, &UCDialog::updateType);
+    connect(radioButton_PM,   &QRadioButton::toggled,        this, &UCDialog::updateType);
+    connect(radioButton_RAW,  &QRadioButton::toggled,        this, &UCDialog::updateType);
+    connect(radioButton_SEP,  &QRadioButton::toggled,        this, &UCDialog::updateType);
 }
 
 unsigned long UCDialog::getCtx() const {

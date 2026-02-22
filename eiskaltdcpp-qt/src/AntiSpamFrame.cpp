@@ -46,30 +46,30 @@ void AntiSpamFrame::InitDocument() {
 
     loadGUIData();
 
-    connect(checkBox_ASENABLE, SIGNAL(clicked()), this, SLOT(slotAntiSpamSwitch()));
-    connect(checkBox_ASFILTER, SIGNAL(clicked()), this, SLOT(slotAsFilter()));
-    connect(checkBox_FILTER_OPS, SIGNAL(clicked()), this, SLOT(slotFilterOps()));
+    connect(checkBox_ASENABLE, &QCheckBox::clicked, this, &AntiSpamFrame::slotAntiSpamSwitch);
+    connect(checkBox_ASFILTER, &QCheckBox::clicked, this, &AntiSpamFrame::slotAsFilter);
+    connect(checkBox_FILTER_OPS, &QCheckBox::clicked, this, &AntiSpamFrame::slotFilterOps);
 
-    connect(pushButton_ADDWHITE, SIGNAL(clicked()), this, SLOT(slotAddToWhite()));
-    connect(pushButton_ADDBLACK, SIGNAL(clicked()), this, SLOT(slotAddToBlack()));
-    connect(pushButton_ADDGRAY, SIGNAL(clicked()), this, SLOT(slotAddToGray()));
-    connect(pushButton_REMWHITE, SIGNAL(clicked()), this, SLOT(slotRemFromWhite()));
-    connect(pushButton_REMBLACK, SIGNAL(clicked()), this, SLOT(slotRemFromBlack()));
-    connect(pushButton_REMGRAY, SIGNAL(clicked()), this, SLOT(slotRemFromGray()));
-    connect(pushButton_CLRWHITE, SIGNAL(clicked()), this, SLOT(slotClearWhite()));
-    connect(pushButton_CLRBLACK, SIGNAL(clicked()), this, SLOT(slotClearBlack()));
-    connect(pushButton_CLRGRAY, SIGNAL(clicked()), this, SLOT(slotClearGray()));
+    connect(pushButton_ADDWHITE, &QPushButton::clicked, this, &AntiSpamFrame::slotAddToWhite);
+    connect(pushButton_ADDBLACK, &QPushButton::clicked, this, &AntiSpamFrame::slotAddToBlack);
+    connect(pushButton_ADDGRAY, &QPushButton::clicked, this, &AntiSpamFrame::slotAddToGray);
+    connect(pushButton_REMWHITE, &QPushButton::clicked, this, &AntiSpamFrame::slotRemFromWhite);
+    connect(pushButton_REMBLACK, &QPushButton::clicked, this, &AntiSpamFrame::slotRemFromBlack);
+    connect(pushButton_REMGRAY, &QPushButton::clicked, this, &AntiSpamFrame::slotRemFromGray);
+    connect(pushButton_CLRWHITE, &QPushButton::clicked, this, &AntiSpamFrame::slotClearWhite);
+    connect(pushButton_CLRBLACK, &QPushButton::clicked, this, &AntiSpamFrame::slotClearBlack);
+    connect(pushButton_CLRGRAY, &QPushButton::clicked, this, &AntiSpamFrame::slotClearGray);
 
-    connect(pushButton_OK, SIGNAL(clicked()), this, SLOT(slotAccept()));
+    connect(pushButton_OK, &QPushButton::clicked, this, &AntiSpamFrame::slotAccept);
 
-    connect(pushButton_WTOG, SIGNAL(clicked()), this, SLOT(slotWToG()));
-    connect(pushButton_WTOB, SIGNAL(clicked()), this, SLOT(slotWToB()));
-    connect(pushButton_BTOW, SIGNAL(clicked()), this, SLOT(slotBToW()));
-    connect(pushButton_BTOG, SIGNAL(clicked()), this, SLOT(slotBToG()));
-    connect(pushButton_GTOB, SIGNAL(clicked()), this, SLOT(slotGToB()));
-    connect(pushButton_GTOW, SIGNAL(clicked()), this, SLOT(slotGToW()));
+    connect(pushButton_WTOG, &QPushButton::clicked, this, &AntiSpamFrame::slotWToG);
+    connect(pushButton_WTOB, &QPushButton::clicked, this, &AntiSpamFrame::slotWToB);
+    connect(pushButton_BTOW, &QPushButton::clicked, this, &AntiSpamFrame::slotBToW);
+    connect(pushButton_BTOG, &QPushButton::clicked, this, &AntiSpamFrame::slotBToG);
+    connect(pushButton_GTOB, &QPushButton::clicked, this, &AntiSpamFrame::slotGToB);
+    connect(pushButton_GTOW, &QPushButton::clicked, this, &AntiSpamFrame::slotGToW);
 
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &AntiSpamFrame::slotSettingsChanged);
 
     slotAntiSpamSwitch();
 }

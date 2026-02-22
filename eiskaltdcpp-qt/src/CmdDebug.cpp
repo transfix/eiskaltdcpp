@@ -13,6 +13,8 @@
 #include <QTextCursor>
 #include <QTextEdit>
 #include <QTextDocument>
+#include <QPushButton>
+#include <QSpinBox>
 
 #include "WulforUtil.h"
 #include "CmdDebug.h"
@@ -35,17 +37,17 @@ CmdDebug::CmdDebug(QWidget *parent)
     plainTextEdit_DEBUG->setReadOnly(true);
     plainTextEdit_DEBUG->setMouseTracking(true);
 
-    connect(this, SIGNAL(coreDebugCommand(const QString&, const QString&)), this, SLOT(addOutput(const QString&, const QString&)), Qt::QueuedConnection);
-    connect(spinBoxLines, SIGNAL(valueChanged(int)), this, SLOT(maxLinesChanged(int)));
-    connect(pushButton_ClearLog, SIGNAL(clicked(bool)), plainTextEdit_DEBUG, SLOT(clear()));
-    connect(toolButton_BACK, SIGNAL(clicked()), this, SLOT(slotFindBackward()));
-    connect(toolButton_FORWARD, SIGNAL(clicked()), this, SLOT(slotFindForward()));
-    connect(toolButton_HIDE, SIGNAL(clicked()), this, SLOT(slotHideSearchBar()));
-    connect(lineEdit_FIND, SIGNAL(textEdited(QString)), this, SLOT(slotFindTextEdited(QString)));
-    connect(toolButton_ALL, SIGNAL(clicked()), this, SLOT(slotFindAll()));
+    connect(this, &CmdDebug::coreDebugCommand, this, &CmdDebug::addOutput, Qt::QueuedConnection);
+    connect(spinBoxLines, qOverload<int>(&QSpinBox::valueChanged), this, &CmdDebug::maxLinesChanged);
+    connect(pushButton_ClearLog, &QPushButton::clicked, plainTextEdit_DEBUG, &QPlainTextEdit::clear);
+    connect(toolButton_BACK, &QToolButton::clicked, this, &CmdDebug::slotFindBackward);
+    connect(toolButton_FORWARD, &QToolButton::clicked, this, &CmdDebug::slotFindForward);
+    connect(toolButton_HIDE, &QToolButton::clicked, this, &CmdDebug::slotHideSearchBar);
+    connect(lineEdit_FIND, &QLineEdit::textEdited, this, &CmdDebug::slotFindTextEdited);
+    connect(toolButton_ALL, &QToolButton::clicked, this, &CmdDebug::slotFindAll);
     dcpp::getContext()->getDebugManager()->addListener(this);
 
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &CmdDebug::slotSettingsChanged);
 
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
 }

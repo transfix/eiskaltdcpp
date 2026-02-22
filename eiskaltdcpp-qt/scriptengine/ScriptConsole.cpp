@@ -55,8 +55,8 @@ ScriptConsole::ScriptConsole(QWidget *parent) :
         "}"
     ));
 
-    connect(pushButton_START, SIGNAL(clicked()), this, SLOT(startEvaluation()));
-    connect(pushButton_STOP, SIGNAL(clicked()), this, SLOT(stopEvaluation()));
+    connect(pushButton_START, &QPushButton::clicked, this, &ScriptConsole::startEvaluation);
+    connect(pushButton_STOP, &QPushButton::clicked, this, &ScriptConsole::stopEvaluation);
 }
 
 void ScriptConsole::startEvaluation(){
@@ -94,8 +94,8 @@ ScriptConsole::ScriptConsole(QWidget *parent) :
     myPrint.setData(engine.newQObject(textEdit_OUTPUT));
     engine.globalObject().setProperty("printErr", myPrintErr);
 
-    connect(pushButton_START, SIGNAL(clicked()), this, SLOT(startEvaluation()));
-    connect(pushButton_STOP, SIGNAL(clicked()), this, SLOT(stopEvaluation()));
+    connect(pushButton_START, &QPushButton::clicked, this, &ScriptConsole::startEvaluation);
+    connect(pushButton_STOP, &QPushButton::clicked, this, &ScriptConsole::stopEvaluation);
 }
 
 void ScriptConsole::startEvaluation(){

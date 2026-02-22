@@ -108,21 +108,21 @@ void ToolBar::initTabs(){
     for (const auto &s : shortcuts){
         s->setContext(Qt::ApplicationShortcut);
 
-        connect(s, SIGNAL(activated()), this, SLOT(slotShorcuts()));
+        connect(s, &QShortcut::activated, this, &ToolBar::slotShorcuts);
     }
 
-    connect(tabbar, SIGNAL(currentChanged(int)), this, SLOT(slotIndexChanged(int)));
-    connect(tabbar, SIGNAL(tabMoved(int,int)), this, SLOT(slotTabMoved(int,int)));
-    connect(tabbar, SIGNAL(tabCloseRequested(int)), this, SLOT(slotClose(int)));
-    connect(tabbar, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
+    connect(tabbar, &QTabBar::currentChanged, this, &ToolBar::slotIndexChanged);
+    connect(tabbar, &QTabBar::tabMoved, this, &ToolBar::slotTabMoved);
+    connect(tabbar, &QTabBar::tabCloseRequested, this, &ToolBar::slotClose);
+    connect(tabbar, &QWidget::customContextMenuRequested, this, &ToolBar::slotContextMenu);
     
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(added(ArenaWidget*)),     this, SLOT(insertWidget(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(removed(ArenaWidget*)),   this, SLOT(removeWidget(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(activated(ArenaWidget*)), this, SLOT(mapped(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(updated(ArenaWidget*)),   this, SLOT(updated(ArenaWidget*)));
-    connect(ArenaWidgetManager::getInstance(), SIGNAL(toggled(ArenaWidget*)),   this, SLOT(toggled(ArenaWidget*)));
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::added,     this, &ToolBar::insertWidget);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::removed,   this, &ToolBar::removeWidget);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::activated, this, &ToolBar::mapped);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::updated,   this, &ToolBar::updated);
+    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::toggled,   this, &ToolBar::toggled);
        
-    connect(GlobalTimer::getInstance(), SIGNAL(second()), this, SLOT(redraw()));
+    connect(GlobalTimer::getInstance(), &GlobalTimer::second, this, &ToolBar::redraw);
 
     addWidget(tabbar);
 }

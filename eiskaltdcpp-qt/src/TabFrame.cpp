@@ -49,10 +49,10 @@ TabFrame::TabFrame(QWidget *parent) :
     for (const auto &s : shortcuts){
         s->setContext(Qt::ApplicationShortcut);
 
-        connect(s, SIGNAL(activated()), this, SLOT(slotShorcuts()));
+        connect(s, &QShortcut::activated, this, &TabFrame::slotShorcuts);
     }
 
-    connect(GlobalTimer::getInstance(), SIGNAL(second()), this, SLOT(redraw()));
+    connect(GlobalTimer::getInstance(), &GlobalTimer::second, this, &TabFrame::redraw);
 }
 
 
@@ -144,10 +144,10 @@ void TabFrame::insertWidget(ArenaWidget *awgt){
     if (awgt->toolButton())
         awgt->toolButton()->setChecked(true);
 
-    connect(btn, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu()));
-    connect(btn, SIGNAL(clicked()), this, SLOT(buttonClicked()));
-    connect(btn, SIGNAL(closeRequest()), this, SLOT(closeRequsted()));
-    connect(btn, SIGNAL(dropped(TabButton*)), this, SLOT(slotDropped(TabButton*)));
+    connect(btn, &QWidget::customContextMenuRequested, this, &TabFrame::slotContextMenu);
+    connect(btn, &TabButton::clicked, this, &TabFrame::buttonClicked);
+    connect(btn, &TabButton::closeRequest, this, &TabFrame::closeRequsted);
+    connect(btn, &TabButton::dropped, this, &TabFrame::slotDropped);
 }
 
 bool TabFrame::hasWidget(ArenaWidget *awgt) const{

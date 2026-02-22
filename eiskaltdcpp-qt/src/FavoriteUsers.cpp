@@ -43,16 +43,16 @@ FavoriteUsers::FavoriteUsers(QWidget *parent) :
     treeView->header()->restoreState(WVGET(WS_FAVUSERS_STATE, QByteArray()).toByteArray());
     treeView->setSortingEnabled(true);
 
-    connect(treeView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu()));
-    connect(treeView->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu()));
-    connect(checkBox_AUTOGRANT, SIGNAL(toggled(bool)), this, SLOT(slotAutoGrant(bool)));
+    connect(treeView, &QWidget::customContextMenuRequested, this, &FavoriteUsers::slotContextMenu);
+    connect(treeView->header(), &QWidget::customContextMenuRequested, this, &FavoriteUsers::slotHeaderMenu);
+    connect(checkBox_AUTOGRANT, &QCheckBox::toggled, this, &FavoriteUsers::slotAutoGrant);
 
-    connect(this, SIGNAL(coreUserAdded(VarMap)),                this, SLOT(addUser(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreUserRemoved(QString)),             this, SLOT(remUser(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreStatusChanged(QString,QString)),   this, SLOT(updateUser(QString,QString)), Qt::QueuedConnection);
+    connect(this, &FavoriteUsers::coreUserAdded, this, &FavoriteUsers::addUser, Qt::QueuedConnection);
+    connect(this, &FavoriteUsers::coreUserRemoved, this, &FavoriteUsers::remUser, Qt::QueuedConnection);
+    connect(this, &FavoriteUsers::coreStatusChanged, this, &FavoriteUsers::updateUser, Qt::QueuedConnection);
 
     WulforSettings *WS = WulforSettings::getInstance();
-    connect(WS, SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
+    connect(WS, &WulforSettings::strValueChanged, this, &FavoriteUsers::slotSettingsChanged);
 
     FavoriteManager::FavoriteMap ul = dcpp::getContext()->getFavoriteManager()->getFavoriteUsers();
     VarMap params;

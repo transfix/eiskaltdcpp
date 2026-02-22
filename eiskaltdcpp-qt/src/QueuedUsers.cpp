@@ -31,9 +31,9 @@ QueuedUsers::QueuedUsers(){
     treeView_USERS->setContextMenuPolicy(Qt::CustomContextMenu);
     treeView_USERS->header()->restoreState(WVGET("queued-users/headerstate", QByteArray()).toByteArray());
 
-    connect(this, SIGNAL(coreWaitingAddFile(VarMap)), this, SLOT(slotWaitingAddFile(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreWaitingRemoved(VarMap)), this, SLOT(slotWaitingRemoved(VarMap)), Qt::QueuedConnection);
-    connect(treeView_USERS, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu()));
+    connect(this, &QueuedUsers::coreWaitingAddFile, this, &QueuedUsers::slotWaitingAddFile, Qt::QueuedConnection);
+    connect(this, &QueuedUsers::coreWaitingRemoved, this, &QueuedUsers::slotWaitingRemoved, Qt::QueuedConnection);
+    connect(treeView_USERS, &QWidget::customContextMenuRequested, this, &QueuedUsers::slotContextMenu);
 
     dcpp::getContext()->getUploadManager()->addListener(this);
     

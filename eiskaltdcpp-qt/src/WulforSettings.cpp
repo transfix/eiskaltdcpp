@@ -50,8 +50,8 @@ WulforSettings::WulforSettings()
     idns.push_back("рф");
     QUrl::setIdnWhitelist(idns);
 
-    connect(this, SIGNAL(fontChanged(QString,QString)),
-            this, SIGNAL(strValueChanged(QString,QString)));
+    connect(this, &WulforSettings::fontChanged,
+            this, &WulforSettings::strValueChanged);
 }
 
 WulforSettings::~WulforSettings(){

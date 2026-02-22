@@ -35,7 +35,7 @@ CustomFontModel::CustomFontModel(QObject *parent)
     addNewFont(WS_CHAT_ULIST_FONT,  tr("Public Chat: Userlist"));
     addNewFont(WS_CHAT_PM_FONT,     tr("Private Chat"));
 
-    connect(this, SIGNAL(fontChanged(QString,QString)), WulforSettings::getInstance(), SIGNAL(fontChanged(QString,QString)));
+    connect(this, &CustomFontModel::fontChanged, WulforSettings::getInstance(), &WulforSettings::fontChanged);
 }
 
 CustomFontModel::~CustomFontModel()

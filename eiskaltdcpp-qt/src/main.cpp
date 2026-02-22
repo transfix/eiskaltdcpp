@@ -182,13 +182,13 @@ int main(int argc, char *argv[])
     MainWindow::newInstance();
 #if defined(Q_OS_MAC)
     MainWindow::getInstance()->setUnload(false);
-    QObject::connect(&app, SIGNAL(clickedOnDock()),
-                     MainWindow::getInstance(), SLOT(show()));
+    QObject::connect(&app, &EiskaltApp::clickedOnDock,
+                     MainWindow::getInstance(), &MainWindow::show);
 #else // defined(Q_OS_MAC)
     MainWindow::getInstance()->setUnload(!WBGET(WB_TRAY_ENABLED));
 #endif // defined(Q_OS_MAC)
 
-    app.connect(&app, SIGNAL(messageReceived(QString)), MainWindow::getInstance(), SLOT(parseInstanceLine(QString)));
+    QObject::connect(&app, &QtSingleCoreApplication::messageReceived, MainWindow::getInstance(), &MainWindow::parseInstanceLine);
 
     HubManager::newInstance();
 

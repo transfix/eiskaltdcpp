@@ -65,17 +65,17 @@ PublicHubs::PublicHubs(QWidget *parent) :
 
     toolButton_CLOSEFILTER->setIcon(WICON(WulforUtil::eiEDITDELETE));
 
-    connect(this, SIGNAL(coreDownloadStarted(QString)),  this, SLOT(setStatus(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreDownloadFailed(QString)),   this, SLOT(setStatus(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreDownloadFinished(QString)), this, SLOT(onFinished(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreCacheLoaded(QString)),      this, SLOT(onFinished(QString)), Qt::QueuedConnection);
+    connect(this, &PublicHubs::coreDownloadStarted,  this, &PublicHubs::setStatus, Qt::QueuedConnection);
+    connect(this, &PublicHubs::coreDownloadFailed,   this, &PublicHubs::setStatus, Qt::QueuedConnection);
+    connect(this, &PublicHubs::coreDownloadFinished, this, &PublicHubs::onFinished, Qt::QueuedConnection);
+    connect(this, &PublicHubs::coreCacheLoaded,      this, &PublicHubs::onFinished, Qt::QueuedConnection);
 
-    connect(treeView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu()));
-    connect(treeView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(slotDoubleClicked(QModelIndex)));
-    connect(treeView->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu()));
-    connect(toolButton_CLOSEFILTER, SIGNAL(clicked()), this, SLOT(slotFilter()));
-    connect(comboBox_HUBS, SIGNAL(activated(int)), this, SLOT(slotHubChanged(int)));
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
+    connect(treeView, &QTreeView::customContextMenuRequested, this, &PublicHubs::slotContextMenu);
+    connect(treeView, &QTreeView::doubleClicked, this, &PublicHubs::slotDoubleClicked);
+    connect(treeView->header(), &QHeaderView::customContextMenuRequested, this, &PublicHubs::slotHeaderMenu);
+    connect(toolButton_CLOSEFILTER, &QToolButton::clicked, this, &PublicHubs::slotFilter);
+    connect(comboBox_HUBS, qOverload<int>(&QComboBox::activated), this, &PublicHubs::slotHubChanged);
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &PublicHubs::slotSettingsChanged);
     
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
     if (comboBox_HUBS->count())
@@ -234,7 +234,7 @@ void PublicHubs::slotFilter(){
     if (frame->isVisible()){
         treeView->setModel(model);
 
-        disconnect(lineEdit_FILTER, SIGNAL(textChanged(QString)), proxy, SLOT(setFilterFixedString(QString)));
+        disconnect(lineEdit_FILTER, &QLineEdit::textChanged, proxy, &QSortFilterProxyModel::setFilterFixedString);
 
         delete proxy;
         proxy = nullptr;
@@ -249,8 +249,8 @@ void PublicHubs::slotFilter(){
 
         treeView->setModel(proxy);
 
-        connect(lineEdit_FILTER, SIGNAL(textChanged(QString)), proxy, SLOT(setFilterFixedString(QString)));
-        connect(comboBox_FILTER, SIGNAL(currentIndexChanged(int)), this, SLOT(slotFilterColumnChanged()));
+        connect(lineEdit_FILTER, &QLineEdit::textChanged, proxy, &QSortFilterProxyModel::setFilterFixedString);
+        connect(comboBox_FILTER, qOverload<int>(&QComboBox::currentIndexChanged), this, &PublicHubs::slotFilterColumnChanged);
 
         lineEdit_FILTER->setFocus();
 

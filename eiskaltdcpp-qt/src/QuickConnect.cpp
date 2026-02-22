@@ -20,8 +20,8 @@ QuickConnect::QuickConnect(QWidget *parent) : QDialog(parent) {
 
     comboBox_HUB->addItems(WulforSettings::getInstance()->getStr(WS_QCONNECT_HISTORY).split(" ", Qt::SkipEmptyParts));
 
-    connect(buttonBox, SIGNAL(accepted()), this, SLOT(slotAccept()));
-    connect(comboBox_HUB, SIGNAL(activated(int)), this, SLOT(slotAccept()));
+    connect(buttonBox, &QDialogButtonBox::accepted, this, &QuickConnect::slotAccept);
+    connect(comboBox_HUB, qOverload<int>(&QComboBox::activated), this, &QuickConnect::slotAccept);
 
     comboBox_HUB->setFocus();
 }

@@ -23,7 +23,7 @@ public:
     EiskaltEventFilter(): has_activity(true), counter(0){
         timer.setInterval(60000);
 
-        connect(&timer, SIGNAL(timeout()), this, SLOT(tick()));
+        connect(&timer, &QTimer::timeout, this, &EiskaltEventFilter::tick);
 
         timer.start();
     }

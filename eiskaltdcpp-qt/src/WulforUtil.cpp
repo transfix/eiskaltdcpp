@@ -908,8 +908,8 @@ bool WulforUtil::getUserCommandParams(const UserCommand& uc, StringMap& params) 
 
     dlg.setFixedHeight(vlayout->sizeHint().height());
 
-    connect(buttonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
-    connect(buttonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
+    connect(buttonBox, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(buttonBox, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
 
     if (dlg.exec() != QDialog::Accepted)
         return false;

@@ -525,31 +525,31 @@ void SearchFrame::init(){
 
     lineEdit_FILTER->installEventFilter(this);
 
-    connect(this, SIGNAL(coreClientConnected(QString)),    this, SLOT(onHubAdded(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreClientDisconnected(QString)), this, SLOT(onHubRemoved(QString)),Qt::QueuedConnection);
-    connect(this, SIGNAL(coreClientUpdated(QString)),      this, SLOT(onHubChanged(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreSR(VarMap)),                  this, SLOT(addResult(VarMap)), Qt::QueuedConnection);
+    connect(this, &SearchFrame::coreClientConnected,    this, &SearchFrame::onHubAdded, Qt::QueuedConnection);
+    connect(this, &SearchFrame::coreClientDisconnected, this, &SearchFrame::onHubRemoved, Qt::QueuedConnection);
+    connect(this, &SearchFrame::coreClientUpdated,      this, &SearchFrame::onHubChanged, Qt::QueuedConnection);
+    connect(this, &SearchFrame::coreSR,                 this, &SearchFrame::addResult, Qt::QueuedConnection);
 
-    connect(d->focusShortcut, SIGNAL(activated()), lineEdit_SEARCHSTR, SLOT(setFocus()));
-    connect(d->focusShortcut, SIGNAL(activated()), lineEdit_SEARCHSTR, SLOT(selectAll()));
-    connect(close_wnd, SIGNAL(triggered()), this, SLOT(slotClose()));
-    connect(pushButton_SEARCH, SIGNAL(clicked()), this, SLOT(slotStartSearch()));
-    connect(pushButton_STOP, SIGNAL(clicked()), this, SLOT(slotStopSearch()));
-    connect(pushButton_CLEAR, SIGNAL(clicked()), this, SLOT(slotClear()));
-    connect(treeView_RESULTS, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(slotResultDoubleClicked(QModelIndex)));
-    connect(treeView_RESULTS, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
-    connect(treeView_RESULTS->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu(QPoint)));
-    connect(GlobalTimer::getInstance(), SIGNAL(second()), this, SLOT(slotTimer()));
-    connect(pushButton_SIDEPANEL, SIGNAL(clicked()), this, SLOT(slotToggleSidePanel()));
-    connect(lineEdit_SEARCHSTR, SIGNAL(returnPressed()), this, SLOT(slotStartSearch()));
-    connect(lineEdit_SIZE,      SIGNAL(returnPressed()), this, SLOT(slotStartSearch()));
-    connect(comboBox_FILETYPES, SIGNAL(currentIndexChanged(int)), lineEdit_SEARCHSTR, SLOT(setFocus()));
-    connect(comboBox_FILETYPES, SIGNAL(currentIndexChanged(int)), lineEdit_SEARCHSTR, SLOT(selectAll()));
-    connect(toolButton_CLOSEFILTER, SIGNAL(clicked()), this, SLOT(slotFilter()));
-    connect(comboBox_FILTERCOLUMNS, SIGNAL(currentIndexChanged(int)), lineEdit_FILTER, SLOT(selectAll()));
-    connect(comboBox_FILTERCOLUMNS, SIGNAL(currentIndexChanged(int)), this, SLOT(slotChangeProxyColumn(int)));
+    connect(d->focusShortcut, &QShortcut::activated, lineEdit_SEARCHSTR, qOverload<>(&QWidget::setFocus));
+    connect(d->focusShortcut, &QShortcut::activated, lineEdit_SEARCHSTR, &QLineEdit::selectAll);
+    connect(close_wnd, &QAction::triggered, this, &SearchFrame::slotClose);
+    connect(pushButton_SEARCH, &QPushButton::clicked, this, &SearchFrame::slotStartSearch);
+    connect(pushButton_STOP, &QPushButton::clicked, this, &SearchFrame::slotStopSearch);
+    connect(pushButton_CLEAR, &QPushButton::clicked, this, &SearchFrame::slotClear);
+    connect(treeView_RESULTS, &QTreeView::doubleClicked, this, &SearchFrame::slotResultDoubleClicked);
+    connect(treeView_RESULTS, &QTreeView::customContextMenuRequested, this, &SearchFrame::slotContextMenu);
+    connect(treeView_RESULTS->header(), &QHeaderView::customContextMenuRequested, this, &SearchFrame::slotHeaderMenu);
+    connect(GlobalTimer::getInstance(), &GlobalTimer::second, this, &SearchFrame::slotTimer);
+    connect(pushButton_SIDEPANEL, &QPushButton::clicked, this, &SearchFrame::slotToggleSidePanel);
+    connect(lineEdit_SEARCHSTR, &LineEdit::returnPressed, this, &SearchFrame::slotStartSearch);
+    connect(lineEdit_SIZE,      &LineEdit::returnPressed, this, &SearchFrame::slotStartSearch);
+    connect(comboBox_FILETYPES, qOverload<int>(&QComboBox::currentIndexChanged), lineEdit_SEARCHSTR, qOverload<>(&QWidget::setFocus));
+    connect(comboBox_FILETYPES, qOverload<int>(&QComboBox::currentIndexChanged), lineEdit_SEARCHSTR, &QLineEdit::selectAll);
+    connect(toolButton_CLOSEFILTER, &QToolButton::clicked, this, &SearchFrame::slotFilter);
+    connect(comboBox_FILTERCOLUMNS, qOverload<int>(&QComboBox::currentIndexChanged), lineEdit_FILTER, &QLineEdit::selectAll);
+    connect(comboBox_FILTERCOLUMNS, qOverload<int>(&QComboBox::currentIndexChanged), this, &SearchFrame::slotChangeProxyColumn);
 
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &SearchFrame::slotSettingsChanged);
 
     load();
 
@@ -611,7 +611,7 @@ void SearchFrame::initSecond(){
         d->timer->setInterval(1000);
         d->timer->setSingleShot(true);
 
-        connect(d->timer, SIGNAL(timeout()), this, SLOT(timerTick()));
+        connect(d->timer, &QTimer::timeout, this, &SearchFrame::timerTick);
     }
 
     d->timer->start();*/
@@ -1619,7 +1619,7 @@ void SearchFrame::slotFilter(){
     if (frame_FILTER->isVisible()){
         treeView_RESULTS->setModel(d->model);
 
-        disconnect(lineEdit_FILTER, SIGNAL(textChanged(QString)), d->proxy, SLOT(setFilterFixedString(QString)));
+        disconnect(lineEdit_FILTER, &LineEdit::textChanged, d->proxy, &SearchProxyModel::setFilterFixedString);
     }
     else {
         d->proxy = (d->proxy? d->proxy : (new SearchProxyModel(this)));
@@ -1631,7 +1631,7 @@ void SearchFrame::slotFilter(){
 
         treeView_RESULTS->setModel(d->proxy);
 
-        connect(lineEdit_FILTER, SIGNAL(textChanged(QString)), d->proxy, SLOT(setFilterFixedString(QString)));
+        connect(lineEdit_FILTER, &LineEdit::textChanged, d->proxy, &SearchProxyModel::setFilterFixedString);
 
         if (!lineEdit_SEARCHSTR->selectedText().isEmpty()){
             lineEdit_FILTER->setText(lineEdit_SEARCHSTR->selectedText());

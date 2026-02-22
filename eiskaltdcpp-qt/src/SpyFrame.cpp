@@ -33,10 +33,10 @@ SpyFrame::SpyFrame(QWidget *parent)
     treeView->header()->restoreState(WVGET("spyframe-header-state", QByteArray()).toByteArray());
 
     connect(this, SIGNAL(coreIncomingSearch(QString,bool)), model, SLOT(addResult(QString,bool)), Qt::QueuedConnection);
-    connect(pushButton, SIGNAL(clicked()), this, SLOT(slotStartStop()));
-    connect(pushButton_CLEAR, SIGNAL(clicked()), this, SLOT(slotClear()));
-    connect(treeView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenu()));
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
+    connect(pushButton, &QPushButton::clicked, this, &SpyFrame::slotStartStop);
+    connect(pushButton_CLEAR, &QPushButton::clicked, this, &SpyFrame::slotClear);
+    connect(treeView, &QWidget::customContextMenuRequested, this, &SpyFrame::contextMenu);
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &SpyFrame::slotSettingsChanged);
     
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
 }

@@ -87,17 +87,17 @@ void SettingsNotification::init(){
     toolButton_BRWTR->setIcon(WU->getPixmap(WulforUtil::eiFOLDER_BLUE));
     toolButton_BRWFAV->setIcon(WU->getPixmap(WulforUtil::eiFOLDER_BLUE));
 
-    connect(toolButton_BRWNICK, SIGNAL(clicked()), this, SLOT(slotBrowseFile()));
-    connect(toolButton_BRWPM,   SIGNAL(clicked()), this, SLOT(slotBrowseFile()));
-    connect(toolButton_BRWTR,   SIGNAL(clicked()), this, SLOT(slotBrowseFile()));
-    connect(toolButton_BRWFAV,  SIGNAL(clicked()), this, SLOT(slotBrowseFile()));
+    connect(toolButton_BRWNICK, &QToolButton::clicked, this, &SettingsNotification::slotBrowseFile);
+    connect(toolButton_BRWPM,   &QToolButton::clicked, this, &SettingsNotification::slotBrowseFile);
+    connect(toolButton_BRWTR,   &QToolButton::clicked, this, &SettingsNotification::slotBrowseFile);
+    connect(toolButton_BRWFAV,  &QToolButton::clicked, this, &SettingsNotification::slotBrowseFile);
 
-    connect(pushButton_TESTNICKSAY, SIGNAL(clicked()), this, SLOT(slotTest()));
-    connect(pushButton_TESTPM,      SIGNAL(clicked()), this, SLOT(slotTest()));
-    connect(pushButton_TESTTR,      SIGNAL(clicked()), this, SLOT(slotTest()));
-    connect(pushButton_TESTFAV,     SIGNAL(clicked()), this, SLOT(slotTest()));
+    connect(pushButton_TESTNICKSAY, &QPushButton::clicked, this, &SettingsNotification::slotTest);
+    connect(pushButton_TESTPM,      &QPushButton::clicked, this, &SettingsNotification::slotTest);
+    connect(pushButton_TESTTR,      &QPushButton::clicked, this, &SettingsNotification::slotTest);
+    connect(pushButton_TESTFAV,     &QPushButton::clicked, this, &SettingsNotification::slotTest);
 
-    connect(groupBox_SNDCMD, SIGNAL(toggled(bool)), this, SLOT(slotToggleSndCmd(bool)));
+    connect(groupBox_SNDCMD, &QGroupBox::toggled, this, &SettingsNotification::slotToggleSndCmd);
 
 #ifndef DBUS_NOTIFY
     frame->setVisible(false);
@@ -125,7 +125,7 @@ void SettingsNotification::playFile(const QString &file){
                 return;
 
             ShellCommandRunner *r = new ShellCommandRunner(cmd, QStringList() << file, this);
-            connect(r, SIGNAL(finished(bool,QString)), this, SLOT(slotCmdFinished(bool,QString)));
+            connect(r, &ShellCommandRunner::finished, this, &SettingsNotification::slotCmdFinished);
 
             r->start();
         }

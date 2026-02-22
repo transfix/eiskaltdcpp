@@ -15,7 +15,7 @@ GlobalTimer::GlobalTimer() : QObject(nullptr), timer(new QTimer()), tickCount(0)
     timer->setInterval(1000);
     timer->setSingleShot(false);
     
-    connect(timer.get(), SIGNAL(timeout()), this, SLOT(slotTick()));
+    connect(timer.get(), &QTimer::timeout, this, &GlobalTimer::slotTick);
     
     timer->start();
 }

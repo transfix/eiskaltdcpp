@@ -105,9 +105,9 @@ void SettingsDownloads::init(){
         toolButton_BROWSE->setIcon(WICON(WulforUtil::eiFOLDER_BLUE));
         toolButton_BROWSE1->setIcon(WICON(WulforUtil::eiFOLDER_BLUE));
 
-        connect(toolButton_BROWSE, SIGNAL(clicked()), SLOT(slotBrowse()));
-        connect(toolButton_BROWSE1, SIGNAL(clicked()), SLOT(slotBrowse()));
-        connect(pushButton_CFGLISTS, SIGNAL(clicked()), SLOT(slotCfgPublic()));
+        connect(toolButton_BROWSE, &QToolButton::clicked, this, &SettingsDownloads::slotBrowse);
+        connect(toolButton_BROWSE1, &QToolButton::clicked, this, &SettingsDownloads::slotBrowse);
+        connect(pushButton_CFGLISTS, &QPushButton::clicked, this, &SettingsDownloads::slotCfgPublic);
     }
     {//Download to
         QString aliases, paths;
@@ -128,7 +128,7 @@ void SettingsDownloads::init(){
         }
 
         treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-        connect(treeWidget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotDownloadTo()));
+        connect(treeWidget, &QWidget::customContextMenuRequested, this, &SettingsDownloads::slotDownloadTo);
     }
     {//Queue
         //Auto-priority

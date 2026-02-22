@@ -65,9 +65,9 @@ HashProgress::HashProgress(QWidget *parent):
     timer = new QTimer();
     timer->setInterval(250);
 
-    connect(timer, SIGNAL(timeout()), this, SLOT(timerTick()));
-    connect(pushButton_START, SIGNAL(clicked()), this, SLOT(slotStart()));
-    connect(checkBox, SIGNAL(toggled(bool)), this, SLOT(slotAutoClose(bool)));
+    connect(timer, &QTimer::timeout, this, &HashProgress::timerTick);
+    connect(pushButton_START, &QPushButton::clicked, this, &HashProgress::slotStart);
+    connect(checkBox, &QCheckBox::toggled, this, &HashProgress::slotAutoClose);
 
     timer->start();
 }

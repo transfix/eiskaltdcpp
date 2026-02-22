@@ -27,12 +27,12 @@ PublicHubsList::PublicHubsList(QWidget *parent): QDialog(parent)
     listWidget->addItems(_q(dcpp::getContext()->getSettingsManager()->get(SettingsManager::HUBLIST_SERVERS))
                          .split(";", Qt::SkipEmptyParts));
 
-    connect(pushButton_DOWN, SIGNAL(clicked()), this, SLOT(slotDown()));
-    connect(pushButton_UP,   SIGNAL(clicked()), this, SLOT(slotUp()));
-    connect(pushButton_ADD,  SIGNAL(clicked()), this, SLOT(slotAdd()));
-    connect(pushButton_REM,  SIGNAL(clicked()), this, SLOT(slotRem()));
-    connect(pushButton_EDIT, SIGNAL(clicked()), this, SLOT(slotChange()));
-    connect(this, SIGNAL(accepted()), this, SLOT(slotAccepted()));
+    connect(pushButton_DOWN, &QPushButton::clicked, this, &PublicHubsList::slotDown);
+    connect(pushButton_UP,   &QPushButton::clicked, this, &PublicHubsList::slotUp);
+    connect(pushButton_ADD,  &QPushButton::clicked, this, &PublicHubsList::slotAdd);
+    connect(pushButton_REM,  &QPushButton::clicked, this, &PublicHubsList::slotRem);
+    connect(pushButton_EDIT, &QPushButton::clicked, this, &PublicHubsList::slotChange);
+    connect(this, &QDialog::accepted, this, &PublicHubsList::slotAccepted);
 }
 
 void PublicHubsList::slotAccepted(){

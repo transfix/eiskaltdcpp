@@ -49,57 +49,57 @@ void Settings::init(){
 
     QListWidgetItem *item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiUSERS), tr("Personal"), listWidget);
     SettingsPersonal *personal = new SettingsPersonal(this);
-    connect(this, SIGNAL(timeToDie()), personal, SLOT(ok()));
+    connect(this, &Settings::timeToDie, personal, &SettingsPersonal::ok);
     widgets.insert(item, (int)Page::Personal);
 
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiCONNECT), tr("Connection"), listWidget);
     SettingsConnection *connection = new SettingsConnection(this);
-    connect(this, SIGNAL(timeToDie()), connection, SLOT(ok()));
+    connect(this, &Settings::timeToDie, connection, &SettingsConnection::ok);
     widgets.insert(item, (int)Page::Connection);
 
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiDOWNLOAD), tr("Downloads"), listWidget);
     SettingsDownloads *downloads = new SettingsDownloads(this);
-    connect(this, SIGNAL(timeToDie()), downloads, SLOT(ok()));
+    connect(this, &Settings::timeToDie, downloads, &SettingsDownloads::ok);
     widgets.insert(item, (int)Page::Downloads);
 
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiFOLDER_BLUE), tr("Sharing"), listWidget);
     SettingsSharing *sharing = new SettingsSharing(this);
-    connect(this, SIGNAL(timeToDie()), sharing, SLOT(ok()));
+    connect(this, &Settings::timeToDie, sharing, &SettingsSharing::ok);
     widgets.insert(item, (int)Page::Sharing);
 
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiGUI), tr("GUI"), listWidget);
     SettingsGUI *gui = new SettingsGUI(this);
-    connect(this, SIGNAL(timeToDie()), gui, SLOT(ok()));
+    connect(this, &Settings::timeToDie, gui, &SettingsGUI::ok);
     widgets.insert(item, (int)Page::GUI);
 
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiMESSAGE), tr("Notifications"), listWidget);
     SettingsNotification *notify = new SettingsNotification(this);
-    connect(this, SIGNAL(timeToDie()), notify, SLOT(ok()));
+    connect(this, &Settings::timeToDie, notify, &SettingsNotification::ok);
     widgets.insert(item, (int)Page::Notifications);
 
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiOPEN_LOG_FILE), tr("Logs"), listWidget);
     SettingsLog *logs = new SettingsLog(this);
-    connect(this, SIGNAL(timeToDie()), logs, SLOT(ok()));
+    connect(this, &Settings::timeToDie, logs, &SettingsLog::ok);
     widgets.insert(item, (int)Page::Logs);
 
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiUSERS), tr("User Commands"), listWidget);
     SettingsUC *ucs = new SettingsUC(this);
-    connect(this, SIGNAL(timeToDie()), ucs, SLOT(ok()));
+    connect(this, &Settings::timeToDie, ucs, &SettingsUC::ok);
     widgets.insert(item, (int)Page::UserCommands);
 
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiEDIT), tr("Shortcuts"), listWidget);
     SettingsShortcuts *sshs = new SettingsShortcuts(this);
-    connect(this, SIGNAL(timeToDie()), sshs, SLOT(ok()));
+    connect(this, &Settings::timeToDie, sshs, &SettingsShortcuts::ok);
     widgets.insert(item, (int)Page::Shortcuts);
     
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiEDIT), tr("History"), listWidget);
     SettingsHistory *shist = new SettingsHistory(this);
-    connect(this, SIGNAL(timeToDie()), shist, SLOT(ok()));
+    connect(this, &Settings::timeToDie, shist, &SettingsHistory::ok);
     widgets.insert(item, (int)Page::History);
 
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiCONSOLE), tr("Advanced"), listWidget);
     SettingsAdvanced *sadv = new SettingsAdvanced(this);
-    connect(this, SIGNAL(timeToDie()), sadv, SLOT(ok()));
+    connect(this, &Settings::timeToDie, sadv, &SettingsAdvanced::ok);
     widgets.insert(item, (int)Page::Advanced);
 
     listWidget->setMinimumWidth(listWidget->sizeHintForColumn(0) + 6);
@@ -130,12 +130,12 @@ void Settings::init(){
         aiv->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     }
 
-    connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(slotItemActivated(QListWidgetItem*)));
-    connect(listWidget, SIGNAL(itemActivated(QListWidgetItem*)), this, SLOT(slotItemActivated(QListWidgetItem*)));
-    connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
-    connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
-    connect(this, SIGNAL(accepted()), this, SIGNAL(timeToDie()));
-    connect(this, SIGNAL(accepted()), this, SLOT(dirty()));
+    connect(listWidget, &QListWidget::itemClicked, this, &Settings::slotItemActivated);
+    connect(listWidget, &QListWidget::itemActivated, this, &Settings::slotItemActivated);
+    connect(buttonBox, &QDialogButtonBox::accepted, this, &Settings::accept);
+    connect(buttonBox, &QDialogButtonBox::rejected, this, &Settings::reject);
+    connect(this, &QDialog::accepted, this, &Settings::timeToDie);
+    connect(this, &QDialog::accepted, this, &Settings::dirty);
 }
 
 void Settings::setMouseScroller(QWidget *w){

@@ -132,18 +132,18 @@ void SettingsSharing::init(){
     if (ind >= 0)
         comboBox_BUFSIZE->setCurrentIndex(ind);
 
-    connect(toolButton_ADD, SIGNAL(clicked()), this, SLOT(slotAddExeption()));
-    connect(toolButton_EDIT, SIGNAL(clicked()), this, SLOT(slotEditExeption()));
-    connect(toolButton_DELETE, SIGNAL(clicked()), this, SLOT(slotDeleteExeption()));
-    connect(toolButton_BROWSE, SIGNAL(clicked()), this, SLOT(slotAddDirExeption()));
-    connect(listWidget_SKIPLIST, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(slotEditExeption()));
+    connect(toolButton_ADD, &QToolButton::clicked, this, &SettingsSharing::slotAddExeption);
+    connect(toolButton_EDIT, &QToolButton::clicked, this, &SettingsSharing::slotEditExeption);
+    connect(toolButton_DELETE, &QToolButton::clicked, this, &SettingsSharing::slotDeleteExeption);
+    connect(toolButton_BROWSE, &QToolButton::clicked, this, &SettingsSharing::slotAddDirExeption);
+    connect(listWidget_SKIPLIST, &QListWidget::itemDoubleClicked, this, &SettingsSharing::slotEditExeption);
 
-    connect(toolButton_RECREATE, SIGNAL(clicked()), this, SLOT(slotRecreateShare()));
-    connect(checkBox_SHAREHIDDEN, SIGNAL(clicked(bool)), this, SLOT(slotShareHidden(bool)));
-    connect(treeView->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu()));
+    connect(toolButton_RECREATE, &QToolButton::clicked, this, &SettingsSharing::slotRecreateShare);
+    connect(checkBox_SHAREHIDDEN, &QCheckBox::clicked, this, &SettingsSharing::slotShareHidden);
+    connect(treeView->header(), &QHeaderView::customContextMenuRequested, this, &SettingsSharing::slotHeaderMenu);
 
-    connect(treeWidget_SIMPLE_MODE, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
-    connect(checkBox_SIMPLE_SHARE_MODE, SIGNAL(clicked()), this, SLOT(slotSimpleShareModeChanged()));
+    connect(treeWidget_SIMPLE_MODE, &QTreeWidget::customContextMenuRequested, this, &SettingsSharing::slotContextMenu);
+    connect(checkBox_SIMPLE_SHARE_MODE, &QCheckBox::clicked, this, &SettingsSharing::slotSimpleShareModeChanged);
 
     slotSimpleShareModeChanged();
 }
@@ -266,8 +266,8 @@ void SettingsSharing::slotSimpleShareModeChanged(){
             if (!WSGET(WS_SHAREHEADER_STATE).isEmpty())
                 treeView->header()->restoreState(QByteArray::fromBase64(WSGET(WS_SHAREHEADER_STATE).toUtf8()));
 
-            connect(model, SIGNAL(getName(QModelIndex)), this, SLOT(slotGetName(QModelIndex)));
-            connect(model, SIGNAL(expandMe(QModelIndex)), treeView, SLOT(expand(QModelIndex)));
+            connect(model, &ShareDirModel::getName, this, &SettingsSharing::slotGetName);
+            connect(model, &ShareDirModel::expandMe, treeView, &QTreeView::expand);
 
             model->beginExpanding();
         }

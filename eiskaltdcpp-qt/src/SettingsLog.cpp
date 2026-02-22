@@ -64,7 +64,7 @@ void SettingsLog::init(){
 
     toolButton_BROWSE->setIcon(WulforUtil::getInstance()->getPixmap(WulforUtil::eiFOLDER_BLUE));
 
-    connect(toolButton_BROWSE, SIGNAL(clicked()), this, SLOT(slotBrowse()));
+    connect(toolButton_BROWSE, &QToolButton::clicked, this, &SettingsLog::slotBrowse);
 }
 
 void SettingsLog::ok(){

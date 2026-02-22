@@ -219,29 +219,29 @@ void TransferView::init(){
     treeView_TRANSFERS->setContextMenuPolicy(Qt::CustomContextMenu);
     treeView_TRANSFERS->header()->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    connect(treeView_TRANSFERS, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
-    connect(treeView_TRANSFERS->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu(QPoint)));
+    connect(treeView_TRANSFERS, &QTreeView::customContextMenuRequested, this, &TransferView::slotContextMenu);
+    connect(treeView_TRANSFERS->header(), &QHeaderView::customContextMenuRequested, this, &TransferView::slotHeaderMenu);
 
-    connect(this, SIGNAL(coreDMRequesting(VarMap)),     model, SLOT(initTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreDMStarting(VarMap)),       model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreDMTick(VarMap)),           model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreUpdateParents()),          model, SLOT(updateParents()), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreUpdateParents()),          model, SLOT(sort()), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreDMComplete(VarMap)),       model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreUpdateTransferPosition(VarMap,qint64)), model, SLOT(updateTransferPos(VarMap,qint64)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreDMFailed(VarMap)),         model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreCMAdded(VarMap)),          model, SLOT(addConnection(VarMap)));
-    connect(this, SIGNAL(coreCMConnected(VarMap)),      model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreCMRemoved(VarMap)),        model, SLOT(removeTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreCMFailed(VarMap)),         model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreCMStatusChanged(VarMap)),  model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreQMFinished(VarMap)),       model, SLOT(finishParent(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreQMRemoved(VarMap)),        model, SLOT(finishParent(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreDownloadComplete(QString)), this, SLOT(downloadComplete(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreUMStarting(VarMap)),       model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreUMTick(VarMap)),           model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreUMComplete(VarMap)),       model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreUMFailed(VarMap)),         model, SLOT(updateTransfer(VarMap)), Qt::QueuedConnection);
+    connect(this, &TransferView::coreDMRequesting,     model, &TransferViewModel::initTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreDMStarting,       model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreDMTick,           model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreUpdateParents,          model, &TransferViewModel::updateParents, Qt::QueuedConnection);
+    connect(this, &TransferView::coreUpdateParents,          model, qOverload<>(&TransferViewModel::sort), Qt::QueuedConnection);
+    connect(this, &TransferView::coreDMComplete,       model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreUpdateTransferPosition, model, &TransferViewModel::updateTransferPos, Qt::QueuedConnection);
+    connect(this, &TransferView::coreDMFailed,         model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreCMAdded,          model, &TransferViewModel::addConnection);
+    connect(this, &TransferView::coreCMConnected,      model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreCMRemoved,        model, &TransferViewModel::removeTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreCMFailed,         model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreCMStatusChanged,  model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreQMFinished,       model, &TransferViewModel::finishParent, Qt::QueuedConnection);
+    connect(this, &TransferView::coreQMRemoved,        model, &TransferViewModel::finishParent, Qt::QueuedConnection);
+    connect(this, &TransferView::coreDownloadComplete, this, &TransferView::downloadComplete, Qt::QueuedConnection);
+    connect(this, &TransferView::coreUMStarting,       model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreUMTick,           model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreUMComplete,       model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
+    connect(this, &TransferView::coreUMFailed,         model, &TransferViewModel::updateTransfer, Qt::QueuedConnection);
 
     load();
 }

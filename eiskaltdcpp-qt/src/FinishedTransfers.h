@@ -141,20 +141,20 @@ private:
         treeView->setContextMenuPolicy(Qt::CustomContextMenu);
         treeView->header()->setContextMenuPolicy(Qt::CustomContextMenu);
 
-        QObject::connect(this, SIGNAL(coreAddedFile(VarMap)),   model, SLOT(addFile(VarMap)), Qt::QueuedConnection);
-        QObject::connect(this, SIGNAL(coreAddedUser(VarMap)),   model, SLOT(addUser(VarMap)), Qt::QueuedConnection);
-        QObject::connect(this, SIGNAL(coreUpdatedFile(VarMap)), model, SLOT(addFile(VarMap)), Qt::QueuedConnection);
-        QObject::connect(this, SIGNAL(coreUpdatedUser(VarMap)), model, SLOT(addUser(VarMap)), Qt::QueuedConnection);
-        QObject::connect(this, SIGNAL(coreRemovedFile(QString)), model, SLOT(remFile(QString)), Qt::QueuedConnection);
-        QObject::connect(this, SIGNAL(coreRemovedUser(QString)), model, SLOT(remUser(QString)), Qt::QueuedConnection);
+        QObject::connect(this, &FinishedTransferProxy::coreAddedFile,   model, &FinishedTransfersModel::addFile, Qt::QueuedConnection);
+        QObject::connect(this, &FinishedTransferProxy::coreAddedUser,   model, &FinishedTransfersModel::addUser, Qt::QueuedConnection);
+        QObject::connect(this, &FinishedTransferProxy::coreUpdatedFile, model, &FinishedTransfersModel::addFile, Qt::QueuedConnection);
+        QObject::connect(this, &FinishedTransferProxy::coreUpdatedUser, model, &FinishedTransfersModel::addUser, Qt::QueuedConnection);
+        QObject::connect(this, &FinishedTransferProxy::coreRemovedFile, model, &FinishedTransfersModel::remFile, Qt::QueuedConnection);
+        QObject::connect(this, &FinishedTransferProxy::coreRemovedUser, model, &FinishedTransfersModel::remUser, Qt::QueuedConnection);
 
-        QObject::connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
-        QObject::connect(comboBox, SIGNAL(activated(int)), this, SLOT(slotTypeChanged(int)));
-        QObject::connect(pushButton, SIGNAL(clicked()), this, SLOT(slotClear()));
-        QObject::connect(treeView, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(slotItemDoubleClicked(const QModelIndex &)));
-        QObject::connect(treeView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu()));
-        QObject::connect(treeView->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu()));
-        QObject::connect(checkBox_FULL, SIGNAL(toggled(bool)), this, SLOT(slotSwitchOnlyFull(bool)));
+        QObject::connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &FinishedTransferProxy::slotSettingsChanged);
+        QObject::connect(comboBox, qOverload<int>(&QComboBox::activated), this, &FinishedTransferProxy::slotTypeChanged);
+        QObject::connect(pushButton, &QPushButton::clicked, this, &FinishedTransferProxy::slotClear);
+        QObject::connect(treeView, &QTreeView::doubleClicked, this, &FinishedTransferProxy::slotItemDoubleClicked);
+        QObject::connect(treeView, &QTreeView::customContextMenuRequested, this, &FinishedTransferProxy::slotContextMenu);
+        QObject::connect(treeView->header(), &QHeaderView::customContextMenuRequested, this, &FinishedTransferProxy::slotHeaderMenu);
+        QObject::connect(checkBox_FULL, &QCheckBox::toggled, this, &FinishedTransferProxy::slotSwitchOnlyFull);
 
         FinishedTransfers::slotSwitchOnlyFull(false);
         FinishedTransfers::slotTypeChanged(0);
@@ -204,7 +204,7 @@ private:
         AsyncRunner *runner = new AsyncRunner(this);
 
         runner->setRunFunction([this]() { this->loadListFromDB(); });
-        connect(runner, SIGNAL(finished()), runner, SLOT(deleteLater()));
+        connect(runner, &QThread::finished, runner, &QObject::deleteLater);
 
         runner->start();
     }

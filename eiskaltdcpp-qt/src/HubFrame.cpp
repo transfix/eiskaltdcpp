@@ -1084,7 +1084,7 @@ void HubFrame::closeEvent(QCloseEvent *e){
     for (const auto &it : d->pm){
         PMWindow *w = const_cast<PMWindow*>(it);
 
-        disconnect(w, SIGNAL(privateMessageClosed(QString)), this, SLOT(slotPMClosed(QString)));
+        disconnect(w, &PMWindow::privateMessageClosed, this, &HubFrame::slotPMClosed);
 
         ArenaWidgetManager::getInstance()->rem(w);
     }
@@ -1193,42 +1193,42 @@ void HubFrame::init(){
         EmoticonFactory::getInstance()->fillLayout(frame_SMILES->layout(), sz);
 
     for (const auto &l : frame_SMILES->findChildren<EmoticonLabel*>())
-        connect(l, SIGNAL(clicked()), this, SLOT(slotSmileClicked()));
+        connect(l, &EmoticonLabel::clicked, this, &HubFrame::slotSmileClicked);
 
-    connect(this, SIGNAL(coreConnecting(QString)), this, SLOT(addStatus(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreConnected(QString)), this, SLOT(addStatus(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreUserUpdated(dcpp::UserPtr,dcpp::Identity)), this, SLOT(userUpdated(dcpp::UserPtr,dcpp::Identity)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreUserRemoved(dcpp::UserPtr,dcpp::Identity)), this, SLOT(userRemoved(dcpp::UserPtr,dcpp::Identity)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreStatusMsg(QString)), this, SLOT(addStatus(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreFollow(QString)), this, SLOT(follow(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreFailed()), this, SLOT(clearUsers()), Qt::QueuedConnection);
-    connect(this, SIGNAL(corePassword()), this, SLOT(getPassword()), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreMessage(VarMap)), this, SLOT(newMsg(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(corePrivateMsg(VarMap)), this, SLOT(newPm(VarMap)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreHubUpdated()), MainWindow::getInstance(), SLOT(redrawToolPanel()), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreFavoriteUserAdded(QString)), this, SLOT(changeFavStatus(QString)), Qt::QueuedConnection);
-    connect(this, SIGNAL(coreFavoriteUserRemoved(QString)), this, SLOT(changeFavStatus(QString)), Qt::QueuedConnection);
+    connect(this, &HubFrame::coreConnecting, this, &HubFrame::addStatus, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreConnected, this, &HubFrame::addStatus, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreUserUpdated, this, &HubFrame::userUpdated, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreUserRemoved, this, &HubFrame::userRemoved, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreStatusMsg, this, &HubFrame::addStatus, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreFollow, this, &HubFrame::follow, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreFailed, this, &HubFrame::clearUsers, Qt::QueuedConnection);
+    connect(this, &HubFrame::corePassword, this, &HubFrame::getPassword, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreMessage, this, &HubFrame::newMsg, Qt::QueuedConnection);
+    connect(this, &HubFrame::corePrivateMsg, this, &HubFrame::newPm, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreHubUpdated, MainWindow::getInstance(), &MainWindow::redrawToolPanel, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreFavoriteUserAdded, this, &HubFrame::changeFavStatus, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreFavoriteUserRemoved, this, &HubFrame::changeFavStatus, Qt::QueuedConnection);
 
-    connect(label_LAST_STATUS, SIGNAL(linkActivated(QString)), this, SLOT(slotStatusLinkOpen(QString)));
-    connect(treeView_USERS, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotUserListMenu(QPoint)));
-    connect(treeView_USERS->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu(QPoint)));
-    connect(GlobalTimer::getInstance(), SIGNAL(second()), this, SLOT(slotUsersUpdated()));
-    connect(textEdit_CHAT, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotChatMenu(QPoint)));
-    connect(toolButton_BACK, SIGNAL(clicked()), this, SLOT(slotFindBackward()));
-    connect(toolButton_FORWARD, SIGNAL(clicked()), this, SLOT(slotFindForward()));
-    connect(toolButton_HIDE, SIGNAL(clicked()), this, SLOT(slotHideSearchBar()));
-    connect(lineEdit_FIND, SIGNAL(textEdited(QString)), this, SLOT(slotFindTextEdited(QString)));
-    connect(lineEdit_FILTER, SIGNAL(textChanged(QString)), this, SLOT(slotFilterTextChanged()));
-    connect(comboBox_COLUMNS, SIGNAL(activated(int)), this, SLOT(slotFilterTextChanged()));
-    connect(toolButton_SMILE, SIGNAL(clicked()), this, SLOT(slotSmile()));
-    connect(toolButton_SMILE, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotSmileContextMenu()));
-    connect(toolButton_ALL, SIGNAL(clicked()), this, SLOT(slotFindAll()));
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString, QString)), this, SLOT(slotSettingsChanged(QString,QString)));
-    connect(WulforSettings::getInstance(), SIGNAL(intValueChanged(QString,int)), this, SLOT(slotBoolSettingsChanged(QString,int)));
+    connect(label_LAST_STATUS, &QLabel::linkActivated, this, &HubFrame::slotStatusLinkOpen);
+    connect(treeView_USERS, &QTreeView::customContextMenuRequested, this, &HubFrame::slotUserListMenu);
+    connect(treeView_USERS->header(), &QHeaderView::customContextMenuRequested, this, &HubFrame::slotHeaderMenu);
+    connect(GlobalTimer::getInstance(), &GlobalTimer::second, this, &HubFrame::slotUsersUpdated);
+    connect(textEdit_CHAT, &QTextEdit::customContextMenuRequested, this, &HubFrame::slotChatMenu);
+    connect(toolButton_BACK, &QToolButton::clicked, this, &HubFrame::slotFindBackward);
+    connect(toolButton_FORWARD, &QToolButton::clicked, this, &HubFrame::slotFindForward);
+    connect(toolButton_HIDE, &QToolButton::clicked, this, &HubFrame::slotHideSearchBar);
+    connect(lineEdit_FIND, &QLineEdit::textEdited, this, &HubFrame::slotFindTextEdited);
+    connect(lineEdit_FILTER, &QLineEdit::textChanged, this, &HubFrame::slotFilterTextChanged);
+    connect(comboBox_COLUMNS, qOverload<int>(&QComboBox::activated), this, &HubFrame::slotFilterTextChanged);
+    connect(toolButton_SMILE, &QToolButton::clicked, this, &HubFrame::slotSmile);
+    connect(toolButton_SMILE, &QToolButton::customContextMenuRequested, this, &HubFrame::slotSmileContextMenu);
+    connect(toolButton_ALL, &QToolButton::clicked, this, &HubFrame::slotFindAll);
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &HubFrame::slotSettingsChanged);
+    connect(WulforSettings::getInstance(), &WulforSettings::intValueChanged, this, &HubFrame::slotBoolSettingsChanged);
 
 #ifdef USE_ASPELL
-    connect(plainTextEdit_INPUT, SIGNAL(textChanged()), this, SLOT(slotInputTextChanged()));
-    connect(plainTextEdit_INPUT, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotInputContextMenu()));
+    connect(plainTextEdit_INPUT, &ChatEdit::textChanged, this, &HubFrame::slotInputTextChanged);
+    connect(plainTextEdit_INPUT, &ChatEdit::customContextMenuRequested, this, &HubFrame::slotInputContextMenu);
 
     plainTextEdit_INPUT->setContextMenuPolicy(Qt::CustomContextMenu);
 #endif
@@ -1287,20 +1287,20 @@ void HubFrame::initMenu(){
 
                 d->arenaMenu->addMenu(u_c);
 
-                connect(u_c, SIGNAL(triggered(QAction*)), this, SLOT(slotHubMenu(QAction*)));
+                connect(u_c, &QMenu::triggered, this, &HubFrame::slotHubMenu);
             }
         }
     }
 
     d->arenaMenu->addActions(QList<QAction*>() << sep << close_wnd);
 
-    connect(reconnect,  SIGNAL(triggered()), this, SLOT(slotReconnect()));
-    connect(show_wnd,   SIGNAL(triggered()), this, SLOT(slotShowWnd()));
-    connect(addToFav,   SIGNAL(triggered()), this, SLOT(addAsFavorite()));
-    connect(copyIP,     SIGNAL(triggered()), this, SLOT(slotCopyHubIP()));
-    connect(copyTitle,  SIGNAL(triggered()), this, SLOT(slotCopyHubTitle()));
-    connect(copyURL,    SIGNAL(triggered()), this, SLOT(slotCopyHubURL()));
-    connect(close_wnd,  SIGNAL(triggered()), this, SLOT(slotClose()));
+    connect(reconnect,  &QAction::triggered, this, &HubFrame::slotReconnect);
+    connect(show_wnd,   &QAction::triggered, this, &HubFrame::slotShowWnd);
+    connect(addToFav,   &QAction::triggered, this, &HubFrame::addAsFavorite);
+    connect(copyIP,     &QAction::triggered, this, &HubFrame::slotCopyHubIP);
+    connect(copyTitle,  &QAction::triggered, this, &HubFrame::slotCopyHubTitle);
+    connect(copyURL,    &QAction::triggered, this, &HubFrame::slotCopyHubURL);
+    connect(close_wnd,  &QAction::triggered, this, &HubFrame::slotClose);
 }
 
 
@@ -1888,7 +1888,7 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
         line = line.remove(0, 4);
 
         ShellCommandRunner *sh = new ShellCommandRunner(line, wg);
-        connect(sh, SIGNAL(finished(bool,QString)), this, SLOT(slotShellFinished(bool,QString)));
+        connect(sh, qOverload<bool, const QString&>(&ShellCommandRunner::finished), this, &HubFrame::slotShellFinished);
 
         d->shell_list.append(sh);
 
@@ -2052,10 +2052,10 @@ void HubFrame::addPM(QString cid, QString output, bool keepfocus, QString nick){
         PMWindow *p = ArenaWidgetFactory().create<PMWindow, QString, QString>(cid, _q(d->client->getHubUrl()));
         p->textEdit_CHAT->setContextMenuPolicy(Qt::CustomContextMenu);
 
-        connect(p, SIGNAL(privateMessageClosed(QString)), this, SLOT(slotPMClosed(QString)));
-        connect(p, SIGNAL(inputTextChanged()), this, SLOT(slotInputTextChanged()));
-        connect(p, SIGNAL(inputTextMenu()), this, SLOT(slotInputContextMenu()));
-        connect(p->textEdit_CHAT, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotChatMenu(QPoint)));
+        connect(p, &PMWindow::privateMessageClosed, this, &HubFrame::slotPMClosed);
+        connect(p, &PMWindow::inputTextChanged, this, &HubFrame::slotInputTextChanged);
+        connect(p, &PMWindow::inputTextMenu, this, &HubFrame::slotInputContextMenu);
+        connect(p->textEdit_CHAT, &QTextEdit::customContextMenuRequested, this, &HubFrame::slotChatMenu);
 
         p->setCompleter(d->completer, d->model);
         p->setAttribute(Qt::WA_DeleteOnClose);
@@ -2363,9 +2363,9 @@ void HubFrame::addAsFavorite(){
 
 void HubFrame::disablePrivateMessages(bool disable) {
     if (disable)
-        disconnect(this, SIGNAL(corePrivateMsg(VarMap)), this, SLOT(newPm(VarMap)));
+        disconnect(this, &HubFrame::corePrivateMsg, this, &HubFrame::newPm);
     else
-        connect(this, SIGNAL(corePrivateMsg(VarMap)), this, SLOT(newPm(VarMap)), Qt::QueuedConnection);
+        connect(this, &HubFrame::corePrivateMsg, this, &HubFrame::newPm, Qt::QueuedConnection);
 }
 
 
@@ -3654,7 +3654,7 @@ void HubFrame::slotSettingsChanged(const QString &key, const QString &value){
             EmoticonFactory::getInstance()->fillLayout(frame_SMILES->layout(), sz);
 
             for (const auto &l : frame_SMILES->findChildren<EmoticonLabel*>())
-                connect(l, SIGNAL(clicked()), this, SLOT(slotSmileClicked()));
+                connect(l, &EmoticonLabel::clicked, this, &HubFrame::slotSmileClicked);
         }
     }
     else if (key == "hubframe/chat-background-color"){
@@ -3692,7 +3692,7 @@ void HubFrame::slotBoolSettingsChanged(const QString &key, int value){
             EmoticonFactory::getInstance()->fillLayout(frame_SMILES->layout(), sz);
 
             for (const auto &l : frame_SMILES->findChildren<EmoticonLabel*>())
-                connect(l, SIGNAL(clicked()), this, SLOT(slotSmileClicked()));
+                connect(l, &EmoticonLabel::clicked, this, &HubFrame::slotSmileClicked);
 
         }
         else{

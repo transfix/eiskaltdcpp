@@ -43,7 +43,7 @@ Notification::Notification(QObject *parent) :
 
     enableTray(WBGET(WB_TRAY_ENABLED));
 
-    connect(MainWindow::getInstance(), SIGNAL(notifyMessage(int,QString,QString)), this, SLOT(showMessage(int,QString,QString)), Qt::QueuedConnection);
+    connect(MainWindow::getInstance(), &MainWindow::notifyMessage, this, &Notification::showMessage, Qt::QueuedConnection);
 }
 
 Notification::~Notification(){
@@ -78,7 +78,7 @@ void Notification::enableTray(bool enable){
             timer->setSingleShot(true);
             timer->setInterval(5000);
 
-            connect(timer, SIGNAL(timeout()), this, SLOT(slotCheckTray()));
+            connect(timer, &QTimer::timeout, this, &Notification::slotCheckTray);
 
             timer->start();
 
@@ -123,13 +123,13 @@ void Notification::enableTray(bool enable){
         show_hide->setIcon(WICON(WulforUtil::eiHIDEWINDOW));
         close_app->setIcon(WICON(WulforUtil::eiEXIT));
 
-        connect(show_hide, SIGNAL(triggered()), this, SLOT(slotShowHide()));
-        connect(close_app, SIGNAL(triggered()), this, SLOT(slotExit()));
-        connect(tray, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
-                this, SLOT(slotTrayMenuTriggered(QSystemTrayIcon::ActivationReason)));
-        connect(actSuppressTxt, SIGNAL(triggered()), this, SLOT(slotSuppressTxt()));
-        connect(actSuppressSnd, SIGNAL(triggered()), this, SLOT(slotSuppressSnd()));
-        connect(setup_speed_lim, SIGNAL(triggered()), this, SLOT(slotShowSpeedLimits()));
+        connect(show_hide, &QAction::triggered, this, &Notification::slotShowHide);
+        connect(close_app, &QAction::triggered, this, &Notification::slotExit);
+        connect(tray, &QSystemTrayIcon::activated,
+                this, &Notification::slotTrayMenuTriggered);
+        connect(actSuppressTxt, &QAction::triggered, this, &Notification::slotSuppressTxt);
+        connect(actSuppressSnd, &QAction::triggered, this, &Notification::slotSuppressSnd);
+        connect(setup_speed_lim, &QAction::triggered, this, &Notification::slotShowSpeedLimits);
 
         menu->addAction(show_hide);
         menu->addAction(setup_speed_lim);
@@ -222,7 +222,7 @@ void Notification::showMessage(int t, const QString &title, const QString &msg){
                         break;
 
                     ShellCommandRunner *r = new ShellCommandRunner(cmd, QStringList() << sound, this);
-                    connect(r, SIGNAL(finished(bool,QString)), this, SLOT(slotCmdFinished(bool,QString)));
+                    connect(r, &ShellCommandRunner::finished, this, &Notification::slotCmdFinished);
 
                     r->start();
                 }

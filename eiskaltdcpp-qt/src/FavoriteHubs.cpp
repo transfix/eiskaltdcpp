@@ -25,6 +25,7 @@
 #include <QHeaderView>
 #include <QItemSelectionModel>
 #include <QList>
+#include <QPushButton>
 
 using namespace dcpp;
 
@@ -161,17 +162,17 @@ void FavoriteHubs::init(){
         connectButton->setEnabled(false);
     }
 
-    connect(treeView, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(slotContexMenu(const QPoint&)));
-    connect(treeView, SIGNAL(clicked(QModelIndex)), this, SLOT(slotClicked(QModelIndex)));
-    connect(treeView->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu()));
-    connect(treeView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(slotDblClicked()));
+    connect(treeView, &QWidget::customContextMenuRequested, this, &FavoriteHubs::slotContexMenu);
+    connect(treeView, &QTreeView::clicked, this, &FavoriteHubs::slotClicked);
+    connect(treeView->header(), &QWidget::customContextMenuRequested, this, &FavoriteHubs::slotHeaderMenu);
+    connect(treeView, &QTreeView::doubleClicked, this, &FavoriteHubs::slotDblClicked);
 
-    connect(add_newButton, SIGNAL(clicked()), this, SLOT(slotAdd_newButtonClicked()));
-    connect(changeButton,  SIGNAL(clicked()), this, SLOT(slotChangeButtonClicked()));
-    connect(removeButton,  SIGNAL(clicked()), this, SLOT(slotRemoveButtonClicked()));
-    connect(connectButton, SIGNAL(clicked()), this, SLOT(slotConnectButtonClicked()));
+    connect(add_newButton, &QPushButton::clicked, this, &FavoriteHubs::slotAdd_newButtonClicked);
+    connect(changeButton,  &QPushButton::clicked, this, &FavoriteHubs::slotChangeButtonClicked);
+    connect(removeButton,  &QPushButton::clicked, this, &FavoriteHubs::slotRemoveButtonClicked);
+    connect(connectButton, &QPushButton::clicked, this, &FavoriteHubs::slotConnectButtonClicked);
 
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &FavoriteHubs::slotSettingsChanged);
 
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
 }
@@ -180,8 +181,8 @@ void FavoriteHubs::initHubEditor(FavoriteHubEditor &editor){
     editor.comboBox_ENC->addItem(tr("System default"));
     editor.comboBox_ENC->addItems(WulforUtil::getInstance()->encodings());
     editor.spinBox_MINSEARCH_INTERVAL->setValue(SETTING(MINIMUM_SEARCH_INTERVAL));
-    connect(editor.checkBox_CID, SIGNAL(clicked()), this, SLOT(slotUpdateComboBox_CID()));
-    connect(editor.lineEdit_ADDRESS, SIGNAL(textChanged(QString)), this, SLOT(slotUpdateComboBox_CID()));
+    connect(editor.checkBox_CID, &QCheckBox::clicked, this, &FavoriteHubs::slotUpdateComboBox_CID);
+    connect(editor.lineEdit_ADDRESS, &QLineEdit::textChanged, this, &FavoriteHubs::slotUpdateComboBox_CID);
 }
 
 static bool isValidIP(const QString &ip){

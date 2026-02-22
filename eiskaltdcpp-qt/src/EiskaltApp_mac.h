@@ -31,7 +31,7 @@ public:
     EiskaltEventFilter(): counter(0), has_activity(true), prevAppState(Qt::ApplicationHidden) {
         timer.setInterval(60000);
 
-        connect(&timer, SIGNAL(timeout()), this, SLOT(tick()));
+        connect(&timer, &QTimer::timeout, this, &EiskaltEventFilter::tick);
 
         timer.start();
     }
@@ -113,7 +113,7 @@ public:
         installEventFilter(&ef);
         installMacHandlers();
 
-        connect(&ef, SIGNAL(clickedOnDock()), this, SIGNAL(clickedOnDock()));
+        connect(&ef, &EiskaltEventFilter::clickedOnDock, this, &EiskaltApp::clickedOnDock);
     }
 
     void commitData(QSessionManager& manager){

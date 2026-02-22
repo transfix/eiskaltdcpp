@@ -19,6 +19,7 @@
 #include <QHeaderView>
 #include <QItemSelectionModel>
 #include <QList>
+#include <QPushButton>
 #include <QtDebug>
 
 using namespace dcpp;
@@ -114,18 +115,18 @@ void ADLS::init(){
         downButton->setEnabled(false);
     }
 
-    connect(treeView, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(slotContexMenu(const QPoint&)));
-    connect(treeView, SIGNAL(clicked(QModelIndex)), this, SLOT(slotClicked(QModelIndex)));
-    connect(treeView->header(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotHeaderMenu()));
-    connect(treeView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(slotDblClicked()));
+    connect(treeView, &QWidget::customContextMenuRequested, this, &ADLS::slotContexMenu);
+    connect(treeView, &QTreeView::clicked, this, &ADLS::slotClicked);
+    connect(treeView->header(), &QWidget::customContextMenuRequested, this, &ADLS::slotHeaderMenu);
+    connect(treeView, &QTreeView::doubleClicked, this, &ADLS::slotDblClicked);
 
-    connect(WulforSettings::getInstance(), SIGNAL(strValueChanged(QString,QString)), this, SLOT(slotSettingsChanged(QString,QString)));
+    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &ADLS::slotSettingsChanged);
 
-    connect(add_newButton, SIGNAL(clicked()), this, SLOT(slotAdd_newButtonClicked()));
-    connect(changeButton,  SIGNAL(clicked()), this, SLOT(slotChangeButtonClicked()));
-    connect(removeButton,  SIGNAL(clicked()), this, SLOT(slotRemoveButtonClicked()));
-    connect(upButton,      SIGNAL(clicked()), this, SLOT(slotUpButtonClicked()));
-    connect(downButton,    SIGNAL(clicked()), this, SLOT(slotDownButtonClicked()));
+    connect(add_newButton, &QPushButton::clicked, this, &ADLS::slotAdd_newButtonClicked);
+    connect(changeButton,  &QPushButton::clicked, this, &ADLS::slotChangeButtonClicked);
+    connect(removeButton,  &QPushButton::clicked, this, &ADLS::slotRemoveButtonClicked);
+    connect(upButton,      &QPushButton::clicked, this, &ADLS::slotUpButtonClicked);
+    connect(downButton,    &QPushButton::clicked, this, &ADLS::slotDownButtonClicked);
 }
 
 void ADLS::slotContexMenu(const QPoint &){

@@ -32,7 +32,7 @@ EmoticonDialog::EmoticonDialog(QWidget * parent, Qt::WindowFlags f)
     resize(s);
 
     for (const auto &l : findChildren<EmoticonLabel*>())
-        connect(l, SIGNAL(clicked()), this, SLOT(smileClicked()));
+        connect(l, &EmoticonLabel::clicked, this, &EmoticonDialog::smileClicked);
 }
 
 /** */

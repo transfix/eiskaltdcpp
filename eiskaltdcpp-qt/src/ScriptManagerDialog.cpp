@@ -31,8 +31,8 @@ ScriptManagerDialog::ScriptManagerDialog(QWidget *parent) :
     setupUi(this);
 
     model = new ScriptManagerModel(nullptr);
-    connect(this, SIGNAL(accepted()), model, SLOT(save()));
-    connect(comboBox, SIGNAL(activated(int)), this, SLOT(slotSetChangedAction(int)));
+    connect(this, &QDialog::accepted, model, &ScriptManagerModel::save);
+    connect(comboBox, qOverload<int>(&QComboBox::activated), this, &ScriptManagerDialog::slotSetChangedAction);
 
     treeView->setModel(model);
 

@@ -240,15 +240,14 @@ ShortcutGetter::ShortcutGetter(QWidget *parent) : QDialog(parent)
 	captureButton->setToolTip( tr("Capture keystrokes") );
 	captureButton->setCheckable( captureKeyboard() );
 	captureButton->setChecked( captureKeyboard() );
-	connect(captureButton, SIGNAL(toggled(bool)), 
-            this, SLOT(setCaptureKeyboard(bool)));
+	connect(captureButton, &QPushButton::toggled, this, &ShortcutGetter::setCaptureKeyboard);
 
 
 	buttonbox->addButton(captureButton, QDialogButtonBox::ActionRole);
 
-	connect( buttonbox, SIGNAL(accepted()), this, SLOT(accept()) );
-	connect( buttonbox, SIGNAL(rejected()), this, SLOT(reject()) );
-	connect( clearbutton, SIGNAL(clicked()), leKey, SLOT(clear()) );
+	connect(buttonbox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+	connect(buttonbox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+	connect(clearbutton, &QPushButton::clicked, leKey, &QLineEdit::clear);
 	vbox->addWidget(buttonbox);
 }
 
