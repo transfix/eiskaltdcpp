@@ -157,7 +157,7 @@ bool Secretary::eventFilter(QObject *obj, QEvent *e){
                 */
             }
         }
-        else if (isChat && m_e->button() == Qt::MidButton)
+        else if (isChat && m_e->button() == Qt::MiddleButton)
         {
             QString nick;
             bool cursoratnick = false;

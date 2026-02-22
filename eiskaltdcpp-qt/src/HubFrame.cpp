@@ -952,7 +952,7 @@ bool HubFrame::eventFilter(QObject *obj, QEvent *e){
                 */
             }
         }
-        else if ((isChat || isUserList) && m_e->button() == Qt::MidButton)
+        else if ((isChat || isUserList) && m_e->button() == Qt::MiddleButton)
         {
             QString nick;
             QString cid;

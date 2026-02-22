@@ -50,7 +50,6 @@ class WulforUtil :
 friend class dcpp::Singleton<WulforUtil>;
 
 public:
-    Q_ENUMS (Icons)
 
     enum Icons {
         eiADLS = 0,
@@ -129,6 +128,7 @@ public:
         eiFILETYPE_UNKNOWN,
         eiFILETYPE_VIDEO
     };
+    Q_ENUM(Icons)
 
     typedef QHash<qulonglong, QPixmap> PixmapMap;
 
