@@ -13,13 +13,21 @@
 #include <QAction>
 #include <QIcon>
 #include <QMap>
+#if QT_VERSION >= 0x060000
+#include <QJSEngine>
+#else
 #include <QtScript/QScriptEngine>
+#endif
 
 class MainWindowScript : public QObject
 {
 Q_OBJECT
 public:
+#if QT_VERSION >= 0x060000
+    explicit MainWindowScript(QJSEngine *engine, QObject *parent = nullptr);
+#else
     explicit MainWindowScript(QScriptEngine *engine, QObject *parent = nullptr);
+#endif
     virtual ~MainWindowScript();
 
 public slots:
@@ -29,7 +37,11 @@ public slots:
     bool remMenu(QMenu *menu);
 
 private:
+#if QT_VERSION >= 0x060000
+    QJSEngine *engine;
+#else
     QScriptEngine *engine;
+#endif
     QMap<QString, QAction*> actions;
     QMap<QMenu*, QAction*> menus;
 };

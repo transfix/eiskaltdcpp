@@ -10,8 +10,14 @@
 #pragma once
 
 #include <QObject>
+// Use hex literal instead of QT_VERSION_CHECK() — Qt5 moc doesn't expand it
+#if QT_VERSION >= 0x060000
+#include <QJSEngine>
+#include <QJSValue>
+#else
 #include <QtScript/QScriptEngine>
 #include <QtScript/QScriptValue>
+#endif
 #include <QFileSystemWatcher>
 #include <QMetaType>
 
@@ -24,10 +30,23 @@
 #include "dcpp/DCPlusPlus.h"
 #include "dcpp/Singleton.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include "ScriptBridge.h"
+
+struct ScriptObject {
+    QJSEngine engine;
+    ScriptBridge *bridge = nullptr;
+    QString path;
+};
+
+#else // Qt5
+
 struct ScriptObject {
     QScriptEngine engine;
     QString path;
 };
+
+#endif
 
 class ScriptEngine :
         public QObject,
@@ -46,7 +65,14 @@ public Q_SLOTS:
     void loadScript(const QString&);
     void stopScripts();
     void stopScript(const QString&);
+
+public:
+    // Not Q_SLOTS — called directly, and conditional types confuse the moc preprocessor
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    void prepareThis(QJSEngine &);
+#else
     void prepareThis(QScriptEngine &);
+#endif
 
 private Q_SLOTS:
     void slotWSKeyChanged(const QString &key, const QString &value);
@@ -65,8 +91,14 @@ private:
     ScriptEngine(const ScriptEngine&) {}
     ScriptEngine &operator =(const ScriptEngine&){ return *this; }
 
+    // Conditional types confuse the moc preprocessor — keep in private (non-slot) section
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    void registerStaticMembers(QJSEngine &);
+    void registerDynamicMembers(QJSEngine &);
+#else
     void registerStaticMembers(QScriptEngine &);
     void registerDynamicMembers(QScriptEngine &);
+#endif
 
     QMap<QString, ScriptObject*> scripts;
 

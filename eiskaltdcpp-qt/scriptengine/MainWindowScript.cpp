@@ -12,6 +12,101 @@
 
 #include <QtDebug>
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+
+MainWindowScript::MainWindowScript(QJSEngine *engine, QObject *parent)
+    : QObject(parent)
+    , engine(engine)
+{
+    Q_ASSERT_X(engine != nullptr, Q_FUNC_INFO, "engine == NULL");
+}
+
+MainWindowScript::~MainWindowScript(){
+}
+
+bool MainWindowScript::addToolButton(const QString &name, const QString &title, const QIcon &icon) {
+    QJSValue mwToolBar = engine->globalObject().property("MainWindow").property("ToolBar");
+
+    if (mwToolBar.isUndefined()) {
+        qDebug() << "MainWindowScript::addToolButton: MainWindow.ToolBar is undefined";
+        return false;
+    }
+
+    if (name.isEmpty())
+        return false;
+
+    QAction *act = new QAction(icon, title, MainWindow::getInstance());
+    act->setObjectName("scriptToolbarButton" + name);
+    actions.insert(name, act);
+
+    QJSValue act_val = engine->newQObject(act);
+    mwToolBar.setProperty(name, act_val);
+
+    MainWindow::getInstance()->addActionOnToolBar(act);
+
+    return true;
+}
+
+bool MainWindowScript::remToolButton(const QString &name) {
+    QJSValue mwToolBar = engine->globalObject().property("MainWindow").property("ToolBar");
+
+    if (mwToolBar.isUndefined()) {
+        qDebug() << "MainWindowScript::remToolButton: MainWindow.ToolBar is undefined";
+        return false;
+    }
+
+    if (mwToolBar.property(name).isUndefined() || !actions.contains(name))
+        return false;
+
+    QAction *act = actions.value(name);
+
+    mwToolBar.setProperty(name, QJSValue());
+
+    MainWindow::getInstance()->remActionFromToolBar(act);
+    actions.remove(name);
+
+    act->deleteLater();
+
+    return true;
+}
+
+bool MainWindowScript::addMenu(QMenu *menu) {
+    if (!menu || menus.contains(menu) || menu->title().isEmpty())
+        return false;
+
+    QMenuBar *menuBar = MainWindow::getInstance()->menuBar();
+    QAction *act = menuBar->addMenu(menu);
+
+    MainWindow::getInstance()->toggleMainMenu(menuBar->isVisible());
+
+    menus.insert(menu, act);
+
+    QJSValue menu_val = engine->newQObject(menu);
+    engine->globalObject().property("MainWindow").property("MenuBar").setProperty(menu->title(), menu_val);
+
+    return true;
+}
+
+bool MainWindowScript::remMenu(QMenu *menu) {
+    if (!(menu && menus.contains(menu)))
+        return false;
+
+    QMenuBar *menuBar = MainWindow::getInstance()->menuBar();
+    menuBar->removeAction(menus[menu]);
+
+    menus.remove(menu);
+
+    menu->deleteLater();
+
+    engine->globalObject().property("MainWindow").property("MenuBar").setProperty(menu->title(), QJSValue());
+
+    MainWindow::getInstance()->toggleMainMenu(menuBar->isVisible());
+
+    return true;
+}
+
+#else // Qt5
+
 MainWindowScript::MainWindowScript(QScriptEngine *engine, QObject *parent)
     : QObject(parent)
     , engine(engine)
@@ -110,3 +205,5 @@ bool MainWindowScript::remMenu(QMenu *menu) {
 
     return true;
 }
+
+#endif // QT_VERSION check

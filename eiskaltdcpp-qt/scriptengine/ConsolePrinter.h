@@ -9,35 +9,22 @@
 
 #pragma once
 
-#include <QtGlobal>
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-#include <QJSEngine>
-#include <QJSValue>
-#include "ConsolePrinter.h"
-#else
-#include <QtScript/QScriptEngine>
-#include <QtScript/QScriptValue>
-#endif
-#include <QDialog>
+// Qt6-only: Helper QObject for ScriptConsole that provides print/printErr.
+// Replaces the QScriptEngine callee().data() pattern removed in Qt6.
+// This header is only moc-processed in Qt6 builds (via CMakeLists.txt).
 
-#include "ui_UIDialogScriptConsole.h"
+#include <QObject>
 
-class ScriptConsole : public QDialog,
-                      private Ui::DialogScriptConsole
-{
-Q_OBJECT
+class QTextEdit;
+
+class ConsolePrinter : public QObject {
+    Q_OBJECT
 public:
-    explicit ScriptConsole(QWidget *parent = nullptr);
+    explicit ConsolePrinter(QTextEdit *edit, QObject *parent = nullptr);
 
-private Q_SLOTS:
-    void startEvaluation();
-    void stopEvaluation();
+    Q_INVOKABLE void print(const QString &text);
+    Q_INVOKABLE void printErr(const QString &text);
 
 private:
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    QJSEngine engine;
-    ConsolePrinter *printer = nullptr;
-#else
-    QScriptEngine engine;
-#endif
+    QTextEdit *m_edit;
 };

@@ -10,6 +10,68 @@
 #include "ScriptConsole.h"
 #include "ScriptEngine.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+
+// ============ Qt6: ConsolePrinter implementation ============
+
+ConsolePrinter::ConsolePrinter(QTextEdit *edit, QObject *parent)
+    : QObject(parent), m_edit(edit) {}
+
+void ConsolePrinter::print(const QString &text) {
+    if (m_edit) m_edit->append(text);
+}
+
+void ConsolePrinter::printErr(const QString &text) {
+    if (m_edit) m_edit->append(text);
+}
+
+ScriptConsole::ScriptConsole(QWidget *parent) :
+    QDialog(parent)
+{
+    setupUi(this);
+
+    this->setWindowFlags(Qt::Window);
+
+    setWindowTitle(tr("Script Console"));
+
+    ScriptEngine::getInstance()->prepareThis(engine);
+
+    printer = new ConsolePrinter(textEdit_OUTPUT, this);
+    QJSValue printerVal = engine.newQObject(printer);
+    engine.globalObject().setProperty("_printer", printerVal);
+
+    // Override print/printErr to write to console output
+    engine.evaluate(QStringLiteral(
+        "function print() {"
+        "  var parts = [];"
+        "  for (var i = 0; i < arguments.length; i++) parts.push(arguments[i]);"
+        "  _printer.print(parts.join(' '));"
+        "}"
+        "function printErr() {"
+        "  if (arguments.length < 1) return;"
+        "  var msg = arguments[0];"
+        "  for (var i = 1; i < arguments.length; i++) msg = msg.replace('%' + i, arguments[i]);"
+        "  _printer.printErr(msg);"
+        "}"
+    ));
+
+    connect(pushButton_START, SIGNAL(clicked()), this, SLOT(startEvaluation()));
+    connect(pushButton_STOP, SIGNAL(clicked()), this, SLOT(stopEvaluation()));
+}
+
+void ScriptConsole::startEvaluation(){
+    QJSValue result = engine.evaluate(textEdit_INPUT->toPlainText());
+    if (result.isError()) {
+        textEdit_OUTPUT->append(result.property("stack").toString());
+    }
+}
+
+void ScriptConsole::stopEvaluation(){
+    engine.setInterrupted(true);
+}
+
+#else // Qt5
+
 static QScriptValue myPrintFunc(QScriptContext *context, QScriptEngine *engine);
 static QScriptValue myPrintErrFunc(QScriptContext *context, QScriptEngine *engine);
 
@@ -85,3 +147,5 @@ static QScriptValue myPrintErrFunc(QScriptContext *context, QScriptEngine *engin
 
     return engine->undefinedValue();
 }
+
+#endif // QT_VERSION check

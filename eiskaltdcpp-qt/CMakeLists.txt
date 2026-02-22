@@ -18,9 +18,6 @@ set (QT "Qt${QT_MAJOR}")
 message (STATUS "Building eiskaltdcpp-qt with ${QT}")
 
 # --- Block removed modules under Qt6 ---
-if (USE_QT6 AND USE_JS)
-    message (FATAL_ERROR "USE_JS is not yet supported with Qt6 (QScriptEngine removed). Set -DUSE_JS=OFF")
-endif ()
 if (USE_QT6 AND USE_QT_QML)
     message (FATAL_ERROR "USE_QT_QML is not yet supported with Qt6 (QDeclarativeView removed). Set -DUSE_QT_QML=OFF")
 endif ()
@@ -61,7 +58,11 @@ else (DBUS_NOTIFY)
 endif (DBUS_NOTIFY)
 
 if (USE_JS)
-    find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Script REQUIRED)
+    if (USE_QT6)
+        find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Qml REQUIRED)
+    else ()
+        find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Script REQUIRED)
+    endif ()
     add_definitions (-DUSE_JS)
     message (STATUS "Building with Qt Script support")
 else (USE_JS)
@@ -135,6 +136,15 @@ endif (NOT ASPELL_FOUND)
 if (USE_JS)
     file (GLOB scriptengine_srcs ${PROJECT_SOURCE_DIR}/scriptengine/*.cpp)
     file (GLOB scriptengine_hdrs ${PROJECT_SOURCE_DIR}/scriptengine/*.h)
+
+    # ScriptBridge.h and ConsolePrinter.h are Qt6-only (they unconditionally
+    # include QJSEngine) — exclude from moc on Qt5 builds.
+    if (NOT USE_QT6)
+        list (REMOVE_ITEM scriptengine_hdrs
+                ${PROJECT_SOURCE_DIR}/scriptengine/ScriptBridge.h
+                ${PROJECT_SOURCE_DIR}/scriptengine/ConsolePrinter.h)
+    endif ()
+
     list (APPEND SRCS
             ${scriptengine_srcs}
             src/codeeditor/codeeditor.cpp)
@@ -255,7 +265,11 @@ if (DBUS_NOTIFY)
     list (APPEND LIBS ${QT}::DBus)
 endif ()
 if (USE_JS)
-    list (APPEND LIBS ${QT}::Script)
+    if (USE_QT6)
+        list (APPEND LIBS ${QT}::Qml)
+    else ()
+        list (APPEND LIBS ${QT}::Script)
+    endif ()
 endif ()
 if (USE_QT_SQLITE)
     list (APPEND LIBS ${QT}::Sql)

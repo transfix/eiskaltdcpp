@@ -35,11 +35,170 @@
 #include <QDir>
 #include <QFile>
 #include <QTextStream>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QScriptValueIterator>
+#endif
 
 #ifndef CLIENT_SCRIPTS_DIR
 #define CLIENT_SCRIPTS_DIR
 #endif
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+
+// ============================================================
+// Qt6: ScriptBridge implementation
+// ============================================================
+
+ScriptBridge::ScriptBridge(QJSEngine *engine, QObject *parent)
+    : QObject(parent), m_engine(engine) {}
+
+void ScriptBridge::shellExec(const QString &cmd, const QStringList &args) {
+    QProcess *process = new QProcess();
+    QObject::connect(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished),
+                     process, &QProcess::deleteLater);
+    process->start(cmd, args);
+}
+
+QJSValue ScriptBridge::getMagnets(const QStringList &files) {
+    QStringList magnets;
+    for (const auto &f : files) {
+        QFile file(f);
+        if (!file.exists())
+            continue;
+        const dcpp::TTHValue *tth = dcpp::getContext()->getHashManager()->getFileTTHif(_tq(f));
+        if (tth)
+            magnets.push_back(WulforUtil::getInstance()->makeMagnet(
+                f.split(QDir::separator(), Qt::SkipEmptyParts).last(),
+                file.size(), _q(tth->toBase32())));
+    }
+    QJSValue array = m_engine->newArray(magnets.size());
+    for (int i = 0; i < magnets.length(); i++)
+        array.setProperty(i, QJSValue(magnets.at(i)));
+    return array;
+}
+
+void ScriptBridge::printErr(const QString &msg) {
+    qWarning() << qPrintable(msg);
+}
+
+void ScriptBridge::Import(const QString &name) {
+    qWarning() << "ScriptBridge> Import() is not supported in Qt6. Ignoring:" << name;
+}
+
+QJSValue ScriptBridge::Include(const QString &path) {
+    QFile f(path);
+    if (!(f.exists() && f.open(QIODevice::ReadOnly)))
+        return QJSValue();
+    QTextStream stream(&f);
+    QString data = stream.readAll();
+    QJSValue ret = m_engine->evaluate(data, path);
+    if (ret.isError())
+        qDebug() << "ScriptBridge> Include error:" << ret.property("stack").toString();
+    return ret;
+}
+
+QJSValue ScriptBridge::Eval(const QString &code) {
+    QJSValue ret = m_engine->evaluate(code);
+    if (ret.isError())
+        qDebug() << "ScriptBridge> Eval error:" << ret.property("stack").toString();
+    return ret;
+}
+
+QString ScriptBridge::parseChatLinks(const QString &text) {
+    return HubFrame::LinkParser::parseForLinks(text, false);
+}
+
+QString ScriptBridge::parseMagnetAlias(const QString &text) {
+    QString output = text;
+    HubFrame::LinkParser::parseForMagnetAlias(output);
+    return output;
+}
+
+QJSValue ScriptBridge::getStaticMember(const QString &className) {
+    QObject *obj = nullptr;
+    if (className == "AntiSpam") {
+        if (!AntiSpam::getInstance()) {
+            AntiSpam::newInstance();
+            AntiSpam::getInstance()->loadSettings();
+            AntiSpam::getInstance()->loadLists();
+        }
+        obj = qobject_cast<QObject*>(AntiSpam::getInstance());
+    }
+    else if (className == "DownloadQueue")
+        obj = qobject_cast<QObject*>(ArenaWidgetFactory().create<dcpp::Singleton, DownloadQueue>());
+    else if (className == "FavoriteHubs")
+        obj = qobject_cast<QObject*>(ArenaWidgetFactory().create<dcpp::Singleton, FavoriteHubs>());
+    else if (className == "FavoriteUsers")
+        obj = qobject_cast<QObject*>(ArenaWidgetFactory().create<dcpp::Singleton, FavoriteUsers>());
+    else if (className == "Notification") {
+        if (Notification::getInstance()) {
+            m_engine->globalObject().setProperty("NOTIFY_ANY", (int)Notification::ANY);
+            obj = qobject_cast<QObject*>(Notification::getInstance());
+        }
+    }
+    else if (className == "HubManager")
+        obj = qobject_cast<QObject*>(HubManager::getInstance());
+    else if (className == "ClientManagerScript") {
+        if (!ClientManagerScript::getInstance()) {
+            ClientManagerScript::newInstance();
+            ClientManagerScript::getInstance()->moveToThread(MainWindow::getInstance()->thread());
+        }
+        obj = qobject_cast<QObject*>(ClientManagerScript::getInstance());
+    }
+    else if (className == "HashManagerScript") {
+        if (!HashManagerScript::getInstance()) {
+            HashManagerScript::newInstance();
+            HashManagerScript::getInstance()->moveToThread(MainWindow::getInstance()->thread());
+        }
+        obj = qobject_cast<QObject*>(HashManagerScript::getInstance());
+    }
+    else if (className == "LogManagerScript") {
+        if (!LogManagerScript::getInstance()) {
+            LogManagerScript::newInstance();
+            LogManagerScript::getInstance()->moveToThread(MainWindow::getInstance()->thread());
+        }
+        obj = qobject_cast<QObject*>(LogManagerScript::getInstance());
+    }
+    else if (className == "WulforUtil")
+        obj = qobject_cast<QObject*>(WulforUtil::getInstance());
+    else if (className == "WulforSettings")
+        obj = qobject_cast<QObject*>(WulforSettings::getInstance());
+
+    return m_engine->newQObject(obj);
+}
+
+QJSValue ScriptBridge::createHubFrame(const QString &url, const QString &enc) {
+    HubFrame *fr = ArenaWidgetFactory().create<HubFrame, MainWindow*, QString, QString>(
+        MainWindow::getInstance(), url, enc);
+    return m_engine->newQObject(qobject_cast<QObject*>(fr));
+}
+
+QJSValue ScriptBridge::createSearchFrame() {
+    SearchFrame *fr = ArenaWidgetFactory().create<SearchFrame>();
+    return m_engine->newQObject(qobject_cast<QObject*>(fr));
+}
+
+QJSValue ScriptBridge::createShellCommandRunner(const QString &cmd, const QStringList &args) {
+    ShellCommandRunner *runner = new ShellCommandRunner(cmd, args, MainWindow::getInstance());
+    QObject::connect(runner, SIGNAL(finished(bool,QString)), runner, SLOT(deleteLater()));
+    return m_engine->newQObject(qobject_cast<QObject*>(runner));
+}
+
+QJSValue ScriptBridge::createMainWindowScript() {
+    return m_engine->newQObject(qobject_cast<QObject*>(
+        new MainWindowScript(m_engine, MainWindow::getInstance())));
+}
+
+QJSValue ScriptBridge::createScriptWidget() {
+    return m_engine->newQObject(qobject_cast<QObject*>(
+        ArenaWidgetFactory().create<ScriptWidget>()));
+}
+
+QJSValue ScriptBridge::createIcon(const QString &path) {
+    return m_engine->toScriptValue(QIcon(path));
+}
+
+#else // Qt5
 
 static QScriptValue shellExec(QScriptContext*, QScriptEngine*);
 static QScriptValue getMagnets(QScriptContext*, QScriptEngine*);
@@ -53,6 +212,8 @@ static QScriptValue includeFile(QScriptContext*, QScriptEngine*);
 static QScriptValue printErr(QScriptContext*, QScriptEngine*);
 QScriptValue ScriptVarMapToScriptValue(QScriptEngine* eng, const VarMap& map);
 void ScriptVarMapFromScriptValue( const QScriptValue& value, VarMap& map);
+
+#endif // QT_VERSION check
 
 ScriptEngine::ScriptEngine() :
         QObject(nullptr)
@@ -123,19 +284,31 @@ void ScriptEngine::loadJSScript(const QString &file){
 
     prepareThis(obj->engine);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QJSValue scriptPath = QJSValue(file.left(file.lastIndexOf(QDir::separator())) + QDir::separator());
+    obj->engine.globalObject().setProperty("SCRIPT_PATH", scriptPath);
+
+    scripts.insert(file, obj);
+    watcher.addPath(file);
+
+    QJSValue result = obj->engine.evaluate(data, file);
+    if (result.isError()) {
+        qDebug() << "ScriptEngine> Error loading" << file << ":"
+                 << result.property("stack").toString();
+    }
+#else
     QScriptValue scriptPath = QScriptValue(&obj->engine, file.left(file.lastIndexOf(QDir::separator())) + QDir::separator());
     obj->engine.globalObject().setProperty("SCRIPT_PATH", scriptPath);
 
     scripts.insert(file, obj);
-
     watcher.addPath(file);
 
     obj->engine.evaluate(data, file);
-
     if (obj->engine.hasUncaughtException()){
         for (const auto &s : obj->engine.uncaughtExceptionBacktrace())
             qDebug() << s;
     }
+#endif
 }
 
 #ifdef USE_QML
@@ -166,6 +339,18 @@ void ScriptEngine::stopScript(const QString &path){
 
     ScriptObject *obj = scripts.value(path);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QJSValue deinit = obj->engine.globalObject().property("deinit");
+    if (deinit.isCallable())
+        deinit.call();
+
+    obj->engine.setInterrupted(true);
+
+    scripts.remove(path);
+
+    delete obj->bridge;
+    delete obj;
+#else
     obj->engine.globalObject().property("deinit").call();
 
     if (obj->engine.isEvaluating())
@@ -177,6 +362,7 @@ void ScriptEngine::stopScript(const QString &path){
         qDebug() << obj->engine.uncaughtExceptionBacktrace();
 
     delete obj;
+#endif
 }
 
 void ScriptEngine::slotProcessChangedFiles() {
@@ -188,6 +374,116 @@ void ScriptEngine::slotProcessChangedFiles() {
     changedFiles.clear();
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+
+// ============ Qt6 prepareThis using ScriptBridge ============
+
+void ScriptEngine::prepareThis(QJSEngine &engine){
+    DEBUG_BLOCK
+
+    ScriptBridge *bridge = new ScriptBridge(&engine);
+    QJSValue bridgeVal = engine.newQObject(bridge);
+    engine.globalObject().setProperty("_bridge", bridgeVal);
+
+    // Store bridge in the corresponding ScriptObject (if any) for cleanup
+    for (auto it = scripts.begin(); it != scripts.end(); ++it) {
+        if (&it.value()->engine == &engine) {
+            it.value()->bridge = bridge;
+            break;
+        }
+    }
+
+#ifndef _WIN32
+    QJSValue scriptsPath = QJSValue(QString(CLIENT_SCRIPTS_DIR) + QDir::separator());
+#else
+    QJSValue scriptsPath = QJSValue(
+        qApp->applicationDirPath() + QDir::separator() + CLIENT_SCRIPTS_DIR + QDir::separator());
+#endif
+    engine.globalObject().setProperty("SCRIPTS_PATH", scriptsPath);
+
+    // Expose singleton QObjects directly
+    engine.globalObject().setProperty("MainWindow",
+        engine.newQObject(MainWindow::getInstance()));
+    engine.globalObject().setProperty("WulforUtil",
+        engine.newQObject(WulforUtil::getInstance()));
+    engine.globalObject().setProperty("WulforSettings",
+        engine.newQObject(WulforSettings::getInstance()));
+    engine.globalObject().setProperty("WidgetManager",
+        engine.newQObject(ArenaWidgetManager::getInstance()));
+
+    // LinkParser namespace via evaluate
+    engine.evaluate(QStringLiteral(
+        "var LinkParser = {"
+        "  parse: function(text) { return _bridge.parseChatLinks(text); },"
+        "  parseMagnetAlias: function(text) { return _bridge.parseMagnetAlias(text); }"
+        "};"
+    ));
+
+    // Create backward-compatible JS function wrappers for utility functions
+    engine.evaluate(QStringLiteral(
+        "function shellExec(cmd) {"
+        "  var args = [];"
+        "  for (var i = 1; i < arguments.length; i++) args.push(arguments[i]);"
+        "  _bridge.shellExec(cmd, args);"
+        "}"
+        "function getMagnets() {"
+        "  var files = [];"
+        "  for (var i = 0; i < arguments.length; i++) files.push(arguments[i]);"
+        "  return _bridge.getMagnets(files);"
+        "}"
+        "function printErr(msg) {"
+        "  _bridge.printErr(msg);"
+        "}"
+        "function Import(name) {"
+        "  _bridge.Import(name);"
+        "}"
+        "function Include(path) {"
+        "  return _bridge.Include(path);"
+        "}"
+        "function Eval(code) {"
+        "  return _bridge.Eval(code);"
+        "}"
+    ));
+
+    // Create backward-compatible constructor wrappers (work with 'new' keyword)
+    registerStaticMembers(engine);
+    registerDynamicMembers(engine);
+}
+
+void ScriptEngine::registerStaticMembers(QJSEngine &engine){
+    DEBUG_BLOCK
+
+    static QStringList staticMembers = QStringList()
+        << "AntiSpam" << "DownloadQueue" << "FavoriteHubs"
+        << "Notification" << "HubManager" << "ClientManagerScript"
+        << "LogManagerScript" << "FavoriteUsers" << "HashManagerScript";
+
+    // WulforUtil and WulforSettings are already exposed as direct QObject references
+    for (const auto &cl : staticMembers) {
+        QString wrapper = QStringLiteral("function %1() { return _bridge.getStaticMember('%1'); }").arg(cl);
+        engine.evaluate(wrapper);
+    }
+}
+
+void ScriptEngine::registerDynamicMembers(QJSEngine &engine){
+    DEBUG_BLOCK
+
+    // Create JS constructor functions that delegate to bridge factory methods
+    engine.evaluate(QStringLiteral(
+        "function HubFrame(url, enc) { return _bridge.createHubFrame(url, enc); }"
+        "function SearchFrame() { return _bridge.createSearchFrame(); }"
+        "function ShellCommandRunner(cmd) {"
+        "  var args = [];"
+        "  for (var i = 1; i < arguments.length; i++) args.push(arguments[i]);"
+        "  return _bridge.createShellCommandRunner(cmd, args);"
+        "}"
+        "function MainWindowScript() { return _bridge.createMainWindowScript(); }"
+        "function ScriptWidget() { return _bridge.createScriptWidget(); }"
+        "function QIcon(path) { return _bridge.createIcon(path); }"
+    ));
+}
+
+#else // Qt5
 
 void ScriptEngine::prepareThis(QScriptEngine &engine){
     DEBUG_BLOCK
@@ -280,6 +576,8 @@ void ScriptEngine::registerDynamicMembers(QScriptEngine &engine){
     }
 }
 
+#endif // QT_VERSION check (Qt5 vs Qt6 prepareThis/register*)
+
 void ScriptEngine::slotWSKeyChanged(const QString &key, const QString &value){
     DEBUG_BLOCK
 
@@ -312,6 +610,9 @@ void ScriptEngine::slotScriptChanged(const QString &script){
         changedFiles.push_back(script);
     }
 }
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+// ============ Qt5 free-standing script callback functions ============
 
 static QScriptValue shellExec(QScriptContext *ctx, QScriptEngine *engine){
     Q_UNUSED(engine);
@@ -590,3 +891,5 @@ void ScriptVarMapFromScriptValue( const QScriptValue& value, VarMap& map){
        map[itr.name()] = qscriptvalue_cast<VarMap::mapped_type>(itr.value());
     }
 }
+
+#endif // QT_VERSION < 6 (Qt5 callback functions)
