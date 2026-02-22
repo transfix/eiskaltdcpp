@@ -38,8 +38,13 @@ find_package (Iconv REQUIRED)
 find_package (Git QUIET)
 
 option (USE_QT5 "Qt 5.x interface." ON)
+option (USE_QT6 "Qt 6.x interface (requires Qt >= 6.2)." OFF)
 option (USE_QT_QML "Build with Qt Declarative Ui support" OFF)
 option (USE_QT_SQLITE "Build with SQLite support" ON)
+
+if (USE_QT5 AND USE_QT6)
+    message (FATAL_ERROR "USE_QT5 and USE_QT6 are mutually exclusive. Please enable only one.")
+endif ()
 option (USE_GTK3 "GTK+ 3.x interface" OFF)
 option (NO_UI_DAEMON "Daemon without any UI" OFF)
 option (WITH_DHT "DHT support for libeiskaltdcpp" ON)
@@ -132,7 +137,7 @@ else (USE_MINIUPNP)
     message (STATUS "Building without UPnP support (miniupnpc)")
 endif (USE_MINIUPNP)
 
-if (USE_QT5)
+if (USE_QT5 OR USE_QT6)
     if (USE_PROGRESS_BARS)
         message (STATUS "Building with Qt UI with progress bars")
     else (USE_PROGRESS_BARS)
@@ -174,12 +179,12 @@ endif (INSTALL_RUNTIME_PATH)
 
 if (NOT CMAKE_BUILD_TYPE)
     set (CMAKE_BUILD_TYPE "RelWithDebInfo")
-elseif (CMAKE_BUILD_TYPE STREQUAL "Debug" AND USE_QT5)
+elseif (CMAKE_BUILD_TYPE STREQUAL "Debug" AND (USE_QT5 OR USE_QT6))
     message (STATUS "${PROJECT_NAME} Qt with CMAKE_BUILD_TYPE=Debug is very unstable now!\n"
                    "\tYou can build it for your own risk.\n"
                    "\tBut do not even try to write bug reports in this case.\n"
                    "\tPlease use RelWithDebInfo instead it.")
-elseif (CMAKE_BUILD_TYPE STREQUAL "Gentoo" AND USE_QT5)
+elseif (CMAKE_BUILD_TYPE STREQUAL "Gentoo" AND (USE_QT5 OR USE_QT6))
     message (STATUS "${PROJECT_NAME} Qt with CMAKE_BUILD_TYPE=Gentoo may be unstable now.\n"
                    "\tPlease try to use RelWithDebInfo instead it if some troubles happened.")
 endif (NOT CMAKE_BUILD_TYPE)
@@ -386,9 +391,9 @@ if (JSONRPC_DAEMON)
     add_subdirectory (json)
 endif (JSONRPC_DAEMON)
 
-if (USE_QT5)
+if (USE_QT5 OR USE_QT6)
     add_subdirectory (eiskaltdcpp-qt)
-endif (USE_QT5)
+endif ()
 
 if (USE_GTK3)
     add_subdirectory (eiskaltdcpp-gtk)

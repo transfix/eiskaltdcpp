@@ -36,7 +36,7 @@ if (USE_QT OR USE_QT5 OR USE_GTK OR USE_GTK3)
     if (UNIX AND NOT APPLE AND NOT HAIKU)
         install (FILES icons/icon_128x128.png DESTINATION ${SHARE_DIR}/pixmaps/ RENAME eiskaltdcpp.png)
     endif ()
-endif (USE_QT OR USE_QT5 OR USE_GTK OR USE_GTK3)
+endif (USE_QT5 OR USE_QT6 OR USE_GTK3)
 
 if (USE_ASPELL AND LOCAL_ASPELL_DATA)
     install (DIRECTORY aspell/ DESTINATION ${CLIENT_DATA_DIR}/aspell)

@@ -4,29 +4,34 @@ cmake_minimum_required (VERSION 3.2.0)
 
 include_directories(${PROJECT_BINARY_DIR})
 
-if (USE_QT5)
-    find_package (Qt5Core          5.0.2 REQUIRED)
-    find_package (Qt5Gui           5.0.2 REQUIRED)
-    find_package (Qt5Widgets       5.0.2 REQUIRED)
-    find_package (Qt5Xml           5.0.2 REQUIRED)
-    find_package (Qt5Network       5.0.2 REQUIRED)
-    # This is temporary workaround which fixes build with Qt5 on Travis CI:
-    find_package (Qt5LinguistTools       REQUIRED)
-    find_package (Qt5Multimedia    5.0.2 REQUIRED)
-    find_package (Qt5Concurrent    5.0.2 REQUIRED)
+# --- Qt version selection ---
+if (USE_QT6)
+    set (QT_MAJOR 6)
+    set (QT_MIN_VERSION 6.2.0)
+elseif (USE_QT5)
+    set (QT_MAJOR 5)
+    set (QT_MIN_VERSION 5.0.2)
+else ()
+    message (FATAL_ERROR "No Qt version selected (USE_QT5 or USE_QT6)")
+endif ()
+set (QT "Qt${QT_MAJOR}")
+message (STATUS "Building eiskaltdcpp-qt with ${QT}")
+
+# --- Block removed modules under Qt6 ---
+if (USE_QT6 AND USE_JS)
+    message (FATAL_ERROR "USE_JS is not yet supported with Qt6 (QScriptEngine removed). Set -DUSE_JS=OFF")
+endif ()
+if (USE_QT6 AND USE_QT_QML)
+    message (FATAL_ERROR "USE_QT_QML is not yet supported with Qt6 (QDeclarativeView removed). Set -DUSE_QT_QML=OFF")
 endif ()
 
-set (QT_USE_QTNETWORK 1)
-set (QT_USE_QTXML 1)
-set (QT_USE_QTWEBKIT 0)
+# --- Find required Qt modules ---
+find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Core Gui Widgets Xml Network
+              Multimedia Concurrent LinguistTools REQUIRED)
 
 if (USE_QT_QML)
-    if (USE_QT5)
-        find_package (Qt5Declarative 5.0.2 REQUIRED)
-        find_package (Qt5XmlPatterns 5.0.2 REQUIRED)
-    endif ()
-    add_definitions(-DUSE_QML)
-    set (QT_USE_QTDECLARATIVE 1)
+    find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Declarative XmlPatterns REQUIRED)
+    add_definitions (-DUSE_QML)
     set (USE_JS ON)
     message (STATUS "Building with Qt Declarative UI support")
 else (USE_QT_QML)
@@ -38,33 +43,24 @@ if (APPLE OR HAIKU)
 endif ()
 
 if (DBUS_NOTIFY)
-    if (USE_QT5)
-        find_package (Qt5DBus 5.0.2 REQUIRED)
-    endif (USE_QT5)
+    find_package (${QT} ${QT_MIN_VERSION} COMPONENTS DBus REQUIRED)
     add_definitions (-DDBUS_NOTIFY)
-    set (QT_USE_QTDBUS 1)
     message (STATUS "Building with Qt DBus support")
 else (DBUS_NOTIFY)
     message (STATUS "Building without Qt DBus support")
 endif (DBUS_NOTIFY)
 
 if (USE_JS)
-    if (USE_QT5)
-        find_package (Qt5Script 5.0.2 REQUIRED)
-    endif ()
+    find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Script REQUIRED)
     add_definitions (-DUSE_JS)
-    set (QT_USE_QTSCRIPT 1)
     message (STATUS "Building with Qt Script support")
 else (USE_JS)
     message (STATUS "Building without Qt Script support")
 endif (USE_JS)
 
 if (USE_QT_SQLITE)
-    if (USE_QT5)
-        find_package (Qt5Sql 5.0.2 REQUIRED)
-    endif (USE_QT5)
+    find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Sql REQUIRED)
     add_definitions (-DUSE_QT_SQLITE)
-    set (QT_USE_QTSQL 1)
     message (STATUS "Building with Qt SQLite support")
 else (USE_QT_SQLITE)
     message (STATUS "Building without Qt SQLite support")
@@ -147,17 +143,21 @@ if (NOT USE_JS)
             ${PROJECT_SOURCE_DIR}/src/ScriptManagerDialog.h)
 endif (NOT USE_JS)
 
-if (USE_QT5)
-    #Create moc files
+if (USE_QT6)
+    qt_wrap_cpp (M_SRCS ${MOC_HDRS} OPTIONS -nn)
+    qt_wrap_ui (U_SRCS ${UI_FORMS})
+elseif (USE_QT5)
     QT5_WRAP_CPP (M_SRCS ${MOC_HDRS} OPTIONS -nn)
-    #Create .h files from ui files
     QT5_WRAP_UI (U_SRCS ${UI_FORMS})
-endif()
+endif ()
 
-if (USE_QT5)
+if (USE_QT6)
+    get_target_property (QT_LRELEASE_EXECUTABLE ${QT}::lrelease LOCATION)
+    get_target_property (QT_RCC_EXECUTABLE ${QT}::rcc LOCATION)
+elseif (USE_QT5)
     set (QT_LRELEASE_EXECUTABLE ${Qt5_LRELEASE_EXECUTABLE})
-    get_target_property(QT_RCC_EXECUTABLE Qt5::rcc LOCATION)
-endif()
+    get_target_property (QT_RCC_EXECUTABLE Qt5::rcc LOCATION)
+endif ()
 
 #Create translations
 file (MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/translations/)
@@ -174,7 +174,7 @@ endforeach ()
 
 if (WIN32 OR APPLE OR INSTALL_QT_TRANSLATIONS OR BUILD_STATIC)
     # Qt translations
-    get_target_property (QtCore_location Qt5::Core LOCATION)
+    get_target_property (QtCore_location ${QT}::Core LOCATION)
     get_filename_component (QtCore_DIR "${QtCore_location}" PATH)
     if (WIN32)
         set (QT_ROOT_DIR "${QtCore_DIR}/..")
@@ -183,7 +183,11 @@ if (WIN32 OR APPLE OR INSTALL_QT_TRANSLATIONS OR BUILD_STATIC)
     elseif (BUILD_STATIC)
         set (QT_ROOT_DIR "${QtCore_DIR}/..")
     elseif (INSTALL_QT_TRANSLATIONS AND NOT BUILD_STATIC)
-        set (QT_ROOT_DIR "/usr/share/qt5")
+        if (USE_QT6)
+            set (QT_ROOT_DIR "/usr/share/qt6")
+        else ()
+            set (QT_ROOT_DIR "/usr/share/qt5")
+        endif ()
     endif ()
     set (QT_TRANSLATIONS_DIR "${QT_ROOT_DIR}/translations/")
     file (GLOB QT_TRANSLATIONS "${QT_TRANSLATIONS_DIR}/qt_*.qm")
@@ -220,31 +224,25 @@ execute_process (COMMAND ${QT_RCC_EXECUTABLE} -binary  ${DEFAULT_QRC_FILE}
                                               -o ${PROJECT_BINARY_DIR}/default.rcc
                  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/)
 
-if (USE_QT5)
-    include_directories (${Qt5Core_INCLUDE_DIRS}
-                         ${Qt5Gui_INCLUDE_DIRS}
-                         ${Qt5Widgets_INCLUDE_DIRS}
-                         ${Qt5Xml_INCLUDE_DIRS}
-                         ${Qt5Multimedia_INCLUDE_DIRS}
-                         ${Qt5Concurrent_INCLUDE_DIRS}
-                         ${Qt5Declarative_INCLUDE_DIRS}
-                         ${Qt5XmlPatterns_INCLUDE_DIRS}
-                         ${Qt5DBus_INCLUDE_DIRS}
-                         ${Qt5Script_INCLUDE_DIRS}
-                         ${Qt5Sql_INCLUDE_DIRS}
-                         ${Qt5Network_INCLUDE_DIRS})
-    list (APPEND LIBS ${Qt5Core_LIBRARIES}
-                      ${Qt5Gui_LIBRARIES}
-                      ${Qt5Widgets_LIBRARIES}
-                      ${Qt5Xml_LIBRARIES}
-                      ${Qt5Multimedia_LIBRARIES}
-                      ${Qt5Concurrent_LIBRARIES}
-                      ${Qt5Declarative_LIBRARIES}
-                      ${Qt5XmlPatterns_LIBRARIES}
-                      ${Qt5DBus_LIBRARIES}
-                      ${Qt5Script_LIBRARIES}
-                      ${Qt5Sql_LIBRARIES}
-                      ${Qt5Network_LIBRARIES})
+# Qt target-based linking (handles include_directories automatically)
+list (APPEND LIBS ${QT}::Core
+                  ${QT}::Gui
+                  ${QT}::Widgets
+                  ${QT}::Xml
+                  ${QT}::Multimedia
+                  ${QT}::Concurrent
+                  ${QT}::Network)
+if (USE_QT_QML)
+    list (APPEND LIBS ${QT}::Declarative ${QT}::XmlPatterns)
+endif ()
+if (DBUS_NOTIFY)
+    list (APPEND LIBS ${QT}::DBus)
+endif ()
+if (USE_JS)
+    list (APPEND LIBS ${QT}::Script)
+endif ()
+if (USE_QT_SQLITE)
+    list (APPEND LIBS ${QT}::Sql)
 endif ()
 
 include_directories (${PROJECT_SOURCE_DIR}
@@ -255,6 +253,8 @@ include_directories (${PROJECT_SOURCE_DIR}
 list (APPEND LIBS ${ICONV_LIBRARIES})
 
 if (BUILD_STATIC AND USE_QT5)
+    # Static build support is Qt5-only for now.
+    # TODO: Add Qt6 static build support (platform plugin API changed).
     if (WIN32)
         find_library (QT5FontDatabaseSupport Qt5FontDatabaseSupport)
         find_library (QT5EventDispatcherSupport Qt5EventDispatcherSupport)
@@ -525,17 +525,22 @@ if (INSTALL_METAINFO)
 endif ()
 
 if (APPLE)
-    if (USE_QT5)
+    if (USE_QT6)
+        get_target_property (_qt_install_prefix ${QT}::Core LOCATION)
+        get_filename_component (_qt_install_prefix "${_qt_install_prefix}" PATH)
+        get_filename_component (_qt_install_prefix "${_qt_install_prefix}" PATH)
+        set (MACDEPLOYQT "${_qt_install_prefix}/bin/macdeployqt")
+    elseif (USE_QT5)
         if (${_qt5Core_install_prefix} STREQUAL "")
         message(WARNING "Warning! \"_qt5Core_install_prefix\" is not set, macdeployqt found in PATH will be used")
         set (MACDEPLOYQT "macdeployqt")
         else (${_qt5Core_install_prefix} STREQUAL "")
         set (MACDEPLOYQT "${_qt5Core_install_prefix}/bin/macdeployqt")
         endif (${_qt5Core_install_prefix} STREQUAL "")
-        install (CODE "
-                    execute_process(COMMAND ${MACDEPLOYQT} ${PROJECT_NAME_GLOBAL}.app -verbose=2
-                        WORKING_DIRECTORY \${CMAKE_INSTALL_PREFIX})")
-    endif (USE_QT5)
+    endif ()
+    install (CODE "
+                execute_process(COMMAND ${MACDEPLOYQT} ${PROJECT_NAME_GLOBAL}.app -verbose=2
+                    WORKING_DIRECTORY \${CMAKE_INSTALL_PREFIX})")
     set (CPACK_BINARY_DRAGNDROP ON)
 endif (APPLE)
 
