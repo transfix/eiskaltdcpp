@@ -15,7 +15,9 @@
 #include "ShellCommandRunner.h"
 
 #include <QFileDialog>
+#ifndef NO_QT_MULTIMEDIA
 #include <QSoundEffect>
+#endif
 #include <QUrl>
 #include <QDir>
 
@@ -108,12 +110,14 @@ void SettingsNotification::playFile(const QString &file){
             return;
 
         if (!WBGET(WB_NOTIFY_SND_EXTERNAL)) {
+#ifndef NO_QT_MULTIMEDIA
             auto *effect = new QSoundEffect(this);
             effect->setSource(QUrl::fromLocalFile(file));
             connect(effect, &QSoundEffect::playingChanged, effect, [effect]() {
                 if (!effect->isPlaying()) effect->deleteLater();
             });
             effect->play();
+#endif
         } else {
             QString cmd = lineEdit_SNDCMD->text();
 

@@ -34,8 +34,10 @@ target_include_directories(eiskaltdcpp-tests PRIVATE
     ${ZLIB_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIR}
     ${GETTEXT_INCLUDE_DIR}
-    ${IDN2_INCLUDE_DIR}
 )
+if (USE_IDN2)
+    target_include_directories(eiskaltdcpp-tests PRIVATE ${IDN2_INCLUDE_DIR})
+endif ()
 
 target_link_libraries(eiskaltdcpp-tests PRIVATE
     dcpp

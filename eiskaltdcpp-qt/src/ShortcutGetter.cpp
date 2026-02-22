@@ -215,7 +215,7 @@ ShortcutGetter::ShortcutGetter(QWidget *parent) : QDialog(parent)
 
 			
 	QVBoxLayout *vbox = new QVBoxLayout(this);
-	vbox->setMargin(2);
+	vbox->setContentsMargins(2, 2, 2, 2);
 	vbox->setSpacing(4);
 			
 	QLabel *l = new QLabel(this);

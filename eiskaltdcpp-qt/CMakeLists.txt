@@ -27,7 +27,17 @@ endif ()
 
 # --- Find required Qt modules ---
 find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Core Gui Widgets Xml Network
-              Multimedia Concurrent LinguistTools REQUIRED)
+              Concurrent REQUIRED)
+# Multimedia is optional (needed for QSoundEffect notification sounds)
+find_package (${QT} COMPONENTS Multimedia QUIET)
+if (${QT}Multimedia_FOUND)
+    message (STATUS "Found ${QT}::Multimedia — sound notifications enabled")
+else ()
+    message (STATUS "${QT}::Multimedia not found — sound notifications disabled")
+    add_definitions (-DNO_QT_MULTIMEDIA)
+endif ()
+# LinguistTools is optional (only needed for updating translations)
+find_package (${QT} COMPONENTS LinguistTools QUIET)
 
 if (USE_QT_QML)
     find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Declarative XmlPatterns REQUIRED)
@@ -152,7 +162,11 @@ elseif (USE_QT5)
 endif ()
 
 if (USE_QT6)
-    get_target_property (QT_LRELEASE_EXECUTABLE ${QT}::lrelease LOCATION)
+    if (TARGET ${QT}::lrelease)
+        get_target_property (QT_LRELEASE_EXECUTABLE ${QT}::lrelease LOCATION)
+    else ()
+        find_program (QT_LRELEASE_EXECUTABLE NAMES lrelease-qt6 lrelease6 lrelease)
+    endif ()
     get_target_property (QT_RCC_EXECUTABLE ${QT}::rcc LOCATION)
 elseif (USE_QT5)
     set (QT_LRELEASE_EXECUTABLE ${Qt5_LRELEASE_EXECUTABLE})
@@ -229,9 +243,11 @@ list (APPEND LIBS ${QT}::Core
                   ${QT}::Gui
                   ${QT}::Widgets
                   ${QT}::Xml
-                  ${QT}::Multimedia
                   ${QT}::Concurrent
                   ${QT}::Network)
+if (${QT}Multimedia_FOUND)
+    list (APPEND LIBS ${QT}::Multimedia)
+endif ()
 if (USE_QT_QML)
     list (APPEND LIBS ${QT}::Declarative ${QT}::XmlPatterns)
 endif ()

@@ -312,7 +312,7 @@ namespace dht
         cmd.addParam("NI", SETTING(NICK));
         cmd.addParam("SL", Util::toString(dcpp::getContext()->getUploadManager()->getSlots()));
 
-        int limit = ThrottleManager::getInstance()->getUpLimit();
+        int limit = dcpp::getContext()->getThrottleManager()->getUpLimit();
         if (SETTING(THROTTLE_ENABLE) && limit > 0) {
             cmd.addParam("US", Util::toString(limit*1024));
         } else {

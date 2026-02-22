@@ -171,11 +171,11 @@ QWidget *Settings::prepareWidget(QWidget *w)
         scrollArea->setWidget(w);
         scrollArea->setWidgetResizable(true);
         scrollArea->setFrameShape(QFrame::NoFrame);
-        w->layout()->setMargin(0);
+        w->layout()->setContentsMargins(0, 0, 0, 0);
         return scrollArea;
     }
 
-    w->layout()->setMargin(0);
+    w->layout()->setContentsMargins(0, 0, 0, 0);
     return w;
 }
 

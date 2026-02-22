@@ -2112,7 +2112,7 @@ TTHValue* QueueManager::FileQueue::findPFSPubTTH()
         {
             if(cand == NULL || cand->getNextPublishingTime() > qi->getNextPublishingTime() || (cand->getNextPublishingTime() == qi->getNextPublishingTime() && cand->getPriority() < qi->getPriority()) )
             {
-                if(qi->getDownloadedBytes() > (int64_t)ctx()->getHashManager()->getBlockSize(qi->getTTH()))
+                if(qi->getDownloadedBytes() > (int64_t)dcpp::getContext()->getHashManager()->getBlockSize(qi->getTTH()))
                     cand = qi;
             }
         }

@@ -19,9 +19,13 @@ include_directories (${PROJECT_BINARY_DIR}
                      ${BZIP2_INCLUDE_DIR}
                      ${ZLIB_INCLUDE_DIR}
                      ${OPENSSL_INCLUDE_DIR}
-                     ${GETTEXT_INCLUDE_DIR}
-                     ${LUA_INCLUDE_DIR}
-                     ${IDN2_INCLUDE_DIR})
+                     ${GETTEXT_INCLUDE_DIR})
+if (LUA_SCRIPT)
+    include_directories (${LUA_INCLUDE_DIR})
+endif ()
+if (USE_IDN2)
+    include_directories (${IDN2_INCLUDE_DIR})
+endif ()
 
 if (WIN32)
     set (LINK STATIC)

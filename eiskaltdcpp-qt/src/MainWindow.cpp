@@ -36,6 +36,7 @@
 #include <QMetaType>
 #include <QTimer>
 #include <QAction>
+#include <QActionGroup>
 #include <QStatusBar>
 #include <QDate>
 

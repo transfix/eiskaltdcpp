@@ -11,7 +11,9 @@
 
 #include <QMenu>
 #include <QList>
+#ifndef NO_QT_MULTIMEDIA
 #include <QSoundEffect>
+#endif
 #include <QUrl>
 #include <QFile>
 
@@ -205,12 +207,14 @@ void Notification::showMessage(int t, const QString &title, const QString &msg){
                     break;
 
                 if (!WBGET(WB_NOTIFY_SND_EXTERNAL)) {
+#ifndef NO_QT_MULTIMEDIA
                     auto *effect = new QSoundEffect(this);
                     effect->setSource(QUrl::fromLocalFile(sound));
                     connect(effect, &QSoundEffect::playingChanged, effect, [effect]() {
                         if (!effect->isPlaying()) effect->deleteLater();
                     });
                     effect->play();
+#endif
                 } else {
                     QString cmd = WSGET(WS_NOTIFY_SND_CMD);
 

@@ -208,7 +208,7 @@ ShareBrowser::ShareBrowser(UserPtr _user, const QString &_file, const QString &_
 {
     nick = WulforUtil::getInstance()->getNicks(user->getCID());
 
-    if (nick.indexOf(_q(user->getCID().toBase32()) >= nullptr)) { // User offline
+    if (nick.indexOf(_q(user->getCID().toBase32())) >= 0) { // User offline
         nick = _q(dcpp::getContext()->getClientManager()->getNicks(HintedUser(user, ""))[0]);
 
         QFileInfo info(_file);
@@ -606,7 +606,7 @@ void ShareBrowser::changeRoot(dcpp::DirectoryListing::Directory *root){
              << _q(file->mediaInfo.video_info)
              << _q(file->mediaInfo.audio_info)
              << (quint64)file->getHit()
-             << QDateTime::fromTime_t(file->getTS()).toString("yyyy-MM-dd hh:mm");
+             << QDateTime::fromSecsSinceEpoch(file->getTS()).toString("yyyy-MM-dd hh:mm");
 
         child = new FileBrowserItem(data, list_root);
         child->file = file;
