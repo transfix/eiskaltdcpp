@@ -11,7 +11,8 @@
 
 #include <QMenu>
 #include <QList>
-#include <QSound>
+#include <QSoundEffect>
+#include <QUrl>
 #include <QFile>
 
 #include "WulforUtil.h"
@@ -203,9 +204,14 @@ void Notification::showMessage(int t, const QString &title, const QString &msg){
                 if (sound.isEmpty() || !QFile::exists(sound))
                     break;
 
-                if (!WBGET(WB_NOTIFY_SND_EXTERNAL))
-                    QSound::play(sound);
-                else {
+                if (!WBGET(WB_NOTIFY_SND_EXTERNAL)) {
+                    auto *effect = new QSoundEffect(this);
+                    effect->setSource(QUrl::fromLocalFile(sound));
+                    connect(effect, &QSoundEffect::playingChanged, effect, [effect]() {
+                        if (!effect->isPlaying()) effect->deleteLater();
+                    });
+                    effect->play();
+                } else {
                     QString cmd = WSGET(WS_NOTIFY_SND_CMD);
 
                     if (cmd.isEmpty())
