@@ -21,7 +21,6 @@
 
 #include <QApplication>
 #include <QFile>
-#include <QTextCodec>
 #include <QLocale>
 #include <QFile>
 #include <QDir>

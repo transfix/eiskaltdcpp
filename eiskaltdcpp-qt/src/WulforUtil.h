@@ -14,7 +14,6 @@
 #include <QImage>
 #include <QMap>
 #include <QHash>
-#include <QTextCodec>
 #include <QTreeView>
 #include <QAbstractItemModel>
 //#include <QHttp>
@@ -149,7 +148,6 @@ public:
 
     void textToHtml(QString&,bool=true);
 
-    QTextCodec *codecForEncoding(const QString&);
     //Convert Qt encoding name to internal DC++ representation
     QString qtEnc2DcEnc(QString);
     QString dcEnc2QtEnc(QString);

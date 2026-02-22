@@ -755,13 +755,6 @@ QStringList WulforUtil::encodings(){
     return QtEnc2DCEnc.keys();
 }
 
-QTextCodec *WulforUtil::codecForEncoding(const QString &name){
-    if (!QtEnc2DCEnc.contains(name))
-        return QTextCodec::codecForLocale();
-
-    return QTextCodec::codecForName(name.toUtf8());
-}
-
 bool WulforUtil::openUrl(const QString &url){
     if (url.startsWith("http://") || url.startsWith("www.") || url.startsWith(("ftp://")) || url.startsWith("https://")){
         if (!SETTING(MIME_HANDLER).empty())

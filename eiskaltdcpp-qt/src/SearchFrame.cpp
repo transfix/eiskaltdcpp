@@ -10,7 +10,6 @@
 #include <QComboBox>
 #include <QTreeView>
 #include <QAction>
-#include <QTextCodec>
 #include <QDir>
 #include <QItemSelectionModel>
 #include <QFileDialog>

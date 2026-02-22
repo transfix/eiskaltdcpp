@@ -20,7 +20,6 @@
 #include <QModelIndex>
 #include <QItemSelectionModel>
 #include <QtDebug>
-#include <QTextCodec>
 #include <QMessageBox>
 #include <QClipboard>
 #include <QKeyEvent>

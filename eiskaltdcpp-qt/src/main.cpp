@@ -70,7 +70,6 @@ using namespace std;
 #include <QMainWindow>
 #include <QRegularExpression>
 #include <QObject>
-#include <QTextCodec>
 
 #ifdef DBUS_NOTIFY
 #include <QtDBus>
@@ -122,9 +121,6 @@ bool dockClickHandler(id self,SEL _cmd,...)
 
 int main(int argc, char *argv[])
 {
-#if QT_VERSION < 0x050000
-    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
-#endif
     setlocale(LC_ALL, "");
 
     EiskaltApp app(argc, argv, _q(dcpp::Util::getLoginName()+"EDCPP"));
@@ -153,9 +149,6 @@ int main(int argc, char *argv[])
     dcpp::getContext()->getTimerManager()->start();
 
     dcpp::getContext()->getHashManager()->setPriority(Thread::IDLE);
-#if QT_VERSION < 0x050000
-    QTextCodec::setCodecForCStrings(QTextCodec::codecForName("UTF-8"));
-#endif
     app.setOrganizationName("EiskaltDC++ Team");
     app.setApplicationName("EiskaltDC++ Qt");
     app.setApplicationVersion(QString::fromStdString(eiskaltdcppVersionString));

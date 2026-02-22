@@ -11,7 +11,6 @@
 
 #include <QEvent>
 #include <QStringList>
-#include <QTextCodec>
 #include <QWidget>
 
 #include "ui_UISecretary.h"

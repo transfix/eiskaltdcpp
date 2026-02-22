@@ -44,7 +44,6 @@
 #endif
 
 #include <QMouseEvent>
-#include <QTextCodec>
 #include <QItemSelectionModel>
 #include <QMenu>
 #include <QClipboard>
@@ -79,8 +78,6 @@ public:
     Client *client;
 
     // Work data
-    QTextCodec *codec;
-
     quint64 total_shared;
     QString hub_title;
 
@@ -813,7 +810,6 @@ HubFrame::HubFrame(QWidget *parent, QString hub="", QString encoding="")
 
     d->total_shared = 0;
     d->arenaMenu = nullptr;
-    d->codec = nullptr;
     d->chatDisabled = false;
     d->hasMessages = false;
     d->hasHighlightMessages = false;
@@ -837,8 +833,6 @@ HubFrame::HubFrame(QWidget *parent, QString hub="", QString encoding="")
     }
 
     d->client->setEncoding(enc.toStdString());
-
-    d->codec = WulforUtil::getInstance()->codecForEncoding(encoding);
 
     init();
 
