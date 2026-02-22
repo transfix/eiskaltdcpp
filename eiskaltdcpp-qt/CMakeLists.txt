@@ -17,11 +17,6 @@ endif ()
 set (QT "Qt${QT_MAJOR}")
 message (STATUS "Building eiskaltdcpp-qt with ${QT}")
 
-# --- Block removed modules under Qt6 ---
-if (USE_QT6 AND USE_QT_QML)
-    message (FATAL_ERROR "USE_QT_QML is not yet supported with Qt6 (QDeclarativeView removed). Set -DUSE_QT_QML=OFF")
-endif ()
-
 # --- Find required Qt modules ---
 find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Core Gui Widgets Xml Network
               Concurrent REQUIRED)
@@ -36,13 +31,14 @@ endif ()
 # LinguistTools is optional (only needed for updating translations)
 find_package (${QT} COMPONENTS LinguistTools QUIET)
 
+# --- QDeclarativeView removed in Qt6, replaced with QQuickWidget ---
 if (USE_QT_QML)
-    find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Declarative XmlPatterns REQUIRED)
+    find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Quick QuickWidgets REQUIRED)
     add_definitions (-DUSE_QML)
     set (USE_JS ON)
-    message (STATUS "Building with Qt Declarative UI support")
+    message (STATUS "Building with Qt Quick UI support")
 else (USE_QT_QML)
-    message (STATUS "Building without Qt Declarative UI support")
+    message (STATUS "Building without Qt Quick/Declarative UI support")
 endif (USE_QT_QML)
 
 if (APPLE OR HAIKU)
@@ -259,7 +255,7 @@ if (${QT}Multimedia_FOUND)
     list (APPEND LIBS ${QT}::Multimedia)
 endif ()
 if (USE_QT_QML)
-    list (APPEND LIBS ${QT}::Declarative ${QT}::XmlPatterns)
+    list (APPEND LIBS ${QT}::Quick ${QT}::QuickWidgets)
 endif ()
 if (DBUS_NOTIFY)
     list (APPEND LIBS ${QT}::DBus)
