@@ -60,9 +60,7 @@
 #include <QShortcut>
 #include <QHeaderView>
 
-#if QT_VERSION >= 0x050000
 #include <QUrlQuery>
-#endif
 
 #include <QtDebug>
 
@@ -506,27 +504,15 @@ QString HubFrame::LinkParser::parseForLinks(QString input, bool use_emot){
                 if (linktype == "magnet:"){
                     QString magnet = link;
 
-#if QT_VERSION >= 0x050000
                     QUrlQuery u;
-#else
-                    QUrl u;
-#endif
 
                     if (!magnet.contains("+")) {
-#if QT_VERSION >= 0x050000
                         u.setQuery(magnet.toUtf8());
-#else
-                        u.setEncodedUrl(magnet.toUtf8());
-#endif
                     } else {
                         QString _l = magnet;
 
                         _l.replace("+", "%20");
-#if QT_VERSION >= 0x050000
                             u.setQuery(_l.toUtf8());
-#else
-                            u.setEncodedUrl(_l.toUtf8());
-#endif
                     }
                     if (u.hasQueryItem("kt")) {
                         QString keywords = u.queryItemValue("kt");
@@ -541,15 +527,9 @@ QString HubFrame::LinkParser::parseForLinks(QString input, bool use_emot){
                             keywords = tr("Invalid keywords");
 
                         if (!hub.isEmpty())
-#if QT_VERSION >= 0x050000
                             toshow = keywords.toHtmlEscaped() + " (" + hub.toHtmlEscaped() + ")";
                         else
                             toshow = keywords.toHtmlEscaped();
-#else
-                            toshow = Qt::escape(keywords) + " (" + Qt::escape(hub) + ")";
-                        else
-                            toshow = Qt::escape(keywords);
-#endif
                     }
                     else {
                         QString name, tth;
@@ -1551,7 +1531,7 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
     PMWindow *pm = qobject_cast<PMWindow *>(wg);
     Q_D(HubFrame);
 
-    QStringList list = line.split(" ", QString::SkipEmptyParts);
+    QStringList list = line.split(" ", Qt::SkipEmptyParts);
 
     if (list.isEmpty())
         return false;
@@ -1594,7 +1574,7 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
         }
     }
     else if (cmd == "/alias" && !emptyParam){
-        QStringList lex = line.split(" ", QString::SkipEmptyParts);
+        QStringList lex = line.split(" ", Qt::SkipEmptyParts);
 
         if (lex.size() >= 2){
             QString aliases = QByteArray::fromBase64(WSGET(WS_CHAT_CMD_ALIASES).toUtf8());
@@ -1615,10 +1595,10 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
             }
             else if (lex.at(1) == "purge" && lex.size() == 3){
                 QString alias = lex.at(2);
-                QStringList alias_list = aliases.split('\n', QString::SkipEmptyParts);
+                QStringList alias_list = aliases.split('\n', Qt::SkipEmptyParts);
 
                 for (const auto &line : alias_list){
-                    QStringList cmds = line.split('\t', QString::SkipEmptyParts);
+                    QStringList cmds = line.split('\t', Qt::SkipEmptyParts);
 
                     if (cmds.size() == 2 && alias == cmds.at(0)){
                         alias_list.removeAt(alias_list.indexOf(line));
@@ -1648,7 +1628,7 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
                         pm->addStatus(tr("Invalid alias syntax."));
                 }
                 else {
-                    QStringList new_cmd = raw.split("::", QString::SkipEmptyParts);
+                    QStringList new_cmd = raw.split("::", Qt::SkipEmptyParts);
 
                     if (new_cmd.size() < 2 || new_cmd.at(1).isEmpty()){
                         if (fr == this)
@@ -1934,11 +1914,11 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
     }
     else if (!WSGET(WS_CHAT_CMD_ALIASES).isEmpty()){
         QString aliases = QByteArray::fromBase64(WSGET(WS_CHAT_CMD_ALIASES).toUtf8());
-        QStringList alias_list = aliases.split('\n', QString::SkipEmptyParts);
+        QStringList alias_list = aliases.split('\n', Qt::SkipEmptyParts);
         bool ok = false;
 
         for (const auto &line : alias_list){
-            QStringList cmds = line.split('\t', QString::SkipEmptyParts);
+            QStringList cmds = line.split('\t', Qt::SkipEmptyParts);
 
             if (cmds.size() == 2 && cmd == ("/" + cmds.at(0))){
                 parseForCmd(cmds.at(1), wg);

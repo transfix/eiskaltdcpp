@@ -125,7 +125,6 @@ bool Secretary::eventFilter(QObject *obj, QEvent *e){
             return true;
         }
 
-#if QT_VERSION >= 0x050000
         if (controlModifier) {
             if (k_e->key() == Qt::Key_Equal || k_e->key() == Qt::Key_Plus){
                 textEdit_MESSAGES->zoomIn();
@@ -138,7 +137,6 @@ bool Secretary::eventFilter(QObject *obj, QEvent *e){
                 return true;
             }
         }
-#endif
     }
     else if (e->type() == QEvent::MouseButtonPress){
         QMouseEvent *m_e = reinterpret_cast<QMouseEvent*>(e);
@@ -591,7 +589,7 @@ void Secretary::addOutput(const QString& htmlMsg, const QString& origMsg, const 
 
     if (checkBox_HUBS_FILTER->isChecked()) {
         const QStringList &&urlParts = url.split(":");
-        const QStringList &&addresses = lineEdit_HUBS_FILTER->text().split(",", QString::SkipEmptyParts);
+        const QStringList &&addresses = lineEdit_HUBS_FILTER->text().split(",", Qt::SkipEmptyParts);
         if (urlParts.isEmpty() || addresses.isEmpty())
             return;
 
@@ -629,7 +627,7 @@ void Secretary::addOutput(const QString& htmlMsg, const QString& origMsg, const 
     }
 
     if (checkBox_KEYWORDS->isChecked()) {
-        const QStringList &&keywords = lineEdit_KEYWORDS->text().split(",", QString::SkipEmptyParts);
+        const QStringList &&keywords = lineEdit_KEYWORDS->text().split(",", Qt::SkipEmptyParts);
         for (const auto &k : keywords) {
             if (origMsg.contains(k, Qt::CaseInsensitive)) {
                 storeMessage = true;

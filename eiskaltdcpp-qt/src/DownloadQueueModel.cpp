@@ -10,11 +10,7 @@
 #include "DownloadQueueModel.h"
 #include "WulforUtil.h"
 
-#if QT_VERSION >= 0x050000
 #include <QtWidgets>
-#else
-#include <QtGui>
-#endif
 
 #include <QFileInfo>
 #include <QList>
@@ -558,7 +554,7 @@ DownloadQueueItem *DownloadQueueModel::createPath(const QString & path){
     QString _path = path;
     _path.replace("\\", "/");
 
-    QStringList list = _path.split("/", QString::SkipEmptyParts);
+    QStringList list = _path.split("/", Qt::SkipEmptyParts);
 
     DownloadQueueItem *root = d->rootItem;
 

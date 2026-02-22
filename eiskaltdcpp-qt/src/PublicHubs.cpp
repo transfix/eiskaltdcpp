@@ -40,7 +40,7 @@ PublicHubs::PublicHubs(QWidget *parent) :
 
     QString hubs = _q(dcpp::getContext()->getSettingsManager()->get(SettingsManager::HUBLIST_SERVERS));
 
-    comboBox_HUBS->addItems(hubs.split(";", QString::SkipEmptyParts));
+    comboBox_HUBS->addItems(hubs.split(";", Qt::SkipEmptyParts));
     comboBox_HUBS->setCurrentIndex(dcpp::getContext()->getFavoriteManager()->getSelectedHubList());
 
     for (int i = 0; i < model->columnCount(); i++)

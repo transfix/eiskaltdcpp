@@ -179,7 +179,7 @@ void HashProgress::timerTick(){
         file->setToolTip(fname);
 
         if (metrics.width(fname) > file->width()*3/4){
-            QStringList parts = fname.split(QDir::separator(), QString::SkipEmptyParts);
+            QStringList parts = fname.split(QDir::separator(), Qt::SkipEmptyParts);
 
             if (parts.size() > 1){
                 QString out = "";
