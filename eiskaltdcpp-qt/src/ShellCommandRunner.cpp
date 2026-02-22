@@ -53,7 +53,7 @@ void ShellCommandRunner::run() {
     if (useArgList)
         process.start(cmd, argList);
     else
-        process.start(args);
+        process.start(args, QStringList());
 
     process.closeWriteChannel();
     process.waitForFinished(100);

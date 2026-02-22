@@ -140,7 +140,7 @@ QVariant FileBrowserModel::data(const QModelIndex &index, int role) const
 
             break;
         }
-        case Qt::BackgroundColorRole:
+        case Qt::BackgroundRole:
         {
             if (item->isDuplicate){
                 QPalette pal = qApp->palette();

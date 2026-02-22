@@ -129,7 +129,7 @@ QVariant TransferViewModel::data(const QModelIndex &index, int role) const
         {
             break;
         }
-        case Qt::BackgroundColorRole:
+        case Qt::BackgroundRole:
             break;
         case Qt::ToolTipRole:
         {
@@ -352,7 +352,7 @@ void TransferViewModel::addConnection(const VarMap &params){
     if (item->download && bGroup)
         item->target = vstr(params["TARGET"]);
 
-    transfer_hash.insertMulti(item->cid, item);
+    transfer_hash.insert(item->cid, item);
 
     if (showTranferedFilesOnly){
         if (vstr(params["FNAME"]).isEmpty() || (tr("File list") == params["FNAME"]) ){

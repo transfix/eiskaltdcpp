@@ -209,7 +209,7 @@ void ChatEdit::complete()
 
     if (!cc->popup()->isVisible() || completionPrefix.length() < cc->completionPrefix().length()) {
         QString pattern = QString("(\\[.*\\])?%1.*").arg( QRegularExpression::escape(completionPrefix) );
-        QStringList nicks = cc_model->findItems(pattern, Qt::MatchRegExp, 0);
+        QStringList nicks = cc_model->findItems(pattern, Qt::MatchRegularExpression, 0);
 
         if (nicks.isEmpty())
             return;

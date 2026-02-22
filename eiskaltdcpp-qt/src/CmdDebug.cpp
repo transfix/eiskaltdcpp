@@ -182,7 +182,7 @@ void CmdDebug::slotFindTextEdited(const QString &text){
     QTextCursor c = plainTextEdit_DEBUG->textCursor();
 
     c.movePosition(QTextCursor::StartOfLine,QTextCursor::MoveAnchor,1);
-    c = plainTextEdit_DEBUG->document()->find(lineEdit_FIND->text(), c, nullptr);
+    c = plainTextEdit_DEBUG->document()->find(lineEdit_FIND->text(), c, QTextDocument::FindFlags());
     if (!c.isNull()) {
         plainTextEdit_DEBUG->setExtraSelections(QList<QTextEdit::ExtraSelection>());
         plainTextEdit_DEBUG->setTextCursor(c);
@@ -208,13 +208,13 @@ void CmdDebug::slotFindAll(){
 
         selection.format.setBackground(color);
 
-        QTextCursor c = plainTextEdit_DEBUG->document()->find(lineEdit_FIND->text(), 0, nullptr);
+        QTextCursor c = plainTextEdit_DEBUG->document()->find(lineEdit_FIND->text(), 0, QTextDocument::FindFlags());
 
         while (!c.isNull()) {
             selection.cursor = c;
             extraSelections.append(selection);
 
-            c = plainTextEdit_DEBUG->document()->find(lineEdit_FIND->text(), c, nullptr);
+            c = plainTextEdit_DEBUG->document()->find(lineEdit_FIND->text(), c, QTextDocument::FindFlags());
         }
     }
     plainTextEdit_DEBUG->setExtraSelections(extraSelections);

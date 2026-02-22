@@ -1239,7 +1239,7 @@ void HubFrame::init(){
     plainTextEdit_INPUT->setAcceptRichText(false);
 
     textEdit_CHAT->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    textEdit_CHAT->setTabStopWidth(40);
+    textEdit_CHAT->setTabStopDistance(40);
     updateStyles();
 
     load();
@@ -3377,7 +3377,7 @@ void HubFrame::slotFindTextEdited(const QString & text){
     QTextCursor c = textEdit_CHAT->textCursor();
 
     c.movePosition(QTextCursor::StartOfLine,QTextCursor::MoveAnchor,1);
-    c = textEdit_CHAT->document()->find(lineEdit_FIND->text(), c, nullptr);
+    c = textEdit_CHAT->document()->find(lineEdit_FIND->text(), c, QTextDocument::FindFlags());
     if (!c.isNull()) {
         textEdit_CHAT->setExtraSelections(QList<QTextEdit::ExtraSelection>());
         textEdit_CHAT->setTextCursor(c);
@@ -3403,13 +3403,13 @@ void HubFrame::slotFindAll(){
 
         selection.format.setBackground(color);
 
-        QTextCursor c = textEdit_CHAT->document()->find(lineEdit_FIND->text(), 0, nullptr);
+        QTextCursor c = textEdit_CHAT->document()->find(lineEdit_FIND->text(), 0, QTextDocument::FindFlags());
 
         while (!c.isNull()) {
             selection.cursor = c;
             extraSelections.append(selection);
 
-            c = textEdit_CHAT->document()->find(lineEdit_FIND->text(), c, nullptr);
+            c = textEdit_CHAT->document()->find(lineEdit_FIND->text(), c, QTextDocument::FindFlags());
         }
     }
     textEdit_CHAT->setExtraSelections(extraSelections);

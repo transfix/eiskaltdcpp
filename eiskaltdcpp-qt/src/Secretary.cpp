@@ -464,7 +464,7 @@ void Secretary::slotFindTextEdited(const QString &text){
     QTextCursor c = textEdit_MESSAGES->textCursor();
 
     c.movePosition(QTextCursor::StartOfLine,QTextCursor::MoveAnchor,1);
-    c = textEdit_MESSAGES->document()->find(lineEdit_FIND->text(), c, nullptr);
+    c = textEdit_MESSAGES->document()->find(lineEdit_FIND->text(), c, QTextDocument::FindFlags());
     if (!c.isNull()) {
         textEdit_MESSAGES->setExtraSelections(QList<QTextEdit::ExtraSelection>());
         textEdit_MESSAGES->setTextCursor(c);
@@ -490,13 +490,13 @@ void Secretary::slotFindAll(){
 
         selection.format.setBackground(color);
 
-        QTextCursor c = textEdit_MESSAGES->document()->find(lineEdit_FIND->text(), 0, nullptr);
+        QTextCursor c = textEdit_MESSAGES->document()->find(lineEdit_FIND->text(), 0, QTextDocument::FindFlags());
 
         while (!c.isNull()) {
             selection.cursor = c;
             extraSelections.append(selection);
 
-            c = textEdit_MESSAGES->document()->find(lineEdit_FIND->text(), c, nullptr);
+            c = textEdit_MESSAGES->document()->find(lineEdit_FIND->text(), c, QTextDocument::FindFlags());
         }
     }
     textEdit_MESSAGES->setExtraSelections(extraSelections);
