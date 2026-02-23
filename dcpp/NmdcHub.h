@@ -66,6 +66,16 @@ public:
     void pbBroadcast(const string& base64data);
     void pbRouted(const string& toNick, const string& base64data);
     bool hasNmdcPbSupport() const { return (supportFlags & SUPPORTS_NMDCPB) != 0; }
+    bool hasHubRelaySupport() const { return (supportFlags & SUPPORTS_HUBRELAY) != 0; }
+
+#ifdef WITH_NMDCPB
+    // E2EPM: send encrypted PM if peer supports it
+    void sendEncryptedPM(const string& targetNick, const string& message, bool thirdPerson = false);
+    // Handle incoming protobuf commands with deserialization
+    void handlePbCommand(const string& cmd, const string& param);
+    // Send PbEnvelope via $PB (base64url)
+    void sendPbEnvelope(const string& toNick, const string& serializedEnvelope);
+#endif
 
     virtual void password(const string& aPass) { send("$MyPass " + fromUtf8(aPass) + "|"); }
     virtual void info(bool force) { myInfo(force); }
@@ -87,7 +97,8 @@ private:
         SUPPORTS_USERCOMMAND = 0x01,
         SUPPORTS_NOGETINFO = 0x02,
         SUPPORTS_USERIP2 = 0x04,
-        SUPPORTS_NMDCPB = 0x08
+        SUPPORTS_NMDCPB = 0x08,
+        SUPPORTS_HUBRELAY = 0x10
     };
 
     mutable CriticalSection cs;

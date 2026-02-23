@@ -21,7 +21,7 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 
 # Test executable
-add_executable(eiskaltdcpp-tests
+set(TEST_SOURCES
     test_main.cpp
     test_cid.cpp
     test_util.cpp
@@ -68,6 +68,12 @@ add_executable(eiskaltdcpp-tests
     test_dht_context.cpp
 )
 
+if (WITH_NMDCPB)
+    list(APPEND TEST_SOURCES test_nmdcpb_crypto.cpp)
+endif ()
+
+add_executable(eiskaltdcpp-tests ${TEST_SOURCES})
+
 target_include_directories(eiskaltdcpp-tests PRIVATE
     ${CMAKE_SOURCE_DIR}          # for "dcpp/..." includes from extra/
     ${CMAKE_SOURCE_DIR}/dcpp     # for "Singleton.h" etc.
@@ -87,6 +93,14 @@ target_link_libraries(eiskaltdcpp-tests PRIVATE
     dcpp
     Catch2::Catch2WithMain
 )
+
+if (WITH_NMDCPB)
+    target_include_directories(eiskaltdcpp-tests PRIVATE
+        ${Protobuf_INCLUDE_DIRS}
+        ${CMAKE_BINARY_DIR}/dcpp    # for generated nmdcpb.pb.h
+    )
+    target_link_libraries(eiskaltdcpp-tests PRIVATE ${Protobuf_LIBRARIES})
+endif ()
 
 # Auto-discover test cases
 catch_discover_tests(eiskaltdcpp-tests)

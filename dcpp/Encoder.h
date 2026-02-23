@@ -36,6 +36,11 @@ public:
     static bool isBase32(const string& str);
 
     static void fromBase16(const char* src, uint8_t *dst, size_t len);
+
+    // Base64url encoding/decoding (for NMDCpb wire protocol)
+    static string toBase64(const string& src);
+    static string fromBase64(const string& src);
+
 private:
     static const int8_t base32Table[];
     static const char base32Alphabet[];

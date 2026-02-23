@@ -36,6 +36,14 @@
 #include "UserCommand.h"
 #include "version.h"
 
+#ifdef WITH_NMDCPB
+#include "E2EPMManager.h"
+#include "RelayConnection.h"
+#include "NmdcPbCrypto.h"
+#include "proto/nmdcpb.pb.h"
+#include "Encoder.h"
+#endif
+
 namespace dcpp {
 
 NmdcHub::NmdcHub(DCContext& ctx, const string& aHubURL, bool secure) :
@@ -585,6 +593,8 @@ void NmdcHub::onLine(const string& aLine) {
                 supportFlags |= SUPPORTS_USERIP2;
             } else if(i == "NMDCpb") {
                 supportFlags |= SUPPORTS_NMDCPB;
+            } else if(i == "HubRelay") {
+                supportFlags |= SUPPORTS_HUBRELAY;
             }
         }
     } else if(cmd == "$UserCommand") {
@@ -650,6 +660,7 @@ void NmdcHub::onLine(const string& aLine) {
                 };
 
                 feat.push_back("NMDCpb");
+                feat.push_back("HubRelay");
 
                 if(ctx().getCryptoManager()->TLSOk())
                     feat.push_back("TLS");
@@ -858,17 +869,39 @@ void NmdcHub::onLine(const string& aLine) {
             dcdebug("NmdcHub::onLine %s failed with error: %s\n", cmd.c_str(), e.getError().c_str());
         }
     } else if(cmd == "$PB" || cmd == "$PBB" || cmd == "$PBR") {
-        // NMDCpb protobuf message: <nick> <base64data> or <to> <from> <base64data>
+        // NMDCpb protobuf message
         if(!param.empty()) {
-            string nick, data;
-            string::size_type j = param.find(' ');
-            if(j != string::npos) {
-                nick = toUtf8(param.substr(0, j));
-                data = param.substr(j + 1);
+            if(cmd == "$PBR") {
+                // $PBR <to> <from> <base64data> — 3-field split
+                string::size_type j1 = param.find(' ');
+                if(j1 != string::npos) {
+                    string::size_type j2 = param.find(' ', j1 + 1);
+                    if(j2 != string::npos) {
+                        string toNick = toUtf8(param.substr(0, j1));
+                        string fromNick = toUtf8(param.substr(j1 + 1, j2 - j1 - 1));
+                        string data = param.substr(j2 + 1);
+                        // For $PBR, pass fromNick as nick, data as data
+                        fire(ClientListener::NmdcPbMessage(), this, cmd, fromNick, data);
+#ifdef WITH_NMDCPB
+                        handlePbCommand(cmd, param);
+#endif
+                    }
+                }
             } else {
-                nick = toUtf8(param);
+                // $PB / $PBB: <nick> <base64data>
+                string nick, data;
+                string::size_type j = param.find(' ');
+                if(j != string::npos) {
+                    nick = toUtf8(param.substr(0, j));
+                    data = param.substr(j + 1);
+                } else {
+                    nick = toUtf8(param);
+                }
+                fire(ClientListener::NmdcPbMessage(), this, cmd, nick, data);
+#ifdef WITH_NMDCPB
+                handlePbCommand(cmd, param);
+#endif
             }
-            fire(ClientListener::NmdcPbMessage(), this, cmd, nick, data);
         }
     } else {
         dcassert(cmd[0] == '$');
@@ -1172,6 +1205,190 @@ void NmdcHub::pbRouted(const string& toNick, const string& base64data) {
 
     send("$PBR " + fromUtf8(toNick) + " " + fromUtf8(getMyNick()) + " " + base64data + "|");
 }
+
+#ifdef WITH_NMDCPB
+
+void NmdcHub::sendPbEnvelope(const string& toNick, const string& serializedEnvelope) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return;
+
+    // Base64url encode the serialized envelope
+    string encoded = Encoder::toBase64(serializedEnvelope);
+    if(toNick.empty()) {
+        // Broadcast
+        send("$PB " + fromUtf8(getMyNick()) + " " + encoded + "|");
+    } else {
+        // Routed
+        send("$PBR " + fromUtf8(toNick) + " " + fromUtf8(getMyNick()) + " " + encoded + "|");
+    }
+}
+
+void NmdcHub::sendEncryptedPM(const string& targetNick, const string& message, bool thirdPerson) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) {
+        // Fallback to legacy PM
+        privateMessage(targetNick, message);
+        return;
+    }
+
+    auto* mgr = E2EPMManager::getInstance();
+    if(!mgr->isEstablished(getHubUrl(), targetNick)) {
+        if(!mgr->hasSession(getHubUrl(), targetNick)) {
+            // Initiate key exchange
+            auto ourPubKey = mgr->initiateKeyExchange(getHubUrl(), targetNick);
+            if(!ourPubKey.empty()) {
+                // Build PbPMKeyExchange envelope
+                nmdcpb::PbEnvelope env;
+                env.set_route(nmdcpb::PbEnvelope::DIRECT);
+                env.set_from_nick(getMyNick());
+                env.set_to_nick(targetNick);
+                auto* kex = env.mutable_pm_key_exchange();
+                kex->set_target_nick(targetNick);
+                kex->set_public_key(ourPubKey.data(), ourPubKey.size());
+                kex->set_protocol_version(1);
+
+                string serialized;
+                env.SerializeToString(&serialized);
+                sendPbEnvelope(targetNick, serialized);
+            }
+        }
+        // Queue message to send after session establishment
+        mgr->queuePendingMessage(getHubUrl(), targetNick, message, thirdPerson);
+        return;
+    }
+
+    // Session established — encrypt and send
+    auto encrypted = mgr->encryptPM(getHubUrl(), targetNick, message, thirdPerson);
+    if(encrypted.ciphertext.empty()) {
+        // Fallback
+        privateMessage(targetNick, message);
+        return;
+    }
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick(getMyNick());
+    env.set_to_nick(targetNick);
+    auto* epm = env.mutable_encrypted_pm();
+    epm->set_target_nick(targetNick);
+    epm->set_nonce(encrypted.nonce);
+    epm->set_ciphertext(encrypted.ciphertext.data(), encrypted.ciphertext.size());
+    epm->set_sender_pubkey_hint(encrypted.senderPubHint, 8);
+
+    string serialized;
+    env.SerializeToString(&serialized);
+    sendPbEnvelope(targetNick, serialized);
+}
+
+void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
+    // Extract base64 data portion
+    string base64data;
+    string fromNick;
+
+    if(cmd == "$PBR") {
+        // $PBR <to> <from> <base64data>
+        string::size_type j1 = param.find(' ');
+        if(j1 == string::npos) return;
+        string::size_type j2 = param.find(' ', j1 + 1);
+        if(j2 == string::npos) return;
+        fromNick = toUtf8(param.substr(j1 + 1, j2 - j1 - 1));
+        base64data = param.substr(j2 + 1);
+    } else {
+        // $PB / $PBB: <nick> <base64data>
+        string::size_type j = param.find(' ');
+        if(j == string::npos) return;
+        fromNick = toUtf8(param.substr(0, j));
+        base64data = param.substr(j + 1);
+    }
+
+    // Decode base64
+    string decoded;
+    decoded = Encoder::fromBase64(base64data);
+    if(decoded.empty()) return;
+
+    // Parse PbEnvelope
+    nmdcpb::PbEnvelope env;
+    if(!env.ParseFromString(decoded)) {
+        dcdebug("NmdcHub::handlePbCommand: failed to parse PbEnvelope\n");
+        return;
+    }
+
+    // Dispatch by payload type
+    if(env.has_pm_key_exchange()) {
+        auto& kex = env.pm_key_exchange();
+        if(kex.public_key().size() != X25519_KEY_SIZE) return;
+
+        auto* mgr = E2EPMManager::getInstance();
+        const uint8_t* peerPub = reinterpret_cast<const uint8_t*>(kex.public_key().data());
+
+        // TOFU check
+        if(mgr->checkKeyChanged(getHubUrl(), fromNick, peerPub)) {
+            // Key changed! Fire warning event.
+            dcdebug("E2EPM: key changed for %s — possible MITM\n", fromNick.c_str());
+        }
+        mgr->updateLastKnownKey(getHubUrl(), fromNick, peerPub);
+
+        auto ourPubKey = mgr->handleKeyExchange(getHubUrl(), fromNick, peerPub);
+        if(!ourPubKey.empty()) {
+            // Send our key exchange response
+            nmdcpb::PbEnvelope resp;
+            resp.set_route(nmdcpb::PbEnvelope::DIRECT);
+            resp.set_from_nick(getMyNick());
+            resp.set_to_nick(fromNick);
+            auto* rkex = resp.mutable_pm_key_exchange();
+            rkex->set_target_nick(fromNick);
+            rkex->set_public_key(ourPubKey.data(), ourPubKey.size());
+            rkex->set_protocol_version(1);
+
+            string serialized;
+            resp.SerializeToString(&serialized);
+            sendPbEnvelope(fromNick, serialized);
+        }
+
+        // Flush pending messages if session is now established
+        if(mgr->isEstablished(getHubUrl(), fromNick)) {
+            auto pending = mgr->drainPendingMessages(getHubUrl(), fromNick);
+            for(auto& [text, isAction] : pending) {
+                sendEncryptedPM(fromNick, text, isAction);
+            }
+        }
+    } else if(env.has_encrypted_pm()) {
+        auto& epm = env.encrypted_pm();
+        auto* mgr = E2EPMManager::getInstance();
+
+        const uint8_t* hint = epm.sender_pubkey_hint().size() >= 8
+            ? reinterpret_cast<const uint8_t*>(epm.sender_pubkey_hint().data())
+            : nullptr;
+
+        try {
+            auto decrypted = mgr->decryptPM(
+                getHubUrl(), fromNick,
+                epm.nonce(),
+                std::vector<uint8_t>(epm.ciphertext().begin(), epm.ciphertext().end()),
+                hint);
+
+            // Fire as a regular PM event with encrypted flag
+            Lock l(cs);
+            auto ou = findUser(fromNick);
+            auto me = findUser(getMyNick());
+            if(ou && me) {
+                ChatMessage chatMsg = { decrypted.text, ou, me, ou, decrypted.isAction, 0 };
+                fire(ClientListener::Message(), this, chatMsg);
+            }
+        } catch(const CryptoError& e) {
+            dcdebug("E2EPM decrypt failed from %s: %s\n", fromNick.c_str(), e.what());
+        }
+    } else if(env.has_relay_request()) {
+        // Incoming relay request — will be handled by ConnectionManager integration
+        dcdebug("NmdcHub: received PbRelayRequest from %s\n", fromNick.c_str());
+    } else if(env.has_relay_ack()) {
+        dcdebug("NmdcHub: received PbRelayAck from %s\n", fromNick.c_str());
+    } else if(env.has_relay_closed()) {
+        dcdebug("NmdcHub: received PbRelayClosed\n");
+    }
+}
+
+#endif // WITH_NMDCPB
 
 #ifdef LUA_SCRIPT
 bool NmdcHubScriptInstance::onClientMessage(NmdcHub* aClient, const string& aLine) {

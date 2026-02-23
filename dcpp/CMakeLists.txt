@@ -7,6 +7,28 @@ file (GLOB dcpp_hdrs ${PROJECT_SOURCE_DIR}/*.h)
 list (REMOVE_ITEM dcpp_srcs ${PROJECT_SOURCE_DIR}/FileReader.cpp)
 list (REMOVE_ITEM dcpp_hdrs ${PROJECT_SOURCE_DIR}/FileReader.h)
 
+# NMDCpb protobuf extension
+if (WITH_NMDCPB)
+    # Compile .proto → C++ sources  
+    set(NMDCPB_PROTO "${PROJECT_SOURCE_DIR}/proto/nmdcpb.proto")
+    set(NMDCPB_PROTO_OUTDIR "${PROJECT_BINARY_DIR}/proto")
+    file(MAKE_DIRECTORY ${NMDCPB_PROTO_OUTDIR})
+    
+    add_custom_command(
+        OUTPUT  "${NMDCPB_PROTO_OUTDIR}/nmdcpb.pb.h"
+                "${NMDCPB_PROTO_OUTDIR}/nmdcpb.pb.cc"
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+                --cpp_out=${NMDCPB_PROTO_OUTDIR}
+                --proto_path=${PROJECT_SOURCE_DIR}/proto
+                ${NMDCPB_PROTO}
+        DEPENDS ${NMDCPB_PROTO}
+        COMMENT "Generating NMDCpb protobuf C++ sources"
+    )
+    
+    list(APPEND dcpp_srcs "${NMDCPB_PROTO_OUTDIR}/nmdcpb.pb.cc")
+    list(APPEND dcpp_hdrs "${NMDCPB_PROTO_OUTDIR}/nmdcpb.pb.h")
+endif (WITH_NMDCPB)
+
 set (DCPP_SRCS ${dcpp_srcs} PARENT_SCOPE)
 set (DCPP_HDRS ${dcpp_hdrs} PARENT_SCOPE)
 
@@ -20,6 +42,10 @@ include_directories (${PROJECT_BINARY_DIR}
                      ${OPENSSL_INCLUDE_DIR}
                      ${GETTEXT_INCLUDE_DIR}
                      ${ICONV_INCLUDE_DIR})
+if (WITH_NMDCPB)
+    include_directories (${Protobuf_INCLUDE_DIRS}
+                         ${NMDCPB_PROTO_OUTDIR}/..)
+endif (WITH_NMDCPB)
 if (LUA_SCRIPT)
     include_directories (${LUA_INCLUDE_DIR})
 endif ()
@@ -62,6 +88,10 @@ endif (APPLE)
 set (UPNP "extra")
 
 add_library (dcpp ${LINK} ${dcpp_srcs})
+
+if (WITH_NMDCPB)
+    target_compile_definitions(dcpp PUBLIC WITH_NMDCPB)
+endif (WITH_NMDCPB)
 
 if (WITH_DHT)
     set (DHT_LIB "dht")
@@ -149,6 +179,9 @@ target_link_libraries (dcpp
                        ${UPNP}
                        ${PCRE}
                        ${XATTR_LIBRARIES})
+if (WITH_NMDCPB)
+    target_link_libraries(dcpp ${Protobuf_LIBRARIES})
+endif (WITH_NMDCPB)
 set_target_properties(dcpp PROPERTIES
                       VERSION ${SO_VERSION}
                       SOVERSION ${SO_VERSION}
