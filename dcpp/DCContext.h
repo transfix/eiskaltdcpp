@@ -50,6 +50,9 @@ class ConnectivityManager;
 class MappingManager;
 class DebugManager;
 class DynDNS;
+#ifdef WITH_NMDCPB
+class E2EPMManager;
+#endif
 #ifdef LUA_SCRIPT
 class ScriptManager;
 #endif
@@ -147,6 +150,9 @@ public:
 #ifdef WITH_DHT
     [[nodiscard]] ::dht::DHT*             getDHT()                 const { return dht_.get(); }
 #endif
+#ifdef WITH_NMDCPB
+    [[nodiscard]] E2EPMManager*        getE2EPMManager()        const noexcept { return e2epmManager_.get(); }
+#endif
 #ifdef LUA_SCRIPT
     [[nodiscard]] ScriptManager*        getScriptManager()       const { return scriptManager_.get(); }
 #endif
@@ -181,6 +187,9 @@ private:
     std::unique_ptr<::IPFilter>          ipFilter_;
 #ifdef WITH_DHT
     std::unique_ptr<::dht::DHT>           dht_;
+#endif
+#ifdef WITH_NMDCPB
+    std::unique_ptr<E2EPMManager>        e2epmManager_;
 #endif
 #ifdef LUA_SCRIPT
     std::unique_ptr<ScriptManager>       scriptManager_;

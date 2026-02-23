@@ -11,7 +11,7 @@
 #ifdef WITH_NMDCPB
 
 #include "NmdcPbCrypto.h"
-#include "Singleton.h"
+#include "DCContext.h"
 #include "CriticalSection.h"
 
 #include <cstdint>
@@ -69,10 +69,10 @@ struct E2EPMSession {
 // E2EPM Manager
 // =========================================================================
 
-class E2EPMManager : public Singleton<E2EPMManager> {
-    friend class Singleton<E2EPMManager>;
-
+class E2EPMManager : public ContextAware {
 public:
+    E2EPMManager();
+    ~E2EPMManager();
     /// Key used to look up sessions: (hubUrl, peerNick)
     using SessionKey = std::pair<std::string, std::string>;
 
@@ -146,9 +146,6 @@ public:
                             const uint8_t peerPubKey[X25519_KEY_SIZE]);
 
 private:
-    E2EPMManager() = default;
-    ~E2EPMManager() = default;
-
     void deriveKeys(E2EPMSession& session);
     std::string buildAAD(const std::string& sender, const std::string& target) const;
 

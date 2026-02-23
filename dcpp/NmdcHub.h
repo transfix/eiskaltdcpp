@@ -75,6 +75,11 @@ public:
 #ifdef WITH_NMDCPB
     // E2EPM: send encrypted PM if peer supports it
     void sendEncryptedPM(const string& targetNick, const string& message, bool thirdPerson = false);
+    // PrivateSearch: send a targeted search to a specific user
+    void sendPrivateSearch(const string& targetNick, const string& searchId,
+                           const string& query, const string& tth = Util::emptyString,
+                           int fileType = 0, uint64_t minSize = 0, uint64_t maxSize = 0,
+                           uint32_t maxResults = 10, const StringList& extensions = StringList());
     // Handle incoming protobuf commands with deserialization
     void handlePbCommand(const string& cmd, const string& param);
     // Send PbEnvelope via $PB (base64url)

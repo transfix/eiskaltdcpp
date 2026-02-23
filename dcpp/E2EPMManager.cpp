@@ -13,6 +13,9 @@
 
 namespace dcpp {
 
+E2EPMManager::E2EPMManager() = default;
+E2EPMManager::~E2EPMManager() = default;
+
 // =========================================================================
 // Session lifecycle
 // =========================================================================

@@ -161,8 +161,8 @@ TEST_CASE("Emoji fingerprint is deterministic and symmetric", "[crypto]") {
 // =========================================================================
 
 TEST_CASE("E2EPM session lifecycle: key exchange and establish", "[e2epm]") {
-    E2EPMManager::newInstance();
-    auto* mgr = E2EPMManager::getInstance();
+    E2EPMManager mgrObj;
+    auto* mgr = &mgrObj;
 
     std::string hub = "nmdc://test-hub:411";
     std::string alice = "Alice";
@@ -191,16 +191,14 @@ TEST_CASE("E2EPM session lifecycle: key exchange and establish", "[e2epm]") {
 
     mgr->closeSession(hub, bob);
     REQUIRE_FALSE(mgr->hasSession(hub, bob));
-
-    E2EPMManager::deleteInstance();
 }
 
 TEST_CASE("E2EPM encrypt/decrypt roundtrip", "[e2epm]") {
     // Set up two managers simulating Alice and Bob
     // Since singleton, we'll simulate by doing both sides in same manager
     // with different peer names
-    E2EPMManager::newInstance();
-    auto* mgr = E2EPMManager::getInstance();
+    E2EPMManager mgrObj;
+    auto* mgr = &mgrObj;
     std::string hub = "nmdc://roundtrip-hub:411";
     mgr->closeAllSessions(hub);
 
@@ -223,12 +221,11 @@ TEST_CASE("E2EPM encrypt/decrypt roundtrip", "[e2epm]") {
     REQUIRE(encrypted2.nonce == 1);
 
     mgr->closeAllSessions(hub);
-    E2EPMManager::deleteInstance();
 }
 
 TEST_CASE("E2EPM TOFU key change detection", "[e2epm]") {
-    E2EPMManager::newInstance();
-    auto* mgr = E2EPMManager::getInstance();
+    E2EPMManager mgrObj;
+    auto* mgr = &mgrObj;
     std::string hub = "nmdc://tofu-hub:411";
 
     auto kp1 = generateX25519KeyPair();
@@ -243,13 +240,11 @@ TEST_CASE("E2EPM TOFU key change detection", "[e2epm]") {
 
     // Different key — change detected!
     REQUIRE(mgr->checkKeyChanged(hub, "Mallory", kp2.publicKey));
-
-    E2EPMManager::deleteInstance();
 }
 
 TEST_CASE("E2EPM pending message queue", "[e2epm]") {
-    E2EPMManager::newInstance();
-    auto* mgr = E2EPMManager::getInstance();
+    E2EPMManager mgrObj;
+    auto* mgr = &mgrObj;
     std::string hub = "nmdc://pending-hub:411";
     mgr->closeAllSessions(hub);
 
@@ -274,7 +269,6 @@ TEST_CASE("E2EPM pending message queue", "[e2epm]") {
     REQUIRE(empty.empty());
 
     mgr->closeAllSessions(hub);
-    E2EPMManager::deleteInstance();
 }
 
 // =========================================================================
@@ -534,6 +528,162 @@ TEST_CASE("PbPMPlaintext serialization", "[protobuf]") {
 TEST_CASE("hexEncode", "[crypto]") {
     uint8_t data[] = {0x00, 0xff, 0xab, 0xcd};
     REQUIRE(hexEncode(data, 4) == "00ffabcd");
+}
+
+// =========================================================================
+// PrivateSearch Protobuf Roundtrip Tests
+// =========================================================================
+
+TEST_CASE("PbPrivateSearch serialization roundtrip", "[privatesearch]") {
+    nmdcpb::PbPrivateSearch ps;
+    ps.set_search_id("search-abc-123");
+    ps.set_query("ubuntu iso");
+    ps.set_file_type(nmdcpb::PbPrivateSearch::COMPRESSED);
+    ps.set_min_size(1024);
+    ps.set_max_size(1073741824);
+    ps.set_max_results(25);
+    ps.add_extensions("iso");
+    ps.add_extensions("img");
+
+    // Wrap in envelope
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick("Alice");
+    env.set_to_nick("Bob");
+    env.mutable_private_search()->CopyFrom(ps);
+
+    // Serialize
+    std::string wire;
+    REQUIRE(env.SerializeToString(&wire));
+    REQUIRE(!wire.empty());
+
+    // Deserialize
+    nmdcpb::PbEnvelope env2;
+    REQUIRE(env2.ParseFromString(wire));
+    REQUIRE(env2.has_private_search());
+    auto& ps2 = env2.private_search();
+    REQUIRE(ps2.search_id() == "search-abc-123");
+    REQUIRE(ps2.query() == "ubuntu iso");
+    REQUIRE(ps2.file_type() == nmdcpb::PbPrivateSearch::COMPRESSED);
+    REQUIRE(ps2.min_size() == 1024);
+    REQUIRE(ps2.max_size() == 1073741824);
+    REQUIRE(ps2.max_results() == 25);
+    REQUIRE(ps2.extensions_size() == 2);
+    REQUIRE(ps2.extensions(0) == "iso");
+    REQUIRE(ps2.extensions(1) == "img");
+}
+
+TEST_CASE("PbPrivateSearch TTH search roundtrip", "[privatesearch]") {
+    nmdcpb::PbPrivateSearch ps;
+    ps.set_search_id("tth-search-42");
+    ps.set_tth("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567AAAABBBB");
+    ps.set_file_type(nmdcpb::PbPrivateSearch::TTH);
+    ps.set_max_results(1);
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick("Alice");
+    env.set_to_nick("Bob");
+    env.mutable_private_search()->CopyFrom(ps);
+
+    std::string wire;
+    REQUIRE(env.SerializeToString(&wire));
+
+    nmdcpb::PbEnvelope env2;
+    REQUIRE(env2.ParseFromString(wire));
+    REQUIRE(env2.has_private_search());
+    auto& ps2 = env2.private_search();
+    REQUIRE(ps2.tth() == "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567AAAABBBB");
+    REQUIRE(ps2.file_type() == nmdcpb::PbPrivateSearch::TTH);
+    REQUIRE(ps2.query().empty());
+}
+
+TEST_CASE("PbPrivateSearchResult serialization roundtrip", "[privatesearch]") {
+    nmdcpb::PbPrivateSearchResult psr;
+    psr.set_search_id("search-abc-123");
+    psr.set_is_partial(true);
+
+    auto* r1 = psr.add_results();
+    r1->set_filename("ubuntu-24.04.iso");
+    r1->set_path("Shared\\ISOs\\");
+    r1->set_size(4700000000ULL);
+    r1->set_tth("AAABBBCCC111222333444555666777888999AABBB");
+    r1->set_free_slots(3);
+    r1->set_total_slots(5);
+    r1->set_is_directory(false);
+
+    auto* r2 = psr.add_results();
+    r2->set_filename("ISOs");
+    r2->set_path("Shared\\");
+    r2->set_size(0);
+    r2->set_is_directory(true);
+    r2->set_free_slots(3);
+    r2->set_total_slots(5);
+
+    // Wrap in envelope
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick("Bob");
+    env.set_to_nick("Alice");
+    env.mutable_private_search_result()->CopyFrom(psr);
+
+    std::string wire;
+    REQUIRE(env.SerializeToString(&wire));
+
+    nmdcpb::PbEnvelope env2;
+    REQUIRE(env2.ParseFromString(wire));
+    REQUIRE(env2.has_private_search_result());
+    auto& psr2 = env2.private_search_result();
+    REQUIRE(psr2.search_id() == "search-abc-123");
+    REQUIRE(psr2.is_partial() == true);
+    REQUIRE(psr2.results_size() == 2);
+
+    auto& res1 = psr2.results(0);
+    REQUIRE(res1.filename() == "ubuntu-24.04.iso");
+    REQUIRE(res1.path() == "Shared\\ISOs\\");
+    REQUIRE(res1.size() == 4700000000ULL);
+    REQUIRE(res1.tth() == "AAABBBCCC111222333444555666777888999AABBB");
+    REQUIRE(res1.free_slots() == 3);
+    REQUIRE(res1.total_slots() == 5);
+    REQUIRE(res1.is_directory() == false);
+
+    auto& res2 = psr2.results(1);
+    REQUIRE(res2.filename() == "ISOs");
+    REQUIRE(res2.is_directory() == true);
+}
+
+TEST_CASE("PbPrivateSearchResult error response", "[privatesearch]") {
+    nmdcpb::PbPrivateSearchResult psr;
+    psr.set_search_id("search-fail-1");
+    psr.set_error("search disabled by operator");
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick("Bob");
+    env.set_to_nick("Alice");
+    env.mutable_private_search_result()->CopyFrom(psr);
+
+    std::string wire;
+    REQUIRE(env.SerializeToString(&wire));
+
+    nmdcpb::PbEnvelope env2;
+    REQUIRE(env2.ParseFromString(wire));
+    auto& psr2 = env2.private_search_result();
+    REQUIRE(psr2.error() == "search disabled by operator");
+    REQUIRE(psr2.results_size() == 0);
+}
+
+TEST_CASE("PbPrivateSearch FileType enum values match SearchManager", "[privatesearch]") {
+    // These must stay in sync with SearchManager::TypeModes
+    REQUIRE(static_cast<int>(nmdcpb::PbPrivateSearch::ANY) == 0);
+    REQUIRE(static_cast<int>(nmdcpb::PbPrivateSearch::AUDIO) == 1);
+    REQUIRE(static_cast<int>(nmdcpb::PbPrivateSearch::COMPRESSED) == 2);
+    REQUIRE(static_cast<int>(nmdcpb::PbPrivateSearch::DOCUMENT) == 3);
+    REQUIRE(static_cast<int>(nmdcpb::PbPrivateSearch::EXECUTABLE) == 4);
+    REQUIRE(static_cast<int>(nmdcpb::PbPrivateSearch::PICTURE) == 5);
+    REQUIRE(static_cast<int>(nmdcpb::PbPrivateSearch::VIDEO) == 6);
+    REQUIRE(static_cast<int>(nmdcpb::PbPrivateSearch::DIRECTORY) == 7);
+    REQUIRE(static_cast<int>(nmdcpb::PbPrivateSearch::TTH) == 8);
 }
 
 #else // !WITH_NMDCPB

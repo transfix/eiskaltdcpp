@@ -28,6 +28,7 @@
 #include "CryptoManager.h"
 #include "format.h"
 #include "SearchManager.h"
+#include "SearchResult.h"
 #include "ShareManager.h"
 #include "Socket.h"
 #include "StringTokenizer.h"
@@ -1241,6 +1242,40 @@ void NmdcHub::sendPbEnvelope(const string& toNick, const string& serializedEnvel
     }
 }
 
+void NmdcHub::sendPrivateSearch(const string& targetNick, const string& searchId,
+                                const string& query, const string& tth,
+                                int fileType, uint64_t minSize, uint64_t maxSize,
+                                uint32_t maxResults, const StringList& extensions) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return;
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick(getMyNick());
+    env.set_to_nick(targetNick);
+    auto* ps = env.mutable_private_search();
+    ps->set_search_id(searchId);
+    if(!tth.empty()) {
+        ps->set_tth(tth);
+        ps->set_file_type(nmdcpb::PbPrivateSearch::TTH);
+    } else {
+        ps->set_query(query);
+        ps->set_file_type(static_cast<nmdcpb::PbPrivateSearch::FileType>(fileType));
+    }
+    ps->set_min_size(minSize);
+    ps->set_max_size(maxSize);
+    if(maxResults == 0) maxResults = 10;
+    if(maxResults > 100) maxResults = 100;
+    ps->set_max_results(maxResults);
+    for(auto& ext : extensions) {
+        ps->add_extensions(ext);
+    }
+
+    string serialized;
+    env.SerializeToString(&serialized);
+    sendPbEnvelope(targetNick, serialized);
+}
+
 void NmdcHub::sendEncryptedPM(const string& targetNick, const string& message, bool thirdPerson) {
     checkstate();
     if(!(supportFlags & SUPPORTS_NMDCPB)) {
@@ -1249,7 +1284,8 @@ void NmdcHub::sendEncryptedPM(const string& targetNick, const string& message, b
         return;
     }
 
-    auto* mgr = E2EPMManager::getInstance();
+    auto* mgr = ctx()->getE2EPMManager();
+    if(!mgr) return;
     if(!mgr->isEstablished(getHubUrl(), targetNick)) {
         if(!mgr->hasSession(getHubUrl(), targetNick)) {
             // Initiate key exchange
@@ -1336,7 +1372,8 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         auto& kex = env.pm_key_exchange();
         if(kex.public_key().size() != X25519_KEY_SIZE) return;
 
-        auto* mgr = E2EPMManager::getInstance();
+        auto* mgr = ctx()->getE2EPMManager();
+        if(!mgr) return;
         const uint8_t* peerPub = reinterpret_cast<const uint8_t*>(kex.public_key().data());
 
         // TOFU check
@@ -1372,7 +1409,8 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         }
     } else if(env.has_encrypted_pm()) {
         auto& epm = env.encrypted_pm();
-        auto* mgr = E2EPMManager::getInstance();
+        auto* mgr = ctx()->getE2EPMManager();
+        if(!mgr) return;
 
         const uint8_t* hint = epm.sender_pubkey_hint().size() >= 8
             ? reinterpret_cast<const uint8_t*>(epm.sender_pubkey_hint().data())
@@ -1434,6 +1472,98 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
     } else if(env.has_relay_closed()) {
         auto& rc = env.relay_closed();
         relayManager.handleRelayClosed(rc.relay_id());
+    } else if(env.has_private_search()) {
+        // A peer is asking us to search our local shares
+        auto& ps = env.private_search();
+        if(ps.search_id().empty()) return;
+
+        auto* sm = ctx()->getShareManager();
+        if(!sm) return;
+
+        uint32_t maxRes = ps.max_results();
+        if(maxRes == 0) maxRes = 10;
+        if(maxRes > 100) maxRes = 100;
+
+        SearchResultList results;
+        int fileType = static_cast<int>(ps.file_type());
+        int64_t size = 0;
+        int searchType = 0; // SIZE_DONTCARE
+
+        if(!ps.tth().empty()) {
+            // TTH search
+            sm->search(results, "TTH:" + ps.tth(), 0, 0, SearchManager::TYPE_TTH, this, maxRes);
+        } else if(!ps.query().empty()) {
+            // Size filtering
+            if(ps.min_size() > 0) {
+                size = static_cast<int64_t>(ps.min_size());
+                searchType = 1; // SIZE_ATLEAST
+            } else if(ps.max_size() > 0) {
+                size = static_cast<int64_t>(ps.max_size());
+                searchType = 2; // SIZE_ATMOST
+            }
+            sm->search(results, ps.query(), searchType, size, fileType, this, maxRes);
+        } else {
+            return; // No query and no TTH
+        }
+
+        // Build response
+        nmdcpb::PbEnvelope resp;
+        resp.set_route(nmdcpb::PbEnvelope::DIRECT);
+        resp.set_from_nick(getMyNick());
+        resp.set_to_nick(fromNick);
+        auto* sr = resp.mutable_private_search_result();
+        sr->set_search_id(ps.search_id());
+
+        uint8_t totalSlots = ctx()->getUploadManager()->getSlots();
+        int freeSlots = ctx()->getUploadManager()->getFreeSlots();
+
+        for(auto& r : results) {
+            auto* item = sr->add_results();
+            const string& file = r->getFile();
+            // Split into path and filename
+            auto lastSep = file.rfind('\\');
+            if(lastSep != string::npos) {
+                item->set_path(file.substr(0, lastSep + 1));
+                item->set_filename(file.substr(lastSep + 1));
+            } else {
+                item->set_filename(file);
+            }
+            item->set_size(static_cast<uint64_t>(r->getSize()));
+            item->set_tth(r->getTTH().toBase32());
+            item->set_free_slots(static_cast<uint32_t>(freeSlots));
+            item->set_total_slots(static_cast<uint32_t>(totalSlots));
+            item->set_is_directory(r->getType() == SearchResult::TYPE_DIRECTORY);
+        }
+
+        sr->set_is_partial(results.size() >= maxRes);
+
+        string serialized;
+        resp.SerializeToString(&serialized);
+        sendPbEnvelope(fromNick, serialized);
+
+    } else if(env.has_private_search_result()) {
+        // Results from a peer in response to our private search
+        auto& psr = env.private_search_result();
+
+        Lock l(cs);
+        auto ou = findUser(fromNick);
+        if(!ou) return;
+        auto& user = ou->getUser();
+
+        for(int i = 0; i < psr.results_size(); ++i) {
+            auto& r = psr.results(i);
+            SearchResult::Types type = r.is_directory() ? SearchResult::TYPE_DIRECTORY : SearchResult::TYPE_FILE;
+            string fullPath = r.path() + r.filename();
+            TTHValue tth;
+            if(!r.tth().empty()) {
+                tth = TTHValue(r.tth());
+            }
+            SearchResultPtr srp(new SearchResult(
+                user, type, static_cast<int>(r.total_slots()), static_cast<int>(r.free_slots()),
+                static_cast<int64_t>(r.size()), fullPath, getHubName(), getHubUrl(),
+                Util::emptyString, tth, psr.search_id()));
+            ctx()->getSearchManager()->fire(SearchManagerListener::SR(), srp);
+        }
     }
 }
 
