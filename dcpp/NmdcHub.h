@@ -27,6 +27,10 @@
 #include "Text.h"
 #include "Client.h"
 
+#ifdef WITH_NMDCPB
+#include "RelayConnection.h"
+#endif
+
 #ifdef LUA_SCRIPT
 #include "ScriptManager.h"
 #endif
@@ -75,6 +79,8 @@ public:
     void handlePbCommand(const string& cmd, const string& param);
     // Send PbEnvelope via $PB (base64url)
     void sendPbEnvelope(const string& toNick, const string& serializedEnvelope);
+    // Get relay manager for this hub
+    RelayManager& getRelayManager() { return relayManager; }
 #endif
 
     virtual void password(const string& aPass) { send("$MyPass " + fromUtf8(aPass) + "|"); }
@@ -117,6 +123,10 @@ private:
     typedef FloodMap::iterator FloodIter;
     FloodMap seekers;
     FloodMap flooders;
+
+#ifdef WITH_NMDCPB
+    RelayManager relayManager;
+#endif
 
     NmdcHub(DCContext& ctx, const string& aHubURL, bool secure);
     virtual ~NmdcHub();

@@ -556,7 +556,25 @@ void NmdcHub::onLine(const string& aLine) {
                 // Notify the user that we're passive too...
                 revConnectToMe(*u);
                 updated(*u);
-
+#ifdef WITH_NMDCPB
+            } else if (hasHubRelaySupport()) {
+                // Both sides passive, hub supports relay — initiate relay
+                auto& relayMgr = getRelayManager();
+                auto result = relayMgr.initiateRelay(getHubUrl(), u->getIdentity().getNick());
+                // Build PbRelayRequest and send via $PBR
+                nmdcpb::PbEnvelope env;
+                env.set_route(nmdcpb::PbEnvelope::DIRECT);
+                env.set_from_nick(getMyNick());
+                env.set_to_nick(u->getIdentity().getNick());
+                auto* rr = env.mutable_relay_request();
+                rr->set_target_nick(u->getIdentity().getNick());
+                rr->set_token(result.token);
+                rr->set_public_key(result.publicKey.data(), result.publicKey.size());
+                rr->set_purpose(nmdcpb::PbRelayRequest::FILE_TRANSFER);
+                std::string serialized;
+                env.SerializeToString(&serialized);
+                sendPbEnvelope(u->getIdentity().getNick(), serialized);
+#endif
                 return;
             }
         }
@@ -1379,12 +1397,43 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
             dcdebug("E2EPM decrypt failed from %s: %s\n", fromNick.c_str(), e.what());
         }
     } else if(env.has_relay_request()) {
-        // Incoming relay request — will be handled by ConnectionManager integration
-        dcdebug("NmdcHub: received PbRelayRequest from %s\n", fromNick.c_str());
+        auto& rr = env.relay_request();
+        if(rr.public_key().size() != X25519_KEY_SIZE) return;
+
+        const uint8_t* peerPub = reinterpret_cast<const uint8_t*>(rr.public_key().data());
+        auto ourPub = relayManager.handleRelayRequest(
+            getHubUrl(), fromNick, rr.token(), peerPub);
+
+        if(!ourPub.empty()) {
+            // Auto-accept file transfer relays
+            bool accepted = relayManager.respondToRelay(rr.token(), true);
+
+            // Send relay ack
+            nmdcpb::PbEnvelope resp;
+            resp.set_route(nmdcpb::PbEnvelope::DIRECT);
+            resp.set_from_nick(getMyNick());
+            resp.set_to_nick(fromNick);
+            auto* ack = resp.mutable_relay_ack();
+            ack->set_token(rr.token());
+            ack->set_accepted(accepted);
+            ack->set_public_key(ourPub.data(), ourPub.size());
+
+            string serialized;
+            resp.SerializeToString(&serialized);
+            sendPbEnvelope(fromNick, serialized);
+        }
     } else if(env.has_relay_ack()) {
-        dcdebug("NmdcHub: received PbRelayAck from %s\n", fromNick.c_str());
+        auto& ack = env.relay_ack();
+        const uint8_t* peerPub = ack.public_key().size() == X25519_KEY_SIZE
+            ? reinterpret_cast<const uint8_t*>(ack.public_key().data()) : nullptr;
+
+        if(peerPub) {
+            relayManager.handleRelayAck(
+                ack.token(), ack.accepted(), ack.relay_id(), peerPub);
+        }
     } else if(env.has_relay_closed()) {
-        dcdebug("NmdcHub: received PbRelayClosed\n");
+        auto& rc = env.relay_closed();
+        relayManager.handleRelayClosed(rc.relay_id());
     }
 }
 

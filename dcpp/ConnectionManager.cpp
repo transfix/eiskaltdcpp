@@ -31,6 +31,11 @@
 #include "UserConnection.h"
 #include "DCPlusPlus.h"
 
+#ifdef WITH_NMDCPB
+#include "NmdcHub.h"
+#include "RelayConnection.h"
+#endif
+
 namespace dcpp {
 
 ConnectionManager::ConnectionManager(DCContext& ctx) :
@@ -180,6 +185,30 @@ void ConnectionManager::on(TimerManagerListener::Second, uint64_t aTick) {
                 }
 
                 if(cqi->getUser().user->isSet(User::PASSIVE) && !ctx().getClientManager()->isActive()) {
+#ifdef WITH_NMDCPB
+                    // Check if the hub supports HubRelay for passive-to-passive
+                    bool relayAvailable = false;
+                    {
+                        auto lk = ctx().getClientManager()->lock();
+                        for (auto* c : ctx().getClientManager()->getClients()) {
+                            if (c->getHubUrl() == cqi->getUser().hint) {
+                                if (auto* nmdcHub = dynamic_cast<NmdcHub*>(c)) {
+                                    relayAvailable = nmdcHub->hasHubRelaySupport();
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    if (relayAvailable) {
+                        // Route through hub relay instead of dropping
+                        cqi->setState(ConnectionQueueItem::CONNECTING);
+                        cqi->setLastAttempt(aTick);
+                        ctx().getClientManager()->connect(cqi->getUser(), cqi->getToken());
+                        fire(ConnectionManagerListener::StatusChanged(), cqi);
+                        attemptDone = true;
+                        continue;
+                    }
+#endif
                     passiveUsers.push_back(cqi->getUser());
                     removed.push_back(cqi);
                     continue;
