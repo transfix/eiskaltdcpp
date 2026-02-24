@@ -127,6 +127,7 @@ public:
                       APP_UNIT_BASE,
                       LOG_CMD_DEBUG,
                       NMDC_GETINFO_LIMIT,
+                      RELAY_ONLY_MODE,
                       INT_LAST };
 
     enum Int64Setting { INT64_FIRST = INT_LAST + 1,

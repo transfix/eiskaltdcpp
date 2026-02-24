@@ -71,6 +71,9 @@ public:
     void pbRouted(const string& toNick, const string& base64data);
     bool hasNmdcPbSupport() const { return (supportFlags & SUPPORTS_NMDCPB) != 0; }
     bool hasHubRelaySupport() const { return (supportFlags & SUPPORTS_HUBRELAY) != 0; }
+    bool hasRelayOnlySupport() const { return (supportFlags & SUPPORTS_RELAYONLY) != 0; }
+    /// True if this client is in relay-only privacy mode (no IP leakage).
+    bool isRelayOnly() const;
 
 #ifdef WITH_NMDCPB
     // E2EPM: send encrypted PM if peer supports it
@@ -109,7 +112,8 @@ private:
         SUPPORTS_NOGETINFO = 0x02,
         SUPPORTS_USERIP2 = 0x04,
         SUPPORTS_NMDCPB = 0x08,
-        SUPPORTS_HUBRELAY = 0x10
+        SUPPORTS_HUBRELAY = 0x10,
+        SUPPORTS_RELAYONLY = 0x20
     };
 
     mutable CriticalSection cs;

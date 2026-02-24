@@ -58,6 +58,9 @@ NmdcHub::~NmdcHub() {
     clearUsers();
 }
 
+bool NmdcHub::isRelayOnly() const {
+    return BOOLSETTING(RELAY_ONLY_MODE) && hasHubRelaySupport() && hasNmdcPbSupport();
+}
 
 #define checkstate() if(state != STATE_NORMAL) return
 
@@ -67,6 +70,25 @@ void NmdcHub::connect(const OnlineUser& aUser, const string&) {
     fprintf(stderr, "[NmdcHub::connect] nick=%s active=%d mode=%d\n",
             aUser.getIdentity().getNick().c_str(), (int)isActive(),
             ctx().getClientManager()->getMode(getHubUrl()));
+#ifdef WITH_NMDCPB
+    if(isRelayOnly()) {
+        auto& relayMgr = getRelayManager();
+        auto result = relayMgr.initiateRelay(getHubUrl(), aUser.getIdentity().getNick());
+        nmdcpb::PbEnvelope env;
+        env.set_route(nmdcpb::PbEnvelope::DIRECT);
+        env.set_from_nick(getMyNick());
+        env.set_to_nick(aUser.getIdentity().getNick());
+        auto* rr = env.mutable_relay_request();
+        rr->set_target_nick(aUser.getIdentity().getNick());
+        rr->set_token(result.token);
+        rr->set_public_key(result.publicKey.data(), result.publicKey.size());
+        rr->set_purpose(nmdcpb::PbRelayRequest::FILE_TRANSFER);
+        std::string serialized;
+        env.SerializeToString(&serialized);
+        sendPbEnvelope(aUser.getIdentity().getNick(), serialized);
+        return;
+    }
+#endif
     if(isActive()) {
         connectToMe(aUser);
     } else {
@@ -457,6 +479,12 @@ void NmdcHub::onLine(const string& aLine) {
             return;
         }
         fprintf(stderr, "[NmdcHub::$ConnectToMe] raw param=%s\n", param.c_str());
+#ifdef WITH_NMDCPB
+        if(isRelayOnly()) {
+            dcdebug("NmdcHub: incoming $ConnectToMe ignored in relay-only mode\n");
+            return; // Never accept direct TCP connections in relay-only mode
+        }
+#endif
         string::size_type i = param.find(' ');
         string::size_type j;
         if( (i == string::npos) || ((i + 1) >= param.size()) ) {
@@ -528,6 +556,30 @@ void NmdcHub::onLine(const string& aLine) {
         if(state != STATE_NORMAL) {
             return;
         }
+#ifdef WITH_NMDCPB
+        if(isRelayOnly()) {
+            // In relay-only mode, respond to RCTM with a relay request instead of CTM
+            string::size_type j = param.find(' ');
+            if(j == string::npos) return;
+            OnlineUser* u = findUser(param.substr(0, j));
+            if(!u) return;
+            auto& relayMgr = getRelayManager();
+            auto result = relayMgr.initiateRelay(getHubUrl(), u->getIdentity().getNick());
+            nmdcpb::PbEnvelope env;
+            env.set_route(nmdcpb::PbEnvelope::DIRECT);
+            env.set_from_nick(getMyNick());
+            env.set_to_nick(u->getIdentity().getNick());
+            auto* rr = env.mutable_relay_request();
+            rr->set_target_nick(u->getIdentity().getNick());
+            rr->set_token(result.token);
+            rr->set_public_key(result.publicKey.data(), result.publicKey.size());
+            rr->set_purpose(nmdcpb::PbRelayRequest::FILE_TRANSFER);
+            std::string serialized;
+            env.SerializeToString(&serialized);
+            sendPbEnvelope(u->getIdentity().getNick(), serialized);
+            return;
+        }
+#endif
 
         string::size_type j = param.find(' ');
         if(j == string::npos) {
@@ -614,6 +666,8 @@ void NmdcHub::onLine(const string& aLine) {
                 supportFlags |= SUPPORTS_NMDCPB;
             } else if(i == "HubRelay") {
                 supportFlags |= SUPPORTS_HUBRELAY;
+            } else if(i == "RelayOnly") {
+                supportFlags |= SUPPORTS_RELAYONLY;
             }
         }
     } else if(cmd == "$UserCommand") {
@@ -680,6 +734,9 @@ void NmdcHub::onLine(const string& aLine) {
 
                 feat.push_back("NMDCpb");
                 feat.push_back("HubRelay");
+
+                if(CTX_BOOLSETTING(RELAY_ONLY_MODE))
+                    feat.push_back("RelayOnly");
 
                 if(ctx().getCryptoManager()->TLSOk())
                     feat.push_back("TLS");
@@ -748,6 +805,10 @@ void NmdcHub::onLine(const string& aLine) {
                 OnlineUser* u = findUser(it.substr(0, j));
 
                 if(!u)
+                    continue;
+
+                // In relay-only mode, only store our own IP (skip other users)
+                if(isRelayOnly() && u->getUser() != getMyIdentity().getUser())
                     continue;
 
                 u->getIdentity().setIp(it.substr(j+1));
@@ -940,6 +1001,12 @@ string NmdcHub::checkNick(const string& aNick) {
 
 void NmdcHub::connectToMe(const OnlineUser& aUser) {
     checkstate();
+#ifdef WITH_NMDCPB
+    if(isRelayOnly()) {
+        dcdebug("NmdcHub::connectToMe blocked in relay-only mode for %s\n", aUser.getIdentity().getNick().c_str());
+        return; // Never send our IP in $ConnectToMe
+    }
+#endif
     dcdebug("NmdcHub::connectToMe %s\n", aUser.getIdentity().getNick().c_str());
     string nick = fromUtf8(aUser.getIdentity().getNick());
     ctx().getConnectionManager()->nmdcExpect(nick, getMyNick(), getHubUrl());
@@ -952,6 +1019,12 @@ void NmdcHub::connectToMe(const OnlineUser& aUser) {
 
 void NmdcHub::revConnectToMe(const OnlineUser& aUser) {
     checkstate();
+#ifdef WITH_NMDCPB
+    if(isRelayOnly()) {
+        dcdebug("NmdcHub::revConnectToMe blocked in relay-only mode for %s\n", aUser.getIdentity().getNick().c_str());
+        return; // Never send $RevConnectToMe which could trigger CTM with our IP
+    }
+#endif
     dcdebug("NmdcHub::revConnectToMe %s\n", aUser.getIdentity().getNick().c_str());
     string msg = "$RevConnectToMe " + fromUtf8(getMyNick()) + " " + fromUtf8(aUser.getIdentity().getNick()) + "|";
     fprintf(stderr, "[NmdcHub::revConnectToMe] sending: %s\n", msg.c_str());
@@ -973,6 +1046,8 @@ void NmdcHub::myInfo(bool alwaysSend) {
     char modeChar = '?';
     if(CTX_SETTING(OUTGOING_CONNECTIONS) == SettingsManager::OUTGOING_SOCKS5)
         modeChar = '5';
+    else if(isRelayOnly())
+        modeChar = 'R';
     else if(isActive())
         modeChar = 'A';
     else
@@ -1029,7 +1104,7 @@ void NmdcHub::search(int aSizeType, int64_t aSize, int aFileType, const string& 
         tmp[i] = '$';
     }
     string tmp2;
-    if(isActive() && !CTX_BOOLSETTING(SEARCH_PASSIVE)) {
+    if(isActive() && !CTX_BOOLSETTING(SEARCH_PASSIVE) && !isRelayOnly()) {
         tmp2 = getLocalIp() + ':' + ctx().getSearchManager()->getPort();
     } else {
         tmp2 = "Hub:" + fromUtf8(getMyNick());
