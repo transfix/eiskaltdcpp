@@ -399,6 +399,11 @@ void MainWindow::closeEvent(QCloseEvent *c_e){
     d->arena->setWidget(nullptr);
 
     c_e->accept();
+
+    // In Qt6 the quit-on-last-window-closed mechanism may not fire when
+    // blockSignals(true) has been called on this widget.  Explicitly ask
+    // the application to quit so that QCoreApplication::exec() returns.
+    qApp->quit();
 }
 
 void MainWindow::beginExit(){
