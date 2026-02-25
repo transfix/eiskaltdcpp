@@ -243,6 +243,14 @@ execute_process (COMMAND ${QT_RCC_EXECUTABLE} -binary  ${DEFAULT_QRC_FILE}
                                               -o ${PROJECT_BINARY_DIR}/default.rcc
                  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/)
 
+# Symlink icons from source tree into build tree so the binary can find
+# user icons (usericons.png) and app icons when running uninstalled.
+if (NOT EXISTS "${PROJECT_BINARY_DIR}/icons")
+    execute_process (COMMAND ${CMAKE_COMMAND} -E create_symlink
+                     "${PROJECT_SOURCE_DIR}/icons"
+                     "${PROJECT_BINARY_DIR}/icons")
+endif ()
+
 # Qt target-based linking (handles include_directories automatically)
 list (APPEND LIBS ${QT}::Core
                   ${QT}::Gui
