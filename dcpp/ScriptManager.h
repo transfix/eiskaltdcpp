@@ -113,7 +113,16 @@ class ScriptManager: public ScriptInstance, public Speaker<ScriptManagerListener
 
 public:
     explicit ScriptManager(DCContext& ctx);
-    virtual ~ScriptManager() { if (L) lua_close(L); if(timerEnabled) ctx().getTimerManager()->removeListener(this); }
+    virtual ~ScriptManager() {
+        {
+            Lock l(cs);
+            if (L) {
+                lua_close(L);
+                L = nullptr;
+            }
+        }
+        if(timerEnabled) ctx().getTimerManager()->removeListener(this);
+    }
 
     void load();
     void  SendDebugMessage(const string& s);

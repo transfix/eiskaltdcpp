@@ -356,6 +356,7 @@ ScriptManager::ScriptManager(DCContext& ctx) : ContextAware(ctx), timerEnabled(f
 }
 
 void ScriptManager::load() {
+    Lock l(cs);
     L = luaL_newstate();//lua_open();
     luaStoreDCContext(L, ctx());
     luaL_openlibs(L);
@@ -399,11 +400,13 @@ void ScriptManager::load() {
 
 void ScriptInstance::EvaluateChunk(const string& chunk) {
     Lock l(cs);
+    if (!L) return;  // Lua not initialised
     lua_dostring(L, chunk.c_str());
 }
 
 void ScriptInstance::EvaluateFile(const string& fn) {
     Lock l(cs);
+    if (!L) return;  // Lua not initialised
     string script_full_name;
     if(Util::fileExists(fn)) {
         script_full_name = fn;
@@ -462,6 +465,7 @@ void ScriptManager::SendDebugMessage(const string &mess) {
 bool ScriptInstance::GetLuaBool() {
     //get value from top of stack, check if should cancel message.
     bool ret = false;
+    if (!L) return false;  // Lua not initialised
     if (lua_gettop(L) > 0) {
         ret = !lua_isnil(L, -1);
         lua_pop(L, 1);
@@ -489,6 +493,7 @@ void ScriptInstance::LuaPush(int i) { lua_pushnumber(L, i); }
 void ScriptInstance::LuaPush(const string& s) { lua_pushlstring(L, s.data(), s.size()); }
 
 bool ScriptInstance::MakeCallRaw(const string& table, const string& method, int args, int ret) {
+    if (!L) return false;                    // Lua not initialised
     lua_getglobal(L, table.c_str());        // args + 1
     lua_pushstring(L, method.c_str());      // args + 2
     if (lua_istable(L, -2)) {
