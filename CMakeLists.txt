@@ -1,5 +1,5 @@
+cmake_minimum_required (VERSION 3.10...3.28)
 project (eiskaltdcpp)
-cmake_minimum_required (VERSION 3.2.0)
 
 set (PROJECT_NAME "EiskaltDC++")
 set (APP_VERSION "2.4.2+devel") # Main program version (displayed in UI)
@@ -234,10 +234,14 @@ elseif (GIT_FOUND)
     if (EXISTS "${PROJECT_SOURCE_DIR}/.git/config")
         execute_process (COMMAND ${GIT_EXECUTABLE} describe --tags
                          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-                         OUTPUT_VARIABLE APP_VERSION
-                         OUTPUT_STRIP_TRAILING_WHITESPACE)
-        string (REGEX REPLACE "^v" "" APP_VERSION "${APP_VERSION}")
-        string (REGEX REPLACE "-" "+" APP_VERSION "${APP_VERSION}")
+                         OUTPUT_VARIABLE GIT_APP_VERSION
+                         OUTPUT_STRIP_TRAILING_WHITESPACE
+                         RESULT_VARIABLE GIT_DESCRIBE_RESULT
+                         ERROR_QUIET)
+        if (GIT_DESCRIBE_RESULT EQUAL 0 AND GIT_APP_VERSION)
+            string (REGEX REPLACE "^v" "" APP_VERSION "${GIT_APP_VERSION}")
+            string (REGEX REPLACE "-" "+" APP_VERSION "${APP_VERSION}")
+        endif ()
     endif()
 endif (REPLACE_VERSION)
 

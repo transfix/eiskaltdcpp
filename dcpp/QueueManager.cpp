@@ -2211,6 +2211,7 @@ public:
                 dcpp::getContext()->getLogManager()->message(str(F_("%1% : Matched %2% files") % Util::toString(dcpp::getContext()->getClientManager()->getNicks(user)) % dcpp::getContext()->getQueueManager()->matchListing(dl)));
             } catch (const Exception&) { }
         }
+        detach();  // prevent jthread destructor from self-joining
         delete this;// Cleanup the thread object
         return 0;
     }

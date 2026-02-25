@@ -53,6 +53,13 @@ public:
         }
     }
 
+    void detach() {
+        if (thread_.joinable()) {
+            thread_.get_stop_source().request_stop();
+            thread_.detach();
+        }
+    }
+
     [[nodiscard]] bool joinable() const noexcept { return thread_.joinable(); }
 
     void setThreadPriority([[maybe_unused]] Priority p) {

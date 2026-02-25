@@ -149,6 +149,8 @@ QString WulforUtil::findAppIconsPath() const
 #endif // defined(Q_OS_MAC)
         QDir::homePath() + "/.eiskaltdc++/icons/appl/" + icon_theme,
         bin_path + "/appl/" + icon_theme,
+        bin_path + "/icons/appl/" + icon_theme,
+        bin_path + "/../icons/appl/" + icon_theme,
         CLIENT_ICONS_DIR "/appl/" + icon_theme,
         bin_path + CLIENT_ICONS_DIR "/appl/" + icon_theme,
         bin_path + "/../" CLIENT_ICONS_DIR "/appl/" + icon_theme,
@@ -177,6 +179,8 @@ QString WulforUtil::findUserIconsPath() const
 #endif // defined(Q_OS_MAC)
         QDir::homePath() + "/.eiskaltdc++/icons/user/" + user_theme,
         bin_path + "icons/user/" + user_theme,
+        bin_path + "/icons/user/" + user_theme,
+        bin_path + "/../icons/user/" + user_theme,
         bin_path + "/user/" + user_theme,
         CLIENT_ICONS_DIR "/user/" + user_theme,
         bin_path + CLIENT_ICONS_DIR "/user/" + user_theme,
@@ -266,8 +270,10 @@ QString WulforUtil::getClientResourcesPath() const
     const QString client_res_path = bin_path + QString("/../Resources/" CLIENT_RES_DIR "/") + icon_theme + ".rcc";
 #else // Other systems
     QString client_res_path = QString(CLIENT_RES_DIR) + PATH_SEPARATOR_STR + icon_theme + ".rcc";
-    if (!QDir(client_res_path).exists()) // Fix for Snap, AppImage, etc.
-        client_res_path = bin_path + "/../../" + client_res_path;
+    if (!QFile(client_res_path).exists()) // Build tree: .rcc next to binary
+        client_res_path = bin_path + icon_theme + ".rcc";
+    if (!QFile(client_res_path).exists()) // Fix for Snap, AppImage, etc.
+        client_res_path = bin_path + "/../../" + QString(CLIENT_RES_DIR) + PATH_SEPARATOR_STR + icon_theme + ".rcc";
 #endif
 
     return QDir(client_res_path).absolutePath();;

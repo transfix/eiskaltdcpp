@@ -55,9 +55,9 @@ bool UPnPc::init()
         return false;
 
 #if (MINIUPNPC_API_VERSION >= 18)
-    bool ret = UPNP_GetValidIGD(devices, &urls, &data, nullptr, 0, nullptr, 0);
+    bool ret = UPNP_GetValidIGD(devices, &urls, &::data, nullptr, 0, nullptr, 0);
 #else
-    bool ret = UPNP_GetValidIGD(devices, &urls, &data, nullptr, 0);
+    bool ret = UPNP_GetValidIGD(devices, &urls, &::data, nullptr, 0);
 #endif
 
     freeUPNPDevlist(devices);
@@ -67,20 +67,20 @@ bool UPnPc::init()
 
 bool UPnPc::add(const string& port, const UPnP::Protocol protocol, const string& description)
 {
-    return UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port.c_str(), port.c_str(),
+    return UPNP_AddPortMapping(urls.controlURL, ::data.first.servicetype, port.c_str(), port.c_str(),
         Util::getLocalIp(AF_INET).c_str(), description.c_str(), protocols[protocol], nullptr, nullptr) == UPNPCOMMAND_SUCCESS;
 }
 
 bool UPnPc::remove(const string& port, const UPnP::Protocol protocol)
 {
-    return UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port.c_str(),
+    return UPNP_DeletePortMapping(urls.controlURL, ::data.first.servicetype, port.c_str(),
         protocols[protocol], nullptr) == UPNPCOMMAND_SUCCESS;
 }
 
 string UPnPc::getExternalIP()
 {
     char buf[16] = { 0 };
-    if (UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype, buf) == UPNPCOMMAND_SUCCESS)
+    if (UPNP_GetExternalIPAddress(urls.controlURL, ::data.first.servicetype, buf) == UPNPCOMMAND_SUCCESS)
         return string(buf);
     return Util::emptyString;
 }

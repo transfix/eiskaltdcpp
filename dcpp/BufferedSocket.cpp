@@ -501,6 +501,7 @@ int BufferedSocket::run() {
         }
     }
     dcdebug("BufferedSocket::run() end %p\n", (void*)this);
+    detach();  // prevent jthread destructor from self-joining
     delete this;
     return 0;
 }
