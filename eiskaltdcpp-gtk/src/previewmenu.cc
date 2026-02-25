@@ -1,5 +1,6 @@
 /*
  * Copyright © 2009-2010 freedcpp, https://github.com/eiskaltdcpp/freedcpp
+ * Copyright (C) 2026 Joe Rivera <transfix@sublevels.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
