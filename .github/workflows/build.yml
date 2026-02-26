@@ -56,7 +56,7 @@ jobs:
     - name: Build .deb package
       run: |
         DESTDIR="$(pwd)/pkg" cmake --install build
-        PKG_VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | sed 's/.*"\(.*\)".*/\1/' | tr '+' '~')
+        PKG_VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/' | tr '+' '~')
         ARCH=$(dpkg --print-architecture)
         PKG_NAME="eiskaltdcpp-qt6_${PKG_VERSION}_${ARCH}"
         mkdir -p pkg/DEBIAN
@@ -126,7 +126,7 @@ jobs:
     - name: Build .deb package
       run: |
         DESTDIR="$(pwd)/pkg" cmake --install build
-        PKG_VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | sed 's/.*"\(.*\)".*/\1/' | tr '+' '~')
+        PKG_VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/' | tr '+' '~')
         ARCH=$(dpkg --print-architecture)
         PKG_NAME="eiskaltdcpp-gtk3_${PKG_VERSION}_${ARCH}"
         mkdir -p pkg/DEBIAN
