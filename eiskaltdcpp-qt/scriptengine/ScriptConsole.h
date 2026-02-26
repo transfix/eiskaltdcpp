@@ -12,15 +12,9 @@
 
 #pragma once
 
-#include <QtGlobal>
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QJSEngine>
 #include <QJSValue>
 #include "ConsolePrinter.h"
-#else
-#include <QtScript/QScriptEngine>
-#include <QtScript/QScriptValue>
-#endif
 #include <QDialog>
 
 #include "ui_UIDialogScriptConsole.h"
@@ -37,10 +31,6 @@ private Q_SLOTS:
     void stopEvaluation();
 
 private:
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QJSEngine engine;
     ConsolePrinter *printer = nullptr;
-#else
-    QScriptEngine engine;
-#endif
 };

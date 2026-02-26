@@ -4,15 +4,8 @@ project (eiskaltdcpp-qt)
 include_directories(${PROJECT_BINARY_DIR})
 
 # --- Qt version selection ---
-if (USE_QT6)
-    set (QT_MAJOR 6)
-    set (QT_MIN_VERSION 6.2.0)
-elseif (USE_QT5)
-    set (QT_MAJOR 5)
-    set (QT_MIN_VERSION 5.0.2)
-else ()
-    message (FATAL_ERROR "No Qt version selected (USE_QT5 or USE_QT6)")
-endif ()
+set (QT_MAJOR 6)
+set (QT_MIN_VERSION 6.2.0)
 set (QT "Qt${QT_MAJOR}")
 message (STATUS "Building eiskaltdcpp-qt with ${QT}")
 
@@ -53,11 +46,7 @@ else (DBUS_NOTIFY)
 endif (DBUS_NOTIFY)
 
 if (USE_JS)
-    if (USE_QT6)
-        find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Qml REQUIRED)
-    else ()
-        find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Script REQUIRED)
-    endif ()
+    find_package (${QT} ${QT_MIN_VERSION} COMPONENTS Qml REQUIRED)
     add_definitions (-DUSE_JS)
     message (STATUS "Building with Qt Script support")
 else (USE_JS)
@@ -132,14 +121,6 @@ if (USE_JS)
     file (GLOB scriptengine_srcs ${PROJECT_SOURCE_DIR}/scriptengine/*.cpp)
     file (GLOB scriptengine_hdrs ${PROJECT_SOURCE_DIR}/scriptengine/*.h)
 
-    # ScriptBridge.h and ConsolePrinter.h are Qt6-only (they unconditionally
-    # include QJSEngine) — exclude from moc on Qt5 builds.
-    if (NOT USE_QT6)
-        list (REMOVE_ITEM scriptengine_hdrs
-                ${PROJECT_SOURCE_DIR}/scriptengine/ScriptBridge.h
-                ${PROJECT_SOURCE_DIR}/scriptengine/ConsolePrinter.h)
-    endif ()
-
     list (APPEND SRCS
             ${scriptengine_srcs}
             src/codeeditor/codeeditor.cpp)
@@ -158,25 +139,15 @@ if (NOT USE_JS)
             ${PROJECT_SOURCE_DIR}/src/ScriptManagerDialog.h)
 endif (NOT USE_JS)
 
-if (USE_QT6)
-    qt_wrap_cpp (M_SRCS ${MOC_HDRS} OPTIONS -nn)
-    qt_wrap_ui (U_SRCS ${UI_FORMS})
-elseif (USE_QT5)
-    QT5_WRAP_CPP (M_SRCS ${MOC_HDRS} OPTIONS -nn)
-    QT5_WRAP_UI (U_SRCS ${UI_FORMS})
-endif ()
+qt_wrap_cpp (M_SRCS ${MOC_HDRS} OPTIONS -nn)
+qt_wrap_ui (U_SRCS ${UI_FORMS})
 
-if (USE_QT6)
-    if (TARGET ${QT}::lrelease)
-        get_target_property (QT_LRELEASE_EXECUTABLE ${QT}::lrelease LOCATION)
-    else ()
-        find_program (QT_LRELEASE_EXECUTABLE NAMES lrelease-qt6 lrelease6 lrelease)
-    endif ()
-    get_target_property (QT_RCC_EXECUTABLE ${QT}::rcc LOCATION)
-elseif (USE_QT5)
-    set (QT_LRELEASE_EXECUTABLE ${Qt5_LRELEASE_EXECUTABLE})
-    get_target_property (QT_RCC_EXECUTABLE Qt5::rcc LOCATION)
+if (TARGET ${QT}::lrelease)
+    get_target_property (QT_LRELEASE_EXECUTABLE ${QT}::lrelease LOCATION)
+else ()
+    find_program (QT_LRELEASE_EXECUTABLE NAMES lrelease-qt6 lrelease6 lrelease)
 endif ()
+get_target_property (QT_RCC_EXECUTABLE ${QT}::rcc LOCATION)
 
 #Create translations
 file (MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/translations/)
@@ -202,11 +173,7 @@ if (WIN32 OR APPLE OR INSTALL_QT_TRANSLATIONS OR BUILD_STATIC)
     elseif (BUILD_STATIC)
         set (QT_ROOT_DIR "${QtCore_DIR}/..")
     elseif (INSTALL_QT_TRANSLATIONS AND NOT BUILD_STATIC)
-        if (USE_QT6)
-            set (QT_ROOT_DIR "/usr/share/qt6")
-        else ()
-            set (QT_ROOT_DIR "/usr/share/qt5")
-        endif ()
+        set (QT_ROOT_DIR "/usr/share/qt6")
     endif ()
     set (QT_TRANSLATIONS_DIR "${QT_ROOT_DIR}/translations/")
     file (GLOB QT_TRANSLATIONS "${QT_TRANSLATIONS_DIR}/qt_*.qm")
@@ -268,11 +235,7 @@ if (DBUS_NOTIFY)
     list (APPEND LIBS ${QT}::DBus)
 endif ()
 if (USE_JS)
-    if (USE_QT6)
-        list (APPEND LIBS ${QT}::Qml)
-    else ()
-        list (APPEND LIBS ${QT}::Script)
-    endif ()
+    list (APPEND LIBS ${QT}::Qml)
 endif ()
 if (USE_QT_SQLITE)
     list (APPEND LIBS ${QT}::Sql)
@@ -284,102 +247,6 @@ include_directories (${PROJECT_SOURCE_DIR}
                      ${PROJECT_SOURCE_DIR}/..
                      ${GETTEXT_INCLUDE_DIR})
 list (APPEND LIBS ${ICONV_LIBRARIES})
-
-if (BUILD_STATIC AND USE_QT5)
-    # Static build support is Qt5-only for now.
-    # TODO: Add Qt6 static build support (platform plugin API changed).
-    if (WIN32)
-        find_library (QT5FontDatabaseSupport Qt5FontDatabaseSupport)
-        find_library (QT5EventDispatcherSupport Qt5EventDispatcherSupport)
-        find_library (QT5ThemeSupport Qt5ThemeSupport)
-        find_library (QT5AccessibilitySupport Qt5AccessibilitySupport)
-        find_library (QT5WindowsUIAutomationSupport Qt5WindowsUIAutomationSupport)
-        list (INSERT LIBS 0 Qt5::QWindowsVistaStylePlugin)
-        if (DBUS_NOTIFY)
-            list (APPEND LIBS Qt5::DBus -ldbus-1)
-        endif (DBUS_NOTIFY)
-        list (APPEND LIBS Qt5::QWindowsIntegrationPlugin
-                          ${QT5FontDatabaseSupport}
-                          ${QT5EventDispatcherSupport}
-                          ${QT5ThemeSupport}
-                          ${QT5AccessibilitySupport}
-                          ${QT5WindowsUIAutomationSupport}
-                          Qt5::QSQLiteDriverPlugin
-                          Qt5::Sql
-                          Qt5::QWindowsAudioPlugin
-                          Qt5::Multimedia
-                          ${PCRE2_LIBRARIES}
-                          -lharfbuzz
-                          -lwinmm
-                          -limm32
-                          -lsqlite3
-                          -ljpeg
-                          -lpng
-                          -lopengl32
-                          -lwtsapi32
-                          -lwinmm
-                          -lcrypt32
-                          -lstrmiids
-                          -lfreetype
-             )
-    elseif (UNIX AND NOT APPLE AND NOT HAIKU)
-        add_definitions (-DSQLITE_ENABLE_COLUMN_METADATA=1)
-        find_library (QT5FontDatabaseSupport Qt5FontDatabaseSupport)
-        find_library (QT5EventDispatcherSupport Qt5EventDispatcherSupport)
-        find_library (QT5ThemeSupport Qt5ThemeSupport)
-        find_library (QT5ServiceSupport Qt5ServiceSupport)
-        find_library (QT5AccessibilitySupport Qt5AccessibilitySupport)
-        find_library (QT5EdidSupport Qt5EdidSupport)
-        find_library (QT5XcbQpa Qt5XcbQpa)
-        find_library (XcbStatic xcb-static)
-        if (DBUS_NOTIFY)
-            set (QT5DBus Qt5::DBus)
-        else (DBUS_NOTIFY)
-            set (QT5DBus "")
-        endif (DBUS_NOTIFY)
-        list (APPEND LIBS Qt5::QXcbIntegrationPlugin
-                          ${QT5XcbQpa}
-                          ${QT5FontDatabaseSupport}
-                          ${QT5EventDispatcherSupport}
-                          ${QT5ThemeSupport}
-                          ${QT5ServiceSupport}
-                          ${QT5AccessibilitySupport}
-                          ${QT5EdidSupport}
-                          Qt5::QSQLiteDriverPlugin
-                          Qt5::Sql
-                          Qt5::Multimedia
-                          ${QT5DBus}
-                          ${XcbStatic}
-                          ${PCRE2_LIBRARIES}
-                          -lsqlite3
-                          -ljpeg
-                          -lpng
-                          -lfontconfig
-                          -lfreetype
-                          -luuid
-                          -lexpat
-                          -lSM
-                          -lICE
-                          -lGL
-                          -lm
-                          -ldl
-                          -ldrm
-                          -lxkbcommon
-                          -lxkbcommon-x11
-                          -lXdamage
-                          -lXfixes
-                          -lX11-xcb
-                          -lxcb-glx
-                          -lxcb-dri2
-                          -lXxf86vm
-                          -lXext
-                          -lX11
-                          -lxcb
-                          -lXau
-                          -lXdmcp
-             )
-    endif (WIN32)
-endif (BUILD_STATIC AND USE_QT5)
 
 if (WIN32)
     if (OPENSSL_MSVC)
@@ -558,19 +425,10 @@ if (INSTALL_METAINFO)
 endif ()
 
 if (APPLE)
-    if (USE_QT6)
-        get_target_property (_qt_install_prefix ${QT}::Core LOCATION)
-        get_filename_component (_qt_install_prefix "${_qt_install_prefix}" PATH)
-        get_filename_component (_qt_install_prefix "${_qt_install_prefix}" PATH)
-        set (MACDEPLOYQT "${_qt_install_prefix}/bin/macdeployqt")
-    elseif (USE_QT5)
-        if (${_qt5Core_install_prefix} STREQUAL "")
-        message(WARNING "Warning! \"_qt5Core_install_prefix\" is not set, macdeployqt found in PATH will be used")
-        set (MACDEPLOYQT "macdeployqt")
-        else (${_qt5Core_install_prefix} STREQUAL "")
-        set (MACDEPLOYQT "${_qt5Core_install_prefix}/bin/macdeployqt")
-        endif (${_qt5Core_install_prefix} STREQUAL "")
-    endif ()
+    get_target_property (_qt_install_prefix ${QT}::Core LOCATION)
+    get_filename_component (_qt_install_prefix "${_qt_install_prefix}" PATH)
+    get_filename_component (_qt_install_prefix "${_qt_install_prefix}" PATH)
+    set (MACDEPLOYQT "${_qt_install_prefix}/bin/macdeployqt")
     install (CODE "
                 execute_process(COMMAND ${MACDEPLOYQT} ${PROJECT_NAME_GLOBAL}.app -verbose=2
                     WORKING_DIRECTORY \${CMAKE_INSTALL_PREFIX})")
