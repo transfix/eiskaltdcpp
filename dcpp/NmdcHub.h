@@ -96,6 +96,13 @@ public:
                        uint64_t minShareSize = 0, uint32_t maxResults = 50,
                        bool sweep = false, const string& sweepQuery = "",
                        const string& sweepTth = "", int sweepFileType = 0);
+
+    /// High-level stealth search: registers a context in SearchManager,
+    /// sends PbUserQuery with sweep=true, and returns the query-id.
+    /// Results are aggregated in SearchManager::StealthSearchContext.
+    string stealthSearch(const string& query, const string& tth = "",
+                         uint32_t maxPeers = 50, uint64_t minShareSize = 0);
+
     // Handle incoming protobuf commands with deserialization
     void handlePbCommand(const string& cmd, const string& param);
     // Send PbEnvelope via $PB (base64url)

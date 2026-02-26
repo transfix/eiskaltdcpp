@@ -126,6 +126,69 @@ private:
     std::unique_ptr<Socket> socket;
     string port;
     bool stop;
+
+#ifdef WITH_NMDCPB
+public:
+    // ── Stealth search aggregation (NMDCpb) ──
+
+    struct StealthSearchHit {
+        std::string filename;
+        std::string path;
+        uint64_t    size = 0;
+        std::string tth;           // base32
+        bool        isDirectory = false;
+        StringList  peers;         // nicks offering this file
+        uint32_t    bestFreeSlots = 0;
+        uint32_t    bestTotalSlots = 0;
+
+        std::string uniqueKey() const {
+            return tth.empty()
+                ? (path + "/" + filename + ":" + std::to_string(size))
+                : (tth + ":" + std::to_string(size));
+        }
+    };
+
+    struct StealthSearchContext {
+        std::string queryId;
+        std::string searchQuery;
+        std::string searchTTH;
+        uint32_t    peersExpected = 0;
+        StringList  peersResponded;
+        bool        complete = false;
+        time_t      created = 0;
+        std::map<std::string, StealthSearchHit> hits;  // uniqueKey → hit
+    };
+
+    /// Register a new stealth search and get an opaque query-id back.
+    std::string registerStealthSearch(const std::string& query,
+                                      const std::string& tth);
+
+    /// Feed a PbUserQueryResult into the matching context.
+    void onStealthUserQueryResult(const std::string& queryId,
+                                  uint32_t totalMatching,
+                                  uint32_t sweepCount,
+                                  const std::string& error);
+
+    /// Feed a PbPrivateSearchResult into the matching context.
+    void onStealthSearchResult(const std::string& queryId,
+                               const std::string& fromNick,
+                               const std::vector<StealthSearchHit>& results);
+
+    /// Check if a stealth search is complete.
+    bool isStealthSearchComplete(const std::string& queryId);
+
+    /// Get aggregated hits for a completed search. Clears the context.
+    std::vector<StealthSearchHit> takeStealthResults(const std::string& queryId);
+
+    /// Prune old stealth contexts (older than maxAge seconds).
+    void pruneStealthSearches(time_t maxAge = 120);
+
+private:
+    CriticalSection csStealthSearch;
+    std::map<std::string, StealthSearchContext> mStealthSearches;
+    uint32_t mStealthSeqNo = 0;
+#endif // WITH_NMDCPB
+
 public:
     explicit SearchManager(DCContext& ctx);
     virtual ~SearchManager();

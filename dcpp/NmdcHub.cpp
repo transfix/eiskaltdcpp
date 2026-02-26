@@ -1439,6 +1439,35 @@ void NmdcHub::sendUserQuery(const string& queryId, const string& featureFilter,
     sendPbEnvelope("", serialized);  // Empty toNick → HUB route → $PB broadcast to hub
 }
 
+string NmdcHub::stealthSearch(const string& query, const string& tth,
+                               uint32_t maxPeers, uint64_t minShareSize) {
+    if(state != STATE_NORMAL) return string();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return string();
+
+    // Rate limit: at most one stealth search per 2 seconds
+    static time_t lastStealthSearch = 0;
+    time_t now = time(nullptr);
+    if(now - lastStealthSearch < 2) return string();
+    lastStealthSearch = now;
+
+    // Prune old contexts
+    ctx()->getSearchManager()->pruneStealthSearches(120);
+
+    // Register aggregation context in SearchManager
+    auto queryId = ctx()->getSearchManager()->registerStealthSearch(query, tth);
+
+    // Fire PbUserQuery with sweep = true
+    sendUserQuery(queryId,
+                  "NMDCpb",       // feature filter
+                  minShareSize,
+                  maxPeers,
+                  true,           // sweep
+                  query,
+                  tth);
+
+    return queryId;
+}
+
 void NmdcHub::sendEncryptedPM(const string& targetNick, const string& message, bool thirdPerson) {
     checkstate();
     if(!(supportFlags & SUPPORTS_NMDCPB)) {
@@ -1747,6 +1776,9 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         if(!ou) return;
         auto& user = ou->getUser();
 
+        // Also feed into stealth search aggregation
+        std::vector<SearchManager::StealthSearchHit> stealthHits;
+
         for(int i = 0; i < psr.results_size(); ++i) {
             auto& r = psr.results(i);
             SearchResult::Types type = r.is_directory() ? SearchResult::TYPE_DIRECTORY : SearchResult::TYPE_FILE;
@@ -1760,6 +1792,30 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
                 static_cast<int64_t>(r.size()), fullPath, getHubName(), getHubUrl(),
                 Util::emptyString, tth, psr.search_id()));
             ctx()->getSearchManager()->fire(SearchManagerListener::SR(), srp);
+
+            // Collect for stealth aggregation
+            SearchManager::StealthSearchHit sh;
+            sh.filename = r.filename();
+            sh.path = r.path();
+            sh.size = r.size();
+            sh.tth = r.tth();
+            sh.isDirectory = r.is_directory();
+            sh.bestFreeSlots = r.free_slots();
+            sh.bestTotalSlots = r.total_slots();
+            stealthHits.push_back(std::move(sh));
+        }
+
+        if(!stealthHits.empty()) {
+            // The search_id may contain the stealth query_id
+            // (format: "queryid-sweep")
+            string searchId = psr.search_id();
+            string queryId;
+            auto pos = searchId.rfind("-sweep");
+            if(pos != string::npos)
+                queryId = searchId.substr(0, pos);
+            else
+                queryId = searchId;
+            ctx()->getSearchManager()->onStealthSearchResult(queryId, fromNick, stealthHits);
         }
 
     // ------------------------------------------------------------------
@@ -1848,6 +1904,9 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         auto& uqr = env->user_query_result();
         dcdebug("NmdcHub: user_query_result: query_id=%s total=%u sweep=%d\n",
                 uqr.query_id().c_str(), uqr.total_matching(), uqr.sweep_started());
+        // Feed into stealth search aggregation
+        ctx()->getSearchManager()->onStealthUserQueryResult(
+            uqr.query_id(), uqr.total_matching(), uqr.sweep_count(), uqr.error());
         // Event already dispatched above as pb_message
     }
 }

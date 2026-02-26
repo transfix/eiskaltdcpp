@@ -60,6 +60,14 @@ struct RelaySession {
     uint64_t bytesReceived = 0;
     time_t created = 0;
 
+    // File-transfer state (for resume/persistence)
+    std::string purpose;                   // "FILE_TRANSFER", etc.
+    std::string filename;                  // Transferred file name
+    uint64_t fileSize = 0;                 // Total file size
+    uint64_t confirmedFileOffset = 0;      // Bytes confirmed written to disk
+    std::string partialFilePath;           // Path to partial file on disk
+    std::vector<uint8_t> partialHash;      // SHA-256 state at confirmedFileOffset
+
     RelaySession() {
         memset(localPrivKey, 0, sizeof(localPrivKey));
         memset(localPubKey, 0, sizeof(localPubKey));
