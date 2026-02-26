@@ -26,12 +26,12 @@
 #include <dcpp/Util.h>
 #include <dcpp/StringTokenizer.h>
 #include <iostream>
-#include <arpa/inet.h>
 #include <fcntl.h>
 #include "settingsmanager.hh"
 #include "dcpp/StringTokenizer.h"
 #include "dcpp/DCPlusPlus.h"
 #ifdef HAVE_IFADDRS_H
+#include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #endif
