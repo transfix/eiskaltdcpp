@@ -39,8 +39,10 @@
 
 #ifdef WITH_NMDCPB
 #include "E2EPMManager.h"
+#include "HashManager.h"
 #include "RelayConnection.h"
 #include "NmdcPbCrypto.h"
+#include "SegmentCoordinator.h"
 #include "proto/nmdcpb.pb.h"
 #include "Encoder.h"
 #endif
@@ -1466,6 +1468,111 @@ string NmdcHub::stealthSearch(const string& query, const string& tth,
                   tth);
 
     return queryId;
+}
+
+string NmdcHub::startSegmentedDownload(const string& fileTTH, uint64_t fileSize,
+                                        const vector<string>& peers,
+                                        const string& downloadDir,
+                                        uint64_t segmentSize) {
+    if(state != STATE_NORMAL) return string();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return string();
+    if(peers.empty() || fileSize == 0) return string();
+
+    Lock l(cs);
+    // Generate a unique download ID
+    string downloadId = "seg_" + fileTTH.substr(0, 8) + "_" + Util::toString(time(nullptr));
+
+    auto coord = make_unique<SegmentCoordinator>(
+        fileTTH, fileSize, peers, segmentSize,
+        downloadDir.empty() ? "/tmp" : downloadDir);
+
+    // Try to load the TTH tree for per-segment verification
+    auto* hm = ctx()->getHashManager();
+    if(hm) {
+        TigerTree tt;
+        if(hm->getTree(TTHValue(fileTTH), tt)) {
+            coord->setTTHTree(tt);
+            dcdebug("SegmentedDownload %s: loaded TTH tree (%zu leaves)\n",
+                     downloadId.c_str(), tt.getLeaves().size());
+        }
+    }
+
+    // Plan segments
+    coord->planSegments();
+
+    // Set up callbacks
+    coord->onSegmentComplete = [this, downloadId](const RelaySegment& seg) {
+        dcdebug("SegmentedDownload %s: segment %u complete\n",
+                 downloadId.c_str(), seg.index);
+    };
+
+    coord->onDownloadComplete = [this, downloadId](const SegmentedDownloadInfo& info) {
+        dcdebug("SegmentedDownload %s: all %u segments complete! %.1f KB\n",
+                 downloadId.c_str(), info.segmentCount,
+                 static_cast<double>(info.fileSize) / 1024.0);
+        // Fire listener event
+        fire(ClientListener::StatusMessage(), this,
+             "Segmented download complete: " + info.fileTTH);
+    };
+
+    coord->onSegmentFailed = [this, downloadId](const RelaySegment& seg) {
+        dcdebug("SegmentedDownload %s: segment %u FAILED after %u retries\n",
+                 downloadId.c_str(), seg.index, seg.retries);
+    };
+
+    // Initiate relay sessions for PENDING segments (up to concurrency limits)
+    auto pending = coord->pendingSegments();
+    for(auto* seg : pending) {
+        if(!coord->canAssignPeer(seg->peerNick))
+            continue;
+
+        // Request relay session for this segment
+        auto result = relayManager.initiateRelay(getHubUrl(), seg->peerNick);
+
+        nmdcpb::PbEnvelope env;
+        env.set_route(nmdcpb::PbEnvelope::DIRECT);
+        env.set_from_nick(getMyNick());
+        env.set_to_nick(seg->peerNick);
+        auto* rr = env.mutable_relay_request();
+        rr->set_target_nick(seg->peerNick);
+        rr->set_token(result.token);
+        rr->set_public_key(result.publicKey.data(), result.publicKey.size());
+        rr->set_purpose(nmdcpb::PbRelayRequest::FILE_TRANSFER);
+
+        pbSerializeBuf.clear();
+        env.SerializeToString(&pbSerializeBuf);
+        sendPbEnvelope(seg->peerNick, pbSerializeBuf);
+
+        // We don't have relayId yet — it comes in the ack.
+        // Mark as ASSIGNED with relayId=0 for now.
+        coord->assignSegment(seg->index, seg->peerNick, 0);
+    }
+
+    segmentedDownloads[downloadId] = std::move(coord);
+    dcdebug("SegmentedDownload %s: started with %zu peers, %zu segments\n",
+             downloadId.c_str(), peers.size(), pending.size());
+    return downloadId;
+}
+
+void NmdcHub::cancelSegmentedDownload(const string& downloadId) {
+    Lock l(cs);
+    auto it = segmentedDownloads.find(downloadId);
+    if(it == segmentedDownloads.end()) return;
+
+    // Close all relay sessions associated with this download
+    for(auto& seg : it->second->info().segments) {
+        if(seg.relayId > 0)
+            relayToDownload.erase(seg.relayId);
+    }
+
+    segmentedDownloads.erase(it);
+}
+
+const SegmentedDownloadInfo* NmdcHub::getSegmentedDownloadInfo(const string& downloadId) const {
+    Lock l(cs);
+    auto it = segmentedDownloads.find(downloadId);
+    if(it == segmentedDownloads.end()) return nullptr;
+    return &it->second->info();
 }
 
 void NmdcHub::sendEncryptedPM(const string& targetNick, const string& message, bool thirdPerson) {

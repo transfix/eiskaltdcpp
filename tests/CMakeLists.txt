@@ -69,7 +69,11 @@ set(TEST_SOURCES
 )
 
 if (WITH_NMDCPB)
-    list(APPEND TEST_SOURCES test_nmdcpb_crypto.cpp test_nmdcpb_security.cpp)
+    list(APPEND TEST_SOURCES
+        test_nmdcpb_crypto.cpp
+        test_nmdcpb_security.cpp
+        test_segment_coordinator.cpp
+    )
 endif ()
 
 add_executable(eiskaltdcpp-tests ${TEST_SOURCES})

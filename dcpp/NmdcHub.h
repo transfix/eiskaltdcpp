@@ -29,6 +29,7 @@
 
 #ifdef WITH_NMDCPB
 #include "RelayConnection.h"
+#include "SegmentCoordinator.h"
 #include <google/protobuf/arena.h>
 #endif
 
@@ -103,6 +104,20 @@ public:
     string stealthSearch(const string& query, const string& tth = "",
                          uint32_t maxPeers = 50, uint64_t minShareSize = 0);
 
+    /// Start a segmented multi-source download through relay sessions.
+    /// Peers are a list of NMDCpb-capable nicks that have the file.
+    /// Returns a unique download ID (or empty on failure).
+    string startSegmentedDownload(const string& fileTTH, uint64_t fileSize,
+                                  const vector<string>& peers,
+                                  const string& downloadDir = "/tmp",
+                                  uint64_t segmentSize = 0);
+
+    /// Cancel a segmented download by ID.
+    void cancelSegmentedDownload(const string& downloadId);
+
+    /// Get progress of a segmented download.
+    const SegmentedDownloadInfo* getSegmentedDownloadInfo(const string& downloadId) const;
+
     // Handle incoming protobuf commands with deserialization
     void handlePbCommand(const string& cmd, const string& param);
     // Send PbEnvelope via $PB (base64url)
@@ -157,6 +172,10 @@ private:
     RelayManager relayManager;
     // Pre-allocated serialization buffer (avoids repeated heap alloc on hot path)
     string pbSerializeBuf;
+    // Active segmented downloads (downloadId → coordinator)
+    unordered_map<string, unique_ptr<SegmentCoordinator>> segmentedDownloads;
+    // Maps relay_id → downloadId for routing incoming data
+    unordered_map<uint32_t, string> relayToDownload;
 #endif
 
     NmdcHub(DCContext& ctx, const string& aHubURL, bool secure);

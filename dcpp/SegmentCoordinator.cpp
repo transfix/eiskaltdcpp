@@ -17,7 +17,60 @@
 #include <unistd.h>
 #endif
 
+#include <algorithm>
+
 namespace dcpp {
+
+// =========================================================================
+// SegmentVerifier
+// =========================================================================
+
+void SegmentVerifier::loadTree(const TigerTree& tree) {
+    mLeaves = tree.getLeaves();
+    mBlockSize = tree.getBlockSize();
+    mFileSize = tree.getFileSize();
+}
+
+bool SegmentVerifier::verify(uint64_t offset, const uint8_t* data, size_t len) const {
+    if (mLeaves.empty() || mBlockSize <= 0)
+        return true;  // No tree loaded — skip verification
+
+    // Determine which leaves this data covers
+    size_t firstLeaf = static_cast<size_t>(offset / mBlockSize);
+    size_t lastLeaf = static_cast<size_t>((offset + len - 1) / mBlockSize);
+
+    if (lastLeaf >= mLeaves.size())
+        lastLeaf = mLeaves.size() - 1;
+
+    // Verify each full block covered by [offset, offset+len)
+    for (size_t leafIdx = firstLeaf; leafIdx <= lastLeaf; ++leafIdx) {
+        // Calculate the byte range covered by this leaf
+        uint64_t leafStart = static_cast<uint64_t>(leafIdx) * mBlockSize;
+        uint64_t leafEnd = std::min(leafStart + mBlockSize,
+                                    static_cast<uint64_t>(mFileSize));
+
+        // We can only verify a leaf if we have the complete block
+        if (offset > leafStart || (offset + len) < leafEnd)
+            continue;  // Partial coverage — skip this leaf
+
+        // Hash the block: TTH leaves prepend a 0x00 byte
+        uint64_t blockOffset = leafStart - offset;
+        size_t blockLen = static_cast<size_t>(leafEnd - leafStart);
+
+        TigerHash hasher;
+        uint8_t zero = 0;
+        hasher.update(&zero, 1);
+        hasher.update(data + blockOffset, blockLen);
+        uint8_t* result = hasher.finalize();
+
+        // Compare with stored leaf
+        if (memcmp(result, mLeaves[leafIdx].data, TigerHash::BYTES) != 0) {
+            return false;  // Mismatch
+        }
+    }
+
+    return true;
+}
 
 // =========================================================================
 // PartialFileWriter
@@ -124,7 +177,7 @@ void SegmentCoordinator::planSegments() {
 
     while (offset < mInfo.fileSize) {
         uint64_t length = std::min(mSegmentSize, mInfo.fileSize - offset);
-        Segment seg;
+        RelaySegment seg;
         seg.index = index;
         seg.offset = offset;
         seg.length = length;
@@ -140,9 +193,9 @@ void SegmentCoordinator::planSegments() {
     mInfo.segmentCount = static_cast<uint32_t>(mInfo.segments.size());
 }
 
-std::vector<Segment*> SegmentCoordinator::pendingSegments() {
+std::vector<RelaySegment*> SegmentCoordinator::pendingSegments() {
     Lock l(cs);
-    std::vector<Segment*> out;
+    std::vector<RelaySegment*> out;
     for (auto& seg : mInfo.segments) {
         if (seg.state == SegmentState::PENDING)
             out.push_back(&seg);
@@ -181,13 +234,33 @@ void SegmentCoordinator::startSegment(uint32_t index) {
     mInfo.segments[index].state = SegmentState::TRANSFERRING;
 }
 
-void SegmentCoordinator::onSegmentData(uint32_t index, const uint8_t* /*data*/, size_t len) {
+bool SegmentCoordinator::onSegmentData(uint32_t index, const uint8_t* data, size_t len) {
     Lock l(cs);
-    if (index >= mInfo.segments.size()) return;
+    if (index >= mInfo.segments.size()) return false;
     auto& seg = mInfo.segments[index];
 
     if (seg.state != SegmentState::ASSIGNED && seg.state != SegmentState::TRANSFERRING)
-        return;
+        return false;
+
+    // TTH leaf verification if tree is loaded
+    if (mVerifier.hasTree()) {
+        uint64_t fileOffset = seg.offset + seg.bytesReceived;
+        if (!mVerifier.verify(fileOffset, data, len)) {
+            // Verification failed — mark segment for retry
+            seg.retries++;
+            if (seg.retries <= MAX_RETRIES) {
+                seg.state = SegmentState::PENDING;
+                seg.peerNick.clear();
+                seg.relayId = 0;
+                seg.bytesReceived = 0;
+            } else {
+                seg.state = SegmentState::FAILED;
+                if (onSegmentFailed)
+                    onSegmentFailed(seg);
+            }
+            return false;
+        }
+    }
 
     seg.state = SegmentState::TRANSFERRING;
     seg.bytesReceived += len;
@@ -203,6 +276,7 @@ void SegmentCoordinator::onSegmentData(uint32_t index, const uint8_t* /*data*/, 
                 onDownloadComplete(mInfo);
         }
     }
+    return true;
 }
 
 bool SegmentCoordinator::failSegment(uint32_t index, const std::string& /*error*/) {
@@ -242,7 +316,7 @@ std::vector<uint32_t> SegmentCoordinator::reassignPeer(const std::string& oldPee
     return reassigned;
 }
 
-Segment* SegmentCoordinator::findByRelay(uint32_t relayId) {
+RelaySegment* SegmentCoordinator::findByRelay(uint32_t relayId) {
     Lock l(cs);
     for (auto& seg : mInfo.segments) {
         if (seg.relayId == relayId)

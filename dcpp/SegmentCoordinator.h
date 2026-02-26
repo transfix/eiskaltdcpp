@@ -3,7 +3,7 @@
  *
  * Splits a file into segments and assigns each to a different NMDCpb-capable
  * peer for parallel download through relay sessions.  Handles:
- *   - Segment planning (split by peer count / min segment size)
+ *   - RelaySegment planning (split by peer count / min segment size)
  *   - Round-robin peer assignment with per-peer concurrency limits
  *   - Data routing from relay callbacks to the correct segment
  *   - Retry / reassignment on peer failure
@@ -19,6 +19,7 @@
 #ifdef WITH_NMDCPB
 
 #include "CriticalSection.h"
+#include "MerkleTree.h"
 
 #include <cstdint>
 #include <functional>
@@ -34,7 +35,7 @@ namespace dcpp {
 static constexpr uint64_t kMinSegmentSize = 256 * 1024;
 
 // =========================================================================
-// Segment state
+// RelaySegment state
 // =========================================================================
 
 enum class SegmentState {
@@ -45,7 +46,7 @@ enum class SegmentState {
     FAILED          // Permanent failure after max retries
 };
 
-struct Segment {
+struct RelaySegment {
     uint32_t  index = 0;
     uint64_t  offset = 0;        // Byte offset into the file
     uint64_t  length = 0;        // Expected segment length
@@ -108,7 +109,7 @@ struct SegmentedDownloadInfo {
         return out;
     }
 
-    std::vector<Segment> segments;
+    std::vector<RelaySegment> segments;
 };
 
 // =========================================================================
@@ -149,6 +150,30 @@ private:
 };
 
 // =========================================================================
+// RelaySegment TTH Verifier — checks segment integrity using TTH Merkle tree leaves
+// =========================================================================
+
+class SegmentVerifier {
+public:
+    /// Load TTH tree leaves and block size for a file.
+    /// Typically obtained from HashManager::getTree().
+    void loadTree(const TigerTree& tree);
+
+    /// Verify that `data` at file `offset` matches the expected TTH leaves.
+    /// Returns true if all covered leaves verify, false on mismatch.
+    /// If no tree is loaded, returns true (skip verification).
+    bool verify(uint64_t offset, const uint8_t* data, size_t len) const;
+
+    bool hasTree() const { return !mLeaves.empty(); }
+    int64_t blockSize() const { return mBlockSize; }
+
+private:
+    TigerTree::MerkleList mLeaves;
+    int64_t mBlockSize = 0;
+    int64_t mFileSize = 0;
+};
+
+// =========================================================================
 // SegmentCoordinator
 // =========================================================================
 
@@ -157,7 +182,7 @@ public:
     static constexpr uint32_t MAX_RETRIES = 3;
     static constexpr uint32_t MAX_CONCURRENT_PER_PEER = 2;
 
-    using SegmentCallback = std::function<void(const Segment&)>;
+    using SegmentCallback = std::function<void(const RelaySegment&)>;
     using DownloadCallback = std::function<void(const SegmentedDownloadInfo&)>;
 
     SegmentCoordinator(const std::string& fileTTH,
@@ -176,7 +201,7 @@ public:
     void planSegments();
 
     /// Get segments in PENDING state.
-    std::vector<Segment*> pendingSegments();
+    std::vector<RelaySegment*> pendingSegments();
 
     /// Count of active segments for a peer.
     uint32_t peerActiveCount(const std::string& peerNick) const;
@@ -191,7 +216,12 @@ public:
     void startSegment(uint32_t index);
 
     /// Process incoming data for a segment.
-    void onSegmentData(uint32_t index, const uint8_t* data, size_t len);
+    /// If a SegmentVerifier is set, data is verified against TTH leaves.
+    /// Returns false if TTH verification fails.
+    bool onSegmentData(uint32_t index, const uint8_t* data, size_t len);
+
+    /// Set the TTH tree for segment-level verification.
+    void setTTHTree(const TigerTree& tree) { mVerifier.loadTree(tree); }
 
     /// Mark a segment as failed. Returns true if it can be retried.
     bool failSegment(uint32_t index, const std::string& error = "");
@@ -202,7 +232,7 @@ public:
                                         const std::string& newPeer);
 
     /// Find a segment by its relayId. Returns nullptr if not found.
-    Segment* findByRelay(uint32_t relayId);
+    RelaySegment* findByRelay(uint32_t relayId);
 
     /// Get a const reference to the download info.
     const SegmentedDownloadInfo& info() const { return mInfo; }
@@ -217,6 +247,7 @@ private:
     SegmentedDownloadInfo mInfo;
     uint64_t mSegmentSize;
     std::vector<std::string> mPeers;
+    SegmentVerifier mVerifier;
 };
 
 } // namespace dcpp
