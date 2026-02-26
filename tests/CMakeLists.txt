@@ -69,7 +69,7 @@ set(TEST_SOURCES
 )
 
 if (WITH_NMDCPB)
-    list(APPEND TEST_SOURCES test_nmdcpb_crypto.cpp)
+    list(APPEND TEST_SOURCES test_nmdcpb_crypto.cpp test_nmdcpb_security.cpp)
 endif ()
 
 add_executable(eiskaltdcpp-tests ${TEST_SOURCES})
@@ -114,3 +114,53 @@ endif()
 if (USE_GTK3)
     add_subdirectory(gtk)
 endif()
+
+# =========================================================================
+# Fuzz targets (optional — build with -DBUILD_FUZZ_TARGETS=ON)
+# Requires clang with -fsanitize=fuzzer support
+# =========================================================================
+option(BUILD_FUZZ_TARGETS "Build libFuzzer fuzz targets" OFF)
+
+if (BUILD_FUZZ_TARGETS AND WITH_NMDCPB)
+    set(FUZZ_COMPILE_FLAGS "-fsanitize=fuzzer,address -g -O1")
+    set(FUZZ_LINK_FLAGS "-fsanitize=fuzzer,address")
+
+    # Fuzz target: protobuf deserialization
+    add_executable(fuzz_protobuf fuzz/fuzz_protobuf.cpp)
+    target_include_directories(fuzz_protobuf PRIVATE
+        ${CMAKE_SOURCE_DIR}/dcpp
+        ${Protobuf_INCLUDE_DIRS}
+        ${CMAKE_BINARY_DIR}/dcpp
+    )
+    target_link_libraries(fuzz_protobuf PRIVATE dcpp ${Protobuf_LIBRARIES})
+    set_target_properties(fuzz_protobuf PROPERTIES
+        COMPILE_FLAGS "${FUZZ_COMPILE_FLAGS}"
+        LINK_FLAGS "${FUZZ_LINK_FLAGS}"
+    )
+
+    # Fuzz target: ChaCha20-Poly1305 crypto
+    add_executable(fuzz_crypto fuzz/fuzz_crypto.cpp)
+    target_include_directories(fuzz_crypto PRIVATE
+        ${CMAKE_SOURCE_DIR}/dcpp
+        ${OPENSSL_INCLUDE_DIR}
+    )
+    target_link_libraries(fuzz_crypto PRIVATE dcpp ${OPENSSL_LIBRARIES})
+    set_target_properties(fuzz_crypto PROPERTIES
+        COMPILE_FLAGS "${FUZZ_COMPILE_FLAGS}"
+        LINK_FLAGS "${FUZZ_LINK_FLAGS}"
+    )
+
+    # Fuzz target: base64url encode/decode
+    add_executable(fuzz_base64 fuzz/fuzz_base64.cpp)
+    target_include_directories(fuzz_base64 PRIVATE
+        ${CMAKE_SOURCE_DIR}/dcpp
+    )
+    target_link_libraries(fuzz_base64 PRIVATE dcpp)
+    set_target_properties(fuzz_base64 PROPERTIES
+        COMPILE_FLAGS "${FUZZ_COMPILE_FLAGS}"
+        LINK_FLAGS "${FUZZ_LINK_FLAGS}"
+    )
+
+    message(STATUS "Fuzz targets enabled: fuzz_protobuf, fuzz_crypto, fuzz_base64")
+endif ()
+

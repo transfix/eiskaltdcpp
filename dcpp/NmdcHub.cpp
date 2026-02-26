@@ -1435,16 +1435,18 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
     decoded = Encoder::fromBase64(base64data);
     if(decoded.empty()) return;
 
-    // Parse PbEnvelope
-    nmdcpb::PbEnvelope env;
-    if(!env.ParseFromString(decoded)) {
+    // Parse PbEnvelope — use arena allocation to avoid heap fragmentation
+    // and reduce allocation overhead on the hot path
+    google::protobuf::Arena arena;
+    auto* env = google::protobuf::Arena::CreateMessage<nmdcpb::PbEnvelope>(&arena);
+    if(!env->ParseFromString(decoded)) {
         dcdebug("NmdcHub::handlePbCommand: failed to parse PbEnvelope\n");
         return;
     }
 
     // Dispatch by payload type
-    if(env.has_pm_key_exchange()) {
-        auto& kex = env.pm_key_exchange();
+    if(env->has_pm_key_exchange()) {
+        auto& kex = env->pm_key_exchange();
         if(kex.public_key().size() != X25519_KEY_SIZE) return;
 
         auto* mgr = ctx()->getE2EPMManager();
@@ -1470,9 +1472,9 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
             rkex->set_public_key(ourPubKey.data(), ourPubKey.size());
             rkex->set_protocol_version(1);
 
-            string serialized;
-            resp.SerializeToString(&serialized);
-            sendPbEnvelope(fromNick, serialized);
+            pbSerializeBuf.clear();
+            resp.SerializeToString(&pbSerializeBuf);
+            sendPbEnvelope(fromNick, pbSerializeBuf);
         }
 
         // Flush pending messages if session is now established
@@ -1482,8 +1484,8 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
                 sendEncryptedPM(fromNick, text, isAction);
             }
         }
-    } else if(env.has_encrypted_pm()) {
-        auto& epm = env.encrypted_pm();
+    } else if(env->has_encrypted_pm()) {
+        auto& epm = env->encrypted_pm();
         auto* mgr = ctx()->getE2EPMManager();
         if(!mgr) return;
 
@@ -1509,8 +1511,8 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         } catch(const CryptoError& e) {
             dcdebug("E2EPM decrypt failed from %s: %s\n", fromNick.c_str(), e.what());
         }
-    } else if(env.has_relay_request()) {
-        auto& rr = env.relay_request();
+    } else if(env->has_relay_request()) {
+        auto& rr = env->relay_request();
         if(rr.public_key().size() != X25519_KEY_SIZE) return;
 
         const uint8_t* peerPub = reinterpret_cast<const uint8_t*>(rr.public_key().data());
@@ -1531,12 +1533,12 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
             ack->set_accepted(accepted);
             ack->set_public_key(ourPub.data(), ourPub.size());
 
-            string serialized;
-            resp.SerializeToString(&serialized);
-            sendPbEnvelope(fromNick, serialized);
+            pbSerializeBuf.clear();
+            resp.SerializeToString(&pbSerializeBuf);
+            sendPbEnvelope(fromNick, pbSerializeBuf);
         }
-    } else if(env.has_relay_ack()) {
-        auto& ack = env.relay_ack();
+    } else if(env->has_relay_ack()) {
+        auto& ack = env->relay_ack();
         const uint8_t* peerPub = ack.public_key().size() == X25519_KEY_SIZE
             ? reinterpret_cast<const uint8_t*>(ack.public_key().data()) : nullptr;
 
@@ -1544,12 +1546,12 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
             relayManager.handleRelayAck(
                 ack.token(), ack.accepted(), ack.relay_id(), peerPub);
         }
-    } else if(env.has_relay_closed()) {
-        auto& rc = env.relay_closed();
+    } else if(env->has_relay_closed()) {
+        auto& rc = env->relay_closed();
         relayManager.handleRelayClosed(rc.relay_id());
-    } else if(env.has_private_search()) {
+    } else if(env->has_private_search()) {
         // A peer is asking us to search our local shares
-        auto& ps = env.private_search();
+        auto& ps = env->private_search();
         if(ps.search_id().empty()) return;
 
         auto* sm = ctx()->getShareManager();
@@ -1612,13 +1614,13 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
 
         sr->set_is_partial(results.size() >= maxRes);
 
-        string serialized;
-        resp.SerializeToString(&serialized);
-        sendPbEnvelope(fromNick, serialized);
+        pbSerializeBuf.clear();
+        resp.SerializeToString(&pbSerializeBuf);
+        sendPbEnvelope(fromNick, pbSerializeBuf);
 
-    } else if(env.has_private_search_result()) {
+    } else if(env->has_private_search_result()) {
         // Results from a peer in response to our private search
-        auto& psr = env.private_search_result();
+        auto& psr = env->private_search_result();
 
         Lock l(cs);
         auto ou = findUser(fromNick);

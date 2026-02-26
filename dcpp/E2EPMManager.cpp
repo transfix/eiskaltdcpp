@@ -26,14 +26,22 @@ std::vector<uint8_t> E2EPMManager::initiateKeyExchange(
     SessionKey key{hubUrl, peerNick};
 
     auto it = mSessions.find(key);
-    if (it != mSessions.end() && it->second.established) {
-        // Session already established
-        return {};
-    }
 
-    // Create or re-use session
+    // Create or reset session (supports re-keying of established sessions)
     if (it == mSessions.end()) {
         it = mSessions.emplace(key, E2EPMSession()).first;
+    } else if (it->second.established) {
+        // Re-key: wipe old key material and reset state
+        auto& old = it->second;
+        volatile uint8_t* pk = old.localPrivKey;
+        volatile uint8_t* ek = old.encKey;
+        volatile uint8_t* dk = old.decKey;
+        for (size_t i = 0; i < X25519_KEY_SIZE; ++i) pk[i] = 0;
+        for (size_t i = 0; i < CHACHA_KEY_SIZE; ++i) { ek[i] = 0; dk[i] = 0; }
+        old.established = false;
+        old.encNonce = 0;
+        old.decNonce = 0;
+        while (!old.pendingMessages.empty()) old.pendingMessages.pop();
     }
 
     auto& session = it->second;
@@ -72,13 +80,37 @@ std::vector<uint8_t> E2EPMManager::handleKeyExchange(
         memcpy(session.localPrivKey, kp.privateKey, X25519_KEY_SIZE);
         memcpy(session.localPubKey, kp.publicKey, X25519_KEY_SIZE);
         ourPubKey.assign(session.localPubKey, session.localPubKey + X25519_KEY_SIZE);
+    } else if (it->second.established) {
+        // Re-key: peer wants a new session. Generate fresh keypair,
+        // replace the old session entirely, and complete the exchange.
+        auto& session = it->second;
+
+        // Wipe old key material (destructor handles this, but be explicit)
+        volatile uint8_t* pk = session.localPrivKey;
+        volatile uint8_t* ek = session.encKey;
+        volatile uint8_t* dk = session.decKey;
+        for (size_t i = 0; i < X25519_KEY_SIZE; ++i) pk[i] = 0;
+        for (size_t i = 0; i < CHACHA_KEY_SIZE; ++i) { ek[i] = 0; dk[i] = 0; }
+
+        // Reset session state
+        session.established = false;
+        session.encNonce = 0;
+        session.decNonce = 0;
+        session.created = time(nullptr);
+
+        // Generate fresh ephemeral keypair
+        auto kp = generateX25519KeyPair();
+        memcpy(session.localPrivKey, kp.privateKey, X25519_KEY_SIZE);
+        memcpy(session.localPubKey, kp.publicKey, X25519_KEY_SIZE);
+        ourPubKey.assign(session.localPubKey, session.localPubKey + X25519_KEY_SIZE);
+
+        // Drain any leftover pending messages from the old session
+        while (!session.pendingMessages.empty()) {
+            session.pendingMessages.pop();
+        }
     }
 
     auto& session = it->second;
-    if (session.established) {
-        // Already established — this might be a re-key attempt
-        return {};
-    }
 
     // Store peer's public key
     memcpy(session.peerPubKey, peerPubKey, X25519_KEY_SIZE);
@@ -116,6 +148,9 @@ void E2EPMManager::deriveKeys(E2EPMSession& session) {
 
     session.encNonce = 0;
     session.decNonce = 0;
+    session.messagesSent = 0;
+    session.messagesRecvd = 0;
+    session.lastRotation = time(nullptr);
     session.established = true;
 }
 
@@ -167,6 +202,8 @@ E2EPMManager::EncryptedPM E2EPMManager::encryptPM(
     result.nonce = session.encNonce++;
     memcpy(result.senderPubHint, session.localPubKey, 8);
 
+    session.messagesSent++;
+
     return result;
 }
 
@@ -214,6 +251,7 @@ E2EPMManager::DecryptedPM E2EPMManager::decryptPM(
     }
 
     session.decNonce = nonce + 1;
+    session.messagesRecvd++;
 
     DecryptedPM result;
     result.text = pt.text();
@@ -324,6 +362,64 @@ std::string E2EPMManager::buildAAD(const std::string& sender, const std::string&
     aad.push_back('\0');
     aad += target;
     return aad;
+}
+
+// =========================================================================
+// Key Rotation
+// =========================================================================
+
+bool E2EPMManager::needsRotation(const std::string& hubUrl, const std::string& peerNick) const {
+    Lock l(cs);
+    auto it = mSessions.find(SessionKey{hubUrl, peerNick});
+    if (it == mSessions.end() || !it->second.established) {
+        return false;
+    }
+    const auto& session = it->second;
+    uint64_t totalMsgs = session.messagesSent + session.messagesRecvd;
+    if (totalMsgs >= ROTATION_MESSAGE_THRESHOLD) {
+        return true;
+    }
+    time_t baseline = session.lastRotation > 0 ? session.lastRotation : session.created;
+    if (baseline > 0 && (time(nullptr) - baseline) >= ROTATION_TIME_THRESHOLD) {
+        return true;
+    }
+    return false;
+}
+
+std::vector<E2EPMManager::SessionKey> E2EPMManager::getSessionsNeedingRotation() const {
+    Lock l(cs);
+    std::vector<SessionKey> result;
+    time_t now = time(nullptr);
+    for (const auto& [key, session] : mSessions) {
+        if (!session.established) continue;
+        uint64_t totalMsgs = session.messagesSent + session.messagesRecvd;
+        if (totalMsgs >= ROTATION_MESSAGE_THRESHOLD) {
+            result.push_back(key);
+            continue;
+        }
+        time_t baseline = session.lastRotation > 0 ? session.lastRotation : session.created;
+        if (baseline > 0 && (now - baseline) >= ROTATION_TIME_THRESHOLD) {
+            result.push_back(key);
+        }
+    }
+    return result;
+}
+
+E2EPMManager::RotationStats E2EPMManager::getRotationStats(
+    const std::string& hubUrl, const std::string& peerNick) const {
+    Lock l(cs);
+    auto it = mSessions.find(SessionKey{hubUrl, peerNick});
+    if (it == mSessions.end()) {
+        return RotationStats{0, 0, 0, false};
+    }
+    const auto& session = it->second;
+    time_t baseline = session.lastRotation > 0 ? session.lastRotation : session.created;
+    time_t age = baseline > 0 ? (time(nullptr) - baseline) : 0;
+    uint64_t totalMsgs = session.messagesSent + session.messagesRecvd;
+    bool needed = session.established &&
+                  (totalMsgs >= ROTATION_MESSAGE_THRESHOLD ||
+                   (baseline > 0 && age >= ROTATION_TIME_THRESHOLD));
+    return RotationStats{session.messagesSent, session.messagesRecvd, age, needed};
 }
 
 } // namespace dcpp

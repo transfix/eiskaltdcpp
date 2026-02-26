@@ -29,6 +29,7 @@
 
 #ifdef WITH_NMDCPB
 #include "RelayConnection.h"
+#include <google/protobuf/arena.h>
 #endif
 
 #ifdef LUA_SCRIPT
@@ -135,6 +136,8 @@ private:
 
 #ifdef WITH_NMDCPB
     RelayManager relayManager;
+    // Pre-allocated serialization buffer (avoids repeated heap alloc on hot path)
+    string pbSerializeBuf;
 #endif
 
     NmdcHub(DCContext& ctx, const string& aHubURL, bool secure);

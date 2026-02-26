@@ -43,11 +43,17 @@ struct E2EPMSession {
     bool established;        // true after both keys exchanged
     std::string fingerprint; // Human-readable emoji fingerprint
 
+    // Key rotation tracking
+    uint64_t messagesSent;   // Messages sent since last key rotation
+    uint64_t messagesRecvd;  // Messages received since last key rotation
+    time_t lastRotation;     // Timestamp of last key rotation (0 = never)
+
     // Queue of PMs waiting for session establishment
     std::queue<std::pair<std::string, bool>> pendingMessages; // (text, isAction)
 
     E2EPMSession()
-        : encNonce(0), decNonce(0), created(0), established(false) {
+        : encNonce(0), decNonce(0), created(0), established(false),
+          messagesSent(0), messagesRecvd(0), lastRotation(0) {
         memset(localPrivKey, 0, sizeof(localPrivKey));
         memset(localPubKey, 0, sizeof(localPubKey));
         memset(peerPubKey, 0, sizeof(peerPubKey));
@@ -134,6 +140,28 @@ public:
     void closeSession(const std::string& hubUrl, const std::string& peerNick);
     void closeAllSessions(const std::string& hubUrl);
     size_t sessionCount() const;
+
+    // ----- Key rotation -----
+
+    /// Key rotation configuration thresholds
+    static constexpr uint64_t ROTATION_MESSAGE_THRESHOLD = 1000;  /// Rotate after N messages
+    static constexpr time_t ROTATION_TIME_THRESHOLD = 3600;       /// Rotate after N seconds (1 hour)
+
+    /// Check if a session needs key rotation (message count or time threshold).
+    /// Returns true if rotation is recommended.
+    bool needsRotation(const std::string& hubUrl, const std::string& peerNick) const;
+
+    /// Check all sessions and return list of (hubUrl, peerNick) pairs that need rotation.
+    std::vector<SessionKey> getSessionsNeedingRotation() const;
+
+    /// Get rotation stats for a session
+    struct RotationStats {
+        uint64_t messagesSent;
+        uint64_t messagesRecvd;
+        time_t sessionAge;        /// Seconds since last rotation (or creation)
+        bool rotationNeeded;
+    };
+    RotationStats getRotationStats(const std::string& hubUrl, const std::string& peerNick) const;
 
     // ----- TOFU key tracking -----
 
