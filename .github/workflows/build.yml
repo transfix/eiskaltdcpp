@@ -95,7 +95,7 @@ jobs:
           libbz2-dev zlib1g-dev libssl-dev \
           libminiupnpc-dev libidn2-dev libpcre2-dev \
           liblua5.4-dev libaspell-dev \
-          libgtk-3-dev libnotify-dev libcanberra-dev \
+          libgtk-3-dev libnotify-dev libcanberra-dev libcanberra-gtk3-dev \
           libx11-dev libgl-dev libsqlite3-dev
 
     - name: Configure
@@ -262,8 +262,6 @@ jobs:
         shell: msys2 {0}
 
     steps:
-    - uses: actions/checkout@v4
-
     - name: Set up MSYS2
       uses: msys2/setup-msys2@v2
       with:
@@ -285,7 +283,8 @@ jobs:
           mingw-w64-ucrt-x86_64-gettext-runtime
           mingw-w64-ucrt-x86_64-libiconv
           mingw-w64-ucrt-x86_64-libnotify
-          mingw-w64-ucrt-x86_64-libcanberra
+
+    - uses: actions/checkout@v4
 
     - name: Configure
       run: |
@@ -300,7 +299,7 @@ jobs:
           -DPERL_REGEX=ON \
           -DUSE_ASPELL=OFF \
           -DUSE_LIBNOTIFY=ON \
-          -DUSE_LIBCANBERRA=ON \
+          -DUSE_LIBCANBERRA=OFF \
           -DWITH_EMOTICONS=ON \
           -DWITH_SOUNDS=ON \
           -DBUILD_TESTS=ON
@@ -327,7 +326,7 @@ jobs:
           libssl-3-x64.dll libcrypto-3-x64.dll \
           libminiupnpc.dll libpcre2-8-0.dll lua54.dll \
           libidn2-0.dll libintl-8.dll libiconv-2.dll libunistring-5.dll \
-          libnotify-4.dll libcanberra-0.dll \
+          libnotify-4.dll \
           libwinpthread-1.dll libgcc_s_seh-1.dll libstdc++-6.dll \
         ; do
           [ -f "$MSYS_BIN/$dll" ] && cp "$MSYS_BIN/$dll" artifacts/ || true
@@ -353,11 +352,13 @@ jobs:
     - name: Build on FreeBSD
       uses: vmactions/freebsd-vm@v1
       with:
+        release: "14.2"
         usesh: true
+        mem: 8192
         prepare: |
           pkg install -y \
             cmake ninja gettext \
-            bzip2 openssl miniupnpc libidn2 pcre2 \
+            miniupnpc libidn2 pcre2 \
             lua54 aspell \
             qt6-base qt6-tools qt6-declarative qt6-multimedia qt6-svg \
             libX11 dbus sqlite3
@@ -378,5 +379,5 @@ jobs:
             -DWITH_EMOTICONS=ON \
             -DWITH_SOUNDS=ON \
             -DBUILD_TESTS=ON
-          cmake --build build
+          cmake --build build -- -j2
           cd build && ctest --output-on-failure
