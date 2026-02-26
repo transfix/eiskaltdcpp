@@ -1351,6 +1351,94 @@ void NmdcHub::sendPrivateSearch(const string& targetNick, const string& searchId
     sendPbEnvelope(targetNick, serialized);
 }
 
+void NmdcHub::sendRelayResume(const string& toNick, const string& token,
+                               uint64_t resumeOffset,
+                               const vector<uint8_t>& partialSha256) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return;
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick(getMyNick());
+    env.set_to_nick(toNick);
+    auto* rr = env.mutable_relay_resume();
+    rr->set_token(token);
+    rr->set_resume_offset(resumeOffset);
+    if(!partialSha256.empty()) {
+        rr->set_partial_sha256(partialSha256.data(), partialSha256.size());
+    }
+
+    // Generate new ephemeral key for forward secrecy
+    auto kp = generateX25519KeyPair();
+    // Store our key in the relay session
+    auto* session = relayManager.findByToken(token);
+    if(session) {
+        memcpy(session->localPrivKey, kp.privateKey, X25519_KEY_SIZE);
+        memcpy(session->localPubKey, kp.publicKey, X25519_KEY_SIZE);
+    }
+
+    string serialized;
+    env.SerializeToString(&serialized);
+    sendPbEnvelope(toNick, serialized);
+}
+
+void NmdcHub::sendSegmentRequest(const string& toNick, const string& fileTth,
+                                  uint64_t fileSize, uint64_t segOffset,
+                                  uint64_t segLength, const string& requestId) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return;
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick(getMyNick());
+    env.set_to_nick(toNick);
+    auto* sr = env.mutable_segment_request();
+    sr->set_file_tth(fileTth);
+    sr->set_file_size(fileSize);
+    sr->set_segment_offset(segOffset);
+    sr->set_segment_length(segLength);
+    sr->set_request_id(requestId);
+
+    string serialized;
+    env.SerializeToString(&serialized);
+    sendPbEnvelope(toNick, serialized);
+}
+
+void NmdcHub::sendUserQuery(const string& queryId, const string& featureFilter,
+                             uint64_t minShareSize, uint32_t maxResults,
+                             bool sweep, const string& sweepQuery,
+                             const string& sweepTth, int sweepFileType) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return;
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::HUB);
+    env.set_from_nick(getMyNick());
+    auto* uq = env.mutable_user_query();
+    uq->set_query_id(queryId);
+    uq->set_feature_filter(featureFilter);
+    uq->set_min_share_size(minShareSize);
+    if(maxResults == 0) maxResults = 50;
+    uq->set_max_results(maxResults);
+    uq->set_sweep(sweep);
+
+    if(sweep && (!sweepQuery.empty() || !sweepTth.empty())) {
+        auto* ps = uq->mutable_search();
+        ps->set_search_id(queryId + "-sweep");
+        if(!sweepTth.empty()) {
+            ps->set_tth(sweepTth);
+            ps->set_file_type(nmdcpb::PbPrivateSearch::TTH);
+        } else {
+            ps->set_query(sweepQuery);
+            ps->set_file_type(static_cast<nmdcpb::PbPrivateSearch::FileType>(sweepFileType));
+        }
+    }
+
+    string serialized;
+    env.SerializeToString(&serialized);
+    sendPbEnvelope("", serialized);  // Empty toNick → HUB route → $PB broadcast to hub
+}
+
 void NmdcHub::sendEncryptedPM(const string& targetNick, const string& message, bool thirdPerson) {
     checkstate();
     if(!(supportFlags & SUPPORTS_NMDCPB)) {
@@ -1673,6 +1761,94 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
                 Util::emptyString, tth, psr.search_id()));
             ctx()->getSearchManager()->fire(SearchManagerListener::SR(), srp);
         }
+
+    // ------------------------------------------------------------------
+    // Phase 3.5: Relay Resume
+    // ------------------------------------------------------------------
+    } else if(env->has_relay_resume()) {
+        auto& rr = env->relay_resume();
+        if(rr.token().empty()) return;
+
+        // Peer wants to resume a relay session from a given offset.
+        // We re-key with new ephemeral keys for forward secrecy.
+        auto ourPub = relayManager.handleRelayResume(
+            rr.token(), rr.resume_offset(), nullptr /* peer pubkey comes later from ack */);
+
+        if(!ourPub.empty()) {
+            // Send PbRelayAck with new public key to confirm resume
+            nmdcpb::PbEnvelope resp;
+            resp.set_route(nmdcpb::PbEnvelope::DIRECT);
+            resp.set_from_nick(getMyNick());
+            resp.set_to_nick(fromNick);
+            auto* ack = resp.mutable_relay_ack();
+            ack->set_token(rr.token());
+            ack->set_accepted(true);
+            ack->set_public_key(ourPub.data(), ourPub.size());
+
+            // Use existing relay_id from session
+            auto* session = relayManager.findByToken(rr.token());
+            if(session) {
+                ack->set_relay_id(session->relayId);
+            }
+
+            pbSerializeBuf.clear();
+            resp.SerializeToString(&pbSerializeBuf);
+            sendPbEnvelope(fromNick, pbSerializeBuf);
+        }
+
+    // ------------------------------------------------------------------
+    // Phase 3.5: Segment Request (peer asking us for a file segment)
+    // ------------------------------------------------------------------
+    } else if(env->has_segment_request()) {
+        auto& sr = env->segment_request();
+        if(sr.request_id().empty() || sr.file_tth().empty()) return;
+
+        auto* sm = ctx()->getShareManager();
+        if(!sm) return;
+
+        // Check if we have the file
+        SearchResultList results;
+        sm->search(results, "TTH:" + sr.file_tth(), 0, 0,
+                   SearchManager::TYPE_TTH, this, 1);
+
+        nmdcpb::PbEnvelope resp;
+        resp.set_route(nmdcpb::PbEnvelope::DIRECT);
+        resp.set_from_nick(getMyNick());
+        resp.set_to_nick(fromNick);
+        auto* si = resp.mutable_segment_info();
+        si->set_request_id(sr.request_id());
+        si->set_segment_offset(sr.segment_offset());
+        si->set_segment_length(sr.segment_length());
+        si->set_peer_nick(getMyNick());
+
+        if(!results.empty()) {
+            si->set_available(true);
+        } else {
+            si->set_available(false);
+        }
+
+        pbSerializeBuf.clear();
+        resp.SerializeToString(&pbSerializeBuf);
+        sendPbEnvelope(fromNick, pbSerializeBuf);
+
+    // ------------------------------------------------------------------
+    // Phase 3.5: Segment Info (response to our segment request)
+    // ------------------------------------------------------------------
+    } else if(env->has_segment_info()) {
+        auto& si = env->segment_info();
+        // Fire as a generic NmdcPb event — the Python layer handles aggregation
+        dcdebug("NmdcHub: segment_info from %s for request %s: available=%d\n",
+                fromNick.c_str(), si.request_id().c_str(), si.available());
+        // Event already dispatched above as pb_message
+
+    // ------------------------------------------------------------------
+    // Phase 3.5: User Query Result (from hub, listing matching users)
+    // ------------------------------------------------------------------
+    } else if(env->has_user_query_result()) {
+        auto& uqr = env->user_query_result();
+        dcdebug("NmdcHub: user_query_result: query_id=%s total=%u sweep=%d\n",
+                uqr.query_id().c_str(), uqr.total_matching(), uqr.sweep_started());
+        // Event already dispatched above as pb_message
     }
 }
 

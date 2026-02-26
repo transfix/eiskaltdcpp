@@ -121,6 +121,12 @@ public:
     std::vector<uint8_t> decryptRelayData(uint32_t relayId,
                                            const uint8_t* data, size_t len);
 
+    /// Handle PbRelayResume from peer — re-key and resume from offset.
+    /// Returns our new public key for the resumed session (empty on error).
+    std::vector<uint8_t> handleRelayResume(const std::string& token,
+                                            uint64_t resumeOffset,
+                                            const uint8_t peerPubKey[X25519_KEY_SIZE]);
+
     /// Handle PbRelayClosed from hub.
     void handleRelayClosed(uint32_t relayId);
 

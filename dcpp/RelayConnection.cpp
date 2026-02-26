@@ -229,6 +229,36 @@ std::vector<uint8_t> RelayManager::decryptRelayData(
 }
 
 // =========================================================================
+// Handle relay resume — re-key and continue from offset
+// =========================================================================
+
+std::vector<uint8_t> RelayManager::handleRelayResume(
+    const std::string& token, uint64_t resumeOffset,
+    const uint8_t peerPubKey[X25519_KEY_SIZE]) {
+    Lock l(cs);
+    auto it = mSessionsByToken.find(token);
+    if (it == mSessionsByToken.end()) return {};
+
+    auto* session = it->second;
+
+    // Generate new ephemeral keys for forward secrecy
+    auto kp = generateX25519KeyPair();
+    memcpy(session->localPrivKey, kp.privateKey, X25519_KEY_SIZE);
+    memcpy(session->localPubKey, kp.publicKey, X25519_KEY_SIZE);
+    memcpy(session->peerPubKey, peerPubKey, X25519_KEY_SIZE);
+
+    // Re-derive session keys
+    deriveKeys(*session);
+
+    // Reset nonce counters (fresh crypto context)
+    session->encNonce = 0;
+    session->decNonce = 0;
+    session->state = RelayState::ACTIVE;
+
+    return std::vector<uint8_t>(kp.publicKey, kp.publicKey + X25519_KEY_SIZE);
+}
+
+// =========================================================================
 // Session management
 // =========================================================================
 

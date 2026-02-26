@@ -84,6 +84,18 @@ public:
                            const string& query, const string& tth = Util::emptyString,
                            int fileType = 0, uint64_t minSize = 0, uint64_t maxSize = 0,
                            uint32_t maxResults = 10, const StringList& extensions = StringList());
+    // Relay resume: send PbRelayResume to peer to restart from offset
+    void sendRelayResume(const string& toNick, const string& token,
+                         uint64_t resumeOffset, const vector<uint8_t>& partialSha256 = {});
+    // Segment request: ask a peer for a specific byte range of a file
+    void sendSegmentRequest(const string& toNick, const string& fileTth,
+                            uint64_t fileSize, uint64_t segOffset, uint64_t segLength,
+                            const string& requestId);
+    // User query: ask the hub which users support a feature
+    void sendUserQuery(const string& queryId, const string& featureFilter = "NMDCpb",
+                       uint64_t minShareSize = 0, uint32_t maxResults = 50,
+                       bool sweep = false, const string& sweepQuery = "",
+                       const string& sweepTth = "", int sweepFileType = 0);
     // Handle incoming protobuf commands with deserialization
     void handlePbCommand(const string& cmd, const string& param);
     // Send PbEnvelope via $PB (base64url)
