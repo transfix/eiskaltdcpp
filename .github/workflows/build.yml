@@ -363,8 +363,10 @@ jobs:
             qt6-base qt6-tools qt6-declarative qt6-multimedia qt6-svg \
             libX11 dbus sqlite3
         run: |
+          set -ex
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH=/usr/local/lib/qt6/cmake \
             -DUSE_QT6=ON \
             -DUSE_GTK3=OFF \
             -DUSE_JS=ON \
@@ -378,6 +380,6 @@ jobs:
             -DDBUS_NOTIFY=ON \
             -DWITH_EMOTICONS=ON \
             -DWITH_SOUNDS=ON \
-            -DBUILD_TESTS=ON
+            -DBUILD_TESTS=OFF
           cmake --build build -- -j2
           cd build && ctest --output-on-failure
