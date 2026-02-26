@@ -70,7 +70,9 @@ jobs:
         printf 'Description: EiskaltDC++ - Direct Connect client (Qt6 UI)\n' >> pkg/DEBIAN/control
         printf ' A cross-platform program that uses the Direct Connect and ADC protocols.\n' >> pkg/DEBIAN/control
         printf ' This package contains the Qt6 graphical user interface.\n' >> pkg/DEBIAN/control
-        dpkg-deb --build pkg "${PKG_NAME}.deb"
+        chmod 0755 pkg/DEBIAN
+        chmod 0644 pkg/DEBIAN/control
+        dpkg-deb --root-owner-group --build pkg "${PKG_NAME}.deb"
 
     - name: Upload .deb
       uses: actions/upload-artifact@v4
@@ -138,7 +140,9 @@ jobs:
         printf 'Description: EiskaltDC++ - Direct Connect client (GTK3 UI)\n' >> pkg/DEBIAN/control
         printf ' A cross-platform program that uses the Direct Connect and ADC protocols.\n' >> pkg/DEBIAN/control
         printf ' This package contains the GTK3 graphical user interface.\n' >> pkg/DEBIAN/control
-        dpkg-deb --build pkg "${PKG_NAME}.deb"
+        chmod 0755 pkg/DEBIAN
+        chmod 0644 pkg/DEBIAN/control
+        dpkg-deb --root-owner-group --build pkg "${PKG_NAME}.deb"
 
     - name: Upload .deb
       uses: actions/upload-artifact@v4
@@ -160,6 +164,11 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
     - name: Install Qt6
       uses: jurplel/install-qt-action@v4
