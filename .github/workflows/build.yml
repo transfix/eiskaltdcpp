@@ -463,9 +463,10 @@ jobs:
 
     - name: Collect coverage
       run: |
-        # Capture coverage data
+        # Capture coverage data (ignore gcov quirks with system headers)
         lcov --capture --directory build --output-file coverage.info \
-          --rc lcov_branch_coverage=1
+          --rc lcov_branch_coverage=1 \
+          --ignore-errors mismatch,gcov,inconsistent
 
         # Remove external/system headers and test code from report
         lcov --remove coverage.info \
@@ -473,7 +474,8 @@ jobs:
           '*/build/_deps/*' \
           '*/tests/*' \
           --output-file coverage.info \
-          --rc lcov_branch_coverage=1
+          --rc lcov_branch_coverage=1 \
+          --ignore-errors unused
 
         # Summary
         lcov --list coverage.info --rc lcov_branch_coverage=1
@@ -483,6 +485,7 @@ jobs:
         genhtml coverage.info \
           --output-directory coverage-report \
           --rc lcov_branch_coverage=1 \
+          --ignore-errors unmapped \
           --title "EiskaltDC++ Test Coverage" \
           --legend
 
