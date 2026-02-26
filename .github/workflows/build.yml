@@ -412,3 +412,82 @@ jobs:
       with:
         name: eiskaltdcpp-gtk3-windows-x64
         path: artifacts/
+
+  test-coverage:
+    name: Test Coverage
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          cmake ninja-build g++ gettext lcov \
+          libbz2-dev zlib1g-dev libssl-dev \
+          libminiupnpc-dev libidn2-dev libpcre2-dev \
+          liblua5.4-dev libaspell-dev \
+          qt6-base-dev qt6-tools-dev qt6-tools-dev-tools \
+          qt6-multimedia-dev qt6-declarative-dev \
+          qt6-l10n-tools libqt6svg6-dev \
+          libgl-dev libdbus-1-dev libsqlite3-dev
+
+    - name: Configure with coverage
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_C_FLAGS="--coverage" \
+          -DCMAKE_CXX_FLAGS="--coverage" \
+          -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
+          -DUSE_QT6=ON \
+          -DUSE_GTK3=OFF \
+          -DUSE_JS=ON \
+          -DUSE_QT_QML=OFF \
+          -DUSE_MINIUPNP=ON \
+          -DWITH_DHT=ON \
+          -DUSE_IDN2=ON \
+          -DLUA_SCRIPT=ON \
+          -DPERL_REGEX=ON \
+          -DUSE_ASPELL=ON \
+          -DDBUS_NOTIFY=ON \
+          -DWITH_EMOTICONS=ON \
+          -DWITH_SOUNDS=ON \
+          -DBUILD_TESTS=ON
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Run tests
+      run: ctest --test-dir build --output-on-failure
+
+    - name: Collect coverage
+      run: |
+        # Capture coverage data
+        lcov --capture --directory build --output-file coverage.info \
+          --rc lcov_branch_coverage=1
+
+        # Remove external/system headers and test code from report
+        lcov --remove coverage.info \
+          '/usr/*' \
+          '*/build/_deps/*' \
+          '*/tests/*' \
+          --output-file coverage.info \
+          --rc lcov_branch_coverage=1
+
+        # Summary
+        lcov --list coverage.info --rc lcov_branch_coverage=1
+
+    - name: Generate HTML report
+      run: |
+        genhtml coverage.info \
+          --output-directory coverage-report \
+          --rc lcov_branch_coverage=1 \
+          --title "EiskaltDC++ Test Coverage" \
+          --legend
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage-report/
