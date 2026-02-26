@@ -100,6 +100,7 @@ QVariant TransferViewModel::data(const QModelIndex &index, int role) const
                 return WICON(WulforUtil::eiUP).scaled(18, 18, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
             else
                 return WulforUtil::getInstance()->getPixmapForFile(item->data(COLUMN_TRANSFER_FNAME).toString()).scaled(16, 16);
+            break;
         }
         case Qt::DisplayRole:
         {

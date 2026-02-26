@@ -120,14 +120,14 @@ QVariant SideBarModel::data(const QModelIndex &index, int role) const
     {
         if (!item->getWidget())
             return item->pixmap.scaled(18, 18, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        else if (item->getWidget())
+        else
             return item->getWidget()->getPixmap().scaled(18, 18, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     }
     case Qt::DisplayRole:
     {
         if (!item->getWidget())
             return item->title;
-        else if (item->getWidget())
+        else
             return item->getWidget()->getArenaShortTitle();
     }
     case Qt::TextAlignmentRole:
@@ -140,10 +140,9 @@ QVariant SideBarModel::data(const QModelIndex &index, int role) const
     {
         if (!item->getWidget())
             return item->title;
-        else if (item->getWidget())
+        else
             return WulforUtil::getInstance()->compactToolTipText(item->getWidget()->getArenaTitle(), 60, "\n");
     }
-        break;
     }
 
     return QVariant();
