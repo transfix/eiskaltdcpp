@@ -1013,6 +1013,18 @@ void MainWindow::addPrivateStatusMessage_gui(Msg::TypeMsg typemsg, string cid, s
         dynamic_cast<PrivateMessage*>(entry)->addStatusMessage_gui(message, typemsg);
 }
 
+void MainWindow::updatePrivateE2EPMStatus_gui(string cid, string fingerprint, bool keyWarning)
+{
+    BookEntry *entry = findBookEntry(Entry::PRIVATE_MESSAGE, cid);
+
+    if (entry)
+    {
+        PrivateMessage *pm = dynamic_cast<PrivateMessage*>(entry);
+        if (pm)
+            pm->setE2EPMEncryption_gui(true, fingerprint, keyWarning);
+    }
+}
+
 void MainWindow::showPublicHubs_gui()
 {
     BookEntry *entry = findBookEntry(Entry::PUBLIC_HUBS);

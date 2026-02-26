@@ -34,6 +34,11 @@ struct ChatMessage {
     bool thirdPerson;
     time_t timestamp;
 
+    // E2EPM encryption metadata (set by NmdcHub when decrypting)
+    bool e2epmEncrypted = false;      // true if message was E2E encrypted
+    string e2epmFingerprint;          // Emoji fingerprint of the session
+    bool e2epmKeyChanged = false;     // true if peer key changed (TOFU warning)
+
     string format() const;
 };
 

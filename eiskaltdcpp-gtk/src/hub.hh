@@ -91,6 +91,7 @@ private:
     void addFavoriteUser_gui(ParamMap params);
     void removeFavoriteUser_gui(ParamMap params);
     void addPrivateMessage_gui(Msg::TypeMsg typemsg, std::string nick, std::string cid, std::string url, std::string message, bool useSetting);
+    void updateE2EPMStatus_gui(std::string nick, std::string fingerprint, bool keyWarning);
     void loadImage_gui(std::string target, std::string tth);
     void openImage_gui(std::string target);
     void insertBBcodeEntry_gui(std::string ch);
@@ -183,6 +184,7 @@ private:
     virtual void on(dcpp::ClientListener::StatusMessage, dcpp::Client *, const std::string &message, int flag) noexcept;
     virtual void on(dcpp::ClientListener::NickTaken, dcpp::Client *) noexcept;
     virtual void on(dcpp::ClientListener::SearchFlood, dcpp::Client *, const std::string &message) noexcept;
+    virtual void on(dcpp::ClientListener::E2EPMStatus, dcpp::Client *, const std::string &nick, const std::string &fingerprint, bool keyChanged) noexcept;
     virtual void on(dcpp::QueueManagerListener::Finished, dcpp::QueueItem *item, const std::string& dir, int64_t avSpeed) noexcept;
 
     UserMap userMap;

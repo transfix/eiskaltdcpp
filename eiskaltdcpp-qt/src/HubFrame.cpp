@@ -1197,6 +1197,7 @@ void HubFrame::init(){
     connect(this, &HubFrame::coreMessage, this, &HubFrame::newMsg, Qt::QueuedConnection);
     connect(this, &HubFrame::corePrivateMsg, this, &HubFrame::newPm, Qt::QueuedConnection);
     connect(this, &HubFrame::coreHubUpdated, qtCtx()->mainWindow(), &MainWindow::redrawToolPanel, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreE2EPMStatus, this, &HubFrame::updateE2EPMStatus, Qt::QueuedConnection);
     connect(this, &HubFrame::coreFavoriteUserAdded, this, &HubFrame::changeFavStatus, Qt::QueuedConnection);
     connect(this, &HubFrame::coreFavoriteUserRemoved, this, &HubFrame::changeFavStatus, Qt::QueuedConnection);
 
@@ -2530,6 +2531,14 @@ void HubFrame::newPm(const VarMap &map){
 
     if (!info.empty())
         full_message += " <font color=\"" + qtCtx()->settings()->getStr(WS_CHAT_TIME_COLOR)+ "\">" + _q(info) + "</font>";
+
+    // E2EPM lock indicator per message
+    if (map["E2EPM"].toBool()) {
+        if (map["E2EPM_KEYWARN"].toBool())
+            full_message += " <font color=\"#e65100\" title=\"Key changed!\">⚠</font>";
+        else
+            full_message += " <font color=\"#4caf50\" title=\"E2E Encrypted\">🔒</font>";
+    }
 
     full_message  += QString(" <a style=\"text-decoration:none\" href=\"user://%1\"><font color=\"%2\"><b>%3</b></font></a>")
                      .arg(nick).arg(qtCtx()->settings()->getStr(color)).arg(nick.replace("\"", "&quot;"));
@@ -3886,6 +3895,9 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
         map["3RD"] = third;
         map["CID"] = _q(id.toBase32());
         map["I4"]  = _q(message.from->getIdentity().getIp());
+        map["E2EPM"] = message.e2epmEncrypted;
+        map["E2EPM_FP"] = _q(message.e2epmFingerprint);
+        map["E2EPM_KEYWARN"] = message.e2epmKeyChanged;
 
         if (qtCtx()->settings()->getBool(WB_CHAT_REDIRECT_BOT_PMS) && isBot)
             emit coreMessage(map);
@@ -3988,4 +4000,37 @@ void HubFrame::on(ClientListener::NickTaken, Client*) noexcept{
 
 void HubFrame::on(ClientListener::SearchFlood, Client*, const string &str) noexcept{
     emit coreStatusMsg(tr("Search flood detected: %1").arg(_q(str)));
+}
+
+void HubFrame::on(ClientListener::E2EPMStatus, Client*, const string &nick,
+                   const string &fingerprint, bool keyChanged) noexcept{
+    emit coreE2EPMStatus(_q(nick), _q(fingerprint), keyChanged);
+}
+
+void HubFrame::updateE2EPMStatus(QString nick, QString fingerprint, bool keyChanged) {
+    Q_D(HubFrame);
+
+    // Find the PM window for this nick (by CID)
+    UserPtr user = dcpp::getContext()->getClientManager()->findUser(nick.toStdString(), d->client->getHubUrl());
+    if (!user) return;
+
+    QString cid = _q(user->getCID().toBase32());
+    auto it = d->pm.find(cid);
+    if (it == d->pm.end()) {
+        // Create PM window so status is visible
+        addPM(cid, "");
+        it = d->pm.find(cid);
+        if (it == d->pm.end()) return;
+    }
+
+    PMWindow *pmw = it.value();
+    pmw->setE2EPMStatus(true, fingerprint, keyChanged);
+
+    if (keyChanged) {
+        pmw->addStatus(tr("⚠ E2EPM: Encryption key changed for %1! Verify fingerprint: %2")
+                       .arg(nick, fingerprint));
+    } else {
+        pmw->addStatus(tr("🔒 E2EPM: Encrypted session established with %1. Fingerprint: %2")
+                       .arg(nick, fingerprint));
+    }
 }

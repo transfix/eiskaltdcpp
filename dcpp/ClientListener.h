@@ -45,6 +45,7 @@ public:
     typedef X<17> NmdcSearch;
     typedef X<18> AdcSearch;
     typedef X<19> NmdcPbMessage;
+    typedef X<20> E2EPMStatus;
 
     enum StatusFlags {
         FLAG_NORMAL = 0x00,
@@ -69,6 +70,7 @@ public:
     virtual void on(NmdcSearch, Client*, const string&, int, int64_t, int, const string&) { }
     virtual void on(AdcSearch, Client*, const AdcCommand&, const CID&) { }
     virtual void on(NmdcPbMessage, Client*, const string& /*cmd*/, const string& /*nick*/, const string& /*data*/) { }
+    virtual void on(E2EPMStatus, Client*, const string& /*nick*/, const string& /*fingerprint*/, bool /*keyChanged*/) { }
 };
 
 } // namespace dcpp

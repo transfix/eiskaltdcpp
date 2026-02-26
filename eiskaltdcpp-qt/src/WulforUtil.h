@@ -125,6 +125,9 @@ public:
         eiSPEED_LIMIT_ON,
         eiSPEED_LIMIT_OFF,
 
+        eiE2EPM_LOCK,
+        eiE2EPM_WARN,
+
         eiFILETYPE_APPLICATION,
         eiFILETYPE_ARCHIVE,
         eiFILETYPE_DOCUMENT,

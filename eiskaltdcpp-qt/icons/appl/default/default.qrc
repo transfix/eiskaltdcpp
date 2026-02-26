@@ -17,6 +17,8 @@
         <file alias="edit-copy.png">edit-copy.png</file>
         <file alias="edit-delete.png">edit-delete.png</file>
         <file alias="edit-find.png">edit-find.png</file>
+        <file alias="e2epm-lock.png">e2epm-lock.png</file>
+        <file alias="e2epm-warn.png">e2epm-warn.png</file>
         <file alias="eraser.png">eraser.png</file>
         <file alias="face-smile.png">face-smile.png</file>
         <file alias="favadd.png">favadd.png</file>

@@ -22,6 +22,8 @@ class QObject;
 class QCloseEvent;
 class QMenu;
 class QShowEvent;
+class QLabel;
+class QToolButton;
 
 class PMWindow: public  QWidget,
                 private Ui::UIPrivateMessage,
@@ -56,6 +58,11 @@ public:
 
     void setHasHighlightMessages(bool h);
     bool hasNewMessages();
+
+    // E2EPM encryption indicators
+    void setE2EPMStatus(bool encrypted, const QString &fingerprint, bool keyChanged = false);
+    bool isE2EPMActive() const { return e2epmActive; }
+    QString e2epmFingerprintStr() const { return e2epmFingerprint; }
 
 public Q_SLOTS:
     void slotActivate();
@@ -99,6 +106,13 @@ private:
 
     bool hasMessages;
     bool hasHighlightMessages;
+
+    // E2EPM state
+    bool e2epmActive;
+    bool e2epmKeyWarning;
+    QString e2epmFingerprint;
+    QLabel *labelE2EPMIcon;
+    QLabel *labelE2EPMText;
 
     QString cid;
     QString hubUrl;

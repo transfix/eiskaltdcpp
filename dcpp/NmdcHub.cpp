@@ -1454,7 +1454,8 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         const uint8_t* peerPub = reinterpret_cast<const uint8_t*>(kex.public_key().data());
 
         // TOFU check
-        if(mgr->checkKeyChanged(getHubUrl(), fromNick, peerPub)) {
+        bool keyChanged = mgr->checkKeyChanged(getHubUrl(), fromNick, peerPub);
+        if(keyChanged) {
             // Key changed! Fire warning event.
             dcdebug("E2EPM: key changed for %s — possible MITM\n", fromNick.c_str());
         }
@@ -1479,6 +1480,28 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
 
         // Flush pending messages if session is now established
         if(mgr->isEstablished(getHubUrl(), fromNick)) {
+            // Notify UI about encryption status
+            {
+                Lock l(cs);
+                auto ou = findUser(fromNick);
+                auto me = findUser(getMyNick());
+                if(ou && me) {
+                    string fp = mgr->getFingerprint(getHubUrl(), fromNick);
+                    ChatMessage chatMsg;
+                    chatMsg.text = keyChanged
+                        ? "⚠ E2E encryption key changed for this user! Verify fingerprint: " + fp
+                        : "🔒 E2E encrypted session established. Fingerprint: " + fp;
+                    chatMsg.from = ou;
+                    chatMsg.to = me;
+                    chatMsg.replyTo = ou;
+                    chatMsg.thirdPerson = false;
+                    chatMsg.timestamp = 0;
+                    chatMsg.e2epmEncrypted = true;
+                    chatMsg.e2epmFingerprint = fp;
+                    chatMsg.e2epmKeyChanged = keyChanged;
+                    fire(ClientListener::E2EPMStatus(), this, fromNick, fp, keyChanged);
+                }
+            }
             auto pending = mgr->drainPendingMessages(getHubUrl(), fromNick);
             for(auto& [text, isAction] : pending) {
                 sendEncryptedPM(fromNick, text, isAction);
@@ -1500,12 +1523,21 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
                 std::vector<uint8_t>(epm.ciphertext().begin(), epm.ciphertext().end()),
                 hint);
 
-            // Fire as a regular PM event with encrypted flag
+            // Fire as a regular PM event with E2EPM metadata
             Lock l(cs);
             auto ou = findUser(fromNick);
             auto me = findUser(getMyNick());
             if(ou && me) {
-                ChatMessage chatMsg = { decrypted.text, ou, me, ou, decrypted.isAction, 0 };
+                ChatMessage chatMsg;
+                chatMsg.text = decrypted.text;
+                chatMsg.from = ou;
+                chatMsg.to = me;
+                chatMsg.replyTo = ou;
+                chatMsg.thirdPerson = decrypted.isAction;
+                chatMsg.timestamp = 0;
+                chatMsg.e2epmEncrypted = true;
+                chatMsg.e2epmFingerprint = mgr->getFingerprint(getHubUrl(), fromNick);
+                chatMsg.e2epmKeyChanged = false;
                 fire(ClientListener::Message(), this, chatMsg);
             }
         } catch(const CryptoError& e) {

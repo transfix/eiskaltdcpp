@@ -3672,9 +3672,19 @@ void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexc
         }
         else
         {
+            // Prepend E2EPM encryption indicator to the message line
+            string pmLine = line;
+            if (message.e2epmEncrypted)
+            {
+                if (message.e2epmKeyChanged)
+                    pmLine = "\xe2\x9a\xa0\xef\xb8\x8f " + pmLine; // ⚠️
+                else
+                    pmLine = "\xf0\x9f\x94\x92 " + pmLine; // 🔒
+            }
+
             typedef Func6<Hub, Msg::TypeMsg, string, string, string, string, bool> F6;
             F6 *func = new F6(this, &Hub::addPrivateMessage_gui, typemsg, message.from->getUser()->getCID().toBase32(),
-                              user->getUser()->getCID().toBase32(), client->getHubUrl(), line, true);
+                              user->getUser()->getCID().toBase32(), client->getHubUrl(), pmLine, true);
             wulforManagerInstance()->dispatchGuiFunc(func);
         }
     }
@@ -3771,6 +3781,36 @@ void Hub::on(ClientListener::SearchFlood, Client *, const string &msg) noexcept
     typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
     F3 *func = new F3(this, &Hub::addStatusMessage_gui, _("Search spam detected from ") + msg, Msg::STATUS, Sound::NONE);
     wulforManagerInstance()->dispatchGuiFunc(func);
+}
+
+void Hub::on(ClientListener::E2EPMStatus, Client *, const string &nick, const string &fingerprint, bool keyChanged) noexcept
+{
+    typedef Func3<Hub, string, string, bool> F3;
+    F3 *func = new F3(this, &Hub::updateE2EPMStatus_gui, nick, fingerprint, keyChanged);
+    WulforManager::get()->dispatchGuiFunc(func);
+}
+
+void Hub::updateE2EPMStatus_gui(string nick, string fingerprint, bool keyWarning)
+{
+    // Look up CID from nick using the hub's user map
+    auto it = userMap.find(nick);
+    if (it == userMap.end())
+        return;
+
+    const string &cid = it->second;
+
+    // Update E2EPM status on the PM tab through MainWindow
+    MainWindow *mw = WulforManager::get()->getMainWindow();
+    mw->updatePrivateE2EPMStatus_gui(cid, fingerprint, keyWarning);
+
+    // Add a status message about encryption
+    string status;
+    if (keyWarning)
+        status = _("⚠ E2EPM: Encryption key changed! New fingerprint: ") + fingerprint;
+    else
+        status = _("🔒 E2EPM: End-to-end encrypted session established. Fingerprint: ") + fingerprint;
+
+    mw->addPrivateStatusMessage_gui(Msg::STATUS, cid, status);
 }
 
 void Hub::disableChat(bool enable)

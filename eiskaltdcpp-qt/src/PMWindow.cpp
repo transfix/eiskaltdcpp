@@ -38,6 +38,8 @@
 #include <QMenu>
 #include <QAction>
 #include <QScrollBar>
+#include <QLabel>
+#include <QHBoxLayout>
 
 using namespace dcpp;
 
@@ -57,11 +59,33 @@ static inline void clearLayout(QLayout *l){
 PMWindow::PMWindow(const QString &cid_, const QString &hubUrl_):
         hasMessages(false),
         hasHighlightMessages(false),
+        e2epmActive(false),
+        e2epmKeyWarning(false),
+        labelE2EPMIcon(nullptr),
+        labelE2EPMText(nullptr),
         cid(cid_),
         hubUrl(hubUrl_),
         arena_menu(nullptr)
 {
     setupUi(this);
+
+    // E2EPM encryption indicator bar (hidden by default)
+    {
+        QHBoxLayout *e2epmBar = new QHBoxLayout();
+        e2epmBar->setContentsMargins(4, 2, 4, 2);
+        labelE2EPMIcon = new QLabel(this);
+        labelE2EPMIcon->setFixedSize(18, 18);
+        labelE2EPMIcon->setScaledContents(true);
+        labelE2EPMText = new QLabel(this);
+        labelE2EPMText->setStyleSheet("font-size: 11px;");
+        e2epmBar->addWidget(labelE2EPMIcon);
+        e2epmBar->addWidget(labelE2EPMText);
+        e2epmBar->addStretch();
+        // Insert before the chat edit area (at position 1, after textEdit_CHAT)
+        verticalLayout_2->insertLayout(1, e2epmBar);
+        labelE2EPMIcon->setVisible(false);
+        labelE2EPMText->setVisible(false);
+    }
 
 
     frame_SMILES->setLayout(new FlowLayout(frame_SMILES));
@@ -338,6 +362,10 @@ QMenu *PMWindow::getMenu(){
 const QPixmap &PMWindow::getPixmap(){
     if (hasHighlightMessages)
         return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiMESSAGE);
+    else if (e2epmKeyWarning)
+        return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiE2EPM_WARN);
+    else if (e2epmActive)
+        return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiE2EPM_LOCK);
     else if (hasMessages)
         return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiPMMSG);
     else
@@ -486,6 +514,36 @@ void PMWindow::setHasHighlightMessages(bool h) {
 
 bool PMWindow::hasNewMessages() {
     return (hasMessages || hasHighlightMessages);
+}
+
+void PMWindow::setE2EPMStatus(bool encrypted, const QString &fingerprint, bool keyChanged) {
+    e2epmActive = encrypted;
+    e2epmKeyWarning = keyChanged;
+    e2epmFingerprint = fingerprint;
+
+    if (encrypted) {
+        labelE2EPMIcon->setVisible(true);
+        labelE2EPMText->setVisible(true);
+
+        if (keyChanged) {
+            labelE2EPMIcon->setPixmap(WICON(WulforUtil::eiE2EPM_WARN));
+            labelE2EPMText->setText(tr("⚠ Key changed! Verify fingerprint: %1").arg(fingerprint));
+            labelE2EPMText->setStyleSheet("font-size: 11px; color: #e65100; font-weight: bold;");
+        } else {
+            labelE2EPMIcon->setPixmap(WICON(WulforUtil::eiE2EPM_LOCK));
+            labelE2EPMText->setText(tr("🔒 Encrypted — %1").arg(fingerprint));
+            labelE2EPMText->setStyleSheet("font-size: 11px; color: #4caf50;");
+        }
+        labelE2EPMText->setToolTip(
+            tr("End-to-end encrypted (E2EPM)\nFingerprint: %1\n\n"
+               "Verify this fingerprint matches on the other side\n"
+               "to ensure nobody is intercepting your messages.").arg(fingerprint));
+    } else {
+        labelE2EPMIcon->setVisible(false);
+        labelE2EPMText->setVisible(false);
+    }
+
+    MainWindow::getInstance()->redrawToolPanel();
 }
 
 void PMWindow::nextMsg(){
