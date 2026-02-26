@@ -6,7 +6,14 @@ set (GTK2_DIR "${PROJECT_SOURCE_DIR}/cmake/")
 find_package (X11 QUIET)
 
 if (USE_GTK3)
-    find_package (GTK3 REQUIRED gtk)
+    # On MSYS2/MinGW, the custom FindGTK3.cmake cannot locate headers in
+    # the UCRT64 prefix.  Use pkg-config instead, which always works.
+    if (MINGW)
+        find_package (PkgConfig REQUIRED)
+        pkg_check_modules (GTK3 REQUIRED gtk+-3.0)
+    else ()
+        find_package (GTK3 REQUIRED gtk)
+    endif ()
 endif (USE_GTK3)
 
 if (USE_LIBGNOME2)

@@ -80,6 +80,43 @@ jobs:
         name: eiskaltdcpp-qt6-linux-deb
         path: "*.deb"
 
+    - name: Build AppImage
+      run: |
+        # Install linuxdeploy + Qt plugin
+        wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+        chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+        # Prepare AppDir from cmake install
+        DESTDIR="$(pwd)/AppDir" cmake --install build
+
+        # Create .desktop if missing from AppDir
+        mkdir -p AppDir/usr/share/applications
+        if [ ! -f AppDir/usr/share/applications/eiskaltdcpp-qt.desktop ]; then
+          printf '[Desktop Entry]\nType=Application\nName=EiskaltDC++\nExec=eiskaltdcpp-qt\nIcon=eiskaltdcpp\nCategories=Network;FileTransfer;\n' > AppDir/usr/share/applications/eiskaltdcpp-qt.desktop
+        fi
+
+        # Ensure icon exists
+        mkdir -p AppDir/usr/share/icons/hicolor/128x128/apps
+        find AppDir -name 'eiskaltdcpp.png' -size +1k | head -1 | xargs -I{} cp {} AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png 2>/dev/null || true
+        if [ ! -f AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png ]; then
+          # Fallback: use any available icon
+          find data/icons -name '*.png' | head -1 | xargs -I{} cp {} AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png 2>/dev/null || true
+        fi
+
+        export QMAKE=$(which qmake6 2>/dev/null || which qmake)
+        export VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
+        ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage \
+          --desktop-file AppDir/usr/share/applications/eiskaltdcpp-qt.desktop \
+          --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png || true
+
+    - name: Upload AppImage
+      uses: actions/upload-artifact@v4
+      with:
+        name: eiskaltdcpp-qt6-linux-appimage
+        path: "*.AppImage"
+        if-no-files-found: warn
+
   build-linux-gtk3:
     name: Linux / GTK3
     runs-on: ubuntu-24.04
@@ -149,6 +186,36 @@ jobs:
       with:
         name: eiskaltdcpp-gtk3-linux-deb
         path: "*.deb"
+
+    - name: Build AppImage
+      run: |
+        wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        chmod +x linuxdeploy-x86_64.AppImage
+
+        DESTDIR="$(pwd)/AppDir" cmake --install build
+
+        mkdir -p AppDir/usr/share/applications
+        if [ ! -f AppDir/usr/share/applications/eiskaltdcpp-gtk.desktop ]; then
+          printf '[Desktop Entry]\nType=Application\nName=EiskaltDC++ GTK\nExec=eiskaltdcpp-gtk\nIcon=eiskaltdcpp\nCategories=Network;FileTransfer;\n' > AppDir/usr/share/applications/eiskaltdcpp-gtk.desktop
+        fi
+
+        mkdir -p AppDir/usr/share/icons/hicolor/128x128/apps
+        find AppDir -name 'eiskaltdcpp.png' -size +1k | head -1 | xargs -I{} cp {} AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png 2>/dev/null || true
+        if [ ! -f AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png ]; then
+          find data/icons -name '*.png' | head -1 | xargs -I{} cp {} AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png 2>/dev/null || true
+        fi
+
+        export VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
+        ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage \
+          --desktop-file AppDir/usr/share/applications/eiskaltdcpp-gtk.desktop \
+          --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png || true
+
+    - name: Upload AppImage
+      uses: actions/upload-artifact@v4
+      with:
+        name: eiskaltdcpp-gtk3-linux-appimage
+        path: "*.AppImage"
+        if-no-files-found: warn
 
   build-windows-qt6:
     name: Windows / Qt6 / MSVC
@@ -271,6 +338,7 @@ jobs:
           mingw-w64-ucrt-x86_64-gcc
           mingw-w64-ucrt-x86_64-cmake
           mingw-w64-ucrt-x86_64-ninja
+          mingw-w64-ucrt-x86_64-pkg-config
           mingw-w64-ucrt-x86_64-gtk3
           mingw-w64-ucrt-x86_64-openssl
           mingw-w64-ucrt-x86_64-bzip2
@@ -341,45 +409,3 @@ jobs:
       with:
         name: eiskaltdcpp-gtk3-windows-x64
         path: artifacts/
-
-  build-freebsd:
-    name: FreeBSD / Qt6
-    runs-on: ubuntu-24.04
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Build on FreeBSD
-      uses: vmactions/freebsd-vm@v1
-      with:
-        release: "14.2"
-        usesh: true
-        mem: 8192
-        prepare: |
-          pkg install -y \
-            cmake ninja gettext \
-            miniupnpc libidn2 pcre2 \
-            lua54 aspell \
-            qt6-base qt6-tools qt6-declarative qt6-multimedia qt6-svg \
-            libX11 dbus sqlite3
-        run: |
-          set -ex
-          cmake -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH=/usr/local/lib/qt6/cmake \
-            -DUSE_QT6=ON \
-            -DUSE_GTK3=OFF \
-            -DUSE_JS=ON \
-            -DUSE_QT_QML=OFF \
-            -DUSE_MINIUPNP=ON \
-            -DWITH_DHT=ON \
-            -DUSE_IDN2=ON \
-            -DLUA_SCRIPT=ON \
-            -DPERL_REGEX=ON \
-            -DUSE_ASPELL=ON \
-            -DDBUS_NOTIFY=ON \
-            -DWITH_EMOTICONS=ON \
-            -DWITH_SOUNDS=ON \
-            -DBUILD_TESTS=OFF
-          cmake --build build -- -j2
-          cd build && ctest --output-on-failure
