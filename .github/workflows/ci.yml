@@ -45,7 +45,8 @@ jobs:
             libminiupnpc-dev \
             libpcre2-dev \
             libaspell-dev \
-            libjsoncpp-dev
+            libjsoncpp-dev \
+            libprotobuf-dev protobuf-compiler
 
       - name: Configure (daemon-only)
         if: matrix.daemon-only
