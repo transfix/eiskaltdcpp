@@ -249,7 +249,10 @@ jobs:
       run: |
         vcpkg install --triplet x64-windows `
           openssl bzip2 zlib miniupnpc pcre2 lua `
-          gettext[tools] libiconv libidn2
+          gettext libiconv libidn2
+
+    - name: Install gettext tools
+      run: choco install gettext -y --no-progress
 
     - name: Add vcpkg tools to PATH
       shell: pwsh
