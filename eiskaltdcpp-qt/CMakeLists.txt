@@ -101,7 +101,7 @@ if (MINGW AND WIN32)
                                 -o "${PROJECT_BINARY_DIR}/eiskaltdcpp-qt_rc.o")
     set (WIN_RESOURCES ${PROJECT_BINARY_DIR}/eiskaltdcpp-qt_rc.o)
 elseif (NOT MINGW AND WIN32)
-    set (WIN_RESOURCES"${PROJECT_SOURCE_DIR}/eiskaltdcpp-qt.rc")
+    set (WIN_RESOURCES "${PROJECT_SOURCE_DIR}/eiskaltdcpp-qt.rc")
 endif (MINGW AND WIN32)
 
 if (NOT USE_ASPELL)

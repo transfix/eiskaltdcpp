@@ -50,3 +50,111 @@ jobs:
 
     - name: Test
       run: ctest --test-dir build --output-on-failure
+
+  build-windows-qt6:
+    name: Windows / Qt6 / MSVC
+    runs-on: windows-latest
+
+    env:
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Install Qt6
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.8.3'
+        arch: 'win64_msvc2022_64'
+        modules: 'qtmultimedia qtdeclarative'
+        cache: true
+
+    - name: Install vcpkg dependencies
+      run: |
+        vcpkg install --triplet x64-windows `
+          openssl bzip2 zlib miniupnpc pcre2 lua `
+          gettext[tools] libiconv libidn2
+
+    - name: Add vcpkg tools to PATH
+      shell: pwsh
+      run: |
+        # gettext tools (msgfmt, xgettext, etc.) are in the vcpkg tools directory
+        $toolsBase = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/tools"
+        if (Test-Path $toolsBase) {
+          Get-ChildItem -Path $toolsBase -Directory -Recurse |
+            Where-Object { Get-ChildItem $_.FullName -Filter "*.exe" -ErrorAction SilentlyContinue } |
+            ForEach-Object { echo $_.FullName >> $env:GITHUB_PATH }
+        }
+        # Also add the vcpkg bin dir for runtime DLLs during tests
+        echo "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin" >> $env:GITHUB_PATH
+
+    - name: Configure
+      run: |
+        cmake -B build -G Ninja `
+          -DCMAKE_BUILD_TYPE=Release `
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+          -DUSE_QT6=ON `
+          -DUSE_JS=ON `
+          -DUSE_QT_QML=OFF `
+          -DUSE_MINIUPNP=ON `
+          -DWITH_DHT=ON `
+          -DUSE_IDN2=ON `
+          -DLUA_SCRIPT=ON `
+          -DPERL_REGEX=ON `
+          -DUSE_ASPELL=OFF `
+          -DDBUS_NOTIFY=OFF `
+          -DWITH_EMOTICONS=ON `
+          -DWITH_SOUNDS=ON `
+          -DBUILD_TESTS=ON `
+          -DOPENSSL_MSVC=ON
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Test
+      run: ctest --test-dir build --output-on-failure
+
+    - name: Package
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path artifacts
+
+        # Copy main executable
+        Copy-Item build/eiskaltdcpp-qt/eiskaltdcpp-qt.exe artifacts/
+
+        # Run windeployqt to gather Qt runtime DLLs
+        windeployqt --release --no-translations `
+          artifacts/eiskaltdcpp-qt.exe
+
+        # Copy vcpkg DLLs needed at runtime
+        $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
+        $dllsToCopy = @(
+          "libssl-*-x64.dll", "libcrypto-*-x64.dll",
+          "bz2.dll", "zlib1.dll", "miniupnpc.dll",
+          "pcre2-8.dll", "lua*.dll",
+          "intl-*.dll", "iconv-*.dll",
+          "idn2-*.dll", "unistring-*.dll",
+          "charset-*.dll"
+        )
+        foreach ($pattern in $dllsToCopy) {
+          $files = Get-ChildItem -Path $vcpkgBin -Filter $pattern -ErrorAction SilentlyContinue
+          foreach ($f in $files) {
+            Copy-Item $f.FullName artifacts/ -ErrorAction SilentlyContinue
+          }
+        }
+
+        # Copy data resources
+        Copy-Item -Recurse data/emoticons artifacts/resources/emoticons -ErrorAction SilentlyContinue
+        Copy-Item -Recurse data/sounds artifacts/resources/sounds -ErrorAction SilentlyContinue
+        Copy-Item -Recurse data/icons artifacts/resources/icons -ErrorAction SilentlyContinue
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: eiskaltdcpp-windows-x64
+        path: artifacts/

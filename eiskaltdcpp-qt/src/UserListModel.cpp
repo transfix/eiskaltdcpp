@@ -243,7 +243,11 @@ struct Compare {
         }
 
         template <typename T>
+#if defined(_MSC_VER)
+        __forceinline static bool Cmp(const T& l, const T& r);
+#else
         inline bool static Cmp(const T& l, const T& r) __attribute__((always_inline));
+#endif
         
         static AttrComp attrs[8];
 };
