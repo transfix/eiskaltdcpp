@@ -223,6 +223,9 @@ ShareBrowser::ShareBrowser(UserPtr _user, const QString &_file, const QString &_
         else
             title = tr("Listing: ") + nick;
     }
+    else {
+        title = tr("Listing: ") + nick;
+    }
 
     connect(this, &ShareBrowser::die, this, &ShareBrowser::slotDie, Qt::QueuedConnection);
 

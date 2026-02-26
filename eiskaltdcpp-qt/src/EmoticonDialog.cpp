@@ -32,6 +32,7 @@ EmoticonDialog::EmoticonDialog(QWidget * parent, Qt::WindowFlags f)
     QSize s;
     EmoticonFactory::getInstance()->fillLayout(m_pLayout, s);
 
+    setMinimumSize(s);
     resize(s);
 
     for (const auto &l : findChildren<EmoticonLabel*>())

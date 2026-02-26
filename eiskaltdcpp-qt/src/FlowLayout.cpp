@@ -185,9 +185,8 @@ void FlowLayout::place(QWidget *on, QWidget *what){
 }
 
 int FlowLayout::doLayout(const QRect &rect, bool testOnly) const {
-    int left, top, right, bottom;
-    getContentsMargins(&left, &top, &right, &bottom);
-    QRect effectiveRect = rect.adjusted(+left, +top, -right, -bottom);
+    const QMargins cm = contentsMargins();
+    QRect effectiveRect = rect.adjusted(cm.left(), cm.top(), -cm.right(), -cm.bottom());
     int x = effectiveRect.x();
     int y = effectiveRect.y();
     int lineHeight = 0;
@@ -217,7 +216,7 @@ int FlowLayout::doLayout(const QRect &rect, bool testOnly) const {
         x = nextX;
         lineHeight = qMax(lineHeight, item->sizeHint().height());
     }
-    return y + lineHeight - rect.y() + bottom;
+    return y + lineHeight - rect.y() + cm.bottom();
 }
 
 int FlowLayout::smartSpacing(QStyle::PixelMetric pm) const {

@@ -773,10 +773,11 @@ void TransferViewDelegate::paint(QPainter *painter, const QStyleOptionViewItem &
     const QString status = item->data(COLUMN_TRANSFER_STATS).toString();
 
     QStyleOptionProgressBar progressBarOption;
+    if (option.widget)
+        progressBarOption.initFrom(option.widget);
     progressBarOption.state = QStyle::State_Enabled;
     progressBarOption.direction = QApplication::layoutDirection();
     progressBarOption.rect = option.rect;
-    progressBarOption.fontMetrics = QApplication::fontMetrics();
     progressBarOption.minimum = 0;
     progressBarOption.maximum = 100;
     progressBarOption.textAlignment = Qt::AlignCenter;

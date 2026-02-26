@@ -97,7 +97,7 @@ DownloadQueueModel::~DownloadQueueModel()
 
 int DownloadQueueModel::columnCount(const QModelIndex &parent) const
 {
-    Q_D(const static DownloadQueueModel);
+    Q_D(const DownloadQueueModel);
 
     if (parent.isValid())
         return static_cast<DownloadQueueItem*>(parent.internalPointer())->columnCount();
@@ -119,6 +119,7 @@ QVariant DownloadQueueModel::data(const QModelIndex &index, int role) const
                 return WICON(WulforUtil::eiFOLDER_BLUE).scaled(16, 16);
             else if (index.column() == COLUMN_DOWNLOADQUEUE_NAME)
                 return WulforUtil::getInstance()->getPixmapForFile(item->data(COLUMN_DOWNLOADQUEUE_NAME).toString()).scaled(16, 16);
+            break;
         }
         case Qt::DisplayRole:
         {
@@ -289,7 +290,7 @@ QVariant DownloadQueueModel::headerData(int section, Qt::Orientation orientation
 
 QModelIndex DownloadQueueModel::index(int row, int column, const QModelIndex &parent) const
 {
-    Q_D(const static DownloadQueueModel);
+    Q_D(const DownloadQueueModel);
 
     if (!hasIndex(row, column, parent))
         return QModelIndex();
@@ -310,7 +311,7 @@ QModelIndex DownloadQueueModel::index(int row, int column, const QModelIndex &pa
 
 QModelIndex DownloadQueueModel::parent(const QModelIndex &index) const
 {
-    Q_D(const static DownloadQueueModel);
+    Q_D(const DownloadQueueModel);
 
     if (!index.isValid())
         return QModelIndex();
@@ -326,7 +327,7 @@ QModelIndex DownloadQueueModel::parent(const QModelIndex &index) const
 
 int DownloadQueueModel::rowCount(const QModelIndex &parent) const
 {
-    Q_D(const static DownloadQueueModel);
+    Q_D(const DownloadQueueModel);
     DownloadQueueItem *parentItem;
 
     if (parent.column() > 0)
@@ -743,10 +744,11 @@ void DownloadQueueDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
     const QString status = QString("%1%").arg(percent, 0, 'f', 1);
 
     QStyleOptionProgressBar progressBarOption;
+    if (option.widget)
+        progressBarOption.initFrom(option.widget);
     progressBarOption.state = QStyle::State_Enabled;
     progressBarOption.direction = QApplication::layoutDirection();
     progressBarOption.rect = option.rect;
-    progressBarOption.fontMetrics = QApplication::fontMetrics();
     progressBarOption.minimum = 0;
     progressBarOption.maximum = 100;
     progressBarOption.textAlignment = Qt::AlignCenter;
