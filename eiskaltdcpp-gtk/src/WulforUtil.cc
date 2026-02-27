@@ -415,6 +415,11 @@ bool WulforUtil::profileIsLocked()
     if (profileIsLocked)
         return true;
 
+#ifdef _WIN32
+    // POSIX advisory file locking (fcntl/flock) is not available on Windows.
+    // On Windows, always report the profile as not locked.
+    return false;
+#else
     // We can't use Util::getConfigPath() since the core has not been started yet.
     // Also, Util::getConfigPath() is utf8 and we need system encoding for g_open().
     string configPath;
@@ -449,6 +454,7 @@ bool WulforUtil::profileIsLocked()
     }
 
     return profileIsLocked;
+#endif /* !_WIN32 */
 }
 
 

@@ -274,9 +274,13 @@ jobs:
 
     - name: Configure
       run: |
+        $gettextDir = "C:\Program Files\gettext-iconv"
         cmake -B build -G Ninja `
           -DCMAKE_BUILD_TYPE=Release `
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+          -DGETTEXT_SEARCH_PATH="$gettextDir" `
+          -DGETTEXT_INCLUDE_DIR="$gettextDir/include" `
+          -DGETTEXT_INTL_LIBRARY="$gettextDir/lib/intl.lib" `
           -DUSE_QT6=ON `
           -DUSE_GTK3=OFF `
           -DUSE_JS=ON `

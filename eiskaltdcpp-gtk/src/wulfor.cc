@@ -28,7 +28,9 @@
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 #include <iostream>
+#ifndef _WIN32
 #include <signal.h>
+#endif
 
 #define GUI_LOCALE_DIR LOCALE_DIR
 
@@ -76,6 +78,7 @@ void callBack(void *, const std::string &a)
     std::cout << _("Loading: ") << a << std::endl;
 }
 
+#ifndef _WIN32
 void catchSIG(int sigNum) {
     psignal(sigNum, _("Catching signal "));
 
@@ -118,6 +121,7 @@ void installHandlers(){
 
     printf(_("Signal handlers installed.\n"));
 }
+#endif /* !_WIN32 */
 
 int main(int argc, char *argv[])
 {
@@ -179,7 +183,9 @@ int main(int argc, char *argv[])
     gtk_init(&argc, &argv);
     g_set_application_name("EiskaltDC++ Gtk");
 
+#ifndef _WIN32
     installHandlers();
+#endif
 
     WulforSettingsManager::newInstance();
     WulforManager::start(argc, argv);
