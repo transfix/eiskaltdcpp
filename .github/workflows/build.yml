@@ -479,10 +479,11 @@ jobs:
           --rc lcov_branch_coverage=1 \
           --ignore-errors mismatch,gcov,inconsistent,source
 
-        # Remove external/system headers and test code from report
+        # Remove external/system headers, Catch2 sources, and test code from report
         lcov --remove coverage.info \
           '/usr/*' \
           '*/build/_deps/*' \
+          '*/build/src/catch2/*' \
           '*/tests/*' \
           --output-file coverage.info \
           --rc lcov_branch_coverage=1 \
@@ -496,7 +497,7 @@ jobs:
         genhtml coverage.info \
           --output-directory coverage-report \
           --rc lcov_branch_coverage=1 \
-          --ignore-errors unmapped \
+          --ignore-errors unmapped,source \
           --title "EiskaltDC++ Test Coverage" \
           --legend
 
