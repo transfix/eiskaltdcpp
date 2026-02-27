@@ -144,10 +144,7 @@ jobs:
       run: |
         vcpkg install --triplet x64-windows `
           openssl bzip2 zlib miniupnpc pcre2 lua `
-          libiconv libidn2
-
-    - name: Install gettext tools
-      run: choco install gettext -y --no-progress
+          libiconv libidn2 gettext
 
     - name: Add vcpkg tools to PATH
       shell: pwsh
@@ -159,23 +156,12 @@ jobs:
             ForEach-Object { echo $_.FullName >> $env:GITHUB_PATH }
         }
         echo "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin" >> $env:GITHUB_PATH
-        # Add choco gettext to PATH and set hints for CMake
-        $gettextDir = "C:\Program Files\gettext-iconv"
-        if (Test-Path $gettextDir) {
-          echo "$gettextDir\bin" >> $env:GITHUB_PATH
-          echo "CMAKE_INCLUDE_PATH=$gettextDir\include" >> $env:GITHUB_ENV
-          echo "CMAKE_LIBRARY_PATH=$gettextDir\lib" >> $env:GITHUB_ENV
-        }
 
     - name: Configure
       run: |
-        $gettextDir = "C:\Program Files\gettext-iconv"
         cmake -B build -G Ninja `
           -DCMAKE_BUILD_TYPE=Release `
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
-          -DGETTEXT_SEARCH_PATH="$gettextDir" `
-          -DGETTEXT_INCLUDE_DIR="$gettextDir/include" `
-          -DGETTEXT_INTL_LIBRARY="$gettextDir/lib/intl.lib" `
           -DUSE_QT6=ON `
           -DUSE_GTK3=OFF `
           -DUSE_JS=ON `
@@ -378,7 +364,7 @@ jobs:
       run: |
         vcpkg install --triplet x64-windows `
           openssl bzip2 zlib miniupnpc pcre2 lua `
-          libiconv libidn2
+          libiconv libidn2 gettext
 
     - name: Download build tree
       uses: actions/download-artifact@v4
