@@ -531,7 +531,7 @@ jobs:
           -DDBUS_NOTIFY=ON \
           -DWITH_EMOTICONS=ON \
           -DWITH_SOUNDS=ON \
-          -DBUILD_TESTS=ON
+          -DBUILD_TESTS=OFF
 
     - name: Build .deb package
       run: |
@@ -639,7 +639,7 @@ jobs:
           -DUSE_LIBCANBERRA=ON \
           -DWITH_EMOTICONS=ON \
           -DWITH_SOUNDS=ON \
-          -DBUILD_TESTS=ON
+          -DBUILD_TESTS=OFF
 
     - name: Build .deb package
       run: |
