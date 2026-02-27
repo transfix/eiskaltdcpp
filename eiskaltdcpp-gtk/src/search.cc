@@ -1964,7 +1964,7 @@ void Search::on(TimerManagerListener::Second, uint64_t aTick) noexcept {
         if (search->waitingResults)
         {
             // use rounding below to workaround bug in gtk_progress_bar_set_fraction()
-            uint fract  = (1000 * (args->aTick - search->searchStartTime)) / (search->searchEndTime - search->searchStartTime);
+            unsigned int fract  = (1000 * (args->aTick - search->searchStartTime)) / (search->searchEndTime - search->searchStartTime);
             float fraction  = 1.0f * fract / 1000;
             if (fraction >= 1.0)
             {
