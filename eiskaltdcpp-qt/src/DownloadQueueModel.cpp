@@ -741,7 +741,11 @@ void DownloadQueueDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
     const qulonglong esize = item->data(COLUMN_DOWNLOADQUEUE_ESIZE).toLongLong();
     double percent = ((double)item->data(COLUMN_DOWNLOADQUEUE_DOWN).toLongLong() * 100.0);
     percent = (esize > 0) ? (percent/(double)esize) : 0.0;
-    const QString status = QString("%1%").arg(percent, 0, 'f', 1);
+
+    const QString statusText = item->data(COLUMN_DOWNLOADQUEUE_STATUS).toString();
+    const QString display = statusText.isEmpty()
+        ? QString("%1%").arg(percent, 0, 'f', 1)
+        : QString("%1 / %2%").arg(statusText).arg(percent, 0, 'f', 1);
 
     QStyleOptionProgressBar progressBarOption;
     if (option.widget)
@@ -749,17 +753,28 @@ void DownloadQueueDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
     progressBarOption.state = QStyle::State_Enabled;
     progressBarOption.direction = QApplication::layoutDirection();
     progressBarOption.rect = option.rect;
+    progressBarOption.fontMetrics = option.fontMetrics;
     progressBarOption.minimum = 0;
     progressBarOption.maximum = 100;
     progressBarOption.textAlignment = Qt::AlignCenter;
-    progressBarOption.textVisible = true;
-    progressBarOption.text = status;
+    progressBarOption.textVisible = false;
     progressBarOption.progress = static_cast<int>(percent);
 
     if (option.state & QStyle::State_Selected)
         painter->fillRect(option.rect, option.palette.highlight());
 
-    QApplication::style()->drawControl(QStyle::CE_ProgressBar, &progressBarOption, painter);
+    // Draw groove and contents separately, then render text manually
+    // to avoid Qt6 style engines positioning text outside the bar.
+    QApplication::style()->drawControl(QStyle::CE_ProgressBarGroove, &progressBarOption, painter);
+    QApplication::style()->drawControl(QStyle::CE_ProgressBarContents, &progressBarOption, painter);
+
+    painter->save();
+    if (option.state & QStyle::State_Selected)
+        painter->setPen(option.palette.highlightedText().color());
+    else
+        painter->setPen(option.palette.text().color());
+    painter->drawText(option.rect, Qt::AlignCenter, display);
+    painter->restore();
 #else
     const qulonglong esize = item->data(COLUMN_DOWNLOADQUEUE_ESIZE).toLongLong();
     double percent = ((double)item->data(COLUMN_DOWNLOADQUEUE_DOWN).toLongLong() * 100.0);
@@ -772,4 +787,11 @@ void DownloadQueueDelegate::paint(QPainter *painter, const QStyleOptionViewItem 
 
     QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &plainTextOption, painter);
 #endif
+}
+
+QSize DownloadQueueDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const{
+    QSize sz = QStyledItemDelegate::sizeHint(option, index);
+    // Ensure rows are tall enough for an embedded progress bar
+    sz.setHeight(qMax(sz.height(), option.fontMetrics.height() + 8));
+    return sz;
 }

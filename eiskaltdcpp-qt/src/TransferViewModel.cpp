@@ -779,18 +779,29 @@ void TransferViewDelegate::paint(QPainter *painter, const QStyleOptionViewItem &
     progressBarOption.state = QStyle::State_Enabled;
     progressBarOption.direction = QApplication::layoutDirection();
     progressBarOption.rect = option.rect;
+    progressBarOption.fontMetrics = option.fontMetrics;
     progressBarOption.minimum = 0;
     progressBarOption.maximum = 100;
     progressBarOption.textAlignment = Qt::AlignCenter;
-    progressBarOption.textVisible = true;
+    progressBarOption.textVisible = false;
     progressBarOption.palette = pal;
-    progressBarOption.text = status;
     progressBarOption.progress = static_cast<int>(percent);
 
     if (option.state & QStyle::State_Selected)
         painter->fillRect(option.rect, option.palette.highlight());
 
-    QApplication::style()->drawControl(QStyle::CE_ProgressBar, &progressBarOption, painter);
+    // Draw groove and contents separately, then render text manually
+    // to avoid Qt6 style engines positioning text outside the bar.
+    QApplication::style()->drawControl(QStyle::CE_ProgressBarGroove, &progressBarOption, painter);
+    QApplication::style()->drawControl(QStyle::CE_ProgressBarContents, &progressBarOption, painter);
+
+    painter->save();
+    if (option.state & QStyle::State_Selected)
+        painter->setPen(option.palette.highlightedText().color());
+    else
+        painter->setPen(option.palette.text().color());
+    painter->drawText(option.rect, Qt::AlignCenter, status);
+    painter->restore();
 #else
     const QString status = item->data(COLUMN_TRANSFER_STATS).toString();
 
@@ -800,6 +811,12 @@ void TransferViewDelegate::paint(QPainter *painter, const QStyleOptionViewItem &
 
     QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &plainTextOption, painter);
 #endif
+}
+
+QSize TransferViewDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const{
+    QSize sz = QStyledItemDelegate::sizeHint(option, index);
+    sz.setHeight(qMax(sz.height(), option.fontMetrics.height() + 8));
+    return sz;
 }
 
 void TransferViewDelegate::wsVarValueChanged(const QString &key, const QVariant &val){
