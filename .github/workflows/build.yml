@@ -162,6 +162,7 @@ jobs:
         cmake -B build -G Ninja `
           -DCMAKE_BUILD_TYPE=Release `
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+          -DGETTEXT_SEARCH_PATH="$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows" `
           -DUSE_QT6=ON `
           -DUSE_GTK3=OFF `
           -DUSE_JS=ON `
