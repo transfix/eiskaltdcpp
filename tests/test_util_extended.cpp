@@ -26,15 +26,15 @@ using namespace dcpp;
 // ── getLastDir ──────────────────────────────────────────────────────────
 
 TEST_CASE("Util::getLastDir extracts last directory component", "[Util]") {
-    REQUIRE(Util::getLastDir("/home/user/downloads/") == "downloads");
-    REQUIRE(Util::getLastDir("/home/user/") == "user");
-    REQUIRE(Util::getLastDir("/") == "");
+    REQUIRE(Util::getLastDir("/home/user/downloads/", '/') == "downloads");
+    REQUIRE(Util::getLastDir("/home/user/", '/') == "user");
+    REQUIRE(Util::getLastDir("/", '/') == "");
 }
 
 TEST_CASE("Util::getLastDir with no trailing separator", "[Util]") {
     // When there's no trailing separator, the implementation may vary
     // This documents current behaviour
-    std::string result = Util::getLastDir("/home/user/file.txt");
+    std::string result = Util::getLastDir("/home/user/file.txt", '/');
     // The function searches backward from len-2, so it skips the last char
     // and finds the last separator
     CHECK_FALSE(result.empty()); // just ensure it doesn't crash

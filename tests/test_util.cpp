@@ -20,16 +20,16 @@
 using namespace dcpp;
 
 TEST_CASE("Util::getFileName extracts filename from path", "[Util]") {
-    REQUIRE(Util::getFileName("/home/user/file.txt") == "file.txt");
-    REQUIRE(Util::getFileName("/home/user/") == "");
-    REQUIRE(Util::getFileName("file.txt") == "file.txt");
-    REQUIRE(Util::getFileName("") == "");
+    REQUIRE(Util::getFileName("/home/user/file.txt", '/') == "file.txt");
+    REQUIRE(Util::getFileName("/home/user/", '/') == "");
+    REQUIRE(Util::getFileName("file.txt", '/') == "file.txt");
+    REQUIRE(Util::getFileName("", '/') == "");
 }
 
 TEST_CASE("Util::getFilePath extracts directory from path", "[Util]") {
-    REQUIRE(Util::getFilePath("/home/user/file.txt") == "/home/user/");
-    REQUIRE(Util::getFilePath("/home/user/") == "/home/user/");
-    REQUIRE(Util::getFilePath("file.txt") == "file.txt");
+    REQUIRE(Util::getFilePath("/home/user/file.txt", '/') == "/home/user/");
+    REQUIRE(Util::getFilePath("/home/user/", '/') == "/home/user/");
+    REQUIRE(Util::getFilePath("file.txt", '/') == "file.txt");
 }
 
 TEST_CASE("Util::getFileExt extracts extension", "[Util]") {
