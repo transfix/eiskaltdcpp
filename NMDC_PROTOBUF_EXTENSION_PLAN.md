@@ -6,16 +6,18 @@
 
 ### Implementation Progress Summary
 
-| Phase | Status | Tests | Key Deliverables |
-|-------|--------|-------|-----------------|
-| **Phase 1: NMDCpb** | ✅ Complete | — | `$PB`/`$PBB`/`$PBR` wire format, `PbEnvelope`, protobuf schema, C++ handlers in NmdcHub, Python hub plugin, eiskaltdcpp-py bridge |
-| **Phase 2: HubRelay + E2EPM** | ✅ Complete (15/15) | — | Relay session management, X25519 key exchange, ChaCha20-Poly1305 encryption, PM key exchange, encrypted PM routing, PrivateSearch |
-| **Phase 3: Hub Relay Implementation** | ✅ Complete | — | `cRelayManager` (C++), `hub_plugin.py` relay routing, relay admin commands, idle session expiry |
-| **Phase 3.5: Advanced Relay** | ✅ Complete | 194 C++ + 21 Python | Relay resume with re-keying, segmented multi-source downloads (swarming), stealth private search sweep, TTH tree leaf verification |
-| **Phase 4: MediaShare (core)** | ✅ Complete | 206 C++ + 56 Python | `MediaStorage` (FS + S3), `MediaHandler`, `MediaManager` (C++), `ChatMessage::MediaAttachment`, hub media routing, capabilities, expiry |
+| Phase | Status | Tests (cumulative) | Key Deliverables |
+|-------|--------|-------------------|-----------------|
+| **Phase 1: NMDCpb** | ✅ Complete | 100 C++ + 22 hub C++ + 77 Py | `$PB`/`$PBB`/`$PBR` wire format, `PbEnvelope`, protobuf schema, C++ handlers in NmdcHub, Python hub plugin, eiskaltdcpp-py bridge |
+| **Phase 2: HubRelay + E2EPM** | ✅ Complete | 133 C++ + 46 hub C++ + 170 Py | Relay session management, X25519 key exchange, ChaCha20-Poly1305 encryption, PM key exchange, encrypted PM routing, PrivateSearch |
+| **Phase 3: Hub Relay Implementation** | ✅ Complete | 180 C++ + 46 hub C++ + 189 Py | `cRelayManager` (C++), `hub_plugin.py` relay routing, relay admin commands, idle session expiry, security edge-case tests |
+| **Phase 3.5: Advanced Relay** | ✅ Complete | 194 C++ + 46 hub C++ + 215 Py | Relay resume with re-keying, segmented multi-source downloads (swarming), stealth private search sweep, TTH tree leaf verification |
+| **Phase 4: MediaShare (core)** | ✅ Complete | 248 C++ + 46 hub C++ + 226 Py | `MediaStorage` (FS + S3), `MediaHandler`, `MediaManager` (C++), `ChatMessage::MediaAttachment`, hub media routing, capabilities, expiry, **proto roundtrip tests for all 26 payload types** |
 | **Phase 4: MediaShare (remaining)** | 🔲 Not started | — | HTTP upload endpoint + session token auth, eiskaltdcpp-py bridge exposure, E2EPM encrypted media, **P2P Media mode** |
 | **Phase 4.5: Channels** | 🔲 Designed | — | Public channels, E2E-encrypted private channels (group), channel management, P2P media in channels |
 | **Phase 5: VoiceVideo** | 🔲 Not started | — | Call signaling, SFU group calls, hub streams, Opus/VP8 codecs |
+
+> **Test inventory**: 248 eiskaltdcpp C++ (Catch2 ctest), 46 verlihub hub C++ (22 NMDCpb translation + 24 relay), 226 Python NMDCpb core (pytest), 48 Python benchmark/fuzz, 11 Python socket (9 flaky), 25 Python live (require Docker). See §17 for testing strategy.
 
 ---
 
@@ -3421,6 +3423,46 @@ class TestVoiceVideo:
 - Profile hub CPU for SFU fan-out with N participants
 - Measure hub stream replication latency to 100 subscribers
 - Profile memory usage per active call and per hub stream subscriber
+
+### 17.9 Test Inventory (as of Phase 4 completion)
+
+**eiskaltdcpp C++ tests** (248 Catch2 tests via `ctest` in `eiskaltdcpp/build`):
+
+| File | Tests | Phase | Coverage |
+|------|-------|-------|----------|
+| `test_cid.cpp` | 5 | Infra | CID construction, base32, comparison, generation |
+| `test_util.cpp` + `test_util_extended.cpp` | 27 | Infra | Util helpers (getFileName, getFilePath, roundDown, etc.) |
+| `test_dccontext.cpp` | 6 | Infra | ContextAware, DCContext, Singleton patterns |
+| `test_encoder.cpp` | 7 | Infra | Base32, Base16 encoding |
+| `test_string_tokenizer.cpp` | 10 | Infra | String splitting |
+| `test_text.cpp` | 21 | Infra | UTF-8, toLower, toDOS text encoding |
+| `test_adccommand.cpp` | 15 | Infra | ADC command parsing/serialization |
+| `test_simplexml.cpp` | 9 | Infra | XML building/parsing |
+| `test_nmdcpb_crypto.cpp` | 33 | 1-3 | X25519, ChaCha20, HKDF, E2EPM lifecycle, RelayManager, Base64url, PbEnvelope roundtrips (chat/E2EPM/relay), PrivateSearch proto |
+| `test_nmdcpb_security.cpp` | 47 | 2-3 | Crypto edge cases (empty/truncated/corrupted), E2EPM replay/re-key/rotation, RelayManager security, PbEnvelope garbage resilience, concurrency |
+| `test_nmdcpb_proto.cpp` | 42 | 1-4 | **PbEnvelope roundtrips for ALL 26 payload types**: routing fields, PbUserInfo, PbSearch, PbSearchResult, PbConnect, PbHubInfo, PbStatus, PbExtension, PbRelayAck/Data/Closed/Status, PbPMSessionEnd, PbRelayResume, PbSegmentRequest/Info, PbUserQuery/Result, PbMediaUpload/Meta/Delete/Capabilities, PbMediaRef in PbChat, PbEncryptedMediaRef in PbPMPlaintext, edge cases (unicode, empty, payload_case) |
+| `test_segment_coordinator.cpp` | 14 | 3.5 | Segment planning, lifecycle, fail/retry, reassign, TTH verification, PartialFileWriter |
+| `test_media_manager.cpp` | 12 | 4 | MediaItem properties, type checking, capabilities, cache, listeners, stats |
+
+**verlihub hub C++ tests** (6 CTest executables, 46 unit test functions in `verlihub/build`):
+
+| File | Tests | Phase | Coverage |
+|------|-------|-------|----------|
+| `test_nmdcpb.cpp` | 22 | 1 | Base64url, PbEnvelope chat/PM serialize, PB→legacy translation (public/action/PM), legacy→PB translation, roundtrip, unicode, empty, special chars |
+| `test_relay.cpp` | 24 | 2-3 | Relay request/ack/data/close lifecycle, duplicate/null checks, wrong peer, timeout cleanup, disconnect, session counting, payload limits, bandwidth, concurrent sessions |
+
+**Python NMDCpb tests** (226 core + 48 ancillary via `pytest` in `verlihub/python`):
+
+| File | Tests | Phase | Coverage |
+|------|-------|-------|----------|
+| `test_nmdcpb.py` | 77 | 1-3 | Wire codec (text/binary/relay), base64url, helpers, NMDCLockToKey, E2EPM (session/crypto/manager), wire+E2EPM integration, PrivateSearch (proto + client) |
+| `test_nmdcpb_integration.py` | 93 | 1-3.5 | Hub routing (broadcast/direct/echo), E2EPM through hub, rate limiter, relay sessions, hub plugin relay routing, segment coordinator, segment routing, stealth search |
+| `test_nmdcpb_segment_relay.py` | 21 | 3.5 | SegmentCoordinator lifecycle, relay resume/reconnect, StealthSearch aggregation/dedup |
+| `test_nmdcpb_media.py` | 35 | 4 | MediaConfig, MediaMeta, MediaQuota, FileSystemStorage, MediaHandler (upload/delete/capabilities/expiry/stats) |
+| `test_nmdcpb_benchmark.py` | 19 | 1-3 | Wire codec throughput, opaque relay benchmark, E2EPM crypto benchmark, hub relay simulation |
+| `test_nmdcpb_fuzz.py` | 29 | 1-2 | Property-based (Hypothesis): base64url, wire codec, protobuf, E2EPM crypto, nonce, malformed inputs |
+| `test_nmdcpb_socket.py` | 11 | 1-2 | Socket-level: TCP connect/negotiate, PB chat, E2EPM over sockets, legacy coexistence (9 flaky) |
+| `test_nmdcpb_live.py` | 25 | 1-2 | Live hub: negotiation, chat, routed messages, E2EPM, relay (requires Docker verlihub on localhost:4111) |
 
 ---
 

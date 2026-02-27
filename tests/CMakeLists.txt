@@ -72,6 +72,7 @@ if (WITH_NMDCPB)
     list(APPEND TEST_SOURCES
         test_nmdcpb_crypto.cpp
         test_nmdcpb_security.cpp
+        test_nmdcpb_proto.cpp
         test_segment_coordinator.cpp
         test_media_manager.cpp
     )
