@@ -1,8 +1,21 @@
-# NMDC Protocol Extension Plan: Protobuf Structured Messaging, Hub-Relayed Encrypted Transfers, E2E Encrypted Private Messages, Media Attachments & Voice/Video Calls
+# NMDC Protocol Extension Plan: Protobuf Structured Messaging, Hub-Relayed Encrypted Transfers, E2E Encrypted Private Messages, Media Attachments, Channels & Voice/Video Calls
 
-**Date:** 2026-02-20
+**Date:** 2026-02-26 (updated)
 **Author:** Generated from codebase analysis of verlihub, eiskaltdcpp, and eiskaltdcpp-py
-**Status:** Phase 1 Complete, Phase 2 Complete (15/15 items done) + PrivateSearch extension added
+**Status:** Phases 1-4 Complete (core), Phase 3.5 Complete, Phase 4 Core Complete. Channels (Extension 6) and P2P Media designed.
+
+### Implementation Progress Summary
+
+| Phase | Status | Tests | Key Deliverables |
+|-------|--------|-------|-----------------|
+| **Phase 1: NMDCpb** | ✅ Complete | — | `$PB`/`$PBB`/`$PBR` wire format, `PbEnvelope`, protobuf schema, C++ handlers in NmdcHub, Python hub plugin, eiskaltdcpp-py bridge |
+| **Phase 2: HubRelay + E2EPM** | ✅ Complete (15/15) | — | Relay session management, X25519 key exchange, ChaCha20-Poly1305 encryption, PM key exchange, encrypted PM routing, PrivateSearch |
+| **Phase 3: Hub Relay Implementation** | ✅ Complete | — | `cRelayManager` (C++), `hub_plugin.py` relay routing, relay admin commands, idle session expiry |
+| **Phase 3.5: Advanced Relay** | ✅ Complete | 194 C++ + 21 Python | Relay resume with re-keying, segmented multi-source downloads (swarming), stealth private search sweep, TTH tree leaf verification |
+| **Phase 4: MediaShare (core)** | ✅ Complete | 206 C++ + 56 Python | `MediaStorage` (FS + S3), `MediaHandler`, `MediaManager` (C++), `ChatMessage::MediaAttachment`, hub media routing, capabilities, expiry |
+| **Phase 4: MediaShare (remaining)** | 🔲 Not started | — | HTTP upload endpoint + session token auth, eiskaltdcpp-py bridge exposure, E2EPM encrypted media, **P2P Media mode** |
+| **Phase 4.5: Channels** | 🔲 Designed | — | Public channels, E2E-encrypted private channels (group), channel management, P2P media in channels |
+| **Phase 5: VoiceVideo** | 🔲 Not started | — | Call signaling, SFU group calls, hub streams, Opus/VP8 codecs |
 
 ---
 
@@ -16,23 +29,24 @@
 6. [Extension 3: End-to-End Encrypted Private Messages (E2EPM)](#6-extension-3-end-to-end-encrypted-private-messages-e2epm)
 7. [Extension 4: Media Attachments & File Sharing (MediaShare)](#7-extension-4-media-attachments--file-sharing-mediashare)
 8. [Extension 5: Voice & Video Calls (VoiceVideo)](#8-extension-5-voice--video-calls-voicevideo)
-9. [Wire Protocol Specification](#9-wire-protocol-specification)
-10. [Protobuf Schema Design](#10-protobuf-schema-design)
-11. [Implementation Plan: Verlihub (Hub Side)](#11-implementation-plan-verlihub-hub-side)
-12. [Implementation Plan: eiskaltdcpp (C++ Client Library)](#12-implementation-plan-eiskaltdcpp-c-client-library)
-13. [Implementation Plan: eiskaltdcpp-py (Python Bindings)](#13-implementation-plan-eiskaltdcpp-py-python-bindings)
-14. [Cryptographic Design for Encrypted Relay & E2EPM](#14-cryptographic-design-for-encrypted-relay--e2epm)
-15. [Migration & Backward Compatibility](#15-migration--backward-compatibility)
-16. [Testing Strategy](#16-testing-strategy)
-17. [Phased Rollout](#17-phased-rollout)
-18. [Open Questions & Risks](#18-open-questions--risks)
-19. [Appendix: Reference Material](#19-appendix-reference-material)
+9. [Extension 6: Channels — Public & E2E-Encrypted Group Channels](#9-extension-6-channels--public--e2e-encrypted-group-channels)
+10. [Wire Protocol Specification](#10-wire-protocol-specification)
+11. [Protobuf Schema Design](#11-protobuf-schema-design)
+12. [Implementation Plan: Verlihub (Hub Side)](#12-implementation-plan-verlihub-hub-side)
+13. [Implementation Plan: eiskaltdcpp (C++ Client Library)](#13-implementation-plan-eiskaltdcpp-c-client-library)
+14. [Implementation Plan: eiskaltdcpp-py (Python Bindings)](#14-implementation-plan-eiskaltdcpp-py-python-bindings)
+15. [Cryptographic Design for Encrypted Relay & E2EPM](#15-cryptographic-design-for-encrypted-relay--e2epm)
+16. [Migration & Backward Compatibility](#16-migration--backward-compatibility)
+17. [Testing Strategy](#17-testing-strategy)
+18. [Phased Rollout](#18-phased-rollout)
+19. [Open Questions & Risks](#19-open-questions--risks)
+20. [Appendix: Reference Material](#20-appendix-reference-material)
 
 ---
 
 ## 1. Executive Summary
 
-This document proposes five interrelated NMDC protocol extensions:
+This document proposes six interrelated NMDC protocol extensions:
 
 1. **NMDCpb** — A structured messaging layer that replaces ad-hoc text-based NMDC commands with Protocol Buffers (protobuf) serialized messages, negotiated via `$Supports`. Clients and hubs that support `NMDCpb` can exchange strongly-typed, versioned, binary-efficient messages while maintaining full backward compatibility with standard NMDC clients.
 
@@ -40,9 +54,11 @@ This document proposes five interrelated NMDC protocol extensions:
 
 3. **E2EPM** — End-to-end encrypted private messages between clients, routed through the hub but encrypted such that the hub cannot read the message contents. Clients establish encrypted PM sessions using X25519 key agreement (piggy-backed on their first PM exchange or pre-established), then all subsequent private messages are encrypted with ChaCha20-Poly1305. The hub faithfully relays the opaque ciphertext without being able to inspect or modify it.
 
-4. **MediaShare** — Media attachment support for chat messages. Clients can upload images, audio, video, and arbitrary files to the hub, which stores and serves them via its HTTP API. Attachments are referenced in protobuf chat messages and displayed inline. The hub's storage backend is pluggable (local filesystem or S3-compatible object storage), and all media is ephemeral with configurable TTLs. For E2EPM conversations, media is encrypted client-side before upload so the hub stores only opaque ciphertext.
+4. **MediaShare** — Media attachment support for chat messages. Clients can upload images, audio, video, and arbitrary files to the hub, which stores and serves them via its HTTP API. Attachments are referenced in protobuf chat messages and displayed inline. The hub's storage backend is pluggable (local filesystem or S3-compatible object storage), and all media is ephemeral with configurable TTLs. For E2EPM conversations, media is encrypted client-side before upload so the hub stores only opaque ciphertext. A **P2P Media mode** allows media to be served directly from users' shares via hub relay, bypassing hub storage entirely — this is the default for private channels and the automatic fallback when a user's hub quota is exhausted.
 
 5. **VoiceVideo** — Real-time voice and video communication over the DC protocol. 1:1 calls use HubRelay as an E2E-encrypted transport with WebRTC-inspired signaling via protobuf. Group calls use a Selective Forwarding Unit (SFU) pattern where the hub forwards (but cannot decrypt) each participant's media stream to all others. Hub-wide audio/video broadcast streams ("hub radio" / "hub TV") allow a single broadcaster to stream to all connected clients.
+
+6. **Channels** — Named chat channels beyond the default `#general` main chat. Users can discover available public channels, join/leave them, and create new ones (subject to hub permissions). **Private channels** leverage E2EPM group encryption (Sender Keys) so that all messages and media are end-to-end encrypted — the hub routes opaque ciphertext but cannot read content. Media posted in private channels uses P2P Media mode by default (downloaded from the poster or other members who have it, via hub relay), so the hub never possesses the cleartext files.
 
 All five extensions are designed to be incrementally adoptable: the hub and clients negotiate support via the existing `$Supports` mechanism, and non-supporting clients are completely unaffected.
 
@@ -604,6 +620,118 @@ All uploaded media has a TTL (time-to-live):
 | Uploader identity, upload time | **Visible** |
 | Who downloads which media | **Visible** (HTTP access logs) |
 | Media expiry time | **Visible** (hub manages TTL) |
+| **P2P Media content** | **NOT visible** (data goes through encrypted relay, hub never stores it) |
+| **P2P Media metadata** | **Partially visible** (hub sees relay session, size estimates; not filenames/types) |
+
+### 7.10 P2P Media Mode — Peer-Served Media via Hub Relay
+
+In addition to hub-hosted media (upload to hub storage, download from hub HTTP API), MediaShare supports a **P2P Media mode** where media files are served directly from users' file shares through the hub relay, bypassing hub storage entirely.
+
+#### 7.10.1 Problem Statement
+
+Hub-hosted media has limitations:
+- **Storage cost**: Hub operators pay for disk/S3 storage; users have quotas
+- **Privacy for private channels**: Uploading to the hub means the hub possesses the cleartext file (or the encrypted blob)
+- **Offline availability**: If the hub purges expired media, late joiners cannot see attachments
+- **Quota exhaustion**: When a user's hub quota is full, they can't send media at all
+
+P2P Media solves all of these by leveraging the existing DC file sharing infrastructure.
+
+#### 7.10.2 How P2P Media Works
+
+When a user posts media in P2P mode, the media data is **not uploaded to the hub**. Instead:
+
+1. The poster adds the file to their DC share (or it's already shared)
+2. The poster sends a `PbChat` (or encrypted channel message) containing a `PbP2PMediaRef` — a reference containing the file's TTH, size, filename, MIME type, and the poster's nick
+3. Receiving clients see a **placeholder** in the chat stream ("Loading media from UserA...")
+4. Each receiving client initiates a **relay download** (using existing HubRelay infrastructure) from the poster to fetch the file
+5. Once downloaded, the media displays inline in the chat — the placeholder is replaced with the actual image/video/audio
+6. The downloaded file is **cached locally** and optionally **re-shared** so other users can download from any peer who has it
+
+```
+Poster (UserA)                    Hub                         Viewer (UserB)
+──────────────                    ───                         ──────────────
+1. Share file in DC share
+   (or file already shared)
+
+2. PbChat {                ──────> Broadcast ──────>
+     text: "Check this out!",                          3. Display message text
+     p2p_attachments: [                                   + placeholder for media
+       PbP2PMediaRef {                                    "[Loading image from UserA...]"
+         tth: "ABC...",
+         filename: "sunset.jpg",
+         mime_type: "image/jpeg",
+         size: 245760,
+         source_nick: "UserA"
+       }
+     ]
+   }
+
+                                                       4. Initiate relay download:
+                                                          PbRelayRequest {
+                           <────── Forward relay  <──────    target: "UserA",
+                                   handshake               purpose: P2P_MEDIA
+                                                          }
+5. Accept relay, serve
+   file through encrypted
+   relay channel
+                           ──────> Forward data ──────> 6. Receive file data
+                                                          Verify TTH matches
+                                                          Replace placeholder with
+                                                          inline image display
+
+                                                       7. Cache file locally
+                                                          Optionally re-share for
+                                                          other viewers
+```
+
+#### 7.10.3 Multi-Source P2P Media (Swarming)
+
+When the original poster goes offline, other users who have already downloaded (and cached/re-shared) the media can serve it. This reuses the **segmented multi-source download** infrastructure from Phase 3.5:
+
+1. Viewer checks: is the source nick online? If yes, request relay from them.
+2. If source is offline, use **PrivateSearch** (or the cached source list in the `PbP2PMediaRef`) to find other users with the same TTH.
+3. If multiple sources found, use `SegmentCoordinator` for parallel download from multiple peers.
+4. TTH verification ensures integrity regardless of which peer(s) served the data.
+
+```
+Timeline:
+  T=0:  UserA posts image (TTH=XYZ) to #photos channel
+  T=1:  UserB, UserC download from UserA via relay → cache locally, re-share
+  T=2:  UserA goes offline
+  T=3:  UserD joins channel, sees placeholder for image
+  T=4:  UserD searches for TTH=XYZ → finds UserB and UserC have it
+  T=5:  UserD downloads from UserB (or segments from both B+C)
+  T=6:  Image displays for UserD
+```
+
+#### 7.10.4 When P2P Media Mode Is Used
+
+| Context | Default Mode | Reason |
+|---------|-------------|--------|
+| **Private (E2E) channels** | P2P always | Hub must never possess cleartext media for encrypted channels |
+| **Public channels** when user has hub quota | Hub-hosted | Fastest — all viewers download from hub HTTP API in parallel |
+| **Public channels** when user quota exhausted | P2P fallback | User can still share media even with no hub storage left |
+| **User preference** | Configurable | Some users may prefer P2P for privacy even in public channels |
+| **Hub policy** | Configurable | Hub admin can set `media_p2p_default = 1` to make P2P the default for all public channels |
+
+#### 7.10.5 Hub Retention & Expiry for P2P Media
+
+Hub retention/expiry rules (TTLs, quota eviction) **only affect hub-hosted media**. P2P media is never stored on the hub, so:
+
+- **Hub expiry does NOT affect P2P media** — as long as at least one user with the file is online, the media is available
+- **The chat message** (`PbP2PMediaRef`) itself is subject to hub message retention (if the hub stores chat history), but the media data lives in users' shares
+- **Suggested behavior**: Clients cache downloaded P2P media in a local "channel media" directory with their own local retention policy (configurable, default: keep for 30 days)
+- **Re-share incentive**: Clients that have downloaded media can re-share it automatically, creating a DHT-like availability network. The more popular a media file, the more sources become available.
+
+#### 7.10.6 Hub Configuration for P2P Media
+
+| Config Key | Default | Description |
+|------------|---------|-------------|
+| `media_p2p_enabled` | `1` | Enable/disable P2P media mode |
+| `media_p2p_default` | `0` | Make P2P the default mode for public channels (1=P2P default, 0=hub-hosted default) |
+| `media_p2p_max_size` | `104857600` | Max file size for P2P media references (bytes, default 100MB — higher than hub-hosted since no hub storage cost) |
+| `media_p2p_relay_priority` | `0` | Priority for P2P media relay sessions vs file transfer relays (0=same, 1=higher) |
 
 ---
 
@@ -800,9 +928,297 @@ Broadcaster                      Hub                     Subscriber(s)
 | Bandwidth usage per participant | **Visible** | **Visible** | **Visible** |
 | Mute/camera state | **NOT visible** (inside encrypted channel) | **NOT visible** | Depends on implementation |
 
-## 9. Wire Protocol Specification
+---
 
-### 9.1 NMDCpb Command Format
+## 9. Extension 6: Channels — Public & E2E-Encrypted Group Channels
+
+### 9.1 Feature Name & Negotiation
+
+| Item | Value |
+|------|-------|
+| `$Supports` token | Part of `NMDCpb` (sub-feature) |
+| Feature advertisement | `"Channels"` in `PbUserInfo.features[]` |
+| Capability discovery | `PbChannelList` sent by hub after login |
+| Dependency | NMDCpb. Private channels additionally require E2EPM. |
+
+### 9.2 Problem Statement
+
+Traditional NMDC hubs have exactly one public chat room. All public messages (`<nick> text|`) go to everyone. This creates problems:
+
+| Problem | Detail |
+|---------|--------|
+| **No topic separation** | Technical discussion, off-topic chat, media sharing, and announcements all compete in a single stream |
+| **No opt-in conversations** | Every connected user sees every public message. There's no way to focus on a subset of conversations. |
+| **No private group communication** | Two or more users who want a group conversation must use 1:1 PMs (N×(N-1)/2 sessions) or go off-platform |
+| **No E2E encrypted group chat** | E2EPM is 1:1 only (Question 9 in the plan explicitly punted on group encryption). Multi-party encrypted conversations have no mechanism. |
+| **No media isolation** | Media shared in public chat is visible to all users, even those not interested in a particular topic |
+
+Modern messaging platforms universally support channels/rooms. DC should too.
+
+### 9.3 Solution: Named Channels with Two Security Modes
+
+#### Channel Types
+
+| Type | Hub Visibility | Encryption | Media Storage | Creation |
+|------|---------------|------------|---------------|----------|
+| **Public** | Hub can read all messages | None (TLS-protected link only) | Hub-hosted (default) or P2P | Hub admins or permitted users |
+| **Private (E2E)** | Hub sees metadata only (who's in channel, message count/size) | Sender Keys (group E2E encryption) | **P2P only** (hub never possesses cleartext) | Any user (subject to hub config) |
+
+#### The `#general` Channel
+
+Every hub has a built-in `#general` channel that maps to the traditional NMDC public chat. This channel:
+- Cannot be deleted or made private
+- All NMDCpb users are automatically joined to `#general`
+- Messages in `#general` are translated to/from legacy NMDC `<nick> text|` for non-NMDCpb clients
+- Backward-compatible: legacy clients see `#general` as normal main chat
+
+### 9.4 Public Channels
+
+```
+Client A                         Hub                              Client B
+────────                         ───                              ────────
+1. PbChannel {             ──────>
+     action: LIST_CHANNELS
+   }
+                           <──────  2. PbChannelList {
+                                        channels: [
+                                          { id: "general", name: "#general",
+                                            topic: "Main chat", members: 42,
+                                            is_private: false },
+                                          { id: "tech", name: "#tech",
+                                            topic: "Technical discussion", members: 8,
+                                            is_private: false },
+                                          { id: "photos", name: "#photos",
+                                            topic: "Share photos", members: 15,
+                                            is_private: false },
+                                          { id: "secret-club", name: "#secret-club",
+                                            is_private: true, members: 3 }
+                                        ]
+                                      }
+
+3. PbChannel {             ──────>  4. Add A to #photos
+     action: JOIN,                     Send recent history
+     channel_id: "photos"           5. PbChannelHistory { ... }
+   }
+
+6. PbChat {                ──────>  7. Broadcast to all   ──────>  8. Display in #photos tab
+     channel_id: "photos",             #photos members
+     text: "Sunset from today!",
+     p2p_attachments: [...]
+   }
+```
+
+**Key design decisions:**
+- Channel IDs are hub-unique alphanumeric slugs (e.g., `"tech"`, `"photos"`)
+- Display names use `#` prefix by convention (e.g., `#tech`)
+- Each channel has an optional **topic** (set by creator or admins)
+- Hub maintains **membership lists** — users must join to receive messages
+- Optionally, hub stores recent **message history** for late joiners (configurable depth)
+- Channel messages are standard `PbChat` with an added `channel_id` field
+
+### 9.5 Private (E2E-Encrypted) Channels
+
+Private channels extend the E2EPM model from 1:1 to groups using **Sender Keys** — the same approach used by Signal's group messaging.
+
+#### 9.5.1 Sender Keys Model
+
+Each participant in a private channel generates a **sender key** — a symmetric key used to encrypt all messages they send to the group. The sender key is distributed to all other members via individual E2EPM sessions (1:1 encrypted).
+
+```
+Private channel "#secret-club" with 3 members: Alice, Bob, Charlie
+
+Setup:
+  Alice generates sender_key_A → sends to Bob via E2EPM, sends to Charlie via E2EPM
+  Bob generates sender_key_B   → sends to Alice via E2EPM, sends to Charlie via E2EPM
+  Charlie generates sender_key_C → sends to Alice via E2EPM, sends to Bob via E2EPM
+
+Messaging:
+  Alice sends message → encrypts with sender_key_A → hub broadcasts to Bob & Charlie
+  Bob decrypts with sender_key_A (received during setup)
+  Charlie decrypts with sender_key_A
+
+  Bob sends message → encrypts with sender_key_B → hub broadcasts to Alice & Charlie
+  ...
+```
+
+**Why Sender Keys (not pairwise)?**
+- Message is encrypted **once** with the sender's key → hub fans out to N-1 members
+- With pairwise, each message would need N-1 separate encryptions
+- Sender Keys scale to O(N) key distribution, O(1) per-message encryption
+
+**Key rotation:**
+- When a member **leaves** the channel, all remaining members must regenerate and redistribute their sender keys (so the departed member can't decrypt future messages)
+- When a member **joins**, existing members send their current sender keys to the new member via E2EPM. The new member generates their own sender key and distributes it.
+- Periodic rotation (e.g., every 24h or every 1000 messages) provides forward secrecy even without member changes
+
+#### 9.5.2 Private Channel Lifecycle
+
+```
+Creator (Alice)                     Hub                          Invitee (Bob)
+───────────────                     ───                          ─────────────
+1. PbChannel {               ──────>
+     action: CREATE,
+     channel_id: "secret-club",
+     name: "#secret-club",
+     is_private: true
+   }
+                              <──────  2. PbChannelCreated {
+                                           channel_id: "secret-club",
+                                           owner: "Alice"
+                                         }
+
+3. PbChannelInvite {          ──────>  Forward  ──────>          4. Display invitation UI
+     channel_id: "secret-club",                                    User accepts/rejects
+     target_nick: "Bob"
+   }
+
+                              <────── Forward  <──────           5. PbChannelInviteResponse {
+                                                                      channel_id: "secret-club",
+                                                                      accepted: true
+                                                                    }
+
+6. Distribute sender_key_A
+   to Bob via E2EPM
+                                                                 7. Generate sender_key_B
+                                                                    Distribute to Alice via E2EPM
+
+[Both can now send/receive encrypted messages in #secret-club]
+
+8. PbChannelEncrypted {       ──────> Forward to     ──────>     9. Decrypt with
+     channel_id: "secret-club",       all members                   sender_key_A
+     sender_key_id: key_id_A,         (opaque blob)                 Display message
+     nonce: 42,
+     ciphertext: encrypt(
+       PbChannelPlaintext {
+         text: "Top secret info",
+         p2p_attachments: [...]
+       }
+     )
+   }
+```
+
+#### 9.5.3 Encryption Details for Private Channels
+
+| Parameter | Value |
+|-----------|-------|
+| **Sender key generation** | 32 random bytes per participant |
+| **Sender key distribution** | Wrapped in `PbSenderKeyDistribution` message, sent via 1:1 E2EPM to each member |
+| **Message encryption** | ChaCha20-Poly1305 with sender's key |
+| **Nonce** | 12 bytes: `4-byte sender_key_id ∥ 8-byte little-endian message counter` |
+| **AAD** | `"channel" ∥ channel_id_utf8 ∥ "\x00" ∥ sender_nick_utf8` |
+| **Key rotation trigger** | Member leave, member join, periodic (configurable), manual |
+| **Forward secrecy** | Achieved through periodic key rotation — messages encrypted with old keys cannot be decrypted after rotation |
+
+#### 9.5.4 Media in Private Channels — P2P Only
+
+Private channels use **P2P Media mode exclusively**. Since the hub cannot decrypt channel messages, it also cannot process hub-hosted media uploads for the channel. Instead:
+
+1. Poster includes `PbP2PMediaRef` in their encrypted channel message (TTH, size, MIME type, filename)
+2. Receiving members see a placeholder → initiate relay download from poster
+3. Downloaded media is cached locally and optionally re-shared
+4. If poster goes offline, other members who cached the file serve it (multi-source via TTH)
+
+**Key property**: The hub never possesses any form of the media data — not cleartext, not encrypted blob. The hub only sees encrypted relay traffic between channel members.
+
+### 9.6 Channel Management
+
+#### Channel Operations
+
+| Operation | Who Can Do It | Protocol Message |
+|-----------|--------------|-----------------|
+| List channels | Any NMDCpb user | `PbChannel { action: LIST_CHANNELS }` |
+| Create public channel | Users with `channel_create_min_class` | `PbChannel { action: CREATE, is_private: false }` |
+| Create private channel | Users with `channel_private_create_min_class` | `PbChannel { action: CREATE, is_private: true }` |
+| Join public channel | Any user (or min class per channel) | `PbChannel { action: JOIN }` |
+| Join private channel | Invited users only | `PbChannelInviteResponse { accepted: true }` |
+| Leave channel | Any member | `PbChannel { action: LEAVE }` |
+| Invite to private channel | Channel owner or admins | `PbChannelInvite { ... }` |
+| Kick from channel | Channel owner, hub operators | `PbChannel { action: KICK, target_nick: "..." }` |
+| Set channel topic | Channel owner, hub operators | `PbChannel { action: SET_TOPIC, topic: "..." }` |
+| Delete channel | Channel owner, hub admins | `PbChannel { action: DELETE }` |
+
+#### Channel Roles
+
+| Role | Permissions |
+|------|------------|
+| **Owner** | Full control: invite, kick, set topic, delete, promote admins |
+| **Admin** | Invite, kick, set topic (cannot delete channel or change owner) |
+| **Member** | Send messages, post media |
+| **Read-only** | View messages only (for announcement channels) |
+
+### 9.7 Channel Message History
+
+The hub can optionally maintain a **scrollback buffer** for each channel:
+
+| Config Key | Default | Description |
+|------------|---------|-------------|
+| `channel_history_depth` | `100` | Number of recent messages to store per public channel (0 = disabled) |
+| `channel_history_ttl` | `86400` | How long to keep history messages (seconds, default 24h) |
+
+When a user joins a channel, they receive up to `channel_history_depth` recent messages via `PbChannelHistory`.
+
+**For private channels**: The hub stores the encrypted ciphertext blobs (it can't read them). New members joining mid-conversation can receive the encrypted history IF they have the sender keys — which requires either:
+- (a) The existing members re-send their current sender keys (covers messages encrypted with current key generation only)
+- (b) The channel opts for **no history** (most secure — new members only see messages from after they joined)
+
+Default for private channels: **no history** (messages are ephemeral from the hub's perspective).
+
+### 9.8 Hub Configuration for Channels
+
+| Config Key | Default | Description |
+|------------|---------|-------------|
+| `channels_enabled` | `1` | Enable/disable channels feature |
+| `channel_max_per_hub` | `50` | Maximum total channels on the hub |
+| `channel_max_per_user` | `10` | Maximum channels a single user can join |
+| `channel_max_members` | `200` | Maximum members per channel |
+| `channel_create_min_class` | `1` | Minimum user class to create public channels |
+| `channel_private_enabled` | `1` | Enable/disable private (E2E) channels |
+| `channel_private_create_min_class` | `1` | Minimum user class to create private channels |
+| `channel_private_max_members` | `50` | Maximum members per private channel (lower due to sender key distribution overhead) |
+| `channel_history_depth` | `100` | Public channel scrollback depth (messages) |
+| `channel_history_ttl` | `86400` | Public channel history retention (seconds) |
+| `channel_private_history` | `0` | Enable encrypted history for private channels (0=no, 1=yes) |
+| `channel_name_max_length` | `32` | Maximum channel name length |
+| `channel_topic_max_length` | `200` | Maximum topic length |
+
+### 9.9 What the Hub Can See vs. Cannot See — Channels
+
+| Information | Public Channels | Private (E2E) Channels |
+|-------------|----------------|----------------------|
+| Channel name, topic, member list | **Visible** | **Name visible**; topic encrypted (optional) |
+| Who sends messages | **Visible** | **Visible** (hub routes by channel membership) |
+| Message text / content | **Visible** | **NOT visible** (sender key encryption) |
+| Message count, timing, size | **Visible** | **Visible** (hub forwards ciphertext blobs) |
+| Media attachments (hub-hosted) | **Visible** | N/A (private channels use P2P only) |
+| Media attachments (P2P) | P2P refs visible (TTH, size) but content **NOT visible** | **NOT visible** (refs inside encrypted message) |
+| Member join/leave events | **Visible** | **Visible** (hub manages membership) |
+| Sender key distribution | N/A | **NOT visible** (wrapped in E2EPM) |
+
+### 9.10 Interaction with Legacy Clients
+
+- Legacy NMDC clients (without NMDCpb) **always see `#general`** as normal main chat
+- Messages from legacy clients appear in `#general` for NMDCpb users
+- NMDCpb messages in `#general` are translated to legacy `<nick> text|` for non-NMDCpb clients
+- Legacy clients **cannot see or interact with other channels** — channels are a NMDCpb-only feature
+- The hub **does not translate** non-#general channel messages to legacy format
+
+### 9.11 Comparison with Existing Mechanisms
+
+| Aspect | Legacy NMDC Chat | `PbChat` (single room) | Public Channels | Private Channels |
+|--------|-----------------|----------------------|-----------------|-----------------|
+| Rooms | 1 (main chat) | 1 (main chat) | Multiple named | Multiple named |
+| Opt-in | No (all messages) | No (all messages) | Yes (join/leave) | Yes (invite-only) |
+| Hub can read | Yes | Yes | Yes | **No** (E2E encrypted) |
+| Media | None | Hub-hosted | Hub-hosted or P2P | **P2P only** |
+| Works offline (media) | N/A | Until hub TTL expires | Until hub TTL / while peers online | While any member with cached file is online |
+| Group size | Entire hub | Entire hub | Per-channel limit | Per-channel limit (smaller) |
+| Legacy client support | Full | None | None (except #general) | None |
+
+---
+
+## 10. Wire Protocol Specification
+
+### 10.1 NMDCpb Command Format
 
 The protobuf extension uses a single new NMDC command prefix:
 
@@ -898,9 +1314,9 @@ This dedicated `$PBR` command avoids the overhead of protobuf envelope encoding/
 
 ---
 
-## 10. Protobuf Schema Design
+## 11. Protobuf Schema Design
 
-### 10.1 Core Messages
+### 11.1 Core Messages
 
 ```protobuf
 syntax = "proto3";
@@ -1063,7 +1479,7 @@ message PbExtension {
 }
 ```
 
-### 10.2 Relay Messages
+### 11.2 Relay Messages
 
 ```protobuf
 // === Relay Session Request ===
@@ -1125,7 +1541,7 @@ message PbRelayStatus {
 }
 ```
 
-### 10.3 Encrypted PM Messages
+### 11.3 Encrypted PM Messages
 
 ```protobuf
 // === PM Key Exchange ===
@@ -1180,7 +1596,7 @@ message PbPMSessionEnd {
 - **AAD**: `"e2epm" || sender_nick_utf8 || "\x00" || target_nick_utf8` — binds ciphertext to the conversation participants
 - **Plaintext**: Serialized `PbPMPlaintext` protobuf
 
-### 10.4 Media Messages
+### 11.4 Media Messages
 
 ```protobuf
 // === Media Upload Request (client → hub) ===
@@ -1256,7 +1672,7 @@ message PbMediaCapabilities {
 }
 ```
 
-### 10.5 Voice & Video Call Messages
+### 11.5 Voice & Video Call Messages
 
 ```protobuf
 // === Call Offer (initiator → target via hub) ===
@@ -1357,13 +1773,209 @@ message PbHubStream {
 }
 ```
 
+### 11.6 Channel Messages
+
+```protobuf
+// === Channel Management ===
+message PbChannel {
+  enum ChannelAction {
+    LIST_CHANNELS = 0;    // Client → Hub: request channel list
+    CREATE = 1;           // Client → Hub: create a new channel
+    DELETE = 2;           // Client → Hub: delete a channel (owner/admin)
+    JOIN = 3;             // Client → Hub: join a channel
+    LEAVE = 4;            // Client → Hub: leave a channel
+    SET_TOPIC = 5;        // Client → Hub: set channel topic
+    KICK = 6;             // Client → Hub: kick a member
+    SET_ROLE = 7;         // Client → Hub: change member role
+  }
+
+  ChannelAction action = 1;
+  string channel_id = 2;       // Channel identifier (alphanumeric slug)
+  string name = 3;             // Display name (e.g., "#photos")
+  string topic = 4;            // Channel topic text
+  bool is_private = 5;         // True for E2E-encrypted private channels
+  string target_nick = 6;      // For KICK / SET_ROLE operations
+  ChannelRole target_role = 7;  // For SET_ROLE
+}
+
+// === Channel Role ===
+enum ChannelRole {
+  CHANNEL_MEMBER = 0;
+  CHANNEL_ADMIN = 1;
+  CHANNEL_OWNER = 2;
+  CHANNEL_READONLY = 3;
+}
+
+// === Channel List (hub → client, response to LIST_CHANNELS) ===
+message PbChannelList {
+  message ChannelInfo {
+    string channel_id = 1;
+    string name = 2;
+    string topic = 3;
+    uint32 member_count = 4;
+    bool is_private = 5;
+    string owner_nick = 6;
+    uint64 created_at = 7;      // Unix timestamp
+  }
+  repeated ChannelInfo channels = 1;
+}
+
+// === Channel Created (hub → client, confirmation) ===
+message PbChannelCreated {
+  string channel_id = 1;
+  string owner_nick = 2;
+  bool is_private = 3;
+}
+
+// === Channel Member Update (hub → channel members) ===
+message PbChannelMemberUpdate {
+  enum UpdateType {
+    JOINED = 0;
+    LEFT = 1;
+    KICKED = 2;
+    ROLE_CHANGED = 3;
+  }
+
+  string channel_id = 1;
+  string nick = 2;
+  UpdateType update_type = 3;
+  ChannelRole new_role = 4;     // For ROLE_CHANGED
+  string reason = 5;            // For KICKED
+}
+
+// === Channel Invite (owner/admin → target via hub) ===
+message PbChannelInvite {
+  string channel_id = 1;
+  string target_nick = 2;
+  string inviter_nick = 3;      // Set by hub
+}
+
+// === Channel Invite Response ===
+message PbChannelInviteResponse {
+  string channel_id = 1;
+  bool accepted = 2;
+}
+
+// === Channel History (hub → client, sent on join for public channels) ===
+message PbChannelHistory {
+  string channel_id = 1;
+  repeated PbChat messages = 2;           // Recent public messages
+  repeated PbChannelEncrypted encrypted_messages = 3; // For private channels (if history enabled)
+}
+
+// === Encrypted Channel Message (for private/E2E channels) ===
+message PbChannelEncrypted {
+  string channel_id = 1;
+  uint32 sender_key_id = 2;    // Identifies which sender key was used
+  uint64 nonce = 3;             // Message counter for this sender key
+  bytes ciphertext = 4;         // ChaCha20-Poly1305 encrypted PbChannelPlaintext
+  string from_nick = 5;         // Sender (validated by hub, used for key lookup)
+}
+
+// === Channel Plaintext (encrypted inside PbChannelEncrypted.ciphertext) ===
+// NEVER sent over the wire in cleartext.
+message PbChannelPlaintext {
+  string text = 1;
+  bool is_action = 2;           // /me action
+  uint64 timestamp = 3;
+  string reply_to_hash = 4;     // SHA-256 of message being replied to
+  map<string, string> extra = 5; // Extensible metadata
+  repeated PbP2PMediaRef p2p_attachments = 6; // P2P media (private channels always use P2P)
+  repeated PbMediaRef hub_attachments = 7;    // Hub-hosted media (only in public channels)
+}
+
+// === Sender Key Distribution (sent via E2EPM to each channel member) ===
+message PbSenderKeyDistribution {
+  string channel_id = 1;
+  uint32 key_id = 2;            // Unique ID for this key generation
+  bytes sender_key = 3;         // 32-byte ChaCha20-Poly1305 key
+  string sender_nick = 4;       // Who this key belongs to
+  uint32 key_generation = 5;    // Monotonically increasing generation counter
+                                 // Used to detect stale keys after rotation
+}
+
+// === Sender Key Rotation Request (channel owner/admin → members via hub) ===
+message PbSenderKeyRotation {
+  string channel_id = 1;
+  string reason = 2;             // "member_left", "member_joined", "periodic", "manual"
+  string trigger_nick = 3;      // Nick of the member who left/joined (if applicable)
+}
+```
+
+### 11.7 P2P Media Messages
+
+```protobuf
+// === P2P Media Reference (embedded in PbChat.p2p_attachments or PbChannelPlaintext.p2p_attachments) ===
+// Unlike PbMediaRef (hub-hosted), P2P media is served directly from users' shares via relay.
+message PbP2PMediaRef {
+  string tth = 1;               // Tiger Tree Hash of the file (base32) — used for integrity + multi-source
+  string filename = 2;          // Original filename
+  string mime_type = 3;         // MIME type (e.g., "image/jpeg")
+  uint64 size = 4;              // File size in bytes
+  string source_nick = 5;       // Nick of the user serving this file (poster or cached peer)
+  uint32 width = 6;             // Image/video width (0 if unknown)
+  uint32 height = 7;            // Image/video height
+  uint32 duration_ms = 8;       // Audio/video duration in milliseconds
+  repeated string alt_source_nicks = 9; // Other known users who have this file (for multi-source)
+}
+
+// === P2P Media Status (client → channel, reports download progress for UX) ===
+message PbP2PMediaStatus {
+  enum Status {
+    DOWNLOADING = 0;           // Currently downloading from source
+    AVAILABLE = 1;             // Download complete, cached locally
+    FAILED = 2;                // Download failed (source offline, no alt sources)
+    SOURCING = 3;              // Searching for alternative sources
+  }
+
+  string tth = 1;
+  Status status = 2;
+  uint32 progress_percent = 3; // 0-100
+  string source_nick = 4;      // Who we're downloading from
+  uint32 sources_found = 5;    // Number of sources found for multi-source
+}
+```
+
+### 11.8 Updated PbEnvelope (with Channel and P2P Media additions)
+
+The PbEnvelope `oneof payload` gains the following new fields:
+
+```protobuf
+  // In PbEnvelope.payload oneof:
+    PbChannel channel = 80;
+    PbChannelList channel_list = 81;
+    PbChannelCreated channel_created = 82;
+    PbChannelMemberUpdate channel_member_update = 83;
+    PbChannelInvite channel_invite = 84;
+    PbChannelInviteResponse channel_invite_response = 85;
+    PbChannelHistory channel_history = 86;
+    PbChannelEncrypted channel_encrypted = 87;
+    PbSenderKeyRotation sender_key_rotation = 88;
+    PbP2PMediaStatus p2p_media_status = 89;
+```
+
+### 11.9 Updated PbChat (with channel_id and P2P attachments)
+
+```protobuf
+// Updated PbChat:
+message PbChat {
+  string text = 1;
+  bool is_action = 2;
+  string target_nick = 3;
+  bool is_pm = 4;
+  repeated PbMediaRef attachments = 5;          // Hub-hosted media
+  string channel_id = 6;                        // Channel this message belongs to (empty = #general)
+  repeated PbP2PMediaRef p2p_attachments = 7;   // P2P media (served from user shares via relay)
+}
+```
+
 ---
 
-## 11. Implementation Plan: Verlihub (Hub Side)
+## 12. Implementation Plan: Verlihub (Hub Side)
 
 ### Phase 1: NMDCpb Support Infrastructure
 
-#### 11.1.1 New Support Feature Registration
+#### 12.1.1 New Support Feature Registration
 
 **File: `src/cconndc.h`**
 - Add `eSF_NMDCPB = 1 << 30` and `eSF_HUBRELAY = 1 << 31` to `tSupportFeature` enum
@@ -1373,7 +1985,7 @@ message PbHubStream {
 **File: `src/cconndc.cpp`**
 - Initialize new fields in constructor
 
-#### 11.1.2 New Message Type Registration
+#### 12.1.2 New Message Type Registration
 
 **File: `src/cmessagedc.h`**
 - Add `eDCM_PB`, `eDCM_PBB`, `eDCM_PBR` to the `tDCMsg` enum
@@ -1382,7 +1994,7 @@ message PbHubStream {
 **File: `src/cmessagedc.cpp`**
 - Add `{"$PB ", ...}`, `{"$PBB ", ...}`, `{"$PBR ", ...}` to the `sDC_Commands[]` array
 
-#### 11.1.3 Protocol Handler
+#### 12.1.3 Protocol Handler
 
 **File: `src/cdcproto.h`**
 - Declare `DC_PB()`, `DC_PBB()`, `DC_PBR()` handler methods
@@ -1398,7 +2010,7 @@ message PbHubStream {
 - `DC_PBB()`: Parse length, read binary payload, same routing as `DC_PB()`
 - `DC_PBR()`: Route relay data by `relay_id` lookup → forward to peer connection
 
-#### 11.1.4 Protobuf ↔ NMDC Translation Layer
+#### 12.1.4 Protobuf ↔ NMDC Translation Layer
 
 **New file: `src/cpbtranslate.h` / `src/cpbtranslate.cpp`**
 
@@ -1426,7 +2038,7 @@ This enables a mixed hub where:
 - NMDCpb client sends `$PB` → hub translates to `<nick> text|` for legacy clients
 - Legacy client sends `<nick> text|` → hub translates to `$PB` (PbChat) for NMDCpb clients
 
-#### 11.1.5 Build System Integration
+#### 12.1.5 Build System Integration
 
 **File: `CMakeLists.txt`**
 - Add `find_package(Protobuf REQUIRED)`
@@ -1436,7 +2048,7 @@ This enables a mixed hub where:
 **New file: `proto/nmdcpb.proto`**
 - The protobuf schema definitions from Section 9
 
-#### 11.1.6 Plugin Callbacks
+#### 12.1.6 Plugin Callbacks
 
 **File: `src/cserverdc.h`** (sCallBacks structure)
 - Add `mOnParsedMsgPB` callback list — fires for any protobuf message
@@ -1453,7 +2065,7 @@ This enables a mixed hub where:
 
 ### Phase 2: HubRelay & E2EPM Support
 
-#### 11.2.1 Relay Session Manager
+#### 12.2.1 Relay Session Manager
 
 **New file: `src/crelay.h` / `src/crelay.cpp`**
 
@@ -1497,7 +2109,7 @@ private:
 };
 ```
 
-#### 11.2.2 Config Variables
+#### 12.2.2 Config Variables
 
 **File: `src/cserverdc.cpp`** (config registration)
 
@@ -1517,7 +2129,7 @@ private:
 | `e2epm_flood_period` | `1` | E2EPM flood detection period (seconds) |
 | `e2epm_flood_count` | `5` | Max encrypted PMs per flood period |
 
-#### 11.2.3 E2EPM Hub Handler
+#### 12.2.3 E2EPM Hub Handler
 
 The hub's role for E2EPM is intentionally minimal — it only validates and forwards:
 
@@ -1543,7 +2155,7 @@ The hub **never** has the decryption keys. It treats `PbEncryptedPM.ciphertext` 
 - Logging metadata ("A sent encrypted PM to B at timestamp T")
 - Blocking specific user pairs if needed
 
-#### 11.2.4 Timer Integration
+#### 12.2.4 Timer Integration
 
 **File: `src/cserverdc.cpp`** (OnTimer or MinuteTick)
 - Call `mRelayManager.CleanupTimedOut()` periodically
@@ -1551,7 +2163,7 @@ The hub **never** has the decryption keys. It treats `PbEncryptedPM.ciphertext` 
 
 ### Phase 3: MediaShare & VoiceVideo Support
 
-#### 11.3.1 Media API Implementation
+#### 12.3.1 Media API Implementation
 
 **File: `plugins/python/scripts/hub_api.py`** (extend existing FastAPI app)
 
@@ -1612,7 +2224,7 @@ Background task that runs periodically to:
 
 **Thumbnail generation**: Uses Pillow (for images) and optionally ffmpeg (for video frame extraction) if installed. Falls back gracefully if unavailable.
 
-#### 11.3.2 Session Token for Media API Auth
+#### 12.3.2 Session Token for Media API Auth
 
 The hub issues a short-lived session token to NMDCpb clients. This is included in:
 - `PbHubInfo` or a dedicated `PbSessionToken` message during login
@@ -1624,13 +2236,13 @@ The hub issues a short-lived session token to NMDCpb clients. This is included i
 - Token expires on disconnect or after configurable timeout
 - Validate token in the Python API middleware
 
-#### 11.3.3 Media Config Variables
+#### 12.3.3 Media Config Variables
 
 **File: `src/cserverdc.cpp`** (config registration)
 
 Add all config variables from Section 7.8 (MediaShare) and Section 8.8 (VoiceVideo).
 
-#### 11.3.4 Call Signaling & Stream Routing
+#### 12.3.4 Call Signaling & Stream Routing
 
 **File: `src/cdcproto.cpp`** (within `DC_PB()` handler)
 
@@ -1682,7 +2294,7 @@ private:
 };
 ```
 
-#### 11.3.5 SFU Logic for Group Calls
+#### 12.3.5 SFU Logic for Group Calls
 
 When a group call relay data packet arrives, the hub looks up the group call session and fan-out list, then forwards the encrypted packet to all other participants:
 
@@ -1696,18 +2308,18 @@ This is implemented as an extension to `cRelayManager` with group-aware routing.
 
 ---
 
-## 12. Implementation Plan: eiskaltdcpp (C++ Client Library)
+## 13. Implementation Plan: eiskaltdcpp (C++ Client Library)
 
 ### Phase 1: NMDCpb Client Support
 
-#### 12.1.1 Feature Announcement
+#### 13.1.1 Feature Announcement
 
 **File: `dcpp/NmdcHub.cpp`**
 - Add `"NMDCpb"` to the features list in the `$Supports` message
 - Parse the hub's `$Supports` response for `NMDCpb` and `HubRelay`
 - Add flags to `NmdcHub::SupportFlags`
 
-#### 12.1.2 Protobuf Message Handling
+#### 13.1.2 Protobuf Message Handling
 
 **File: `dcpp/NmdcHub.h` / `dcpp/NmdcHub.cpp`**
 - In `onLine()`: add handlers for `$PB`, `$PBB`, `$PBR` commands
@@ -1719,7 +2331,7 @@ This is implemented as an extension to `cRelayManager` with group-aware routing.
 - Base64url encode/decode
 - Envelope construction with routing metadata
 
-#### 12.1.3 Dual-Mode Sending
+#### 13.1.3 Dual-Mode Sending
 
 When the hub supports NMDCpb, the client can choose to send protobuf or legacy NMDC per-message. Strategy:
 
@@ -1729,7 +2341,7 @@ When the hub supports NMDCpb, the client can choose to send protobuf or legacy N
 
 ### Phase 2: HubRelay Client Support
 
-#### 12.2.1 Relay Connection Abstraction
+#### 13.2.1 Relay Connection Abstraction
 
 **New file: `dcpp/RelayConnection.h` / `dcpp/RelayConnection.cpp`**
 
@@ -1756,7 +2368,7 @@ private:
 };
 ```
 
-#### 12.2.2 ConnectionManager Integration
+#### 13.2.2 ConnectionManager Integration
 
 **File: `dcpp/ConnectionManager.cpp`**
 
@@ -1779,7 +2391,7 @@ if(cqi->getUser().user->isSet(User::PASSIVE) && !ClientManager::getInstance()->i
 }
 ```
 
-#### 12.2.3 Key Exchange Integration
+#### 13.2.3 Key Exchange Integration
 
 **File: `dcpp/CryptoManager.h` / `dcpp/CryptoManager.cpp`**
 - Add X25519 key pair generation (ephemeral, per relay session)
@@ -1790,7 +2402,7 @@ These depend on OpenSSL ≥ 1.1.0 which eiskaltdcpp already links against.
 
 ### Phase 3: E2EPM Client Support
 
-#### 12.3.1 E2EPM Session Manager
+#### 13.3.1 E2EPM Session Manager
 
 **New file: `dcpp/E2EPMManager.h` / `dcpp/E2EPMManager.cpp`**
 
@@ -1847,7 +2459,7 @@ private:
 };
 ```
 
-#### 12.3.2 Integration with PM Sending
+#### 13.3.2 Integration with PM Sending
 
 **File: `dcpp/NmdcHub.cpp`** — modify `sendPM()` / PM-related methods:
 
@@ -1871,7 +2483,7 @@ void NmdcHub::sendPrivateMessage(const OnlineUser& user, const string& msg, bool
 }
 ```
 
-#### 12.3.3 Integration with PM Receiving
+#### 13.3.3 Integration with PM Receiving
 
 **File: `dcpp/NmdcHub.cpp`** — within the `$PB` handler:
 
@@ -1890,7 +2502,7 @@ When a `PbPMKeyExchange` is received:
 
 ### Phase 4: MediaShare Client Support
 
-#### 12.4.1 Media Upload/Download
+#### 13.4.1 Media Upload/Download
 
 **New file: `dcpp/MediaManager.h` / `dcpp/MediaManager.cpp`**
 
@@ -1942,7 +2554,7 @@ private:
 };
 ```
 
-#### 12.4.2 Chat Integration
+#### 13.4.2 Chat Integration
 
 **File: `dcpp/NmdcHub.cpp`** — when sending a chat message with attachments:
 1. Upload each file via `MediaManager::uploadFile()`
@@ -1957,7 +2569,7 @@ private:
 
 ### Phase 5: VoiceVideo Client Support
 
-#### 12.5.1 Call Manager
+#### 13.5.1 Call Manager
 
 **New file: `dcpp/CallManager.h` / `dcpp/CallManager.cpp`**
 
@@ -2021,7 +2633,7 @@ private:
 };
 ```
 
-#### 12.5.2 Audio/Video Pipeline
+#### 13.5.2 Audio/Video Pipeline
 
 **New file: `dcpp/MediaPipeline.h` / `dcpp/MediaPipeline.cpp`**
 
@@ -2060,7 +2672,7 @@ private:
 };
 ```
 
-#### 12.5.3 Build System Integration
+#### 13.5.3 Build System Integration
 
 **File: `CMakeLists.txt`**
 - Add `find_package(Opus)` — optional, enables VoiceVideo
@@ -2070,9 +2682,9 @@ private:
 
 ---
 
-## 13. Implementation Plan: eiskaltdcpp-py (Python Bindings)
+## 14. Implementation Plan: eiskaltdcpp-py (Python Bindings)
 
-### 13.1 Bridge Layer Extensions
+### 14.1 Bridge Layer Extensions
 
 **File: `src/bridge.h` / `src/bridge.cpp`**
 
@@ -2102,7 +2714,7 @@ string getE2EPMFingerprint(const string& hubUrl, const string& peerNick);
 void closeE2EPMSession(const string& hubUrl, const string& peerNick);
 ```
 
-### 13.2 New Callback Methods
+### 14.2 New Callback Methods
 
 **File: `src/callbacks.h`**
 
@@ -2139,7 +2751,7 @@ class DCClientCallback {
 };
 ```
 
-### 13.3 SWIG Interface Updates
+### 14.3 SWIG Interface Updates
 
 **File: `swig/dc_core.i`**
 - Add `%template(ByteVector) std::vector<uint8_t>;`
@@ -2147,7 +2759,7 @@ class DCClientCallback {
 - Expose new `DCBridge` methods and `DCClientCallback` virtual methods
 - Add `RelayInfo` struct typemaps
 
-### 13.4 Python High-Level API
+### 14.4 Python High-Level API
 
 **File: `python/eiskaltdcpp/dc_client.py`**
 
@@ -2208,7 +2820,7 @@ class AsyncDCClient:
         ...
 ```
 
-### 13.5 Pure-Python Protobuf Option
+### 14.5 Pure-Python Protobuf Option
 
 For Python-only testing and development, provide a pure-Python protobuf layer that doesn't require C++ changes:
 
@@ -2241,7 +2853,7 @@ class ProtobufExtension:
 
 This allows rapid iteration on the protocol design from Python before investing in C++ implementation.
 
-### 13.6 MediaShare Python API
+### 14.6 MediaShare Python API
 
 **File: `src/bridge.h` / `src/bridge.cpp`** — new methods:
 
@@ -2285,7 +2897,7 @@ class AsyncDCClient:
                              output_path: str) -> None: ...
 ```
 
-### 13.7 VoiceVideo Python API
+### 14.7 VoiceVideo Python API
 
 **File: `src/bridge.h` / `src/bridge.cpp`** — new methods:
 
@@ -2364,7 +2976,7 @@ class DCClient:
     #             'hub_stream_ended', 'media_uploaded', 'media_capabilities'
 ```
 
-### 13.8 eiskaltdcpp-py REST API Extensions
+### 14.8 eiskaltdcpp-py REST API Extensions
 
 **File: `python/eiskaltdcpp/api/routes/`** — new routers:
 
@@ -2430,7 +3042,7 @@ async def join_stream(stream_id: str, auth=Depends(require_admin)):
     """Join (subscribe to) a hub stream.""" ...
 ```
 
-### 13.9 WebSocket Event Extensions
+### 14.9 WebSocket Event Extensions
 
 **File: `python/eiskaltdcpp/api/websocket.py`**
 
@@ -2444,11 +3056,11 @@ New event channels and event types:
 
 ---
 
-## 14. Cryptographic Design for Encrypted Relay & E2EPM
+## 15. Cryptographic Design for Encrypted Relay & E2EPM
 
 > **Shared crypto primitives**: Both HubRelay and E2EPM use the same cryptographic building blocks — X25519 for key agreement, HKDF-SHA256 for key derivation, and ChaCha20-Poly1305 for authenticated encryption. The difference is in what they encrypt (byte streams vs. individual messages) and how they're used (bulk transfers vs. text chat).
 
-### 14.1 Key Exchange
+### 15.1 Key Exchange
 
 ```
                 Client A                       Hub                      Client B
@@ -2484,7 +3096,7 @@ New event channels and event types:
 - Constant-time (side-channel resistant)
 - Available in OpenSSL ≥ 1.1.0 (already required by eiskaltdcpp)
 
-### 14.2 Data Encryption (HubRelay)
+### 15.2 Data Encryption (HubRelay)
 
 Each relay data chunk is encrypted with **ChaCha20-Poly1305** (AEAD):
 
@@ -2505,7 +3117,7 @@ Encrypted chunk format:
 - Used by TLS 1.3, WireGuard, SSH — well-proven
 - Available in OpenSSL ≥ 1.1.0
 
-### 14.3 Message Encryption (E2EPM)
+### 15.3 Message Encryption (E2EPM)
 
 Each encrypted PM is individually encrypted with **ChaCha20-Poly1305** (same AEAD as relay):
 
@@ -2534,7 +3146,7 @@ PbEncryptedPM.ciphertext format:
 | AAD content | `relay_id \|\| direction \|\| nonce` | `"e2epm" \|\| sender \|\| "\x00" \|\| target` |
 | Session lifetime | Duration of file transfer | Duration of hub connection |
 
-### 14.4 E2EPM Anti-Tampering
+### 15.4 E2EPM Anti-Tampering
 
 Because the hub relays `PbEncryptedPM` messages, a malicious hub could attempt:
 
@@ -2553,7 +3165,7 @@ Because the hub relays `PbEncryptedPM` messages, a malicious hub could attempt:
 5. **Modification**: Alter ciphertext bytes.
    - **Mitigation**: Poly1305 authentication tag. Any modification causes decryption failure → message rejected.
 
-### 14.5 Inside the Encrypted Channel (HubRelay)
+### 15.5 Inside the Encrypted Channel (HubRelay)
 
 Once the relay is established and keys are derived, clients run the standard DC file transfer protocol *inside* the encrypted channel:
 
@@ -2571,7 +3183,7 @@ $FileLength 12345|
 
 This means the relay is fully transparent to the file transfer logic — it just looks like a regular TCP connection to the transfer layer. The hub sees only encrypted byte streams.
 
-### 14.6 Forward Secrecy
+### 15.6 Forward Secrecy
 
 Every relay session and every E2EPM session generates new ephemeral X25519 key pairs. Even if a long-term key is compromised, past sessions cannot be decrypted.
 
@@ -2581,9 +3193,9 @@ Every relay session and every E2EPM session generates new ephemeral X25519 key p
 
 ---
 
-## 15. Migration & Backward Compatibility
+## 16. Migration & Backward Compatibility
 
-### 15.1 Compatibility Matrix
+### 16.1 Compatibility Matrix
 
 | Hub | Client | Result |
 |-----|--------|--------|
@@ -2593,7 +3205,7 @@ Every relay session and every E2EPM session generates new ephemeral X25519 key p
 | NMDCpb | NMDCpb | Full protobuf messaging + relay available |
 | NMDCpb | Mixed | Hub translates: PB→NMDC for legacy, NMDC→PB for NMDCpb clients |
 
-### 15.2 Translation Rules
+### 16.2 Translation Rules
 
 The hub maintains a **translation cache** to avoid re-encoding messages:
 
@@ -2607,7 +3219,7 @@ The hub maintains a **translation cache** to avoid re-encoding messages:
 
 5. **Private Messages**: If both sender and recipient support E2EPM, PMs are encrypted. If either doesn't, the sender falls back to `PbChat` (if NMDCpb) or `$To:` (legacy). The UI should clearly indicate the encryption state of each PM conversation.
 
-### 15.3 Graceful Degradation
+### 16.3 Graceful Degradation
 
 - If protobuf deserialization fails, the hub logs the error and drops the message (does not crash or disconnect the client).
 - Unknown payload types in `PbEnvelope.oneof` are silently ignored (protobuf's natural behavior).
@@ -2615,9 +3227,9 @@ The hub maintains a **translation cache** to avoid re-encoding messages:
 
 ---
 
-## 16. Testing Strategy
+## 17. Testing Strategy
 
-### 16.1 Unit Tests
+### 17.1 Unit Tests
 
 | Component | Tests |
 |-----------|-------|
@@ -2630,7 +3242,7 @@ The hub maintains a **translation cache** to avoid re-encoding messages:
 | E2EPM key fingerprints | Fingerprint generation, TOFU key change detection, key continuity checks |
 | Feature negotiation | $Supports parsing and echoing with NMDCpb/HubRelay flags |
 
-### 16.2 Integration Tests (eiskaltdcpp-py)
+### 17.2 Integration Tests (eiskaltdcpp-py)
 
 Leveraging the existing `test_integration.py` multi-process testing pattern:
 
@@ -2705,7 +3317,7 @@ class TestE2EPM:
         """TOFU: unexpected key change mid-session triggers warning event."""
 ```
 
-### 16.3 Fuzz Testing
+### 17.3 Fuzz Testing
 
 - Feed random/malformed `$PB` payloads to the hub parser — must not crash
 - Feed truncated `$PBB` binary payloads — must not buffer-overflow
@@ -2713,7 +3325,7 @@ class TestE2EPM:
 - Feed forged `PbPMKeyExchange` with invalid keys — must not crash or derive weak secrets
 - Feed `PbEncryptedPM` with corrupted ciphertext — must fail gracefully (no memory corruption)
 
-### 16.4 Performance Testing
+### 17.4 Performance Testing
 
 - Benchmark relay throughput vs direct TCP transfer
 - Measure protobuf encoding/decoding latency vs text NMDC parsing
@@ -2723,7 +3335,7 @@ class TestE2EPM:
 - Measure per-message encrypt/decrypt overhead for E2EPM vs plaintext PMs
 - Profile hub CPU for high-volume encrypted PM routing (hub only forwards, no crypto)
 
-### 16.5 Media Attachment Tests
+### 17.5 Media Attachment Tests
 
 | Component | Tests |
 |-----------|-------|
@@ -2735,7 +3347,7 @@ class TestE2EPM:
 | Encrypted media | Upload encrypted blob, download + decrypt, key in PbPMPlaintext roundtrip |
 | PbMediaRef in PbChat | Roundtrip serialization, display in legacy fallback (URL in text) |
 
-### 16.6 Voice/Video Call Tests
+### 17.6 Voice/Video Call Tests
 
 | Component | Tests |
 |-----------|-------|
@@ -2747,7 +3359,7 @@ class TestE2EPM:
 | Media pipeline | Opus encode/decode roundtrip, VP8 encode/decode roundtrip |
 | Call controls | Mute/unmute signaling, video on/off, call duration tracking |
 
-### 16.7 Integration Tests (MediaShare + VoiceVideo)
+### 17.7 Integration Tests (MediaShare + VoiceVideo)
 
 ```python
 class TestMediaShare:
@@ -2799,7 +3411,7 @@ class TestVoiceVideo:
         """User disconnects during call, verify peer notified and relay cleaned up."""
 ```
 
-### 16.8 Performance Tests (MediaShare + VoiceVideo)
+### 17.8 Performance Tests (MediaShare + VoiceVideo)
 
 - Benchmark media upload/download throughput via hub API
 - Measure thumbnail generation latency for various image sizes
@@ -2812,7 +3424,7 @@ class TestVoiceVideo:
 
 ---
 
-## 17. Phased Rollout
+## 18. Phased Rollout
 
 ### Phase 0: Prototype (Python-only, 2-3 weeks) — **COMPLETE**
 - [x] Define protobuf schema (`nmdcpb/proto/nmdcpb.proto`) — all 5 extensions, compiled to Python
@@ -3027,6 +3639,46 @@ The hub `_handle_relay()` is currently a stub. This must be implemented first.
 - **Goal**: Clients can share images, audio, video, and files inline in chat
 - **Status**: Core implementation complete — protobuf messages, hub-side handler, C++ client manager, chat attachments all wired and tested (206 C++ tests + 56 Python tests pass)
 
+### Phase 4b: P2P Media + MediaShare Remaining (3-4 weeks)
+- [ ] Add `PbP2PMediaRef` and `PbP2PMediaStatus` to protobuf schema (fields in PbChat + PbChannelPlaintext)
+- [ ] Add `PbChat.channel_id` (field 6) and `PbChat.p2p_attachments` (field 7) to protobuf schema
+- [ ] Implement P2P media posting in hub plugin: validate `PbP2PMediaRef` fields, broadcast to channel members (or all NMDCpb users for #general)
+- [ ] Implement P2P media auto-fallback in hub plugin: when user quota exhausted, suggest P2P mode in `PbMediaCapabilities` response
+- [ ] Implement `P2PMediaManager` in eiskaltdcpp C++ client: relay download initiation, TTH-based integrity, local cache, re-share
+- [ ] Implement multi-source P2P download: reuse `SegmentCoordinator` to download P2P media from multiple peers when original poster is offline
+- [ ] Implement P2P media placeholder UX: chat message shows placeholder → progress → inline display on complete
+- [ ] Add `PbP2PMediaStatus` dispatch in NmdcHub: report download progress to channel for UX coordination
+- [ ] Implement P2P media caching policy: local retention (configurable, default 30 days), auto re-share of cached media
+- [ ] Add HTTP upload endpoint + session token authentication for hub-hosted media API
+- [ ] Expose media API (hub-hosted + P2P) in eiskaltdcpp-py bridge + Python client + REST API
+- [ ] Implement `encryptMediaData`/`decryptMediaData` in MediaManager for E2EPM encrypted hub-hosted media
+- [ ] Add P2P media config variables (`media_p2p_enabled`, `media_p2p_default`, `media_p2p_max_size`, `media_p2p_relay_priority`)
+- [ ] Write unit tests for P2P media manager, multi-source fallback, and cache policy
+- [ ] Write integration tests for end-to-end hub-hosted and P2P media sharing scenarios
+- **Goal**: Complete media sharing with P2P fallback, E2EPM encrypted media, and full API exposure
+
+### Phase 4.5: Channels (4-6 weeks)
+- [ ] Add all Channel protobuf messages to schema (PbChannel, PbChannelList, PbChannelCreated, PbChannelMemberUpdate, PbChannelInvite/Response, PbChannelHistory, PbChannelEncrypted, PbChannelPlaintext, PbSenderKeyDistribution, PbSenderKeyRotation) — fields 80-89 in PbEnvelope
+- [ ] Implement `ChannelManager` in verlihub hub plugin: channel registry, membership tracking, `#general` auto-join
+- [ ] Implement channel routing in `_route_hub()`: LIST_CHANNELS, CREATE, DELETE, JOIN, LEAVE, SET_TOPIC, KICK, SET_ROLE
+- [ ] Implement channel message routing: `PbChat` with `channel_id` → broadcast only to channel members (not all NMDCpb users)
+- [ ] Implement `#general` ↔ legacy NMDC translation: `PbChat{channel_id:"general"}` ↔ `<nick> text|` for non-NMDCpb clients
+- [ ] Implement channel history: configurable scrollback buffer per public channel, send `PbChannelHistory` on join
+- [ ] Implement channel permissions: create/join min class, per-channel roles (owner/admin/member/readonly)
+- [ ] Implement `PbChannelInvite` / `PbChannelInviteResponse` flow for private channels
+- [ ] Implement private channel encryption: `PbChannelEncrypted` with sender key encryption (ChaCha20-Poly1305)
+- [ ] Implement `PbSenderKeyDistribution` via E2EPM: key generation, per-member distribution through 1:1 encrypted PM
+- [ ] Implement sender key rotation: on member leave (re-key all), on member join (distribute existing), periodic rotation
+- [ ] Implement `ChannelManager` in eiskaltdcpp C++ client: channel list, join/leave, message sending, sender key storage
+- [ ] Implement private channel sender key management in C++ client: key generation, E2EPM distribution, decryption with correct sender key
+- [ ] Implement P2P-only media enforcement for private channels: reject hub-hosted media refs, require PbP2PMediaRef
+- [ ] Add channel admin commands: `+nmdcpb channels` (list), `+nmdcpb channel create/delete/kick/topic`
+- [ ] Add all channel config variables (see Section 9.8)
+- [ ] Expose channel API in eiskaltdcpp-py bridge + Python client + REST API
+- [ ] Write unit tests for ChannelManager (hub + client), sender key distribution, rotation, and encryption/decryption
+- [ ] Write integration tests: public channel lifecycle, private channel E2E flow, multi-member key rotation, P2P media in private channels
+- **Goal**: Users can create/join/leave public and private channels; private channels are E2E encrypted with sender keys; media in private channels served P2P
+
 ### Phase 5: VoiceVideo (6-10 weeks)
 - [ ] Implement call signaling routing in verlihub `DC_PB()` handler
 - [ ] Implement `cStreamManager` for hub-wide stream management
@@ -3045,9 +3697,9 @@ The hub `_handle_relay()` is currently a stub. This must be implemented first.
 
 ---
 
-## 18. Open Questions & Risks
+## 19. Open Questions & Risks
 
-### 18.1 Open Design Questions
+### 19.1 Open Design Questions
 
 | # | Question | Options | Recommendation |
 |---|----------|---------|----------------|
@@ -3059,7 +3711,7 @@ The hub `_handle_relay()` is currently a stub. This must be implemented first.
 | 6 | Should the protobuf schema be embedded in the $Supports handshake (version hash)? | (a) No — just NMDCpb, version is implicit (b) NMDCpb1 with version number (c) Include schema hash in PbEnvelope | **(b) NMDCpb1** — explicit version in feature name allows future incompatible schema changes (NMDCpb2). |
 | 7 | protobuf vs flatbuffers vs cap'n proto? | protobuf: mature, smallest wire format, widest language support. flatbuffers: zero-copy, larger wire format. cap'n proto: fast, less adoption. | **protobuf** — proven by gRPC ecosystem, excellent Python/C++ support, compact binary. |
 | 8 | Should E2EPM be mandatory when both clients support it? | (a) Always encrypt if both support E2EPM (b) User can choose per-conversation (c) Configurable default | **(a) Always encrypt** — opportunistic encryption by default. Users should not need to opt in. Reduces metadata leakage of "who chose encryption" (which itself is a signal). |
-| 9 | How should group PMs / multi-party encrypted conversations work? | (a) Pairwise sessions only (each pair has its own key) (b) Group key agreement (Sender Keys / MLS-like) | **(a) Pairwise only** for v1. Group encryption is significantly more complex (key management, member add/remove). Can be added in v2 if needed. |
+| 9 | How should group PMs / multi-party encrypted conversations work? | (a) Pairwise sessions only (each pair has its own key) (b) Group key agreement (Sender Keys / MLS-like) | **(b) Sender Keys** — implemented as Private Channels (Extension 6). Each member generates a sender key, distributes via E2EPM. O(N) key distribution, O(1) per-message encryption. Key rotation on member join/leave provides forward secrecy. |
 | 10 | Should E2EPM support offline messages (queued for when peer reconnects)? | (a) No — session is per-connection, messages fail if peer offline (b) Hub queues encrypted PMs for delivery on reconnect | **(a) No offline queue** — Ephemeral keys mean the session dies on disconnect. Offline queuing would require persistent key storage, which undermines forward secrecy. User gets "peer offline" error. |
 | 11 | TOFU vs strict key verification for E2EPM? | (a) TOFU only (warn on change) (b) Require manual verification (c) TOFU default + optional strict mode | **(c)** — TOFU by default (like SSH known_hosts). Power users can enable strict mode requiring fingerprint verification before the first encrypted PM. |
 | 12 | Should media uploads require authentication or allow anonymous downloads? | (a) Auth required for both upload and download (b) Auth for upload, public download (c) Configurable per-hub | **(c) Configurable** — Default to auth-required for both. Hub admins can enable public download URLs for media if they want link-sharing outside the hub. |
@@ -3069,8 +3721,13 @@ The hub `_handle_relay()` is currently a stub. This must be implemented first.
 | 16 | Should hub streams support recording/archiving? | (a) No — live only (b) Hub-side recording (c) Client-side recording only | **(a) Live only** for v1. Recording adds significant storage and legal concerns. Clients can record locally if their OS supports screen/audio capture. |
 | 17 | How should group call participant limits scale? | (a) Fixed limit (config) (b) Dynamic based on hub bandwidth (c) Configurable per-class | **(a) Fixed limit** with `call_max_participants` config. Hub admins set based on their bandwidth. Dynamic scaling is complex and can be added later. |
 | 18 | Should VoiceVideo be available without E2E encryption (for lower latency/complexity)? | (a) Always E2E encrypted (b) Optional encryption (c) E2E for 1:1, optional for group | **(a) Always E2E** for 1:1 calls. Hub streams are the exception (not E2E by default). Group calls use sender keys which are effectively E2E. |
+| 19 | Should private channel history be stored on the hub? | (a) No — ephemeral only, new members see nothing before their join (b) Hub stores encrypted blobs, members can retrieve (c) Configurable per-channel | **(c) Configurable** — Default to no history (`channel_private_history=0`). If enabled, hub stores encrypted ciphertext that it cannot read. New members only see messages from after they joined unless existing members re-share current sender keys covering the history window. |
+| 20 | Should P2P media be the default for all channels or just private ones? | (a) P2P for private only, hub-hosted for public (b) P2P default everywhere (c) Configurable | **(a) P2P for private, hub-hosted for public** — Public channels benefit from hub-hosted media (faster, no relay overhead, available even if poster offline). P2P is the automatic fallback when quota is exhausted. Hub admin can override with `media_p2p_default=1`. |
+| 21 | How should sender key rotation scale for large private channels? | (a) Simple re-key on every membership change (b) Two-phase: immediate invalidation + lazy re-key (c) MLS (Message Layer Security) tree-based | **(a) Simple re-key** for v1 — acceptable for channels up to 50 members (configurable cap). Each member regenerates and re-distributes their sender key (N E2EPM messages per member = O(N²) total). For N=50 this is 2500 key messages, which is a one-time burst. MLS could be considered for v2 if larger groups are needed. |
+| 22 | What happens to P2P media when ALL sources are offline? | (a) Show "media unavailable" (b) Queue download for when a source reconnects (c) Fall back to hub-hosted copy if one exists | **(a) + (b)** — Show "media unavailable" immediately. Optionally queue a background retry that triggers when any user with the matching TTH comes online. If a hub-hosted copy exists (uploaded separately), fall back to that. |
+| 23 | Should channels support pinned messages? | (a) No (b) Yes, owner/admin can pin (c) Yes, with hub-stored pin list | **(b) Yes** — simple list of pinned message hashes per channel, stored in channel metadata. For private channels, the pin list contains ciphertext message hashes (hub can identify pinned messages but not read them). Deferred to v2. |
 
-### 18.2 Risks
+### 19.2 Risks
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
@@ -3094,12 +3751,19 @@ The hub `_handle_relay()` is currently a stub. This must be implemented first.
 | **Opus/VP8 library dependency** | Low — adds new library requirements | Make VoiceVideo optional at compile time (`HAVE_OPUS`, `HAVE_VPX` flags). Core functionality (NMDCpb, HubRelay, E2EPM, MediaShare) does not require these libraries. |
 | **Audio/video quality on poor connections** | Medium — hub relay adds latency vs direct P2P | Adaptive bitrate (Opus supports 6-510 kbps), jitter buffer, packet loss concealment. Hub relay latency is typically < 50ms additional. |
 | **Group call sender key rotation** | Medium — participant leave requires re-keying all others | Simple approach: regenerate sender keys on leave. For large groups, consider MLS (Message Layer Security) in v2. |
+| **Channel sender key distribution O(N²)** | Medium — private channel membership changes trigger N sender key distributions per member (N² total) | Cap private channels at 50 members. Key distribution is a batch of small E2EPM messages (~100 bytes each). For N=50, this is <250KB total burst. Consider MLS tree-based rekeying for v2. |
+| **P2P media unavailability** | Medium — if all sources for a P2P media file go offline, viewers see broken placeholder | Encourage auto-re-share of cached media. Show "media from UserA — source offline" with automatic retry. Multiple `alt_source_nicks` in `PbP2PMediaRef` help. |
+| **P2P media abuse** | Low — users post `PbP2PMediaRef` referencing non-existent files or malicious TTHs | TTH verification on download ensures integrity. Rate limit P2P media posts per user. Hub validates that source_nick is the sender. |
+| **Channel spam/proliferation** | Low — users create excessive channels | `channel_max_per_hub` cap, `channel_create_min_class` permission, admin-only channel creation option. |
+| **Private channel metadata leakage** | Low — hub sees membership list, message timing/sizes | Fundamental trade-off of hub-routed channels. Users wanting full metadata privacy should use direct E2EPM 1:1 sessions. Channel names for private channels can be opaque IDs. |
+| **Sender key compromise** | Medium — if a member's sender key is leaked, all messages encrypted with that key are exposed | Periodic key rotation limits the blast radius. Rotation on member leave prevents ex-members from reading future messages. Forward secrecy per rotation epoch. |
+| **P2P relay bandwidth for popular media** | Medium — if 100 users all try to download the same P2P media from one poster, the poster's relay sessions are overwhelmed | Multi-source: as early downloaders cache and re-share, load distributes. SegmentCoordinator can split across sources. Hub can assist by tracking which users have which TTH (opt-in). |
 
 ---
 
-## 19. Appendix: Reference Material
+## 20. Appendix: Reference Material
 
-### 19.1 Relevant Source Files
+### 20.1 Relevant Source Files
 
 **Verlihub (hub):**
 | File | Role |
@@ -3134,7 +3798,7 @@ The hub `_handle_relay()` is currently a stub. This must be implemented first.
 | `python/eiskaltdcpp/dc_client.py` | `DCClient` — high-level synchronous wrapper |
 | `python/eiskaltdcpp/async_client.py` | `AsyncDCClient` — asyncio wrapper |
 
-### 19.2 Protocol References
+### 20.2 Protocol References
 
 - **NMDC Protocol**: http://nmdc.sourceforge.net/NMDC.html
 - **ADC Protocol**: https://adc.sourceforge.io/ADC.html
@@ -3154,7 +3818,7 @@ The hub `_handle_relay()` is currently a stub. This must be implemented first.
 - **Sender Keys**: https://signal.org/docs/specifications/group-v1/ — group encryption approach used by VoiceVideo group calls
 - **MinIO S3-Compatible Storage**: https://min.io/ — reference S3 backend for MediaShare
 
-### 19.3 Existing Precedents in Codebase
+### 20.3 Existing Precedents in Codebase
 
 | Feature | How It Works | What We Borrow |
 |---------|-------------|----------------|
