@@ -30,6 +30,7 @@
 #ifdef WITH_NMDCPB
 #include "RelayConnection.h"
 #include "SegmentCoordinator.h"
+#include "MediaManager.h"
 #include <google/protobuf/arena.h>
 #endif
 
@@ -118,6 +119,19 @@ public:
     /// Get progress of a segmented download.
     const SegmentedDownloadInfo* getSegmentedDownloadInfo(const string& downloadId) const;
 
+    // Media: request file upload
+    string requestMediaUpload(const string& localPath,
+                              const string& mimeType = "",
+                              uint32_t ttl = 0, bool encrypted = false);
+    // Media: delete a media file
+    void requestMediaDelete(const string& mediaId, const string& reason = "");
+    // Media: query metadata
+    void requestMediaMeta(const string& mediaId);
+    // Media: get capabilities
+    const MediaCapabilities& getMediaCapabilities() const { return mediaManager.getCapabilities(); }
+    // Media: get manager for listener registration
+    MediaManager& getMediaManager() { return mediaManager; }
+
     // Handle incoming protobuf commands with deserialization
     void handlePbCommand(const string& cmd, const string& param);
     // Send PbEnvelope via $PB (base64url)
@@ -170,6 +184,7 @@ private:
 
 #ifdef WITH_NMDCPB
     RelayManager relayManager;
+    MediaManager mediaManager;
     // Pre-allocated serialization buffer (avoids repeated heap alloc on hot path)
     string pbSerializeBuf;
     // Active segmented downloads (downloadId → coordinator)

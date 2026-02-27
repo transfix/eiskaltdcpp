@@ -2015,7 +2015,83 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         ctx()->getSearchManager()->onStealthUserQueryResult(
             uqr.query_id(), uqr.total_matching(), uqr.sweep_count(), uqr.error());
         // Event already dispatched above as pb_message
+
+    // ------------------------------------------------------------------
+    // Phase 4: MediaShare — incoming media messages from hub
+    // ------------------------------------------------------------------
+    } else if(env->has_media_capabilities()) {
+        mediaManager.onPbMediaCapabilities(env->media_capabilities());
+    } else if(env->has_media_meta()) {
+        mediaManager.onPbMediaMeta(env->media_meta());
+    } else if(env->has_media_upload()) {
+        // Server echoed our upload — should not happen, ignore
+        dcdebug("NmdcHub: unexpected media_upload from %s\n", fromNick.c_str());
+    } else if(env->has_media_delete()) {
+        // Notification that media was deleted
+        dcdebug("NmdcHub: media_delete notification: %s\n",
+                env->media_delete().media_id().c_str());
     }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4: MediaShare public API
+// ---------------------------------------------------------------------------
+
+string NmdcHub::requestMediaUpload(const string& localPath,
+                                    const string& mimeType,
+                                    uint32_t ttl, bool encrypted) {
+    string reqId = mediaManager.requestUpload(localPath, mimeType, ttl, encrypted);
+    if(reqId.empty()) return reqId;
+
+    // Build PbMediaUpload and send to hub
+    auto* req = mediaManager.getUploadRequest(reqId);
+    if(!req) return Util::emptyString;
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::HUB);
+    env.set_from_nick(getMyNick());
+    auto* upload = env.mutable_media_upload();
+    upload->set_filename(req->filename);
+    upload->set_mime_type(req->mimeType);
+    upload->set_size(req->size);
+    upload->set_requested_ttl(req->requestedTtl);
+    upload->set_is_encrypted(req->isEncrypted);
+    upload->set_checksum_sha256(req->checksumSha256);
+
+    pbSerializeBuf.clear();
+    env.SerializeToString(&pbSerializeBuf);
+    // Send as broadcast to hub (HUB route)
+    string encoded = Encoder::toBase64(pbSerializeBuf);
+    send("$PB " + fromUtf8(getMyNick()) + " " + encoded + "|");
+    return reqId;
+}
+
+void NmdcHub::requestMediaDelete(const string& mediaId, const string& reason) {
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::HUB);
+    env.set_from_nick(getMyNick());
+    auto* del = env.mutable_media_delete();
+    del->set_media_id(mediaId);
+    if(!reason.empty()) del->set_reason(reason);
+
+    pbSerializeBuf.clear();
+    env.SerializeToString(&pbSerializeBuf);
+    string encoded = Encoder::toBase64(pbSerializeBuf);
+    send("$PB " + fromUtf8(getMyNick()) + " " + encoded + "|");
+}
+
+void NmdcHub::requestMediaMeta(const string& mediaId) {
+    // Send a media_capabilities request to hub; the hub responds with PbMediaMeta
+    // For now, we re-request capabilities which include quota info
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::HUB);
+    env.set_from_nick(getMyNick());
+    env.mutable_media_capabilities(); // empty = request
+
+    pbSerializeBuf.clear();
+    env.SerializeToString(&pbSerializeBuf);
+    string encoded = Encoder::toBase64(pbSerializeBuf);
+    send("$PB " + fromUtf8(getMyNick()) + " " + encoded + "|");
 }
 
 #endif // WITH_NMDCPB

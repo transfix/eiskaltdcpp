@@ -73,6 +73,7 @@ if (WITH_NMDCPB)
         test_nmdcpb_crypto.cpp
         test_nmdcpb_security.cpp
         test_segment_coordinator.cpp
+        test_media_manager.cpp
     )
 endif ()
 
