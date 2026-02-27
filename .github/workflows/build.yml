@@ -198,36 +198,12 @@ jobs:
     - name: Test
       run: ctest --test-dir build --output-on-failure
 
-    - name: Package
-      shell: pwsh
-      run: |
-        New-Item -ItemType Directory -Force -Path artifacts
-        Copy-Item build/eiskaltdcpp-qt/eiskaltdcpp-qt.exe artifacts/
-        windeployqt --release --no-translations artifacts/eiskaltdcpp-qt.exe
-        $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
-        $dllsToCopy = @(
-          "libssl-*-x64.dll", "libcrypto-*-x64.dll",
-          "bz2.dll", "zlib1.dll", "miniupnpc.dll",
-          "pcre2-8.dll", "lua*.dll",
-          "intl-*.dll", "iconv-*.dll",
-          "idn2-*.dll", "unistring-*.dll",
-          "charset-*.dll"
-        )
-        foreach ($pattern in $dllsToCopy) {
-          $files = Get-ChildItem -Path $vcpkgBin -Filter $pattern -ErrorAction SilentlyContinue
-          foreach ($f in $files) {
-            Copy-Item $f.FullName artifacts/ -ErrorAction SilentlyContinue
-          }
-        }
-        Copy-Item -Recurse data/emoticons artifacts/resources/emoticons -ErrorAction SilentlyContinue
-        Copy-Item -Recurse data/sounds artifacts/resources/sounds -ErrorAction SilentlyContinue
-        Copy-Item -Recurse data/icons artifacts/resources/icons -ErrorAction SilentlyContinue
-
-    - name: Upload artifacts
+    - name: Upload build tree
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-qt6-windows-x64
-        path: artifacts/
+        name: windows-qt6-build
+        path: build/
+        retention-days: 1
 
   build-windows-gtk3:
     name: Windows / GTK3 / MSYS2
@@ -287,37 +263,12 @@ jobs:
     - name: Test
       run: ctest --test-dir build --output-on-failure
 
-    - name: Package
-      run: |
-        mkdir -p artifacts
-        cp build/eiskaltdcpp-gtk/eiskaltdcpp-gtk.exe artifacts/
-        MSYS_BIN="/ucrt64/bin"
-        for dll in \
-          libgtk-3-0.dll libgdk-3-0.dll libglib-2.0-0.dll libgobject-2.0-0.dll \
-          libgio-2.0-0.dll libgmodule-2.0-0.dll libgthread-2.0-0.dll \
-          libpango-1.0-0.dll libpangocairo-1.0-0.dll libpangoft2-1.0-0.dll \
-          libpangowin32-1.0-0.dll libcairo-2.dll libcairo-gobject-2.dll \
-          libgdk_pixbuf-2.0-0.dll libatk-1.0-0.dll libfribidi-0.dll \
-          libepoxy-0.dll libharfbuzz-0.dll libfontconfig-1.dll libfreetype-6.dll \
-          libpixman-1-0.dll libpng16-16.dll libbz2-1.dll zlib1.dll \
-          libssl-3-x64.dll libcrypto-3-x64.dll \
-          libminiupnpc.dll libpcre2-8-0.dll lua54.dll \
-          libidn2-0.dll libintl-8.dll libiconv-2.dll libunistring-5.dll \
-          libnotify-4.dll \
-          libwinpthread-1.dll libgcc_s_seh-1.dll libstdc++-6.dll \
-        ; do
-          [ -f "$MSYS_BIN/$dll" ] && cp "$MSYS_BIN/$dll" artifacts/ || true
-        done
-        mkdir -p artifacts/resources
-        cp -r data/emoticons artifacts/resources/emoticons || true
-        cp -r data/sounds artifacts/resources/sounds || true
-        cp -r data/icons artifacts/resources/icons || true
-
-    - name: Upload artifacts
+    - name: Upload build tree
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-gtk3-windows-x64
-        path: artifacts/
+        name: windows-gtk3-build
+        path: build/
+        retention-days: 1
 
   test-coverage:
     name: Test Coverage
@@ -403,6 +354,138 @@ jobs:
         path: coverage-report/
 
   # ─── Packaging (depends on successful builds) ────────────────────────
+
+  package-windows-qt6:
+    name: Package Windows Qt6
+    runs-on: windows-latest
+    needs: build-windows-qt6
+
+    env:
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Qt6
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.8.3'
+        arch: 'win64_msvc2022_64'
+        modules: 'qtmultimedia'
+        cache: true
+
+    - name: Install vcpkg dependencies
+      run: |
+        vcpkg install --triplet x64-windows `
+          openssl bzip2 zlib miniupnpc pcre2 lua `
+          libiconv libidn2
+
+    - name: Download build tree
+      uses: actions/download-artifact@v4
+      with:
+        name: windows-qt6-build
+        path: build/
+
+    - name: Package
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path artifacts
+        Copy-Item build/eiskaltdcpp-qt/eiskaltdcpp-qt.exe artifacts/
+        windeployqt --release --no-translations artifacts/eiskaltdcpp-qt.exe
+        $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
+        $dllsToCopy = @(
+          "libssl-*-x64.dll", "libcrypto-*-x64.dll",
+          "bz2.dll", "zlib1.dll", "miniupnpc.dll",
+          "pcre2-8.dll", "lua*.dll",
+          "intl-*.dll", "iconv-*.dll",
+          "idn2-*.dll", "unistring-*.dll",
+          "charset-*.dll"
+        )
+        foreach ($pattern in $dllsToCopy) {
+          $files = Get-ChildItem -Path $vcpkgBin -Filter $pattern -ErrorAction SilentlyContinue
+          foreach ($f in $files) {
+            Copy-Item $f.FullName artifacts/ -ErrorAction SilentlyContinue
+          }
+        }
+        Copy-Item -Recurse data/emoticons artifacts/resources/emoticons -ErrorAction SilentlyContinue
+        Copy-Item -Recurse data/sounds artifacts/resources/sounds -ErrorAction SilentlyContinue
+        Copy-Item -Recurse data/icons artifacts/resources/icons -ErrorAction SilentlyContinue
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: eiskaltdcpp-qt6-windows-x64
+        path: artifacts/
+
+  package-windows-gtk3:
+    name: Package Windows GTK3
+    runs-on: windows-latest
+    needs: build-windows-gtk3
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+    - name: Set up MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: UCRT64
+        update: false
+        install: >-
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-gtk3
+          mingw-w64-ucrt-x86_64-openssl
+          mingw-w64-ucrt-x86_64-bzip2
+          mingw-w64-ucrt-x86_64-zlib
+          mingw-w64-ucrt-x86_64-miniupnpc
+          mingw-w64-ucrt-x86_64-pcre2
+          mingw-w64-ucrt-x86_64-lua
+          mingw-w64-ucrt-x86_64-libidn2
+          mingw-w64-ucrt-x86_64-gettext-runtime
+          mingw-w64-ucrt-x86_64-libiconv
+          mingw-w64-ucrt-x86_64-libnotify
+
+    - uses: actions/checkout@v4
+
+    - name: Download build tree
+      shell: pwsh
+      uses: actions/download-artifact@v4
+      with:
+        name: windows-gtk3-build
+        path: build/
+
+    - name: Package
+      run: |
+        mkdir -p artifacts
+        cp build/eiskaltdcpp-gtk/eiskaltdcpp-gtk.exe artifacts/
+        MSYS_BIN="/ucrt64/bin"
+        for dll in \
+          libgtk-3-0.dll libgdk-3-0.dll libglib-2.0-0.dll libgobject-2.0-0.dll \
+          libgio-2.0-0.dll libgmodule-2.0-0.dll libgthread-2.0-0.dll \
+          libpango-1.0-0.dll libpangocairo-1.0-0.dll libpangoft2-1.0-0.dll \
+          libpangowin32-1.0-0.dll libcairo-2.dll libcairo-gobject-2.dll \
+          libgdk_pixbuf-2.0-0.dll libatk-1.0-0.dll libfribidi-0.dll \
+          libepoxy-0.dll libharfbuzz-0.dll libfontconfig-1.dll libfreetype-6.dll \
+          libpixman-1-0.dll libpng16-16.dll libbz2-1.dll zlib1.dll \
+          libssl-3-x64.dll libcrypto-3-x64.dll \
+          libminiupnpc.dll libpcre2-8-0.dll lua54.dll \
+          libidn2-0.dll libintl-8.dll libiconv-2.dll libunistring-5.dll \
+          libnotify-4.dll \
+          libwinpthread-1.dll libgcc_s_seh-1.dll libstdc++-6.dll \
+        ; do
+          [ -f "$MSYS_BIN/$dll" ] && cp "$MSYS_BIN/$dll" artifacts/ || true
+        done
+        mkdir -p artifacts/resources
+        cp -r data/emoticons artifacts/resources/emoticons || true
+        cp -r data/sounds artifacts/resources/sounds || true
+        cp -r data/icons artifacts/resources/icons || true
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: eiskaltdcpp-gtk3-windows-x64
+        path: artifacts/
 
   package-linux-qt6:
     name: Package Linux Qt6
