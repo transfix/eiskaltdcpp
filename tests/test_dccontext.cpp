@@ -61,13 +61,14 @@ TEST_CASE("Multiple DCContext instances can coexist", "[DCContext]") {
 
 // ── Singleton::newInstance / deleteInstance tests ────────────────────────
 
-namespace {
+namespace test_dccontext_detail {
 // Minimal singleton-compatible type for isolated testing.
 struct FakeMgr : public Singleton<FakeMgr> {
     int value = 42;
 };
 template<> FakeMgr* Singleton<FakeMgr>::instance = nullptr;
-} // anonymous namespace
+} // namespace test_dccontext_detail
+using test_dccontext_detail::FakeMgr;
 
 TEST_CASE("Singleton newInstance creates and deleteInstance destroys", "[Singleton]") {
     REQUIRE(FakeMgr::getInstance() == nullptr);
