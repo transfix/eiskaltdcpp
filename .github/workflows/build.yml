@@ -401,21 +401,24 @@ jobs:
         New-Item -ItemType Directory -Force -Path artifacts
         Copy-Item build/eiskaltdcpp-qt/eiskaltdcpp-qt.exe artifacts/
         windeployqt --release --no-translations artifacts/eiskaltdcpp-qt.exe
+
+        # Copy all vcpkg runtime DLLs that the exe (and its deps) need
         $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
-        $dllsToCopy = @(
-          "libssl-*-x64.dll", "libcrypto-*-x64.dll",
-          "bz2.dll", "zlib1.dll", "miniupnpc.dll",
-          "pcre2-8.dll", "lua*.dll",
-          "intl-*.dll", "iconv-*.dll",
-          "idn2-*.dll", "unistring-*.dll",
-          "charset-*.dll"
-        )
-        foreach ($pattern in $dllsToCopy) {
-          $files = Get-ChildItem -Path $vcpkgBin -Filter $pattern -ErrorAction SilentlyContinue
-          foreach ($f in $files) {
-            Copy-Item $f.FullName artifacts/ -ErrorAction SilentlyContinue
+        $vcpkgDlls = Get-ChildItem -Path $vcpkgBin -Filter "*.dll" -ErrorAction SilentlyContinue
+        # Build a set of DLL names already in artifacts (from windeployqt)
+        $existing = @{}
+        Get-ChildItem artifacts/*.dll -ErrorAction SilentlyContinue | ForEach-Object { $existing[$_.Name.ToLower()] = $true }
+        # Copy all vcpkg DLLs not already present
+        foreach ($dll in $vcpkgDlls) {
+          if (-not $existing[$dll.Name.ToLower()]) {
+            Copy-Item $dll.FullName artifacts/ -ErrorAction SilentlyContinue
           }
         }
+        # List bundled DLLs for CI log visibility
+        Write-Host "=== Bundled DLLs ==="
+        $bundled = Get-ChildItem artifacts/*.dll
+        Write-Host "Count: $($bundled.Count)"
+        $bundled | ForEach-Object { Write-Host $_.Name }
         Copy-Item -Recurse data/emoticons artifacts/resources/emoticons -ErrorAction SilentlyContinue
         Copy-Item -Recurse data/sounds artifacts/resources/sounds -ErrorAction SilentlyContinue
         Copy-Item -Recurse data/icons artifacts/resources/icons -ErrorAction SilentlyContinue
