@@ -144,7 +144,27 @@ jobs:
       run: |
         vcpkg install --triplet x64-windows `
           openssl bzip2 zlib miniupnpc pcre2 lua `
-          libiconv libidn2 gettext
+          libiconv libidn2 "gettext[tools]"
+
+    - name: List installed gettext files (debug)
+      shell: pwsh
+      run: |
+        $base = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
+        Write-Host "=== gettext headers ==="
+        Get-ChildItem -Path "$base/include" -Filter "*intl*" -ErrorAction SilentlyContinue
+        Write-Host "=== gettext libs ==="
+        Get-ChildItem -Path "$base/lib" -Filter "*intl*" -ErrorAction SilentlyContinue
+        Write-Host "=== gettext bin ==="
+        Get-ChildItem -Path "$base/bin" -Filter "*intl*" -ErrorAction SilentlyContinue
+        Write-Host "=== gettext tools ==="
+        if (Test-Path "$base/tools/gettext") {
+          Get-ChildItem -Path "$base/tools/gettext" -Recurse -ErrorAction SilentlyContinue
+        } else {
+          Write-Host "No tools/gettext directory found"
+          if (Test-Path "$base/tools") {
+            Get-ChildItem -Path "$base/tools" -ErrorAction SilentlyContinue
+          }
+        }
 
     - name: Add vcpkg tools to PATH
       shell: pwsh
@@ -366,7 +386,7 @@ jobs:
       run: |
         vcpkg install --triplet x64-windows `
           openssl bzip2 zlib miniupnpc pcre2 lua `
-          libiconv libidn2 gettext
+          libiconv libidn2 "gettext[tools]"
 
     - name: Download build tree
       uses: actions/download-artifact@v4
