@@ -550,10 +550,11 @@ jobs:
 
     - name: Build AppImage
       run: |
-        # Install linuxdeploy + Qt plugin
-        wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-        wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
-        chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+        # Install linuxdeploy + Qt plugin into a tools subdirectory
+        mkdir -p tools
+        wget -q -P tools https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        wget -q -P tools https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+        chmod +x tools/linuxdeploy-x86_64.AppImage tools/linuxdeploy-plugin-qt-x86_64.AppImage
 
         # Prepare AppDir from cmake install
         DESTDIR="$(pwd)/AppDir" cmake --install build
@@ -574,7 +575,9 @@ jobs:
         export QMAKE=$(which qmake6 2>/dev/null || which qmake)
         export VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
         export LD_LIBRARY_PATH="$(pwd)/AppDir/usr/lib:$LD_LIBRARY_PATH"
-        ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage \
+        mkdir -p dist
+        export OUTPUT="dist/EiskaltDC++-Qt6-${VERSION}-x86_64.AppImage"
+        ./tools/linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage \
           --desktop-file AppDir/usr/share/applications/eiskaltdcpp-qt.desktop \
           --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png || true
 
@@ -582,7 +585,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: eiskaltdcpp-qt6-linux-appimage
-        path: "*.AppImage"
+        path: dist/*.AppImage
         if-no-files-found: warn
 
   package-linux-gtk3:
@@ -658,8 +661,9 @@ jobs:
 
     - name: Build AppImage
       run: |
-        wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-        chmod +x linuxdeploy-x86_64.AppImage
+        mkdir -p tools
+        wget -q -P tools https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        chmod +x tools/linuxdeploy-x86_64.AppImage
 
         DESTDIR="$(pwd)/AppDir" cmake --install build
 
@@ -676,7 +680,9 @@ jobs:
 
         export VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
         export LD_LIBRARY_PATH="$(pwd)/AppDir/usr/lib:$LD_LIBRARY_PATH"
-        ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage \
+        mkdir -p dist
+        export OUTPUT="dist/EiskaltDC++-GTK3-${VERSION}-x86_64.AppImage"
+        ./tools/linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage \
           --desktop-file AppDir/usr/share/applications/eiskaltdcpp-gtk.desktop \
           --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png || true
 
@@ -684,5 +690,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: eiskaltdcpp-gtk3-linux-appimage
-        path: "*.AppImage"
+        path: dist/*.AppImage
         if-no-files-found: warn
