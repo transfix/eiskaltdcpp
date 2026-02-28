@@ -569,6 +569,8 @@ jobs:
         path: "*.deb"
 
     - name: Build AppImage
+      env:
+        APPIMAGE_EXTRACT_AND_RUN: '1'
       run: |
         # Install linuxdeploy + Qt plugin into a tools subdirectory
         mkdir -p tools
@@ -598,8 +600,8 @@ jobs:
         export OUTPUT="EiskaltDC++-Qt6-${VERSION}-x86_64.AppImage"
         ./tools/linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage \
           --desktop-file AppDir/usr/share/applications/eiskaltdcpp-qt.desktop \
-          --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png || true
-        ls -la EiskaltDC++*.AppImage 2>/dev/null || echo 'WARNING: No AppImage output found'
+          --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png
+        ls -la EiskaltDC++*.AppImage
 
     - name: Upload AppImage
       uses: actions/upload-artifact@v4
@@ -680,6 +682,8 @@ jobs:
         path: "*.deb"
 
     - name: Build AppImage
+      env:
+        APPIMAGE_EXTRACT_AND_RUN: '1'
       run: |
         mkdir -p tools
         wget -q -P tools https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
@@ -703,8 +707,8 @@ jobs:
         export OUTPUT="EiskaltDC++-GTK3-${VERSION}-x86_64.AppImage"
         ./tools/linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage \
           --desktop-file AppDir/usr/share/applications/eiskaltdcpp-gtk.desktop \
-          --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png || true
-        ls -la EiskaltDC++*.AppImage 2>/dev/null || echo 'WARNING: No AppImage output found'
+          --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png
+        ls -la EiskaltDC++*.AppImage
 
     - name: Upload AppImage
       uses: actions/upload-artifact@v4
