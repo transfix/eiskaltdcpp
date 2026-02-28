@@ -95,7 +95,7 @@ private:
     string lastMyInfoC;
     string lastMyInfoD;
 
-    typedef list<pair<string, uint32_t> > FloodMap;
+    typedef list<pair<string, uint64_t> > FloodMap;
     typedef FloodMap::iterator FloodIter;
     FloodMap seekers;
     FloodMap flooders;

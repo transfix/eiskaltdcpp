@@ -12,6 +12,10 @@ else ()
     set (PROJECT_NAME_GLOBAL "eiskaltdcpp") # Simplifies packaging in GNU/Linux distros
 endif ()
 
+if (WIN32)
+    add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+endif ()
+
 include (CheckCXXSourceCompiles)
 include (CheckIncludeFile)
 include (CheckIncludeFiles)

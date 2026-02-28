@@ -150,7 +150,7 @@ Segment QueueItem::getNextSegment(int64_t blockSize, int64_t wantedSize, int64_t
 
         // Convert block index to file position
         for(PartsInfo::const_iterator i = partialSource->getPartialInfo().begin(); i != partialSource->getPartialInfo().end(); ++i)
-            posArray.push_back(min(getSize(), (int64_t)(*i) * blockSize));
+            posArray.push_back(std::min(getSize(), (int64_t)(*i) * blockSize));
     }
 
     /***************************/
