@@ -156,7 +156,7 @@ jobs:
     - name: Cache vcpkg packages
       uses: actions/cache@v4
       with:
-        path: ${{ env.VCPKG_INSTALLATION_ROOT }}/installed
+        path: C:/vcpkg/installed
         key: vcpkg-x64-windows-${{ hashFiles('.github/workflows/build.yml') }}
         restore-keys: vcpkg-x64-windows-
 
@@ -393,7 +393,7 @@ jobs:
     - name: Cache vcpkg packages
       uses: actions/cache@v4
       with:
-        path: ${{ env.VCPKG_INSTALLATION_ROOT }}/installed
+        path: C:/vcpkg/installed
         key: vcpkg-x64-windows-${{ hashFiles('.github/workflows/build.yml') }}
         restore-keys: vcpkg-x64-windows-
 
