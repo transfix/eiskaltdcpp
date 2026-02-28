@@ -207,8 +207,8 @@ void HashThread::calculate_tth() {
     memset(buf, 0, BUF_SIZE);
 
     try {
-        File f(Text::fromT(_tq(file_name)),File::READ, File::OPEN);
-        TigerTree tth(max(TigerTree::calcBlockSize(f.getSize(), 10), static_cast<int64_t>(MIN_BLOCK_SIZE)));
+        File f(_tq(file_name), File::READ, File::OPEN);
+        TigerTree tth(std::max(TigerTree::calcBlockSize(f.getSize(), 10), static_cast<int64_t>(MIN_BLOCK_SIZE)));
         if(f.getSize() > 0) {
             size_t n = BUF_SIZE;
             while( (n = f.read(&buf[0], n)) > 0) {
