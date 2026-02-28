@@ -57,15 +57,15 @@ static int aux_do (lua_State *L, int status) {
     return status;
 }
 
-LUALIB_API int lua_dofile (lua_State *L, const char *filename) {
+static int lua_dofile (lua_State *L, const char *filename) {
     return aux_do(L, luaL_loadfile(L, filename));
 }
 
-LUALIB_API int lua_dobuffer (lua_State *L, const char *buff, size_t size, const char *name) {
+static int lua_dobuffer (lua_State *L, const char *buff, size_t size, const char *name) {
     return aux_do(L, luaL_loadbuffer(L, buff, size, name));
 }
 
-LUALIB_API int lua_dostring (lua_State *L, const char *str) {
+static int lua_dostring (lua_State *L, const char *str) {
     return lua_dobuffer(L, str, strlen(str), str);
 }
 
