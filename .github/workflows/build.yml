@@ -568,48 +568,6 @@ jobs:
         name: eiskaltdcpp-qt6-linux-deb
         path: "*.deb"
 
-    - name: Build AppImage
-      env:
-        APPIMAGE_EXTRACT_AND_RUN: '1'
-      run: |
-        # Install linuxdeploy + Qt plugin into a tools subdirectory
-        mkdir -p tools
-        wget -q -P tools https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-        wget -q -P tools https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
-        chmod +x tools/linuxdeploy-x86_64.AppImage tools/linuxdeploy-plugin-qt-x86_64.AppImage
-
-        # Prepare AppDir from cmake install
-        DESTDIR="$(pwd)/AppDir" cmake --install build
-
-        # Create .desktop if missing
-        mkdir -p AppDir/usr/share/applications
-        if [ ! -f AppDir/usr/share/applications/eiskaltdcpp-qt.desktop ]; then
-          printf '[Desktop Entry]\nType=Application\nName=EiskaltDC++\nExec=eiskaltdcpp-qt\nIcon=eiskaltdcpp\nCategories=Network;FileTransfer;\n' > AppDir/usr/share/applications/eiskaltdcpp-qt.desktop
-        fi
-
-        # Ensure icon exists
-        mkdir -p AppDir/usr/share/icons/hicolor/128x128/apps
-        find AppDir -name 'eiskaltdcpp.png' -size +1k | head -1 | xargs -I{} cp {} AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png 2>/dev/null || true
-        if [ ! -f AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png ]; then
-          find data/icons -name '*.png' | head -1 | xargs -I{} cp {} AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png 2>/dev/null || true
-        fi
-
-        export QMAKE=$(which qmake6 2>/dev/null || which qmake)
-        export VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
-        export LD_LIBRARY_PATH="$(pwd)/AppDir/usr/lib:$LD_LIBRARY_PATH"
-        export OUTPUT="EiskaltDC++-Qt6-${VERSION}-x86_64.AppImage"
-        ./tools/linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage \
-          --desktop-file AppDir/usr/share/applications/eiskaltdcpp-qt.desktop \
-          --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png
-        ls -la EiskaltDC++*.AppImage
-
-    - name: Upload AppImage
-      uses: actions/upload-artifact@v4
-      with:
-        name: eiskaltdcpp-qt6-linux-appimage
-        path: EiskaltDC++-Qt6-*.AppImage
-        if-no-files-found: warn
-
   package-linux-gtk3:
     name: Package Linux GTK3
     runs-on: ubuntu-24.04
@@ -680,39 +638,3 @@ jobs:
       with:
         name: eiskaltdcpp-gtk3-linux-deb
         path: "*.deb"
-
-    - name: Build AppImage
-      env:
-        APPIMAGE_EXTRACT_AND_RUN: '1'
-      run: |
-        mkdir -p tools
-        wget -q -P tools https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-        chmod +x tools/linuxdeploy-x86_64.AppImage
-
-        DESTDIR="$(pwd)/AppDir" cmake --install build
-
-        mkdir -p AppDir/usr/share/applications
-        if [ ! -f AppDir/usr/share/applications/eiskaltdcpp-gtk.desktop ]; then
-          printf '[Desktop Entry]\nType=Application\nName=EiskaltDC++ GTK\nExec=eiskaltdcpp-gtk\nIcon=eiskaltdcpp\nCategories=Network;FileTransfer;\n' > AppDir/usr/share/applications/eiskaltdcpp-gtk.desktop
-        fi
-
-        mkdir -p AppDir/usr/share/icons/hicolor/128x128/apps
-        find AppDir -name 'eiskaltdcpp.png' -size +1k | head -1 | xargs -I{} cp {} AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png 2>/dev/null || true
-        if [ ! -f AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png ]; then
-          find data/icons -name '*.png' | head -1 | xargs -I{} cp {} AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png 2>/dev/null || true
-        fi
-
-        export VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
-        export LD_LIBRARY_PATH="$(pwd)/AppDir/usr/lib:$LD_LIBRARY_PATH"
-        export OUTPUT="EiskaltDC++-GTK3-${VERSION}-x86_64.AppImage"
-        ./tools/linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage \
-          --desktop-file AppDir/usr/share/applications/eiskaltdcpp-gtk.desktop \
-          --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png
-        ls -la EiskaltDC++*.AppImage
-
-    - name: Upload AppImage
-      uses: actions/upload-artifact@v4
-      with:
-        name: eiskaltdcpp-gtk3-linux-appimage
-        path: EiskaltDC++-GTK3-*.AppImage
-        if-no-files-found: warn
