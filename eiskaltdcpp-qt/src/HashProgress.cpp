@@ -160,7 +160,7 @@ void HashProgress::timerTick(){
         else {
             double ss = bytes / speedStat;
 
-            eta = _q(Text::toT(Util::formatSeconds((int64_t)(ss))));
+            eta = _q(Util::formatSeconds((int64_t)(ss)));
         }
 
 #if defined(USE_PROGRESS_BARS)

@@ -61,7 +61,7 @@ public:
     QString arena_title;
     QString token;
 
-    TStringList currentSearch;
+    StringList currentSearch;
 
     qulonglong dropped;
     qulonglong results;
@@ -960,7 +960,7 @@ void SearchFrame::slotStartSearch(){
 #endif
 
     QString str_size = lineEdit_SIZE->text();
-    double lsize = Util::toDouble(Text::fromT(str_size.toStdString()));
+    double lsize = Util::toDouble(str_size.toStdString());
 
     switch (comboBox_SIZE->currentIndex()){
         case 1:
@@ -1676,7 +1676,7 @@ void SearchFrame::on(SearchManagerListener::SR, const dcpp::SearchResultPtr& aRe
     }
 
     if(d->isHash) {
-        if(aResult->getType() != SearchResult::TYPE_FILE || TTHValue(Text::fromT(d->currentSearch[0])) != aResult->getTTH()) {
+        if(aResult->getType() != SearchResult::TYPE_FILE || TTHValue(d->currentSearch[0]) != aResult->getTTH()) {
             d->dropped++;
 
             return;
