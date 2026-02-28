@@ -595,17 +595,17 @@ jobs:
         export QMAKE=$(which qmake6 2>/dev/null || which qmake)
         export VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
         export LD_LIBRARY_PATH="$(pwd)/AppDir/usr/lib:$LD_LIBRARY_PATH"
-        mkdir -p dist
-        export OUTPUT="dist/EiskaltDC++-Qt6-${VERSION}-x86_64.AppImage"
+        export OUTPUT="EiskaltDC++-Qt6-${VERSION}-x86_64.AppImage"
         ./tools/linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage \
           --desktop-file AppDir/usr/share/applications/eiskaltdcpp-qt.desktop \
           --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png || true
+        ls -la EiskaltDC++*.AppImage 2>/dev/null || echo 'WARNING: No AppImage output found'
 
     - name: Upload AppImage
       uses: actions/upload-artifact@v4
       with:
         name: eiskaltdcpp-qt6-linux-appimage
-        path: dist/*.AppImage
+        path: EiskaltDC++-Qt6-*.AppImage
         if-no-files-found: warn
 
   package-linux-gtk3:
@@ -700,15 +700,15 @@ jobs:
 
         export VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
         export LD_LIBRARY_PATH="$(pwd)/AppDir/usr/lib:$LD_LIBRARY_PATH"
-        mkdir -p dist
-        export OUTPUT="dist/EiskaltDC++-GTK3-${VERSION}-x86_64.AppImage"
+        export OUTPUT="EiskaltDC++-GTK3-${VERSION}-x86_64.AppImage"
         ./tools/linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage \
           --desktop-file AppDir/usr/share/applications/eiskaltdcpp-gtk.desktop \
           --icon-file AppDir/usr/share/icons/hicolor/128x128/apps/eiskaltdcpp.png || true
+        ls -la EiskaltDC++*.AppImage 2>/dev/null || echo 'WARNING: No AppImage output found'
 
     - name: Upload AppImage
       uses: actions/upload-artifact@v4
       with:
         name: eiskaltdcpp-gtk3-linux-appimage
-        path: dist/*.AppImage
+        path: EiskaltDC++-GTK3-*.AppImage
         if-no-files-found: warn
