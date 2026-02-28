@@ -45,10 +45,23 @@ macro(GETTEXT_FIND_POTENTIAL_DIRS)
       "${GETTEXT_INCLUDE_DIR}"
       "${GETTEXT_SEARCH_PATH}"
       )
-    set(potential_bin_dirs ${potential_bin_dirs} "${path}/../bin")
-    set(potential_lib_dirs ${potential_lib_dirs} "${path}/../lib")
-    set(potential_include_dirs ${potential_include_dirs} "${path}/../include")
+    set(potential_bin_dirs ${potential_bin_dirs} "${path}/../bin" "${path}/bin")
+    set(potential_lib_dirs ${potential_lib_dirs} "${path}/../lib" "${path}/lib")
+    set(potential_include_dirs ${potential_include_dirs} "${path}/../include" "${path}/include")
   endforeach(path)
+
+  # Also search vcpkg-style tool directories and CMAKE_PREFIX_PATH
+  foreach(prefix ${CMAKE_PREFIX_PATH})
+    set(potential_bin_dirs ${potential_bin_dirs}
+      "${prefix}/bin"
+      "${prefix}/tools/gettext/bin")
+    set(potential_lib_dirs ${potential_lib_dirs} "${prefix}/lib")
+    set(potential_include_dirs ${potential_include_dirs} "${prefix}/include")
+  endforeach()
+  if(GETTEXT_SEARCH_PATH)
+    set(potential_bin_dirs ${potential_bin_dirs}
+      "${GETTEXT_SEARCH_PATH}/tools/gettext/bin")
+  endif()
 
 endmacro(GETTEXT_FIND_POTENTIAL_DIRS)
 
@@ -89,7 +102,7 @@ macro(GETTEXT_FIND_RUNTIME_LIBRARY)
       "Path to gettext intl library (leave it empty to use the system one)")
   else(HAVE_GETTEXT)
     find_library(GETTEXT_INTL_LIBRARY
-      NAMES intl
+      NAMES intl libintl
       PATHS ${potential_lib_dirs}
       DOC "Path to gettext intl library")
     if(NOT GETTEXT_INTL_LIBRARY)
