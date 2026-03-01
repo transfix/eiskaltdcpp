@@ -430,11 +430,17 @@ jobs:
           }
         }
         # Copy MSVC runtime DLLs so the app works without VC Redistributable installed
-        $vcRedist = Join-Path $env:VCToolsRedistDir "x64" "Microsoft.VC143.CRT"
-        if (Test-Path $vcRedist) {
-          Copy-Item "$vcRedist\msvcp140*.dll"    artifacts/ -ErrorAction SilentlyContinue
-          Copy-Item "$vcRedist\vcruntime140*.dll" artifacts/ -ErrorAction SilentlyContinue
-          Copy-Item "$vcRedist\concrt140.dll"    artifacts/ -ErrorAction SilentlyContinue
+        $vcRedistBase = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC"
+        $crtDir = Get-ChildItem -Path $vcRedistBase -Directory -ErrorAction SilentlyContinue |
+                    Sort-Object Name -Descending | Select-Object -First 1
+        if ($crtDir) {
+          $vcCrt = Join-Path $crtDir.FullName "x64" "Microsoft.VC143.CRT"
+          if (Test-Path $vcCrt) {
+            Copy-Item "$vcCrt\msvcp140*.dll"    artifacts/ -ErrorAction SilentlyContinue
+            Copy-Item "$vcCrt\vcruntime140*.dll" artifacts/ -ErrorAction SilentlyContinue
+            Copy-Item "$vcCrt\concrt140.dll"    artifacts/ -ErrorAction SilentlyContinue
+            Write-Host "Copied VC runtime from $vcCrt"
+          }
         }
         # Also grab the Universal CRT (ucrtbase) if not already present
         $ucrt = "${env:SystemRoot}\System32\ucrtbase.dll"
