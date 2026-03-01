@@ -429,6 +429,18 @@ jobs:
             Copy-Item $dll.FullName artifacts/ -ErrorAction SilentlyContinue
           }
         }
+        # Copy MSVC runtime DLLs so the app works without VC Redistributable installed
+        $vcRedist = Join-Path $env:VCToolsRedistDir "x64" "Microsoft.VC143.CRT"
+        if (Test-Path $vcRedist) {
+          Copy-Item "$vcRedist\msvcp140*.dll"    artifacts/ -ErrorAction SilentlyContinue
+          Copy-Item "$vcRedist\vcruntime140*.dll" artifacts/ -ErrorAction SilentlyContinue
+          Copy-Item "$vcRedist\concrt140.dll"    artifacts/ -ErrorAction SilentlyContinue
+        }
+        # Also grab the Universal CRT (ucrtbase) if not already present
+        $ucrt = "${env:SystemRoot}\System32\ucrtbase.dll"
+        if ((Test-Path $ucrt) -and -not (Test-Path "artifacts\ucrtbase.dll")) {
+          Copy-Item $ucrt artifacts/ -ErrorAction SilentlyContinue
+        }
         # List bundled DLLs for CI log visibility
         Write-Host "=== Bundled DLLs ==="
         $bundled = Get-ChildItem artifacts/*.dll
