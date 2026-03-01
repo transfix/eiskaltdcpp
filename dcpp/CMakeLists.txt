@@ -77,11 +77,12 @@ if (GETTEXT_FOUND)
             return 0;
         }"
         HAVE_NL_MSG_CAT_CNTR)
-    set_property(SOURCE ${PROJECT_SOURCE_DIR}/Util.h
-                 PROPERTY COMPILE_DEFINITIONS HAVE_NL_MSG_CAT_CNTR APPEND)
-    set_property(SOURCE ${PROJECT_SOURCE_DIR}/Util.cpp
-                 PROPERTY COMPILE_DEFINITIONS HAVE_NL_MSG_CAT_CNTR APPEND)
-    if (NOT HAVE_NL_MSG_CAT_CNTR)
+    if (HAVE_NL_MSG_CAT_CNTR)
+        set_property(SOURCE ${PROJECT_SOURCE_DIR}/Util.h
+                     PROPERTY COMPILE_DEFINITIONS HAVE_NL_MSG_CAT_CNTR APPEND)
+        set_property(SOURCE ${PROJECT_SOURCE_DIR}/Util.cpp
+                     PROPERTY COMPILE_DEFINITIONS HAVE_NL_MSG_CAT_CNTR APPEND)
+    else ()
         message (STATUS "Build without GNU libintl library")
     endif ()
 endif (GETTEXT_FOUND)
