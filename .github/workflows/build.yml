@@ -610,18 +610,16 @@ jobs:
         cp -r data/sounds artifacts/resources/sounds || true
         cp -r data/icons artifacts/resources/icons || true
         # Create a launcher script that sets GTK environment variables
-        cat > artifacts/eiskaltdcpp-gtk.cmd << 'LAUNCHER'
-        @echo off
-        set "HERE=%~dp0"
-        set "GDK_PIXBUF_MODULE_FILE=%HERE%lib\gdk-pixbuf-2.0\2.10.0\loaders.cache"
-        set "GDK_PIXBUF_MODULEDIR=%HERE%lib\gdk-pixbuf-2.0\2.10.0\loaders"
-        set "GSETTINGS_SCHEMA_DIR=%HERE%share\glib-2.0\schemas"
-        set "GTK_EXE_PREFIX=%HERE%"
-        set "XDG_DATA_DIRS=%HERE%share"
-        start "" "%HERE%eiskaltdcpp-gtk.exe" %*
-LAUNCHER
-        # Remove leading spaces from heredoc
-        sed -i 's/^        //' artifacts/eiskaltdcpp-gtk.cmd
+        printf '%s\r\n' \
+          '@echo off' \
+          'set "HERE=%~dp0"' \
+          'set "GDK_PIXBUF_MODULE_FILE=%HERE%lib\gdk-pixbuf-2.0\2.10.0\loaders.cache"' \
+          'set "GDK_PIXBUF_MODULEDIR=%HERE%lib\gdk-pixbuf-2.0\2.10.0\loaders"' \
+          'set "GSETTINGS_SCHEMA_DIR=%HERE%share\glib-2.0\schemas"' \
+          'set "GTK_EXE_PREFIX=%HERE%"' \
+          'set "XDG_DATA_DIRS=%HERE%share"' \
+          'start "" "%HERE%eiskaltdcpp-gtk.exe" %*' \
+          > artifacts/eiskaltdcpp-gtk.cmd
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
