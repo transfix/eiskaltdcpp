@@ -413,8 +413,9 @@ jobs:
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force -Path artifacts
-        Copy-Item build/eiskaltdcpp-qt/eiskaltdcpp-qt.exe artifacts/
-        windeployqt --release --no-translations artifacts/eiskaltdcpp-qt.exe
+        # The exe is named EiskaltDC++.exe on Windows (OUTPUT_NAME = PROJECT_NAME_GLOBAL)
+        Copy-Item 'build/eiskaltdcpp-qt/EiskaltDC++.exe' artifacts/
+        windeployqt --release --no-translations 'artifacts/EiskaltDC++.exe'
 
         # Copy all vcpkg runtime DLLs that the exe (and its deps) need
         $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
