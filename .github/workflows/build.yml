@@ -543,8 +543,9 @@ jobs:
       if: matrix.build_type == 'Release'
       shell: pwsh
       run: |
+        # NSIS is pre-installed on windows-latest runners
+        Write-Host "NSIS: $(& 'C:\Program Files (x86)\NSIS\makensis.exe' /VERSION 2>&1)"
         New-Item -ItemType Directory -Force -Path install-nsis
-        # Use CPack with CPACK_INSTALLED_DIRECTORIES to pack the prepared install tree
         $version = (Select-String -Path CMakeLists.txt -Pattern 'set \(APP_VERSION "([^"]+)"' |
                     ForEach-Object { $_.Matches.Groups[1].Value }) | Select-Object -First 1
         cpack -G NSIS `
@@ -559,10 +560,11 @@ jobs:
           -D "CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL=ON" `
           -D "CPACK_INSTALLED_DIRECTORIES=$PWD/install;." `
           -D "CPACK_PACKAGE_DIRECTORY=$PWD/install-nsis" `
-          --verbose 2>&1 | Tee-Object -Variable cpackOut
-        Write-Host "`n=== NSIS output ==="
-        Get-ChildItem install-nsis/ -ErrorAction SilentlyContinue
-      continue-on-error: true
+          --verbose
+        Write-Host "`n=== NSIS installer ==="
+        Get-ChildItem install-nsis/*.exe | ForEach-Object {
+          Write-Host "  $($_.Name)  ($([math]::Round($_.Length / 1MB, 1)) MB)"
+        }
 
     - name: Upload zip artifacts
       uses: actions/upload-artifact@v4
@@ -576,7 +578,6 @@ jobs:
       with:
         name: eiskaltdcpp-qt6-windows-x64-installer
         path: install-nsis/*.exe
-        if-no-files-found: ignore
 
   package-windows-gtk3:
     name: Package Windows GTK3 (${{ matrix.build_type }})
