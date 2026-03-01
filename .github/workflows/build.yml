@@ -186,6 +186,7 @@ jobs:
         $vcpkgBase = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
         cmake -B build -G Ninja `
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+          -DCMAKE_INSTALL_PREFIX="$PWD/install" `
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
           -DGETTEXT_SEARCH_PATH="$vcpkgBase" `
           -DUSE_QT6=ON `
@@ -259,6 +260,7 @@ jobs:
       run: |
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_INSTALL_PREFIX="$PWD/install" \
           -DUSE_QT6=OFF \
           -DUSE_GTK3=ON \
           -DUSE_MINIUPNP=ON \
@@ -420,27 +422,47 @@ jobs:
           openssl bzip2 zlib miniupnpc pcre2 lua `
           libiconv libidn2 "gettext[tools]"
 
-    - name: Download build tree
-      uses: actions/download-artifact@v4
-      with:
-        name: windows-qt6-build-${{ matrix.build_type }}
-        path: build/
-
-    - name: Package
+    - name: Re-run CMake configure (restore install metadata)
       shell: pwsh
       run: |
-        New-Item -ItemType Directory -Force -Path artifacts
-        Copy-Item 'build/eiskaltdcpp-qt/EiskaltDC++.exe' artifacts/
+        $vcpkgBase = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
+        cmake -B build -G Ninja `
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+          -DCMAKE_INSTALL_PREFIX="$PWD/install" `
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+          -DGETTEXT_SEARCH_PATH="$vcpkgBase" `
+          -DUSE_QT6=ON `
+          -DUSE_GTK3=OFF `
+          -DUSE_JS=ON `
+          -DUSE_QT_QML=OFF `
+          -DUSE_MINIUPNP=ON `
+          -DWITH_DHT=ON `
+          -DUSE_IDN2=ON `
+          -DLUA_SCRIPT=ON `
+          -DPERL_REGEX=ON `
+          -DUSE_ASPELL=OFF `
+          -DDBUS_NOTIFY=OFF `
+          -DWITH_EMOTICONS=ON `
+          -DWITH_SOUNDS=ON `
+          -DBUILD_TESTS=OFF `
+          -DOPENSSL_MSVC=ON
 
-        # Copy PDB debug symbols when available
-        Get-ChildItem 'build/eiskaltdcpp-qt/*.pdb' -ErrorAction SilentlyContinue |
-          ForEach-Object { Copy-Item $_.FullName artifacts/ }
+    - name: Install
+      shell: pwsh
+      run: cmake --install build --config ${{ matrix.build_type }}
 
-        # Deploy Qt DLLs and plugins
+    - name: Deploy Qt DLLs
+      shell: pwsh
+      run: |
         $deployFlag = if ('${{ matrix.build_type }}' -eq 'Debug') { '--debug' } else { '--release' }
-        windeployqt $deployFlag --no-translations 'artifacts/EiskaltDC++.exe'
+        # The exe is at install root (BINDIR=.) named EiskaltDC++.exe
+        $exePath = Get-ChildItem install/*.exe | Select-Object -First 1
+        windeployqt $deployFlag --no-translations $exePath.FullName
 
-        # --- Resolve remaining DLLs precisely using dumpbin /dependents ---
+    - name: Resolve and copy DLL dependencies (dumpbin)
+      shell: pwsh
+      run: |
+        $installDir = "install"
         $vcpkgBase = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
         $searchPaths = if ('${{ matrix.build_type }}' -eq 'Debug') {
           @("$vcpkgBase/debug/bin", "$vcpkgBase/bin")
@@ -448,7 +470,6 @@ jobs:
           @("$vcpkgBase/bin")
         }
 
-        # VC runtime DLL name pattern (copy from System32)
         $vcRuntimeRe = '^(msvcp\d|vcruntime\d|concrt\d|ucrtbase|vcomp\d)'
 
         $visited = [System.Collections.Generic.HashSet[string]]::new(
@@ -456,9 +477,8 @@ jobs:
         $toCopy  = [ordered]@{}
         $queue   = [System.Collections.Queue]::new()
 
-        # Seed the walk with the exe and every DLL windeployqt already placed
-        $queue.Enqueue((Resolve-Path 'artifacts/EiskaltDC++.exe').Path)
-        Get-ChildItem artifacts/*.dll -ErrorAction SilentlyContinue |
+        # Seed with all exe and dll files in the install tree
+        Get-ChildItem $installDir -Recurse -Include *.exe,*.dll -ErrorAction SilentlyContinue |
           ForEach-Object { $queue.Enqueue($_.FullName) }
 
         while ($queue.Count -gt 0) {
@@ -466,23 +486,22 @@ jobs:
           $fileName = [IO.Path]::GetFileName($file)
           if (-not $visited.Add($fileName)) { continue }
 
-          # Parse dumpbin /dependents output for DLL names
           $deps = & dumpbin /nologo /dependents $file 2>&1 |
                   Select-String '^\s+(\S+\.dll)\s*$' |
                   ForEach-Object { $_.Matches.Groups[1].Value }
 
           foreach ($dep in $deps) {
-            if ($visited.Contains($dep))                      { continue }
-            if ($dep -like 'api-ms-*' -or $dep -like 'ext-ms-*') { continue }
+            if ($visited.Contains($dep))                                    { continue }
+            if ($dep -like 'api-ms-*' -or $dep -like 'ext-ms-*')           { continue }
 
-            # Already in artifacts (placed by windeployqt or earlier iteration)?
-            $inArtifacts = Join-Path artifacts $dep
-            if (Test-Path $inArtifacts) {
-              $queue.Enqueue((Resolve-Path $inArtifacts).Path)
+            # Already in install dir?
+            $inInstall = Get-ChildItem "$installDir/$dep" -ErrorAction SilentlyContinue
+            if ($inInstall) {
+              $queue.Enqueue($inInstall.FullName)
               continue
             }
 
-            # Search vcpkg bin directories
+            # Search vcpkg
             $found = $false
             foreach ($sp in $searchPaths) {
               $candidate = Join-Path $sp $dep
@@ -495,37 +514,69 @@ jobs:
             }
             if ($found) { continue }
 
-            # VC runtime → copy from System32
+            # VC runtime from System32
             if ($dep -match $vcRuntimeRe) {
               $sys32 = Join-Path $env:SystemRoot "System32/$dep"
               if (Test-Path $sys32) { $toCopy[$dep] = $sys32 }
             }
-            # Otherwise it is a Windows system DLL (kernel32 etc.) — skip
           }
         }
 
-        # Copy all resolved DLLs into the artifact directory
         foreach ($entry in $toCopy.GetEnumerator()) {
-          Copy-Item $entry.Value artifacts/
+          Copy-Item $entry.Value "$installDir/"
           Write-Host "  dumpbin: $($entry.Key)  <-  $($entry.Value)"
         }
 
-        # Summary
-        Write-Host "`n=== Bundled DLLs ==="
-        $bundled = Get-ChildItem artifacts/*.dll | Sort-Object Name
-        Write-Host "Total: $($bundled.Count)"
-        $bundled | ForEach-Object { Write-Host "  $($_.Name)" }
+        # Copy PDB debug symbols when available
+        Get-ChildItem 'build/eiskaltdcpp-qt/*.pdb' -ErrorAction SilentlyContinue |
+          ForEach-Object { Copy-Item $_.FullName "$installDir/" }
+        Get-ChildItem 'build/dcpp/*.pdb' -ErrorAction SilentlyContinue |
+          ForEach-Object { Copy-Item $_.FullName "$installDir/" }
 
-        # Bundle data files
-        Copy-Item -Recurse data/emoticons artifacts/resources/emoticons -ErrorAction SilentlyContinue
-        Copy-Item -Recurse data/sounds artifacts/resources/sounds -ErrorAction SilentlyContinue
-        Copy-Item -Recurse data/icons artifacts/resources/icons -ErrorAction SilentlyContinue
+        Write-Host "`n=== Install directory contents ==="
+        Get-ChildItem $installDir -Recurse | ForEach-Object {
+          $rel = $_.FullName.Substring((Resolve-Path $installDir).Path.Length + 1)
+          Write-Host "  $rel"
+        }
 
-    - name: Upload artifacts
+    - name: Build NSIS installer (Release only)
+      if: matrix.build_type == 'Release'
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path install-nsis
+        # Use CPack with CPACK_INSTALLED_DIRECTORIES to pack the prepared install tree
+        $version = (Select-String -Path CMakeLists.txt -Pattern 'set \(APP_VERSION "([^"]+)"' |
+                    ForEach-Object { $_.Matches.Groups[1].Value }) | Select-Object -First 1
+        cpack -G NSIS `
+          -D "CPACK_PACKAGE_NAME=EiskaltDC++" `
+          -D "CPACK_PACKAGE_VERSION=$version" `
+          -D "CPACK_PACKAGE_VENDOR=EiskaltDC++ developers" `
+          -D "CPACK_PACKAGE_DESCRIPTION_SUMMARY=EiskaltDC++ - Direct Connect and ADC client" `
+          -D "CPACK_RESOURCE_FILE_LICENSE=$PWD/COPYING" `
+          -D "CPACK_NSIS_DISPLAY_NAME=EiskaltDC++" `
+          -D "CPACK_NSIS_PACKAGE_NAME=EiskaltDC++" `
+          -D "CPACK_NSIS_INSTALL_ROOT=`$PROGRAMFILES64" `
+          -D "CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL=ON" `
+          -D "CPACK_INSTALLED_DIRECTORIES=$PWD/install;." `
+          -D "CPACK_PACKAGE_DIRECTORY=$PWD/install-nsis" `
+          --verbose 2>&1 | Tee-Object -Variable cpackOut
+        Write-Host "`n=== NSIS output ==="
+        Get-ChildItem install-nsis/ -ErrorAction SilentlyContinue
+      continue-on-error: true
+
+    - name: Upload zip artifacts
       uses: actions/upload-artifact@v4
       with:
         name: eiskaltdcpp-qt6-windows-x64-${{ matrix.build_type }}
-        path: artifacts/
+        path: install/
+
+    - name: Upload NSIS installer
+      if: matrix.build_type == 'Release'
+      uses: actions/upload-artifact@v4
+      with:
+        name: eiskaltdcpp-qt6-windows-x64-installer
+        path: install-nsis/*.exe
+        if-no-files-found: ignore
 
   package-windows-gtk3:
     name: Package Windows GTK3 (${{ matrix.build_type }})
@@ -568,48 +619,60 @@ jobs:
         name: windows-gtk3-build-${{ matrix.build_type }}
         path: build/
 
-    - name: Package
+    - name: Re-run CMake configure (restore install metadata)
       run: |
-        mkdir -p artifacts
-        cp build/eiskaltdcpp-gtk/eiskaltdcpp-gtk.exe artifacts/
-        MSYS_BIN="/ucrt64/bin"
-        # Copy the executable's direct and transitive DLL dependencies
-        # Use ldd to find all required DLLs from the MSYS2 environment
-        ldd artifacts/eiskaltdcpp-gtk.exe \
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+          -DUSE_QT6=OFF \
+          -DUSE_GTK3=ON \
+          -DUSE_MINIUPNP=ON \
+          -DWITH_DHT=ON \
+          -DUSE_IDN2=ON \
+          -DLUA_SCRIPT=ON \
+          -DPERL_REGEX=ON \
+          -DUSE_ASPELL=OFF \
+          -DUSE_LIBNOTIFY=ON \
+          -DUSE_LIBCANBERRA=OFF \
+          -DWITH_EMOTICONS=ON \
+          -DWITH_SOUNDS=ON \
+          -DBUILD_TESTS=OFF
+
+    - name: Install
+      run: cmake --install build --config ${{ matrix.build_type }}
+
+    - name: Bundle DLLs and GTK3 runtime
+      run: |
+        # Copy DLL dependencies using ldd
+        ldd install/eiskaltdcpp-gtk.exe \
           | grep -i '/ucrt64/' \
           | awk '{print $3}' \
           | while read -r dll; do
-              cp "$dll" artifacts/ 2>/dev/null || true
+              cp "$dll" install/ 2>/dev/null || true
             done
-        # List bundled DLLs for CI log visibility
+
         echo "=== Bundled DLLs ==="
-        ls -1 artifacts/*.dll | wc -l
-        ls -1 artifacts/*.dll
-        # Bundle GTK3 runtime data (pixbuf loaders, schemas, etc.)
-        mkdir -p artifacts/lib
-        cp -r /ucrt64/lib/gdk-pixbuf-2.0 artifacts/lib/ 2>/dev/null || true
-        # Regenerate loaders.cache with relative paths
-        LOADERS_DIR="artifacts/lib/gdk-pixbuf-2.0/2.10.0/loaders"
+        ls -1 install/*.dll | wc -l
+        ls -1 install/*.dll
+
+        # Bundle GTK3 runtime data
+        mkdir -p install/lib
+        cp -r /ucrt64/lib/gdk-pixbuf-2.0 install/lib/ 2>/dev/null || true
+        LOADERS_DIR="install/lib/gdk-pixbuf-2.0/2.10.0/loaders"
         if [ -d "$LOADERS_DIR" ]; then
-          GDK_PIXBUF_MODULE_FILE="artifacts/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" \
           /ucrt64/bin/gdk-pixbuf-query-loaders.exe "$LOADERS_DIR"/*.dll > \
-            "artifacts/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
-          # Replace absolute paths with relative ones
+            "install/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
           sed -i 's|.*/loaders/|lib/gdk-pixbuf-2.0/2.10.0/loaders/|g' \
-            "artifacts/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
+            "install/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
         fi
-        mkdir -p artifacts/share/glib-2.0
-        cp -r /ucrt64/share/glib-2.0/schemas artifacts/share/glib-2.0/ 2>/dev/null || true
-        # Compile schemas in the bundle
-        /ucrt64/bin/glib-compile-schemas artifacts/share/glib-2.0/schemas/ 2>/dev/null || true
-        mkdir -p artifacts/share/icons
-        cp -r /ucrt64/share/icons/Adwaita artifacts/share/icons/ 2>/dev/null || true
-        cp -r /ucrt64/share/icons/hicolor artifacts/share/icons/ 2>/dev/null || true
-        mkdir -p artifacts/resources
-        cp -r data/emoticons artifacts/resources/emoticons || true
-        cp -r data/sounds artifacts/resources/sounds || true
-        cp -r data/icons artifacts/resources/icons || true
-        # Create a launcher script that sets GTK environment variables
+        mkdir -p install/share/glib-2.0
+        cp -r /ucrt64/share/glib-2.0/schemas install/share/glib-2.0/ 2>/dev/null || true
+        /ucrt64/bin/glib-compile-schemas install/share/glib-2.0/schemas/ 2>/dev/null || true
+        mkdir -p install/share/icons
+        cp -r /ucrt64/share/icons/Adwaita install/share/icons/ 2>/dev/null || true
+        cp -r /ucrt64/share/icons/hicolor install/share/icons/ 2>/dev/null || true
+
+        # Create launcher script
         printf '%s\r\n' \
           '@echo off' \
           'set "HERE=%~dp0"' \
@@ -619,13 +682,16 @@ jobs:
           'set "GTK_EXE_PREFIX=%HERE%"' \
           'set "XDG_DATA_DIRS=%HERE%share"' \
           'start "" "%HERE%eiskaltdcpp-gtk.exe" %*' \
-          > artifacts/eiskaltdcpp-gtk.cmd
+          > install/eiskaltdcpp-gtk.cmd
+
+        echo "=== Install directory ==="
+        find install -type f | sort | head -100
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: eiskaltdcpp-gtk3-windows-x64-${{ matrix.build_type }}
-        path: artifacts/
+        path: install/
 
   package-linux-qt6:
     name: Package Linux Qt6
@@ -813,6 +879,8 @@ jobs:
         # Copy Linux .deb files
         find release-assets/eiskaltdcpp-qt6-linux-deb -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
         find release-assets/eiskaltdcpp-gtk3-linux-deb -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
+        # Copy NSIS installer if present
+        find release-assets/eiskaltdcpp-qt6-windows-x64-installer -name '*.exe' -exec cp {} release/ \; 2>/dev/null || true
         ls -la release/
 
     - name: Create GitHub Release

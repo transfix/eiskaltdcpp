@@ -450,3 +450,34 @@ configure_file ("${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
     IMMEDIATE @ONLY)
 add_custom_target (uninstall
     "${CMAKE_COMMAND}" -P "${CMAKE_BINARY_DIR}/cmake_uninstall.cmake")
+
+# ─── CPack configuration ────────────────────────────────────────────
+set (CPACK_PACKAGE_NAME "${PROJECT_NAME_GLOBAL}")
+set (CPACK_PACKAGE_VERSION "${APP_VERSION}")
+set (CPACK_PACKAGE_VENDOR "EiskaltDC++ developers")
+set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "EiskaltDC++ - Direct Connect and ADC client")
+set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
+
+if (WIN32)
+    # NSIS installer
+    set (CPACK_GENERATOR "NSIS;ZIP")
+    set (CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME_GLOBAL}")
+    set (CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME_GLOBAL}")
+    set (CPACK_NSIS_INSTALL_ROOT "$PROGRAMFILES64")
+    set (CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+    set (CPACK_NSIS_URL_INFO_ABOUT "https://github.com/eiskaltdcpp/eiskaltdcpp")
+    # Start-menu shortcuts
+    set (CPACK_NSIS_CREATE_ICONS_EXTRA
+        "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\${PROJECT_NAME_GLOBAL}.lnk' '$INSTDIR\\\\EiskaltDC++.exe'")
+    set (CPACK_NSIS_DELETE_ICONS_EXTRA
+        "Delete '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\${PROJECT_NAME_GLOBAL}.lnk'")
+    # Desktop shortcut (optional, offered during install)
+    set (CPACK_NSIS_MODIFY_PATH OFF)
+    set (CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
+elseif (APPLE)
+    set (CPACK_GENERATOR "DragNDrop")
+else ()
+    set (CPACK_GENERATOR "DEB;TGZ")
+    set (CPACK_DEBIAN_PACKAGE_MAINTAINER "EiskaltDC++ developers")
+    set (CPACK_DEBIAN_PACKAGE_SECTION "net")
+endif ()
