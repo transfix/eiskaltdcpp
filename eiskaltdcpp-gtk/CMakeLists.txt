@@ -73,7 +73,7 @@ if (LUA_SCRIPT)
     list (APPEND LIBS ${LUA_LIBRARIES})
 endif (LUA_SCRIPT)
 
-add_executable (${PROJECT_NAME} MACOSX_BUNDLE WIN32 ${gtk_srcs})
+add_executable (${PROJECT_NAME} MACOSX_BUNDLE ${gtk_srcs})
 
 if (USE_LIBNOTIFY)
     add_definitions (-DUSE_LIBNOTIFY)

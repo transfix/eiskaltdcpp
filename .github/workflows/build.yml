@@ -430,22 +430,15 @@ jobs:
           }
         }
         # Copy MSVC runtime DLLs so the app works without VC Redistributable installed
-        $vcRedistBase = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC"
-        $crtDir = Get-ChildItem -Path $vcRedistBase -Directory -ErrorAction SilentlyContinue |
-                    Sort-Object Name -Descending | Select-Object -First 1
-        if ($crtDir) {
-          $vcCrt = Join-Path $crtDir.FullName "x64" "Microsoft.VC143.CRT"
-          if (Test-Path $vcCrt) {
-            Copy-Item "$vcCrt\msvcp140*.dll"    artifacts/ -ErrorAction SilentlyContinue
-            Copy-Item "$vcCrt\vcruntime140*.dll" artifacts/ -ErrorAction SilentlyContinue
-            Copy-Item "$vcCrt\concrt140.dll"    artifacts/ -ErrorAction SilentlyContinue
-            Write-Host "Copied VC runtime from $vcCrt"
+        $vcRuntimeDlls = @('msvcp140.dll', 'msvcp140_1.dll', 'msvcp140_2.dll',
+                           'vcruntime140.dll', 'vcruntime140_1.dll',
+                           'concrt140.dll', 'ucrtbase.dll')
+        foreach ($name in $vcRuntimeDlls) {
+          $src = Join-Path $env:SystemRoot "System32\$name"
+          if ((Test-Path $src) -and -not (Test-Path "artifacts\$name")) {
+            Copy-Item $src artifacts/
+            Write-Host "Copied $name"
           }
-        }
-        # Also grab the Universal CRT (ucrtbase) if not already present
-        $ucrt = "${env:SystemRoot}\System32\ucrtbase.dll"
-        if ((Test-Path $ucrt) -and -not (Test-Path "artifacts\ucrtbase.dll")) {
-          Copy-Item $ucrt artifacts/ -ErrorAction SilentlyContinue
         }
         # List bundled DLLs for CI log visibility
         Write-Host "=== Bundled DLLs ==="
@@ -519,8 +512,20 @@ jobs:
         # Bundle GTK3 runtime data (pixbuf loaders, schemas, etc.)
         mkdir -p artifacts/lib
         cp -r /ucrt64/lib/gdk-pixbuf-2.0 artifacts/lib/ 2>/dev/null || true
+        # Regenerate loaders.cache with relative paths
+        LOADERS_DIR="artifacts/lib/gdk-pixbuf-2.0/2.10.0/loaders"
+        if [ -d "$LOADERS_DIR" ]; then
+          GDK_PIXBUF_MODULE_FILE="artifacts/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" \
+          /ucrt64/bin/gdk-pixbuf-query-loaders.exe "$LOADERS_DIR"/*.dll > \
+            "artifacts/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
+          # Replace absolute paths with relative ones
+          sed -i 's|.*/loaders/|lib/gdk-pixbuf-2.0/2.10.0/loaders/|g' \
+            "artifacts/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
+        fi
         mkdir -p artifacts/share/glib-2.0
         cp -r /ucrt64/share/glib-2.0/schemas artifacts/share/glib-2.0/ 2>/dev/null || true
+        # Compile schemas in the bundle
+        /ucrt64/bin/glib-compile-schemas artifacts/share/glib-2.0/schemas/ 2>/dev/null || true
         mkdir -p artifacts/share/icons
         cp -r /ucrt64/share/icons/Adwaita artifacts/share/icons/ 2>/dev/null || true
         cp -r /ucrt64/share/icons/hicolor artifacts/share/icons/ 2>/dev/null || true
@@ -528,6 +533,19 @@ jobs:
         cp -r data/emoticons artifacts/resources/emoticons || true
         cp -r data/sounds artifacts/resources/sounds || true
         cp -r data/icons artifacts/resources/icons || true
+        # Create a launcher script that sets GTK environment variables
+        cat > artifacts/eiskaltdcpp-gtk.cmd << 'LAUNCHER'
+        @echo off
+        set "HERE=%~dp0"
+        set "GDK_PIXBUF_MODULE_FILE=%HERE%lib\gdk-pixbuf-2.0\2.10.0\loaders.cache"
+        set "GDK_PIXBUF_MODULEDIR=%HERE%lib\gdk-pixbuf-2.0\2.10.0\loaders"
+        set "GSETTINGS_SCHEMA_DIR=%HERE%share\glib-2.0\schemas"
+        set "GTK_EXE_PREFIX=%HERE%"
+        set "XDG_DATA_DIRS=%HERE%share"
+        start "" "%HERE%eiskaltdcpp-gtk.exe" %*
+LAUNCHER
+        # Remove leading spaces from heredoc
+        sed -i 's/^        //' artifacts/eiskaltdcpp-gtk.cmd
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
