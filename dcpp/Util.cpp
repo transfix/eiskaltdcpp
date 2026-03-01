@@ -569,18 +569,19 @@ void Util::sanitizeUrl(string& url) {
     // Trim spaces and special characters
     static const std::array<char, 7> special_chars = { ' ', '<', '>', '"', '\t', '\r', '\n' };
     for(const auto &ch : special_chars) {
-        while(url[0] == ch)
+        while(!url.empty() && url[0] == ch)
             url.erase(0, 1);
-        while(url[url.length() - 1] == ch) {
+        while(!url.empty() && url[url.length() - 1] == ch) {
             url.erase(url.length()-1);
         }
     }
 }
 
 string Util::trimCopy(const string &aLine) {
-    string out = aLine;
-    sanitizeUrl(out);
-    return out;
+    auto start = aLine.find_first_not_of(" \t\r\n");
+    if (start == string::npos) return {};
+    auto end = aLine.find_last_not_of(" \t\r\n");
+    return aLine.substr(start, end - start + 1);
 }
 
 /**
