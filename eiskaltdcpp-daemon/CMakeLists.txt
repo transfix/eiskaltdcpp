@@ -58,7 +58,7 @@ if (ENABLE_STACKTRACE)
 endif (ENABLE_STACKTRACE)
 
 # actual target:
-add_executable (${PROJECT_NAME} MACOSX_BUNDLE WIN32
+add_executable (${PROJECT_NAME} MACOSX_BUNDLE
                 ${nasdc_SRCS}
                 )
 
