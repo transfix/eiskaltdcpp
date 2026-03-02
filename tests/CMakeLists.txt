@@ -31,6 +31,10 @@ add_executable(eiskaltdcpp-tests
     test_wildcards.cpp
     test_compression.cpp
     test_simplexmlreader.cpp
+    test_adlsearch.cpp
+    test_queueitem.cpp
+    test_usercommand.cpp
+    test_util_extra.cpp
 )
 
 target_include_directories(eiskaltdcpp-tests PRIVATE
@@ -41,6 +45,9 @@ target_include_directories(eiskaltdcpp-tests PRIVATE
     ${OPENSSL_INCLUDE_DIR}
     ${GETTEXT_INCLUDE_DIR}
 )
+if (LUA_SCRIPT)
+    target_include_directories(eiskaltdcpp-tests PRIVATE ${LUA_INCLUDE_DIR})
+endif ()
 if (USE_IDN2)
     target_include_directories(eiskaltdcpp-tests PRIVATE ${IDN2_INCLUDE_DIR})
 endif ()
