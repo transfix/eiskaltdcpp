@@ -299,11 +299,19 @@ jobs:
           Write-Host "  $rel"
         }
 
+    - name: Install NSIS (Release only)
+      if: matrix.build_type == 'Release'
+      shell: pwsh
+      run: |
+        choco install nsis -y --no-progress
+        $nsisDir = "C:\Program Files (x86)\NSIS"
+        echo "$nsisDir" >> $env:GITHUB_PATH
+        Write-Host "NSIS installed: $(& "$nsisDir\makensis.exe" /VERSION 2>&1)"
+
     - name: Build NSIS installer (Release only)
       if: matrix.build_type == 'Release'
       shell: pwsh
       run: |
-        Write-Host "NSIS: $(& 'C:\Program Files (x86)\NSIS\makensis.exe' /VERSION 2>&1)"
         New-Item -ItemType Directory -Force -Path install-nsis
         $version = (Select-String -Path CMakeLists.txt -Pattern 'set \(APP_VERSION "([^"]+)"' |
                     ForEach-Object { $_.Matches.Groups[1].Value }) | Select-Object -First 1
