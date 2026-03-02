@@ -76,7 +76,7 @@ TEST_CASE("SettingsManager: BOOLSETTING macro works", "[settingsmanager]") {
 
 // ─── formatBytes (requires SettingsManager for APP_UNIT_BASE) ───────────
 
-TEST_CASE("Util: formatBytes with context — bytes", "[util][settingsmanager]") {
+TEST_CASE("Util: formatBytes with context - bytes", "[util][settingsmanager]") {
     ensureContext();
 
     std::string result = Util::formatBytes(0);
@@ -84,7 +84,7 @@ TEST_CASE("Util: formatBytes with context — bytes", "[util][settingsmanager]")
     REQUIRE(result.find("B") != std::string::npos);
 }
 
-TEST_CASE("Util: formatBytes with context — KiB range", "[util][settingsmanager]") {
+TEST_CASE("Util: formatBytes with context - KiB range", "[util][settingsmanager]") {
     ensureContext();
 
     std::string result = Util::formatBytes(1024);
@@ -92,21 +92,21 @@ TEST_CASE("Util: formatBytes with context — KiB range", "[util][settingsmanage
     REQUIRE((result.find("K") != std::string::npos || result.find("k") != std::string::npos));
 }
 
-TEST_CASE("Util: formatBytes with context — MiB range", "[util][settingsmanager]") {
+TEST_CASE("Util: formatBytes with context - MiB range", "[util][settingsmanager]") {
     ensureContext();
 
     std::string result = Util::formatBytes(int64_t(1024) * 1024);
     REQUIRE((result.find("M") != std::string::npos || result.find("m") != std::string::npos));
 }
 
-TEST_CASE("Util: formatBytes with context — GiB range", "[util][settingsmanager]") {
+TEST_CASE("Util: formatBytes with context - GiB range", "[util][settingsmanager]") {
     ensureContext();
 
     std::string result = Util::formatBytes(int64_t(1024) * 1024 * 1024);
     REQUIRE((result.find("G") != std::string::npos || result.find("g") != std::string::npos));
 }
 
-TEST_CASE("Util: formatBytes with context — TiB range", "[util][settingsmanager]") {
+TEST_CASE("Util: formatBytes with context - TiB range", "[util][settingsmanager]") {
     ensureContext();
 
     std::string result = Util::formatBytes(int64_t(1024) * 1024 * 1024 * 1024);

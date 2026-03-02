@@ -109,6 +109,7 @@ const string SettingsManager::settingTags[] =
 SettingsManager::SettingsManager()
 {
 
+    connectionSpeeds.clear();
     connectionSpeeds.push_back("0.005");
     connectionSpeeds.push_back("0.01");
     connectionSpeeds.push_back("0.02");
@@ -638,8 +639,8 @@ bool SettingsManager::parseCoreCmd(string& ret, const string& key, const string&
         return false;
     }
 
-    int n;
-    SettingsManager::Types type;
+    int n = 0;
+    SettingsManager::Types type = SettingsManager::TYPE_INT;
     getType(key.c_str(), n, type);
     if (type == SettingsManager::TYPE_INT) {
         if (!value.empty()) {

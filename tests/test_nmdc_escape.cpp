@@ -66,7 +66,7 @@ TEST_CASE("NmdcHub::unescape: no entities", "[nmdc]") {
 
 // ─── Round-trip ─────────────────────────────────────────────────────────
 
-TEST_CASE("NmdcHub: escape→unescape round-trip", "[nmdc]") {
+TEST_CASE("NmdcHub: escape-unescape round-trip", "[nmdc]") {
     std::string original = "money$pipe|amp&end";
     // Note: escape() encodes $ and |; the & in middle doesn't form an
     // existing entity pattern so the exact round-trip depends on order.
@@ -76,7 +76,7 @@ TEST_CASE("NmdcHub: escape→unescape round-trip", "[nmdc]") {
     REQUIRE(roundtrip == original);
 }
 
-TEST_CASE("NmdcHub: unescape→escape round-trip of entities", "[nmdc]") {
+TEST_CASE("NmdcHub: unescape-escape round-trip of entities", "[nmdc]") {
     std::string original = "&#36;&#124;&amp;";
     // unescape first
     std::string plain = NmdcHub::unescape(original);

@@ -27,7 +27,7 @@ TEST_CASE("User: construction with CID", "[user]") {
     REQUIRE(u.getCID().toBase32() == cid.toBase32());
 }
 
-TEST_CASE("User: default flags — not online, not NMDC", "[user]") {
+TEST_CASE("User: default flags - not online, not NMDC", "[user]") {
     User u(makeCID("u1"));
 
     REQUIRE(u.isOnline() == false);

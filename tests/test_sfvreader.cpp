@@ -1,12 +1,13 @@
 /*
- * Tests for SFVReader — simple file verification CRC lookup.
- * No DCContext required — pure file I/O.
+ * Tests for SFVReader -- simple file verification CRC lookup.
+ * No DCContext required -- pure file I/O.
  */
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "stdinc.h"
 #include "SFVReader.h"
+#include "Util.h"
 
 #include <filesystem>
 #include <fstream>
@@ -17,14 +18,18 @@ namespace fs = std::filesystem;
 static std::string makeTempDir(const std::string& suffix) {
     auto p = fs::temp_directory_path() / ("eiskalt_test_sfv_" + suffix);
     fs::create_directories(p);
-    return p.string() + "/";
+    p = p.make_preferred();
+    auto s = p.string();
+    if (!s.empty() && s.back() != PATH_SEPARATOR)
+        s += PATH_SEPARATOR;
+    return s;
 }
 
 static void removeTempDir(const std::string& path) {
     fs::remove_all(fs::path(path));
 }
 
-TEST_CASE("SFVReader: no SFV file → hasCRC is false", "[sfvreader]") {
+TEST_CASE("SFVReader: no SFV file - hasCRC is false", "[sfvreader]") {
     std::string base = makeTempDir("no_sfv");
     std::string dataFile = base + "somedata.bin";
 
@@ -133,7 +138,7 @@ TEST_CASE("SFVReader: comment lines are skipped", "[sfvreader]") {
     removeTempDir(base);
 }
 
-TEST_CASE("SFVReader: non-existent file → no CRC", "[sfvreader]") {
+TEST_CASE("SFVReader: non-existent file - no CRC", "[sfvreader]") {
     SFVReader reader("/tmp/eiskalt_nonexistent_file_for_sfv_test.dat");
     REQUIRE_FALSE(reader.hasCRC());
 }

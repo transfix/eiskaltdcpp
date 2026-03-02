@@ -11,6 +11,7 @@
 #include "QueueItem.h"
 #include "TigerHash.h"
 #include "MerkleTree.h"
+#include "Util.h"
 
 using namespace dcpp;
 
@@ -62,7 +63,7 @@ TEST_CASE("Segment: contains", "[segment]") {
     REQUIRE(big.contains(shorter) == false); // contains requires same end
 }
 
-TEST_CASE("Segment: trim — overlapping left", "[segment]") {
+TEST_CASE("Segment: trim - overlapping left", "[segment]") {
     Segment a(50, 150);   // [50, 200)
     Segment b(0, 100);    // [0, 100) — overlaps from left
 
@@ -72,7 +73,7 @@ TEST_CASE("Segment: trim — overlapping left", "[segment]") {
     REQUIRE(a.getEnd() == 200);
 }
 
-TEST_CASE("Segment: trim — overlapping right", "[segment]") {
+TEST_CASE("Segment: trim - overlapping right", "[segment]") {
     Segment a(0, 200);    // [0, 200)
     Segment b(100, 200);  // [100, 300) — overlaps from right
 
@@ -83,7 +84,7 @@ TEST_CASE("Segment: trim — overlapping right", "[segment]") {
     REQUIRE(a.getEnd() == 100);
 }
 
-TEST_CASE("Segment: trim — no overlap does nothing", "[segment]") {
+TEST_CASE("Segment: trim - no overlap does nothing", "[segment]") {
     Segment a(0, 100);
     Segment b(200, 100);
 
@@ -92,7 +93,7 @@ TEST_CASE("Segment: trim — no overlap does nothing", "[segment]") {
     REQUIRE(a.getSize() == 100);
 }
 
-TEST_CASE("Segment: trim — complete overlap zeroes", "[segment]") {
+TEST_CASE("Segment: trim - complete overlap zeroes", "[segment]") {
     Segment a(50, 100);   // [50, 150)
     Segment b(0, 200);    // [0, 200) — completely contains a
 
@@ -117,10 +118,12 @@ TEST_CASE("Segment: equality and ordering", "[segment]") {
 
 TEST_CASE("QueueItem: construction and basic getters", "[queueitem]") {
     TTHValue tth = makeTTH("test-file");
-    QueueItem qi("/downloads/test.txt", 1024, QueueItem::NORMAL, QueueItem::FLAG_NORMAL,
+    std::string target = std::string(1, PATH_SEPARATOR) + "downloads" +
+                         std::string(1, PATH_SEPARATOR) + "test.txt";
+    QueueItem qi(target, 1024, QueueItem::NORMAL, QueueItem::FLAG_NORMAL,
                  time(nullptr), tth);
 
-    REQUIRE(qi.getTarget() == "/downloads/test.txt");
+    REQUIRE(qi.getTarget() == target);
     REQUIRE(qi.getSize() == 1024);
     REQUIRE(qi.getPriority() == QueueItem::NORMAL);
     REQUIRE(qi.getTTH() == tth);
@@ -156,8 +159,11 @@ TEST_CASE("QueueItem: flags", "[queueitem]") {
 TEST_CASE("QueueItem: getTargetFileName extracts filename", "[queueitem]") {
     TTHValue tth = makeTTH("fn");
 
-    SECTION("Unix path") {
-        QueueItem qi("/path/to/movie.avi", 0, QueueItem::NORMAL, 0, 0, tth);
+    SECTION("with path separator") {
+        std::string target = std::string(1, PATH_SEPARATOR) + "path" +
+                             std::string(1, PATH_SEPARATOR) + "to" +
+                             std::string(1, PATH_SEPARATOR) + "movie.avi";
+        QueueItem qi(target, 0, QueueItem::NORMAL, 0, 0, tth);
         REQUIRE(qi.getTargetFileName() == "movie.avi");
     }
     SECTION("no path separator") {

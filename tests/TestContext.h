@@ -39,13 +39,15 @@ struct TestContext {
         tmpDir += suffix;
         std::filesystem::create_directories(tmpDir);
 
-        auto dirStr = tmpDir.string() + "/";
+        // Use make_preferred() to ensure native separators (\ on Windows)
+        tmpDir = tmpDir.make_preferred();
+        auto dirStr = tmpDir.string() + std::string(1, PATH_SEPARATOR);
 
         // Initialize Util with paths redirected to our temp dir
         Util::PathsMap overrides;
         overrides[Util::PATH_USER_CONFIG] = dirStr;
         overrides[Util::PATH_USER_LOCAL]  = dirStr;
-        overrides[Util::PATH_DOWNLOADS]   = dirStr + "Downloads/";
+        overrides[Util::PATH_DOWNLOADS]   = dirStr + "Downloads" + std::string(1, PATH_SEPARATOR);
         Util::initialize(overrides);
 
         // Create minimal context (ResourceManager + SettingsManager + LogManager)

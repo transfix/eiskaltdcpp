@@ -118,12 +118,21 @@ TEST_CASE("FavoriteManager: hub groups CRUD", "[favoritemanager]") {
     REQUIRE(retrieved["TestGroup"].connect == false);
 }
 
+// Helper: build a directory path string with native separators + trailing separator
+static std::string nativeDirPath(const std::string& name) {
+    auto p = std::filesystem::temp_directory_path() / name;
+    auto s = p.make_preferred().string();
+    if (!s.empty() && s.back() != PATH_SEPARATOR)
+        s += PATH_SEPARATOR;
+    return s;
+}
+
 // ─── Favorite Directories ───────────────────────────────────────────────
 
 TEST_CASE("FavoriteManager: addFavoriteDir", "[favoritemanager]") {
     ensureContext();
 
-    bool added = g_fm->addFavoriteDir("/tmp/share1/", "Share One");
+    bool added = g_fm->addFavoriteDir(nativeDirPath("share1"), "Share One");
     REQUIRE(added == true);
 
     auto dirs = g_fm->getFavoriteDirs();
@@ -140,26 +149,27 @@ TEST_CASE("FavoriteManager: addFavoriteDir", "[favoritemanager]") {
 TEST_CASE("FavoriteManager: addFavoriteDir no duplicate name", "[favoritemanager]") {
     ensureContext();
 
-    g_fm->addFavoriteDir("/tmp/unique_dir1/", "UniqueName");
-    bool added = g_fm->addFavoriteDir("/tmp/unique_dir2/", "UniqueName");
+    g_fm->addFavoriteDir(nativeDirPath("unique_dir1"), "UniqueName");
+    bool added = g_fm->addFavoriteDir(nativeDirPath("unique_dir2"), "UniqueName");
     REQUIRE(added == false); // same name
 }
 
 TEST_CASE("FavoriteManager: removeFavoriteDir", "[favoritemanager]") {
     ensureContext();
 
-    g_fm->addFavoriteDir("/tmp/removable/", "Removable");
-    bool removed = g_fm->removeFavoriteDir("/tmp/removable/");
+    std::string dirPath = nativeDirPath("removable");
+    g_fm->addFavoriteDir(dirPath, "Removable");
+    bool removed = g_fm->removeFavoriteDir(dirPath);
     REQUIRE(removed == true);
 
-    bool removedAgain = g_fm->removeFavoriteDir("/tmp/removable/");
+    bool removedAgain = g_fm->removeFavoriteDir(dirPath);
     REQUIRE(removedAgain == false); // already removed
 }
 
 TEST_CASE("FavoriteManager: renameFavoriteDir", "[favoritemanager]") {
     ensureContext();
 
-    g_fm->addFavoriteDir("/tmp/renamedir/", "OldName");
+    g_fm->addFavoriteDir(nativeDirPath("renamedir"), "OldName");
     bool renamed = g_fm->renameFavoriteDir("OldName", "NewName");
     REQUIRE(renamed == true);
 

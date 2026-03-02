@@ -60,7 +60,7 @@ const string AdcHub::ZLIF_SUPPORT("ADZLIF");
 const string AdcHub::DHT0_SUPPORT("ADDHT0");
 #endif
 
-const vector<StringList> AdcHub::searchExts;
+vector<StringList> AdcHub::searchExts;
 
 AdcHub::AdcHub(const string& aHubURL, bool secure) :
     Client(aHubURL, '\n', secure, Socket::PROTO_ADC), oldPassword(false), sid(0) {
@@ -765,7 +765,7 @@ const vector<StringList>& AdcHub::getSearchExts() {
         return searchExts;
 
     // the list is always immutable except for this function where it is initially being filled.
-    const_cast<vector<StringList>&>(searchExts) = {
+    searchExts = {
             // these extensions *must* be sorted alphabetically!
     { "ape", "flac", "m4a", "mid", "mp3", "mpc", "ogg", "ra", "wav", "wma" },
     { "7z", "ace", "arj", "bz2", "gz", "lha", "lzh", "rar", "tar", "z", "zip" },

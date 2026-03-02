@@ -12,6 +12,8 @@
 #include "Util.h"
 #include "TestContext.h"
 
+#include <filesystem>
+
 using namespace dcpp;
 
 // Shared test context — lazy-initialized once for all tests in this file
@@ -90,14 +92,17 @@ TEST_CASE("LogManager: getPath uses LOG_DIRECTORY", "[logmanager]") {
     ensureContext();
     auto* sm = getContext()->getSettingsManager();
 
-    // Set a known log directory
-    sm->set(SettingsManager::LOG_DIRECTORY, "/tmp/test_logs/");
+    // Set a known log directory using platform-native path
+    namespace fs = std::filesystem;
+    auto logDir = (fs::temp_directory_path() / "test_logs").make_preferred().string()
+                  + std::string(1, PATH_SEPARATOR);
+    sm->set(SettingsManager::LOG_DIRECTORY, logDir);
 
     auto* lm = getContext()->getLogManager();
     string path = lm->getPath(LogManager::SYSTEM);
 
     // Path should start with the log directory we set
-    REQUIRE(path.substr(0, 15) == "/tmp/test_logs/");
+    REQUIRE(path.substr(0, logDir.size()) == logDir);
 }
 
 TEST_CASE("LogManager: getPath with params", "[logmanager]") {
@@ -105,7 +110,10 @@ TEST_CASE("LogManager: getPath with params", "[logmanager]") {
     auto* sm = getContext()->getSettingsManager();
     auto* lm = getContext()->getLogManager();
 
-    sm->set(SettingsManager::LOG_DIRECTORY, "/tmp/logs/");
+    namespace fs = std::filesystem;
+    auto logDir = (fs::temp_directory_path() / "logs").make_preferred().string()
+                  + std::string(1, PATH_SEPARATOR);
+    sm->set(SettingsManager::LOG_DIRECTORY, logDir);
     lm->saveSetting(LogManager::CHAT, LogManager::FILE, "%[hubURL].log");
 
     ParamMap params;

@@ -130,36 +130,36 @@ TEST_CASE("Util: validateFileName with extra bad chars", "[util]") {
 
 // ===== isPrivateIp =====
 
-TEST_CASE("Util: isPrivateIp — 10.x.x.x", "[util]") {
+TEST_CASE("Util: isPrivateIp - 10.x.x.x", "[util]") {
     REQUIRE(Util::isPrivateIp("10.0.0.1") == true);
     REQUIRE(Util::isPrivateIp("10.255.255.255") == true);
 }
 
-TEST_CASE("Util: isPrivateIp — 127.x.x.x", "[util]") {
+TEST_CASE("Util: isPrivateIp - 127.x.x.x", "[util]") {
     REQUIRE(Util::isPrivateIp("127.0.0.1") == true);
     REQUIRE(Util::isPrivateIp("127.255.255.255") == true);
 }
 
-TEST_CASE("Util: isPrivateIp — 172.16-31.x.x", "[util]") {
+TEST_CASE("Util: isPrivateIp - 172.16-31.x.x", "[util]") {
     REQUIRE(Util::isPrivateIp("172.16.0.1") == true);
     REQUIRE(Util::isPrivateIp("172.31.255.255") == true);
     REQUIRE(Util::isPrivateIp("172.15.0.1") == false);
     REQUIRE(Util::isPrivateIp("172.32.0.1") == false);
 }
 
-TEST_CASE("Util: isPrivateIp — 192.168.x.x", "[util]") {
+TEST_CASE("Util: isPrivateIp - 192.168.x.x", "[util]") {
     REQUIRE(Util::isPrivateIp("192.168.0.1") == true);
     REQUIRE(Util::isPrivateIp("192.168.255.255") == true);
     REQUIRE(Util::isPrivateIp("192.167.0.1") == false);
 }
 
-TEST_CASE("Util: isPrivateIp — public addresses", "[util]") {
+TEST_CASE("Util: isPrivateIp - public addresses", "[util]") {
     REQUIRE(Util::isPrivateIp("8.8.8.8") == false);
     REQUIRE(Util::isPrivateIp("1.1.1.1") == false);
     REQUIRE(Util::isPrivateIp("203.0.113.1") == false);
 }
 
-TEST_CASE("Util: isPrivateIp — invalid IP", "[util]") {
+TEST_CASE("Util: isPrivateIp - invalid IP", "[util]") {
     REQUIRE(Util::isPrivateIp("not.an.ip") == false);
     REQUIRE(Util::isPrivateIp("") == false);
 }
