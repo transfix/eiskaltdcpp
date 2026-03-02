@@ -302,6 +302,11 @@ set (CMAKE_CXX_EXTENSIONS OFF)
 if (CMAKE_CXX_COMPILER_ID STREQUAL GNU OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -pipe -Wformat -Werror=format-security")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -D_FORTIFY_SOURCE=2")
+    # GCC 15+ on MSYS2/MinGW: <semaphore> incorrectly tries to use POSIX
+    # sem_timedwait which is unavailable on Windows. Force the non-POSIX backend.
+    if (MINGW AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "15")
+        add_compile_definitions(_GLIBCXX_USE_POSIX_SEMAPHORE=0)
+    endif ()
     if (USE_GOLD)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-linker-plugin")
         set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fuse-linker-plugin")
