@@ -600,6 +600,9 @@ jobs:
         update: false
         install: >-
           mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-cmake
+          mingw-w64-ucrt-x86_64-ninja
+          mingw-w64-ucrt-x86_64-pkg-config
           mingw-w64-ucrt-x86_64-gtk3
           mingw-w64-ucrt-x86_64-openssl
           mingw-w64-ucrt-x86_64-bzip2
