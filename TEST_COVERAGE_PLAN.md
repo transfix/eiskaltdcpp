@@ -1,6 +1,6 @@
 # Test Coverage Improvement Plan
 
-**Current state:** 5.2% coverage | ~90 test cases | 9 test files  
+**Current state:** 354 test cases | 1,757 assertions | 27 test files  
 **Target:** 40%+ coverage | ~600 test cases | 35+ test files  
 **Framework:** Catch2 v3.5.2 (FetchContent)
 
@@ -8,20 +8,41 @@
 
 ## Current Coverage Map
 
-### Tested (8 of 64 dcpp/ source files)
+### Tested dcpp/ source files
 
 | File | Lines | Test file | Cases |
 |------|------:|-----------|------:|
 | `AdcCommand.cpp` | 265 | `test_adccommand.cpp` | 14 |
+| `ADLSearch.cpp` | 521 | `test_adlsearch.cpp` | 8 |
+| `BZUtils.cpp` + `ZUtils.cpp` | 279 | `test_compression.cpp` | 10 |
 | `CID.cpp` | 34 | `test_cid.cpp` | 5 |
-| `DCContext.cpp` | 233 | `test_dccontext.cpp` | 6 |
+| `DCContext.cpp` | 251 | `test_dccontext.cpp` | 6 |
 | `Encoder.cpp` | 135 | `test_encoder.cpp` | 7 |
+| `FavoriteManager.cpp` | 844 | `test_favoritemanager.cpp` | 17 |
+| `FinishedItem.cpp` | 124 | `test_finisheditem.cpp` | 16 |
+| `HashBloom.cpp` | 99 | `test_hashbloom.cpp` | 12 |
+| `LogManager.cpp` | 109 | `test_logmanager.cpp` | 6 |
+| `QueueItem.cpp` (Segment) | 341 | `test_queueitem.cpp` | 28 |
+| `SearchQueue.cpp` | 132 | `test_searchqueue.cpp` | 11 |
+| `SearchResult.cpp` | 92 | `test_searchresult.cpp` | 11 |
+| `SettingsManager.cpp` | 661 | `test_settingsmanager.cpp` | 11 |
 | `SimpleXML.cpp` | 207 | `test_simplexml.cpp` | 9 |
+| `SimpleXMLReader.cpp` | 754 | `test_simplexmlreader.cpp` | 13 |
 | `StringTokenizer.cpp` | 24 | `test_string_tokenizer.cpp` | 9 |
 | `Text.cpp` | 432 | `test_text.cpp` | 17 |
-| `Util.cpp` | 1,497 | `test_util.cpp` + `test_util_extended.cpp` | 23 |
+| `TigerHash.cpp` | 783 | `test_tigerhash.cpp` | 15 |
+| `User.cpp` | 193 | `test_user.cpp` | 9 |
+| `UserCommand.cpp` | 45 | `test_usercommand.cpp` | 18 |
+| `Util.cpp` | 1,497 | `test_util*.cpp` (4 files) | 58 |
+| `Wildcards.cpp` | 304 | `test_wildcards.cpp` | ~25 |
 
-### Untested — 56 dcpp/ source files (24,362 lines), 72 Qt source files (36,018 lines)
+### Test Infrastructure
+- `TestContext.h` — RAII fixture for tests needing `SETTING()`/`BOOLSETTING()` macros
+- `DCContext::startupMinimal()` — creates ResourceManager, SettingsManager, LogManager
+- `DCContext::shutdown()` — null-safe for minimal startup scenarios
+- `dcpp::setContext()` — injects test context for global `getContext()` access
+
+### Status: Phase 1 ✅ Complete | Phase 2 ✅ Complete
 
 ---
 
