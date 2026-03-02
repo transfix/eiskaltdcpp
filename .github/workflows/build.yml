@@ -318,6 +318,7 @@ jobs:
         cpack -G NSIS `
           -D "CPACK_PACKAGE_NAME=EiskaltDC++" `
           -D "CPACK_PACKAGE_VERSION=$version" `
+          -D "CPACK_PACKAGE_FILE_NAME=EiskaltDC++-${version}-win64" `
           -D "CPACK_PACKAGE_VENDOR=EiskaltDC++ developers" `
           -D "CPACK_PACKAGE_DESCRIPTION_SUMMARY=EiskaltDC++ - Direct Connect and ADC client" `
           -D "CPACK_RESOURCE_FILE_LICENSE=$PWD/COPYING" `
