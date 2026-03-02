@@ -186,7 +186,7 @@ jobs:
         $vcpkgBase = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
         cmake -B build -G Ninja `
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
-          -DCMAKE_INSTALL_PREFIX="$PWD/install" `
+          -DCMAKE_INSTALL_PREFIX="$PWD/dist" `
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
           -DGETTEXT_SEARCH_PATH="$vcpkgBase" `
           -DUSE_QT6=ON `
@@ -260,7 +260,7 @@ jobs:
       run: |
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+          -DCMAKE_INSTALL_PREFIX="$PWD/dist" \
           -DUSE_QT6=OFF \
           -DUSE_GTK3=ON \
           -DUSE_MINIUPNP=ON \
@@ -428,7 +428,7 @@ jobs:
         $vcpkgBase = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
         cmake -B build -G Ninja `
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
-          -DCMAKE_INSTALL_PREFIX="$PWD/install" `
+          -DCMAKE_INSTALL_PREFIX="$PWD/dist" `
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
           -DGETTEXT_SEARCH_PATH="$vcpkgBase" `
           -DUSE_QT6=ON `
@@ -456,13 +456,13 @@ jobs:
       run: |
         $deployFlag = if ('${{ matrix.build_type }}' -eq 'Debug') { '--debug' } else { '--release' }
         # The exe is at install root (BINDIR=.) named EiskaltDC++.exe
-        $exePath = Get-ChildItem install/*.exe | Select-Object -First 1
+        $exePath = Get-ChildItem dist/*.exe | Select-Object -First 1
         windeployqt $deployFlag --no-translations $exePath.FullName
 
     - name: Resolve and copy DLL dependencies (dumpbin)
       shell: pwsh
       run: |
-        $installDir = "install"
+        $installDir = "dist"
         $vcpkgBase = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
         $searchPaths = if ('${{ matrix.build_type }}' -eq 'Debug') {
           @("$vcpkgBase/debug/bin", "$vcpkgBase/bin")
@@ -558,7 +558,7 @@ jobs:
           -D "CPACK_NSIS_PACKAGE_NAME=EiskaltDC++" `
           -D "CPACK_NSIS_INSTALL_ROOT=`$PROGRAMFILES64" `
           -D "CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL=ON" `
-          -D "CPACK_INSTALLED_DIRECTORIES=$PWD/install;." `
+          -D "CPACK_INSTALLED_DIRECTORIES=$PWD/dist;." `
           -D "CPACK_PACKAGE_DIRECTORY=$PWD/install-nsis" `
           --verbose
         Write-Host "`n=== NSIS installer ==="
@@ -570,7 +570,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: eiskaltdcpp-qt6-windows-x64-${{ matrix.build_type }}
-        path: install/
+        path: dist/
 
     - name: Upload NSIS installer
       if: matrix.build_type == 'Release'
@@ -627,7 +627,7 @@ jobs:
       run: |
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+          -DCMAKE_INSTALL_PREFIX="$PWD/dist" \
           -DUSE_QT6=OFF \
           -DUSE_GTK3=ON \
           -DUSE_MINIUPNP=ON \
@@ -648,33 +648,33 @@ jobs:
     - name: Bundle DLLs and GTK3 runtime
       run: |
         # Copy DLL dependencies using ldd
-        ldd install/eiskaltdcpp-gtk.exe \
+        ldd dist/eiskaltdcpp-gtk.exe \
           | grep -i '/ucrt64/' \
           | awk '{print $3}' \
           | while read -r dll; do
-              cp "$dll" install/ 2>/dev/null || true
+              cp "$dll" dist/ 2>/dev/null || true
             done
 
         echo "=== Bundled DLLs ==="
-        ls -1 install/*.dll | wc -l
-        ls -1 install/*.dll
+        ls -1 dist/*.dll | wc -l
+        ls -1 dist/*.dll
 
         # Bundle GTK3 runtime data
-        mkdir -p install/lib
-        cp -r /ucrt64/lib/gdk-pixbuf-2.0 install/lib/ 2>/dev/null || true
-        LOADERS_DIR="install/lib/gdk-pixbuf-2.0/2.10.0/loaders"
+        mkdir -p dist/lib
+        cp -r /ucrt64/lib/gdk-pixbuf-2.0 dist/lib/ 2>/dev/null || true
+        LOADERS_DIR="dist/lib/gdk-pixbuf-2.0/2.10.0/loaders"
         if [ -d "$LOADERS_DIR" ]; then
           /ucrt64/bin/gdk-pixbuf-query-loaders.exe "$LOADERS_DIR"/*.dll > \
-            "install/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
+            "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
           sed -i 's|.*/loaders/|lib/gdk-pixbuf-2.0/2.10.0/loaders/|g' \
-            "install/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
+            "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
         fi
-        mkdir -p install/share/glib-2.0
-        cp -r /ucrt64/share/glib-2.0/schemas install/share/glib-2.0/ 2>/dev/null || true
-        /ucrt64/bin/glib-compile-schemas install/share/glib-2.0/schemas/ 2>/dev/null || true
-        mkdir -p install/share/icons
-        cp -r /ucrt64/share/icons/Adwaita install/share/icons/ 2>/dev/null || true
-        cp -r /ucrt64/share/icons/hicolor install/share/icons/ 2>/dev/null || true
+        mkdir -p dist/share/glib-2.0
+        cp -r /ucrt64/share/glib-2.0/schemas dist/share/glib-2.0/ 2>/dev/null || true
+        /ucrt64/bin/glib-compile-schemas dist/share/glib-2.0/schemas/ 2>/dev/null || true
+        mkdir -p dist/share/icons
+        cp -r /ucrt64/share/icons/Adwaita dist/share/icons/ 2>/dev/null || true
+        cp -r /ucrt64/share/icons/hicolor dist/share/icons/ 2>/dev/null || true
 
         # Create launcher script
         printf '%s\r\n' \
@@ -686,16 +686,16 @@ jobs:
           'set "GTK_EXE_PREFIX=%HERE%"' \
           'set "XDG_DATA_DIRS=%HERE%share"' \
           'start "" "%HERE%eiskaltdcpp-gtk.exe" %*' \
-          > install/eiskaltdcpp-gtk.cmd
+          > dist/eiskaltdcpp-gtk.cmd
 
         echo "=== Install directory ==="
-        find install -type f | sort | head -100
+        find dist -type f | sort | head -100
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: eiskaltdcpp-gtk3-windows-x64-${{ matrix.build_type }}
-        path: install/
+        path: dist/
 
   package-linux-qt6:
     name: Package Linux Qt6
