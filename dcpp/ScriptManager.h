@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include "Singleton.h"
 #include "DCContext.h"
 #include "User.h"
 #include "Socket.h"
@@ -108,7 +107,7 @@ public:
     void EvaluateChunk(const string& chunk);
 };
 
-class ScriptManager: public ScriptInstance, public Singleton<ScriptManager>, public Speaker<ScriptManagerListener>, private ClientManagerListener, private TimerManagerListener, public ContextAware
+class ScriptManager: public ScriptInstance, public Speaker<ScriptManagerListener>, private ClientManagerListener, private TimerManagerListener, public ContextAware
 {
     Socket s;
 
@@ -120,7 +119,6 @@ public:
     void  SendDebugMessage(const string& s);
     GETSET(bool , timerEnabled, TimerEnabled);
 private:
-    friend class Singleton<ScriptManager>;
     friend struct LuaManager;
     friend class ScriptInstance;
 

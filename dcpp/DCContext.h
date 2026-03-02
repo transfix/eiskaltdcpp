@@ -45,6 +45,10 @@ class ADLSearchManager;
 class ConnectivityManager;
 class MappingManager;
 class DebugManager;
+class DynDNS;
+#ifdef LUA_SCRIPT
+class ScriptManager;
+#endif
 
 class DCContext;  // forward for ContextAware
 
@@ -127,6 +131,10 @@ public:
     [[nodiscard]] ConnectivityManager* getConnectivityManager() const noexcept { return connectivityManager_.get(); }
     [[nodiscard]] MappingManager*      getMappingManager()      const noexcept { return mappingManager_.get(); }
     [[nodiscard]] DebugManager*        getDebugManager()        const noexcept { return debugManager_.get(); }
+    [[nodiscard]] DynDNS*               getDynDNS()              const noexcept { return dynDNS_.get(); }
+#ifdef LUA_SCRIPT
+    [[nodiscard]] ScriptManager*        getScriptManager()       const noexcept { return scriptManager_.get(); }
+#endif
 
 private:
     bool running_ = false;
@@ -153,6 +161,10 @@ private:
     std::unique_ptr<ConnectivityManager> connectivityManager_;
     std::unique_ptr<MappingManager>      mappingManager_;
     std::unique_ptr<DebugManager>        debugManager_;
+    std::unique_ptr<DynDNS>              dynDNS_;
+#ifdef LUA_SCRIPT
+    std::unique_ptr<ScriptManager>       scriptManager_;
+#endif
 };
 
 } // namespace dcpp

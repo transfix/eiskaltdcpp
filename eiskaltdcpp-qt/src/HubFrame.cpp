@@ -1878,10 +1878,10 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
     }
 #ifdef LUA_SCRIPT
         else if (cmd == "/lua" && !emptyParam) {
-            ScriptManager::getInstance()->EvaluateChunk(_tq(param));
+            dcpp::getContext()->getScriptManager()->EvaluateChunk(_tq(param));
         }
         else if( cmd == "/luafile" && !emptyParam) {
-            ScriptManager::getInstance()->EvaluateFile(_tq(param));
+            dcpp::getContext()->getScriptManager()->EvaluateFile(_tq(param));
         }
 #endif
     else if (cmd == "/sh" && !emptyParam){

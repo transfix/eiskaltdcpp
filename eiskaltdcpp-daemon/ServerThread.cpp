@@ -94,11 +94,11 @@ int ServerThread::run() {
     startSocket(false);
     autoConnect();
 #ifdef LUA_SCRIPT
-    ScriptManager::getInstance()->load();
+    dcpp::getContext()->getScriptManager()->load();
     if (BOOLSETTING(USE_LUA)) {
         // Start as late as possible, as we might (formatting.lua) need to examine settings
         string defaultluascript = "startup.lua";
-        ScriptManager::getInstance()->EvaluateFile(defaultluascript);
+        dcpp::getContext()->getScriptManager()->EvaluateFile(defaultluascript);
     }
 #endif
 #ifdef XMLRPC_DAEMON

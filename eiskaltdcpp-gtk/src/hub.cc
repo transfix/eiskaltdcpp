@@ -2215,10 +2215,10 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
 #ifdef LUA_SCRIPT
         else if (command == "lua" && !param.empty()) {
-            ScriptManager::getInstance()->EvaluateChunk(Text::fromT(param));
+            dcpp::getContext()->getScriptManager()->EvaluateChunk(Text::fromT(param));
         }
         else if( command == "luafile" && !param.empty()) {
-            ScriptManager::getInstance()->EvaluateFile(Text::fromT(param));
+            dcpp::getContext()->getScriptManager()->EvaluateFile(Text::fromT(param));
         }
         else if (script_ret)
             ;

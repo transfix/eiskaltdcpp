@@ -50,6 +50,10 @@ TEST_CASE("DCContext can be constructed and destroyed", "[DCContext]") {
     REQUIRE(ctx.getSettingsManager() == nullptr);
     REQUIRE(ctx.getTimerManager() == nullptr);
     REQUIRE(ctx.getClientManager() == nullptr);
+    REQUIRE(ctx.getDynDNS() == nullptr);
+#ifdef LUA_SCRIPT
+    REQUIRE(ctx.getScriptManager() == nullptr);
+#endif
 }
 
 TEST_CASE("Multiple DCContext instances can coexist", "[DCContext]") {

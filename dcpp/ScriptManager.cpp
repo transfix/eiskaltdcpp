@@ -42,7 +42,7 @@ static void callalert (lua_State *L, int status) {
             lua_call(L, 1, 0);
         }
         else {  /* no _ALERT function; print it on stderr */
-            ScriptManager::getInstance()->SendDebugMessage(Text::acpToUtf8(string("LUA ERROR: ") + lua_tostring(L, -2)));
+            dcpp::getContext()->getScriptManager()->SendDebugMessage(Text::acpToUtf8(string("LUA ERROR: ") + lua_tostring(L, -2)));
             lua_pop(L, 2);  /* remove error message and _ALERT */
         }
     }
@@ -173,7 +173,7 @@ int LuaManager::SendHubMessage(lua_State* L) {
 int LuaManager::GenerateDebugMessage(lua_State* L) {
     /* arguments: socket, buffer, address */
     if (lua_gettop(L) == 1 && lua_isstring(L, -1))
-        ScriptManager::getInstance()->SendDebugMessage(lua_tostring(L, -1));
+        dcpp::getContext()->getScriptManager()->SendDebugMessage(lua_tostring(L, -1));
 
     return 0;
 }
@@ -182,7 +182,7 @@ int LuaManager::SendUDPPacket(lua_State* L) {
     /* arguments: ip:port, data */
     if (lua_gettop(L) == 2 && lua_isstring(L, -2) && lua_isstring(L, -1)) {
         StringList sl = StringTokenizer<string>(lua_tostring(L, -2), ':').getTokens();
-        ScriptManager::getInstance()->s.writeTo(sl[0], sl[1], lua_tostring(L, -1), string(lua_tostring(L, -1)).size());
+        dcpp::getContext()->getScriptManager()->s.writeTo(sl[0], sl[1], lua_tostring(L, -1), string(lua_tostring(L, -1)).size());
     }
 
     return 0;
@@ -312,7 +312,7 @@ int LuaManager::RunTimer(lua_State* L) {
     /* arguments: bool:on/off */
     if(lua_gettop(L) == 1 && lua_isnumber(L, -1)) {
         bool on = lua_tonumber(L, 1) != 0;      //shut VC++ up
-        ScriptManager* sm = ScriptManager::getInstance();
+        ScriptManager* sm = dcpp::getContext()->getScriptManager();
         if(on != sm->getTimerEnabled()) {
             if(on)
                 dcpp::getContext()->getTimerManager()->addListener(sm);
@@ -479,7 +479,7 @@ bool ScriptInstance::MakeCallRaw(const string& table, const string& method, int 
         }
         const char *msg = lua_tostring(L, -1);
         string formatted_msg = (msg != NULL)?string("LUA Error: ") + msg:string("LUA Error: (unknown)");
-        ScriptManager::getInstance()->SendDebugMessage(formatted_msg);
+        dcpp::getContext()->getScriptManager()->SendDebugMessage(formatted_msg);
         dcassert(lua_gettop(L) == 1);
         lua_pop(L, 1);
     } else {

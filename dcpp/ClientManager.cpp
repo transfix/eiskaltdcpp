@@ -864,7 +864,7 @@ bool ClientManager::ucExecuteLua(const string& ucCommand, StringMap& params) noe
         }
         //@todo: use filter? I opted for no here, but this means Lua has to be careful about
         //filtering if it cares.
-        ScriptManager::getInstance()->EvaluateChunk(Util::formatParams(chunk, params, false));
+        dcpp::getContext()->getScriptManager()->EvaluateChunk(Util::formatParams(chunk, params, false));
         executedlua = true;
         i = j + 1;
     }

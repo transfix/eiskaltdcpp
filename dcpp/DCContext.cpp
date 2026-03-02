@@ -116,11 +116,9 @@ void DCContext::startup(ProgressFn progress) {
     connectivityManager_ = makeManager<ConnectivityManager>(this);
     mappingManager_      = makeManager<MappingManager>(this);
     debugManager_        = makeManager<DebugManager>(this);
-
-    // Conditional singletons — still managed through Singleton<T> for now.
-    DynDNS::newInstance();
+    dynDNS_              = makeManager<DynDNS>(this);
 #ifdef LUA_SCRIPT
-    ScriptManager::newInstance();
+    scriptManager_       = makeManager<ScriptManager>(this);
 #endif
 
     // ── Load persistent state ───────────────────────────────────────────
@@ -131,7 +129,7 @@ void DCContext::startup(ProgressFn progress) {
     mappingManager_->runMiniUPnP();
 #endif
 
-    DynDNS::getInstance()->load();
+    dynDNS_->load();
 
     if (BOOLSETTING(IPFILTER)) {
         IPFilter::newInstance();
@@ -176,7 +174,6 @@ void DCContext::shutdown() {
     // ── Phase 1: tear down debug & conditional singletons ───────────────
     debugManager_.reset();
 
-    DynDNS::deleteInstance();
 #ifdef WITH_DHT
     dht::DHT::deleteInstance();
 #endif
@@ -184,7 +181,7 @@ void DCContext::shutdown() {
     // ── Phase 2: stop threads and active subsystems ─────────────────────
     throttleManager_->shutdown();
 #ifdef LUA_SCRIPT
-    ScriptManager::deleteInstance();
+    scriptManager_.reset();
 #endif
     timerManager_->shutdown();
     hashManager_->shutdown();
@@ -205,6 +202,7 @@ void DCContext::shutdown() {
     // Matches the deleteInstance() sequence in dcpp::shutdown() exactly.
     mappingManager_.reset();
     connectivityManager_.reset();
+    dynDNS_.reset();
     adlSearchManager_.reset();
     finishedManager_.reset();
     shareManager_.reset();
