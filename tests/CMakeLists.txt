@@ -70,3 +70,8 @@ target_link_libraries(eiskaltdcpp-tests PRIVATE
 
 # Auto-discover test cases
 catch_discover_tests(eiskaltdcpp-tests)
+
+# Qt-based tests (separate binary)
+if (USE_QT6)
+    add_subdirectory(qt)
+endif()

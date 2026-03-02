@@ -1,6 +1,6 @@
 # Test Coverage Improvement Plan
 
-**Current state:** 428 test cases | 1,890 assertions | 31 test files  
+**Current state:** 539 test cases | 2,102 assertions | 39 test files (31 dcpp + 8 Qt)  
 **Target:** 40%+ coverage | ~600 test cases | 35+ test files  
 **Framework:** Catch2 v3.5.2 (FetchContent)
 
@@ -46,7 +46,26 @@
 - `DCContext::shutdown()` — null-safe for minimal startup scenarios
 - `dcpp::setContext()` — injects test context for global `getContext()` access
 
-### Status: Phase 1 ✅ Complete | Phase 2 ✅ Complete | Phase 3 ✅ Complete
+### Tested Qt source files (separate binary: `eiskaltdcpp-qt-tests`)
+
+| File | Lines | Test file | Cases |
+|------|------:|-----------|------:|
+| `FavoriteHubModel.cpp` | 433 | `qt/test_favoritehubmodel.cpp` | 14 |
+| `ADLSModel.cpp` | 424 | `qt/test_adlsmodel.cpp` | 13 |
+| `IPFilterModel.cpp` | 187 | `qt/test_ipfiltermodel.cpp` | 11 |
+| `SpyModel.cpp` | 346 | `qt/test_spymodel.cpp` | 13 |
+| `FlowLayout.cpp` | 234 | `qt/test_flowlayout.cpp` | 19 |
+| `WulforSettings.cpp` | 532 | `qt/test_wulforsettings.cpp` | 17 |
+| `SearchBlacklist.cpp` | 100 | `qt/test_searchblacklist.cpp` | 13 |
+| `Antispam.cpp` | 472 | `qt/test_antispam.cpp` | 22 |
+
+### Qt Test Infrastructure
+- `tests/qt/test_qt_main.cpp` — Custom Catch2 main with `QApplication` for Qt event loop
+- `tests/qt/stubs_wulforutil.cpp` — Stub implementations for `WulforUtil` methods
+- `tests/qt/CMakeLists.txt` — Separate binary with `Qt6::Core/Gui/Widgets/Test`, `DISCOVERY_MODE PRE_TEST`
+- Linked against `dcpp` for `TestContext` + `BOOLSETTING()` macros
+
+### Status: Phase 1 ✅ Complete | Phase 2 ✅ Complete | Phase 3 ✅ Complete | Phase 4 ✅ Complete
 
 ---
 
