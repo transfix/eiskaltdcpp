@@ -34,13 +34,15 @@ namespace dcpp {
 
 FavoriteManager::FavoriteManager() : lastId(0), useHttp(false), running(false), c(nullptr), lastServer(0), listType(TYPE_NORMAL), dontSave(false) {
     dcpp::getContext()->getSettingsManager()->addListener(this);
-    dcpp::getContext()->getClientManager()->addListener(this);
+    if (dcpp::getContext()->getClientManager())
+        dcpp::getContext()->getClientManager()->addListener(this);
 
     File::ensureDirectory(Util::getHubListsPath());
 }
 
 FavoriteManager::~FavoriteManager() {
-    dcpp::getContext()->getClientManager()->removeListener(this);
+    if (dcpp::getContext()->getClientManager())
+        dcpp::getContext()->getClientManager()->removeListener(this);
     dcpp::getContext()->getSettingsManager()->removeListener(this);
     if(c) {
         c->removeListener(this);

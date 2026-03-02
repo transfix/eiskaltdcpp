@@ -40,6 +40,8 @@ add_executable(eiskaltdcpp-tests
     test_searchqueue.cpp
     test_finisheditem.cpp
     test_logmanager.cpp
+    test_searchresult.cpp
+    test_favoritemanager.cpp
 )
 
 target_include_directories(eiskaltdcpp-tests PRIVATE
