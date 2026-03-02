@@ -434,5 +434,3 @@ if (APPLE)
                     WORKING_DIRECTORY \${CMAKE_INSTALL_PREFIX})")
     set (CPACK_BINARY_DRAGNDROP ON)
 endif (APPLE)
-
-include(CPack)

@@ -160,14 +160,21 @@ if (APPLE)
 endif(APPLE)
 
 if (LINK STREQUAL SHARED)
+    # Always install the shared library (.so/.dylib) and DLL (.dll)
+    install (TARGETS dcpp
+        RUNTIME DESTINATION ${BINDIR}                   # .dll on Windows
+        LIBRARY DESTINATION ${LIBDIR} NAMELINK_SKIP)    # .so / .dylib (no dev symlink)
     if (WITH_DEV_FILES)
-        install (TARGETS dcpp LIBRARY DESTINATION ${LIBDIR})
-    else (WITH_DEV_FILES)
-        install (TARGETS dcpp LIBRARY DESTINATION ${LIBDIR} NAMELINK_SKIP)
-    endif (WITH_DEV_FILES)
+        # Also install the namelink symlink and import library for development
+        install (TARGETS dcpp
+            LIBRARY DESTINATION ${LIBDIR} NAMELINK_ONLY
+            ARCHIVE DESTINATION ${LIBDIR})
+    endif ()
     message (STATUS "Build libeiskaltdcpp as shared library")
-elseif (LINK STREQUAL STATIC AND WITH_DEV_FILES)
-    install (TARGETS dcpp LIBRARY DESTINATION ${LIBDIR})
+elseif (LINK STREQUAL STATIC)
+    if (WITH_DEV_FILES)
+        install (TARGETS dcpp ARCHIVE DESTINATION ${LIBDIR})
+    endif ()
     message (STATUS "Build libeiskaltdcpp as static library")
 endif (LINK STREQUAL SHARED)
 

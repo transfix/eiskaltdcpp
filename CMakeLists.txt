@@ -481,3 +481,5 @@ else ()
     set (CPACK_DEBIAN_PACKAGE_MAINTAINER "EiskaltDC++ developers")
     set (CPACK_DEBIAN_PACKAGE_SECTION "net")
 endif ()
+
+include (CPack)
