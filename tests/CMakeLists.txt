@@ -38,6 +38,8 @@ add_executable(eiskaltdcpp-tests
     test_settingsmanager.cpp
     test_user.cpp
     test_searchqueue.cpp
+    test_finisheditem.cpp
+    test_logmanager.cpp
 )
 
 target_include_directories(eiskaltdcpp-tests PRIVATE
