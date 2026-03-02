@@ -50,4 +50,8 @@ DCContext* getContext() noexcept {
     return g_context.get();
 }
 
+void setContext(std::unique_ptr<DCContext> ctx) noexcept {
+    g_context = std::move(ctx);
+}
+
 } // namespace dcpp

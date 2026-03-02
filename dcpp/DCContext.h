@@ -105,6 +105,13 @@ public:
     /// Create all managers in dependency order and load persistent state.
     void startup(ProgressFn progress = {});
 
+    /// Lightweight startup for testing: only creates ResourceManager,
+    /// SettingsManager, and LogManager.  Does NOT load settings from disk,
+    /// start threads, or initialize networking.
+    /// Call Util::initialize() with appropriate path overrides BEFORE this
+    /// if you need to redirect config/data to a temp directory.
+    void startupMinimal();
+
     /// Flush state, stop threads, tear down in reverse order.
     void shutdown();
 

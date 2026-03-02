@@ -35,6 +35,9 @@ add_executable(eiskaltdcpp-tests
     test_queueitem.cpp
     test_usercommand.cpp
     test_util_extra.cpp
+    test_settingsmanager.cpp
+    test_user.cpp
+    test_searchqueue.cpp
 )
 
 target_include_directories(eiskaltdcpp-tests PRIVATE

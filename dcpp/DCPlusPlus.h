@@ -19,6 +19,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <string>
 
 namespace dcpp {
@@ -31,5 +32,9 @@ extern void shutdown();
 
 /// Returns the global DCContext created by startup(). nullptr before startup / after shutdown.
 [[nodiscard]] extern DCContext* getContext() noexcept;
+
+/// Replace the global DCContext (for testing). Takes ownership.
+/// The caller must ensure shutdown() of the old context first if applicable.
+extern void setContext(std::unique_ptr<DCContext> ctx) noexcept;
 
 } // namespace dcpp

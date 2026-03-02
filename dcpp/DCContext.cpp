@@ -76,6 +76,24 @@ DCContext::~DCContext() {
     }
 }
 
+// ─── startupMinimal — lightweight init for unit tests ───────────────────
+
+void DCContext::startupMinimal() {
+    if (running_) return;
+
+    // NOTE: Caller is responsible for calling Util::initialize() with
+    // desired path overrides BEFORE this method.  If not yet initialized,
+    // we do a default init here.
+    Util::initialize();
+
+    // Create only the essential managers needed for SETTING() and logging
+    resourceManager_  = makeManager<ResourceManager>(this);
+    settingsManager_  = makeManager<SettingsManager>(this);
+    logManager_       = makeManager<LogManager>(this);
+
+    running_ = true;
+}
+
 // ─── startup — mirrors dcpp::startup() from DCPlusPlus.cpp ─────────────
 
 void DCContext::startup(ProgressFn progress) {
@@ -179,24 +197,25 @@ void DCContext::shutdown() {
 #endif
 
     // ── Phase 2: stop threads and active subsystems ─────────────────────
-    throttleManager_->shutdown();
+    if (throttleManager_) throttleManager_->shutdown();
 #ifdef LUA_SCRIPT
     scriptManager_.reset();
 #endif
-    timerManager_->shutdown();
-    hashManager_->shutdown();
-    connectionManager_->shutdown();
-    mappingManager_->close();
+    if (timerManager_) timerManager_->shutdown();
+    if (hashManager_) hashManager_->shutdown();
+    if (connectionManager_) connectionManager_->shutdown();
+    if (mappingManager_) mappingManager_->close();
 
-    BufferedSocket::waitShutdown();
+    if (connectionManager_) // only wait if sockets were started
+        BufferedSocket::waitShutdown();
 
     // ── Phase 3: save persistent state ──────────────────────────────────
-    queueManager_->saveQueue(true);
-    clientManager_->saveUsers();
+    if (queueManager_) queueManager_->saveQueue(true);
+    if (clientManager_) clientManager_->saveUsers();
     if (IPFilter::getInstance()) {
         IPFilter::getInstance()->shutdown();
     }
-    settingsManager_->save();
+    if (settingsManager_) settingsManager_->save();
 
     // ── Phase 4: destroy managers in dependency-safe order ──────────────
     // Matches the deleteInstance() sequence in dcpp::shutdown() exactly.
