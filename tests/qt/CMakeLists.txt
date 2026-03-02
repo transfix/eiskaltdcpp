@@ -65,8 +65,10 @@ target_link_libraries(eiskaltdcpp-qt-tests PRIVATE
     Qt6::Test
 )
 
-# Auto-discover test cases (defer to CTest time to avoid build-time
-# environment issues with GTK_PATH from snap-packaged editors)
+# Auto-discover test cases.
+# - PRE_TEST defers discovery to ctest time (avoids build-time env issues)
+# - ENVIRONMENT sets offscreen rendering for headless CI runners
 catch_discover_tests(eiskaltdcpp-qt-tests
     DISCOVERY_MODE PRE_TEST
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
