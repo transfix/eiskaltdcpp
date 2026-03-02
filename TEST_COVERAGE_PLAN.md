@@ -1,6 +1,6 @@
 # Test Coverage Improvement Plan
 
-**Current state:** 354 test cases | 1,757 assertions | 27 test files  
+**Current state:** 428 test cases | 1,890 assertions | 31 test files  
 **Target:** 40%+ coverage | ~600 test cases | 35+ test files  
 **Framework:** Catch2 v3.5.2 (FetchContent)
 
@@ -12,7 +12,7 @@
 
 | File | Lines | Test file | Cases |
 |------|------:|-----------|------:|
-| `AdcCommand.cpp` | 265 | `test_adccommand.cpp` | 14 |
+| `AdcCommand.cpp` | 265 | `test_adccommand.cpp` | 34 |
 | `ADLSearch.cpp` | 521 | `test_adlsearch.cpp` | 8 |
 | `BZUtils.cpp` + `ZUtils.cpp` | 279 | `test_compression.cpp` | 10 |
 | `CID.cpp` | 34 | `test_cid.cpp` | 5 |
@@ -35,6 +35,10 @@
 | `UserCommand.cpp` | 45 | `test_usercommand.cpp` | 18 |
 | `Util.cpp` | 1,497 | `test_util*.cpp` (4 files) | 58 |
 | `Wildcards.cpp` | 304 | `test_wildcards.cpp` | ~25 |
+| `File.cpp` | 591 | `test_file_utils.cpp` | 16 |
+| `MerkleTree.h` | 233 | `test_merkletree.cpp` | 14 |
+| `NmdcHub.cpp` (escape) | 1,080 | `test_nmdc_escape.cpp` | 18 |
+| `SFVReader.cpp` | ~100 | `test_sfvreader.cpp` | 7 |
 
 ### Test Infrastructure
 - `TestContext.h` — RAII fixture for tests needing `SETTING()`/`BOOLSETTING()` macros
@@ -42,7 +46,7 @@
 - `DCContext::shutdown()` — null-safe for minimal startup scenarios
 - `dcpp::setContext()` — injects test context for global `getContext()` access
 
-### Status: Phase 1 ✅ Complete | Phase 2 ✅ Complete
+### Status: Phase 1 ✅ Complete | Phase 2 ✅ Complete | Phase 3 ✅ Complete
 
 ---
 
@@ -185,11 +189,12 @@ struct TestContext {
 
 ---
 
-## Phase 3 — Protocol & Network Logic (~35% target)
+## Phase 3 — Protocol & Network Logic (~35% target) ✅ Complete
 
-These require more sophisticated setup but cover critical protocol correctness. Use mock socket/connection classes or test at the message parsing/serialization layer.
+Implemented protocol parsing, file I/O, hash tree, and SFV verification tests.
+NmdcHub `onLine()`/AdcHub dispatch require mock Client infrastructure (deferred to Phase 4+).
 
-### Priority 10: Protocol Parsing
+### Completed in Phase 3
 
 | File | Lines | Approach | Est. cases |
 |------|------:|----------|--------:|
