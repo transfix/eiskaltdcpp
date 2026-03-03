@@ -91,6 +91,7 @@ void DCContext::startupMinimal() {
     settingsManager_  = makeManager<SettingsManager>(this);
     logManager_       = makeManager<LogManager>(this);
 
+    minimalMode_ = true;
     running_ = true;
 }
 
@@ -210,12 +211,20 @@ void DCContext::shutdown() {
         BufferedSocket::waitShutdown();
 
     // ── Phase 3: save persistent state ──────────────────────────────────
-    if (queueManager_) queueManager_->saveQueue(true);
-    if (clientManager_) clientManager_->saveUsers();
-    if (IPFilter::getInstance()) {
-        IPFilter::getInstance()->shutdown();
+    // Skip save() in minimal mode (unit-test path) — there is nothing
+    // meaningful to persist AND the static settingTags[] array that
+    // save() reads may already be destroyed if we are running inside a
+    // static-destruction handler on MSVC (static destruction order
+    // fiasco between settingTags in SettingsManager.cpp and g_context in
+    // DCPlusPlus.cpp).
+    if (!minimalMode_) {
+        if (queueManager_) queueManager_->saveQueue(true);
+        if (clientManager_) clientManager_->saveUsers();
+        if (IPFilter::getInstance()) {
+            IPFilter::getInstance()->shutdown();
+        }
+        if (settingsManager_) settingsManager_->save();
     }
-    if (settingsManager_) settingsManager_->save();
 
     // ── Phase 4: destroy managers in dependency-safe order ──────────────
     // Matches the deleteInstance() sequence in dcpp::shutdown() exactly.

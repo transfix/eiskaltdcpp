@@ -145,6 +145,7 @@ public:
 
 private:
     bool running_ = false;
+    bool minimalMode_ = false;  ///< true when started via startupMinimal()
 
     // ── Owned managers (destruction is reverse of declaration order) ────
     // Order must match DCPlusPlus::startup() construction order.

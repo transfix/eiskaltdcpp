@@ -14,6 +14,7 @@
 #include "Util.h"
 #include "TestContext.h"
 
+#include <cstdlib>
 #include <filesystem>
 
 using namespace dcpp;
@@ -21,6 +22,12 @@ using namespace dcpp;
 // Shared test context
 static std::unique_ptr<dcpp::test::TestContext> g_tc;
 static std::unique_ptr<FavoriteManager> g_fm;
+
+// atexit callback: destroy FavoriteManager while DCContext is still alive.
+// Registered AFTER TestContext's atexit, so it runs FIRST (LIFO order).
+static void cleanupFavoriteManager() {
+    g_fm.reset();
+}
 
 static void ensureContext() {
     if (!g_tc) {
@@ -30,6 +37,8 @@ static void ensureContext() {
         // Saves go to temp dir automatically via TestContext path overrides.
         g_fm = std::make_unique<FavoriteManager>();
         g_fm->setContext(getContext());
+        // Register cleanup AFTER TestContext's atexit → runs FIRST (LIFO).
+        std::atexit(cleanupFavoriteManager);
     }
 }
 

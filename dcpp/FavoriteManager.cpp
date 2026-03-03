@@ -41,9 +41,14 @@ FavoriteManager::FavoriteManager() : lastId(0), useHttp(false), running(false), 
 }
 
 FavoriteManager::~FavoriteManager() {
-    if (dcpp::getContext()->getClientManager())
-        dcpp::getContext()->getClientManager()->removeListener(this);
-    dcpp::getContext()->getSettingsManager()->removeListener(this);
+    // Guard against null context — can happen if the manager outlives the
+    // global DCContext during static destruction (e.g. unit tests).
+    if (dcpp::getContext()) {
+        if (dcpp::getContext()->getClientManager())
+            dcpp::getContext()->getClientManager()->removeListener(this);
+        if (dcpp::getContext()->getSettingsManager())
+            dcpp::getContext()->getSettingsManager()->removeListener(this);
+    }
     if(c) {
         c->removeListener(this);
         delete c;
