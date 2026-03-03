@@ -10,17 +10,29 @@
 
 #include "Antispam.h"
 #include "WulforSettings.h"
+#include "QtContext.h"
 #include "../TestContext.h"
 
 #include <memory>
 
-// Lazy-init dcpp context + WulforSettings
+// Lazy-init dcpp context + QtContext with WulforSettings
 static std::unique_ptr<dcpp::test::TestContext> g_tc;
+static std::unique_ptr<QtContext> g_qtCtx;
+
+static void cleanupQtContext() {
+    setQtContext(nullptr);
+    g_qtCtx.reset();
+}
+
 static void ensureContext() {
     if (!g_tc)
         g_tc = std::make_unique<dcpp::test::TestContext>();
-    if (!WulforSettings::getInstance())
-        WulforSettings::newInstance();
+    if (!qtContext()) {
+        g_qtCtx = std::make_unique<QtContext>();
+        g_qtCtx->createSettings();
+        setQtContext(g_qtCtx.get());
+        std::atexit(cleanupQtContext);
+    }
 }
 
 // Helper: create a fresh AntiSpam, destroying any previous one

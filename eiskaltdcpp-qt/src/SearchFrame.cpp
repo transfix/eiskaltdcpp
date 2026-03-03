@@ -37,6 +37,7 @@
 #include "SearchBlacklist.h"
 #include "SearchBlacklistDialog.h"
 #include "WulforUtil.h"
+#include "QtContext.h"
 #include "Magnet.h"
 #include "ArenaWidgetManager.h"
 #include "ArenaWidgetFactory.h"
@@ -347,7 +348,7 @@ void SearchFrame::Menu::addTempPath(const QString &path){
 SearchFrame::SearchFrame(QWidget *parent): QWidget(parent), d_ptr(new SearchFramePrivate())
 {
     if (!SearchBlacklist::getInstance())
-        SearchBlacklist::newInstance();
+        qtContext()->createSearchBlacklist();
 
     Q_D(SearchFrame);
 

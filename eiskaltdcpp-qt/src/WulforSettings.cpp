@@ -12,6 +12,7 @@
 
 #include "WulforSettings.h"
 #include "WulforUtil.h"
+#include "QtContext.h"
 
 #ifdef USE_ASPELL
 #include "SpellCheck.h"
@@ -40,18 +41,10 @@
 
 using namespace dcpp;
 
-WulforSettings* WulforSettings::instance_ = nullptr;
-
-void WulforSettings::newInstance() {
-    delete instance_;
-    instance_ = new WulforSettings();
+WulforSettings* WulforSettings::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->settings() : nullptr;
 }
-
-void WulforSettings::deleteInstance() {
-    delete instance_;
-    instance_ = nullptr;
-}
-
 
 WulforSettings::WulforSettings()
     : settings(_q(Util::getPath(Util::PATH_USER_CONFIG)) + "EiskaltDC++_Qt.conf", QSettings::IniFormat)

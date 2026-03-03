@@ -17,6 +17,8 @@
 
 #include "dcpp/stdinc.h"
 
+class QtContext;
+
 static const QString & WS_CHAT_OP_COLOR           = "chat-op-color";
 static const QString & WS_CHAT_USER_COLOR         = "chat-us-color";
 static const QString & WS_CHAT_CORE_COLOR         = "chat-co-color";
@@ -161,11 +163,12 @@ class WulforSettings :
     typedef QMap<QString, QString> WStrMap;
 
 public:
-    /// Lifecycle — replaces dcpp::Singleton<WulforSettings>.
-    /// getInstance() returns nullptr before newInstance() / after deleteInstance().
-    static WulforSettings* getInstance() { return instance_; }
-    static void newInstance();
-    static void deleteInstance();
+    WulforSettings();
+    ~WulforSettings() override;
+
+    /// Access through QtContext — NOT a singleton.
+    /// Returns nullptr if no QtContext is active or settings not yet created.
+    static WulforSettings* getInstance();
 
     void load();
     void save();
@@ -195,8 +198,7 @@ Q_SIGNALS:
     void varValueChanged(const QString &key, const QVariant &value);
 
 private:
-    WulforSettings();
-    virtual ~WulforSettings();
+    friend class QtContext;  // QtContext owns and constructs us
 
     void loadOldConfig(); //load old version of config
     void loadQtTranslation(const QString &lcName);
@@ -217,8 +219,6 @@ private:
     QTranslator appTranslator;
     QTranslator qtTranslator;
     QTranslator qtBaseTranslator;
-
-    static WulforSettings* instance_;
 };
 
 static const auto WSGET = [](const QString &key, const QString &default_value = "") -> QString { return WulforSettings::getInstance()->getStr(key, default_value); };

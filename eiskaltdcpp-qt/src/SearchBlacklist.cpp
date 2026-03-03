@@ -12,13 +12,17 @@
 
 #include "SearchBlacklist.h"
 #include "WulforUtil.h"
+#include "QtContext.h"
 
 #include <QFile>
 #include <QTextStream>
 
 #include "dcpp/Util.h"
 
-SearchBlacklist* SearchBlacklist::instance_ = nullptr;
+SearchBlacklist* SearchBlacklist::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->searchBlacklist() : nullptr;
+}
 
 SearchBlacklist::SearchBlacklist(){
     list[NAME] = {};

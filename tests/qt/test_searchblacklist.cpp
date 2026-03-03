@@ -9,32 +9,34 @@
 
 #include "SearchBlacklist.h"
 #include "WulforSettings.h"
+#include "QtContext.h"
 #include "../TestContext.h"
 
 #include <memory>
 
-// Clean up SearchBlacklist before static destruction
-static void cleanupSearchBlacklist() {
-    if (SearchBlacklist::getInstance())
-        SearchBlacklist::deleteInstance();
+// Lazy-init dcpp context + QtContext with WulforSettings
+static std::unique_ptr<dcpp::test::TestContext> g_tc;
+static std::unique_ptr<QtContext> g_qtCtx;
+
+static void cleanupQtContext() {
+    setQtContext(nullptr);
+    g_qtCtx.reset();
 }
 
-// Lazy-init dcpp context + WulforSettings
-static std::unique_ptr<dcpp::test::TestContext> g_tc;
 static void ensureContext() {
     if (!g_tc)
         g_tc = std::make_unique<dcpp::test::TestContext>();
-    if (!WulforSettings::getInstance()) {
-        WulforSettings::newInstance();
-        std::atexit(cleanupSearchBlacklist);
+    if (!qtContext()) {
+        g_qtCtx = std::make_unique<QtContext>();
+        g_qtCtx->createSettings();
+        setQtContext(g_qtCtx.get());
+        std::atexit(cleanupQtContext);
     }
 }
 
 // Helper: create a fresh SearchBlacklist with empty lists
 static SearchBlacklist* freshBlacklist() {
-    if (SearchBlacklist::getInstance())
-        SearchBlacklist::deleteInstance();
-    SearchBlacklist::newInstance();
+    qtContext()->createSearchBlacklist();
     auto *sb = SearchBlacklist::getInstance();
     // Clear any lists that may have been loaded from a previous test's save
     sb->setList(SearchBlacklist::NAME, {});
@@ -44,7 +46,7 @@ static SearchBlacklist* freshBlacklist() {
 
 // ─── Construction ───────────────────────────────────────────────────────
 
-TEST_CASE("SearchBlacklist: singleton creation", "[qt][searchblacklist]") {
+TEST_CASE("SearchBlacklist: context creation", "[qt][searchblacklist]") {
     ensureContext();
     auto *sb = freshBlacklist();
     REQUIRE(sb != nullptr);

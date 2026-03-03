@@ -320,7 +320,6 @@ MainWindow::~MainWindow(){
     delete d->sBar;
 
     ShortcutManager::deleteInstance();
-    SearchBlacklist::deleteInstance();
 
     delete d_ptr;
 }

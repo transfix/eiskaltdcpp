@@ -40,6 +40,7 @@ using namespace std;
 
 #include "WulforUtil.h"
 #include "WulforSettings.h"
+#include "QtContext.h"
 #include "HubManager.h"
 #include "Notification.h"
 #include "VersionGlobal.h"
@@ -156,12 +157,15 @@ int main(int argc, char *argv[])
     
     GlobalTimer::newInstance();
 
-    WulforSettings::newInstance();
-    WulforSettings::getInstance()->load();
-    WulforSettings::getInstance()->loadTheme();
+    QtContext qtCtx;
+    qtCtx.createSettings();
+    setQtContext(&qtCtx);
+
+    qtCtx.settings()->load();
+    qtCtx.settings()->loadTheme();
 
     WulforUtil::newInstance();
-    WulforSettings::getInstance()->loadTranslation();
+    qtCtx.settings()->loadTranslation();
 #if defined(Q_OS_MAC)
     // Disable system tray functionality in Mac OS X:
     WBSET(WB_TRAY_ENABLED, false);
@@ -249,7 +253,8 @@ int main(int argc, char *argv[])
 
     WulforUtil::deleteInstance();
 
-    WulforSettings::deleteInstance();
+    setQtContext(nullptr);
+    // qtCtx destructor destroys WulforSettings & SearchBlacklist
 
     dcpp::shutdown();
 

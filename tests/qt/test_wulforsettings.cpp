@@ -9,35 +9,34 @@
 #include <QVariant>
 
 #include "WulforSettings.h"
+#include "QtContext.h"
 #include "../TestContext.h"
 
 #include <memory>
 
-// Lazy-init dcpp context
+// Lazy-init dcpp context + QtContext
 static std::unique_ptr<dcpp::test::TestContext> g_tc;
-static void ensureContext() {
+static std::unique_ptr<QtContext> g_qtCtx;
+
+static void cleanupQtContext() {
+    setQtContext(nullptr);
+    g_qtCtx.reset();
+}
+
+static void ensureSettings() {
     if (!g_tc)
         g_tc = std::make_unique<dcpp::test::TestContext>();
-}
-
-// Cleanup: destroy WulforSettings before TestContext static destruction.
-// Registered via atexit() so it runs in LIFO order before g_tc's destructor.
-static void cleanupWulforSettings() {
-    WulforSettings::deleteInstance();
-}
-
-// Lazy-init WulforSettings (depends on dcpp context)
-static void ensureSettings() {
-    ensureContext();
-    if (!WulforSettings::getInstance()) {
-        WulforSettings::newInstance();
-        std::atexit(cleanupWulforSettings);
+    if (!qtContext()) {
+        g_qtCtx = std::make_unique<QtContext>();
+        g_qtCtx->createSettings();
+        setQtContext(g_qtCtx.get());
+        std::atexit(cleanupQtContext);
     }
 }
 
 // ─── Construction ───────────────────────────────────────────────────────
 
-TEST_CASE("WulforSettings: singleton exists after creation", "[qt][wulforsettings]") {
+TEST_CASE("WulforSettings: exists after context creation", "[qt][wulforsettings]") {
     ensureSettings();
     REQUIRE(WulforSettings::getInstance() != nullptr);
 }

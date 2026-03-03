@@ -22,6 +22,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(QT_SRC_DIR ${CMAKE_SOURCE_DIR}/eiskaltdcpp-qt/src)
 
 set(QT_MODEL_SOURCES
+    ${QT_SRC_DIR}/QtContext.cpp
     ${QT_SRC_DIR}/FavoriteHubModel.cpp
     ${QT_SRC_DIR}/ADLSModel.cpp
     ${QT_SRC_DIR}/IPFilterModel.cpp
