@@ -21,7 +21,6 @@
 #include "WulforUtil.h"
 
 #include <dcpp/stdinc.h>
-#include <dcpp/Singleton.h>
 #include <dcpp/Text.h>
 
 class HubFrame;
@@ -33,16 +32,17 @@ public:
     QStringList origMessages;
 };
 
+class QtContext;
+
 class Secretary :
         public  QWidget,
         private Ui::UISecretary,
-        public  dcpp::Singleton<Secretary>,
         public  ArenaWidget
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
 
-    friend class dcpp::Singleton<Secretary>;
+    friend class QtContext;
     friend class HubFrame;
 
 public:
@@ -80,10 +80,13 @@ private Q_SLOTS:
 protected:
     virtual bool eventFilter(QObject *obj, QEvent *e);
 
-private:
+public:
     explicit Secretary(QWidget *parent = nullptr);
-    virtual ~Secretary();
+    ~Secretary() override;
 
+    static Secretary* getInstance();
+
+private:
     Secretary(const Secretary&) = delete;
     const Secretary& operator=(const Secretary&) = delete;
 

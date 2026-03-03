@@ -20,7 +20,6 @@
 #include "WulforUtil.h"
 
 #include "dcpp/stdinc.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/FavoriteManager.h"
 #include "dcpp/FavoriteManagerListener.h"
 
@@ -43,17 +42,18 @@ class FavoriteHubEditor:
         }
 };
 
+class QtContext;
+
 class FavoriteHubs :
         public QWidget,
         private Ui::UIFavoriteHubs,
         public ArenaWidget,
-        private dcpp::FavoriteManagerListener,
-        public dcpp::Singleton<FavoriteHubs>
+        private dcpp::FavoriteManagerListener
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
 
-    friend class dcpp::Singleton<FavoriteHubs>;
+    friend class QtContext;
 
     typedef QMap<QString,QVariant> StrMap;
 public:
@@ -81,9 +81,13 @@ private Q_SLOTS:
     void slotConnectButtonClicked();
     void slotUpdateComboBox_CID();
 
-private:
+public:
     FavoriteHubs(QWidget* = nullptr);
-    virtual ~FavoriteHubs();
+    ~FavoriteHubs() override;
+
+    static FavoriteHubs* getInstance();
+
+private:
 
     void load();
     void save();

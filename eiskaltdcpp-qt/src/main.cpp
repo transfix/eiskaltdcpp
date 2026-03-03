@@ -155,16 +155,16 @@ int main(int argc, char *argv[])
     app.setApplicationName("EiskaltDC++ Qt");
     app.setApplicationVersion(QString::fromStdString(eiskaltdcppVersionString));
     
-    GlobalTimer::newInstance();
-
     QtContext qtCtx;
-    qtCtx.createSettings();
     setQtContext(&qtCtx);
+
+    qtCtx.createGlobalTimer();
+    qtCtx.createSettings();
 
     qtCtx.settings()->load();
     qtCtx.settings()->loadTheme();
 
-    WulforUtil::newInstance();
+    qtCtx.createWulforUtil();
     qtCtx.settings()->loadTranslation();
 #if defined(Q_OS_MAC)
     // Disable system tray functionality in Mac OS X:
@@ -181,9 +181,9 @@ int main(int argc, char *argv[])
 
     app.setWindowIcon(WICON(WulforUtil::eiICON_APPL));
 
-    ArenaWidgetManager::newInstance();
+    qtCtx.createArenaWidgetManager();
 
-    MainWindow::newInstance();
+    qtCtx.createMainWindow();
 #if defined(Q_OS_MAC)
     MainWindow::getInstance()->setUnload(false);
     QObject::connect(&app, &EiskaltApp::clickedOnDock,
@@ -194,30 +194,33 @@ int main(int argc, char *argv[])
 
     QObject::connect(&app, &QtSingleCoreApplication::messageReceived, MainWindow::getInstance(), &MainWindow::parseInstanceLine);
 
-    HubManager::newInstance();
+    qtCtx.createHubManager();
 
     WulforSettings::getInstance()->loadTheme();
 
     if (WBGET(WB_APP_ENABLE_EMOTICON)){
-        EmoticonFactory::newInstance();
+        qtCtx.createEmoticonFactory();
         EmoticonFactory::getInstance()->load();
     }
 
 #ifdef USE_ASPELL
     if (WBGET(WB_APP_ENABLE_ASPELL))
-        SpellCheck::newInstance();
+        qtCtx.createSpellCheck();
 #endif
 
-    Notification::newInstance();
+    qtCtx.createNotification();
 
 #ifdef USE_JS
     ScriptEngine::newInstance();
     QObject::connect(ScriptEngine::getInstance(), SIGNAL(scriptChanged(QString)), MainWindow::getInstance(), SLOT(slotJSFileChanged(QString)));
 #endif
 
-    ArenaWidgetFactory().create< dcpp::Singleton, FinishedUploads >();
-    ArenaWidgetFactory().create< dcpp::Singleton, FinishedDownloads >();
-    ArenaWidgetFactory().create< dcpp::Singleton, QueuedUsers >();
+    qtCtx.createFinishedUploads();
+    ArenaWidgetManager::getInstance()->add(qtCtx.finishedUploads());
+    qtCtx.createFinishedDownloads();
+    ArenaWidgetManager::getInstance()->add(qtCtx.finishedDownloads());
+    qtCtx.createQueuedUsers();
+    ArenaWidgetManager::getInstance()->add(qtCtx.queuedUsers());
 
     MainWindow::getInstance()->autoconnect();
     MainWindow::getInstance()->parseCmdLine(app.arguments());
@@ -231,30 +234,12 @@ int main(int argc, char *argv[])
 
     WulforSettings::getInstance()->save();
 
-    EmoticonFactory::deleteInstance();
-
-#ifdef USE_ASPELL
-    if (SpellCheck::getInstance())
-        SpellCheck::deleteInstance();
-#endif
-    Notification::deleteInstance();
-
 #ifdef USE_JS
     ScriptEngine::deleteInstance();
 #endif
 
-    GlobalTimer::deleteInstance();
-    
-    ArenaWidgetManager::deleteInstance();
-    
-    HubManager::getInstance()->release();
-
-    MainWindow::deleteInstance();
-
-    WulforUtil::deleteInstance();
-
     setQtContext(nullptr);
-    // qtCtx destructor destroys WulforSettings & SearchBlacklist
+    // qtCtx destructor destroys all services in reverse declaration order
 
     dcpp::shutdown();
 

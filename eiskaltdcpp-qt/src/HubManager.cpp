@@ -9,8 +9,14 @@
 
 #include "HubManager.h"
 #include "HubFrame.h"
+#include "QtContext.h"
 
 #include <QtDebug>
+
+HubManager* HubManager::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->hubManager() : nullptr;
+}
 
 HubManager::HubManager():
         active(nullptr)

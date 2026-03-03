@@ -43,15 +43,20 @@ static const auto _tq = [](const QString &s) { return s.toStdString(); };
 
 typedef QVariantMap VarMap;
 
+class QtContext;
+
 class WulforUtil :
-        public QObject,
-        public dcpp::Singleton<WulforUtil>
+        public QObject
 {
     Q_OBJECT
 
-friend class dcpp::Singleton<WulforUtil>;
+friend class QtContext;
 
 public:
+    WulforUtil();
+    ~WulforUtil() override;
+
+    static WulforUtil* getInstance();
 
     enum Icons {
         eiADLS = 0,
@@ -191,9 +196,6 @@ public Q_SLOTS:
     bool openUrl(const QString&);
 
 private:
-
-    WulforUtil();
-    virtual ~WulforUtil();
 
     bool loadUserIconsFromFile(QString);
     void clearUserIconCache();

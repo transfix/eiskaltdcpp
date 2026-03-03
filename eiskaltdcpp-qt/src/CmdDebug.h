@@ -20,7 +20,6 @@
 #include "WulforUtil.h"
 
 #include <dcpp/stdinc.h>
-#include <dcpp/Singleton.h>
 #include <dcpp/DebugManager.h>
 #include <dcpp/Text.h>
 
@@ -29,19 +28,22 @@ public:
     int maxLines;
 };
 
+class QtContext;
+
 class CmdDebug : public QWidget,
         private Ui::UICmdDebug,
         public ArenaWidget,
-        public dcpp::Singleton<CmdDebug>,
         private dcpp::DebugManagerListener
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
 
-    friend class dcpp::Singleton<CmdDebug>;
+    friend class QtContext;
 public:
     explicit CmdDebug(QWidget *parent = nullptr);
-    virtual ~CmdDebug();
+    ~CmdDebug() override;
+
+    static CmdDebug* getInstance();
     QWidget *getWidget();
     QString getArenaTitle();
     QString getArenaShortTitle();

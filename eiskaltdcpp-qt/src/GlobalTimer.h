@@ -10,15 +10,18 @@
 #pragma once
 
 #include <QObject>
-#include "dcpp/Singleton.h"
 #include <memory>
 
+class QtContext;
 class QTimer;
 
-class GlobalTimer: public QObject, public dcpp::Singleton<GlobalTimer> {
-    friend class dcpp::Singleton<GlobalTimer>;
+class GlobalTimer: public QObject {
     Q_OBJECT
 public:
+    GlobalTimer();
+    ~GlobalTimer() override;
+
+    static GlobalTimer* getInstance();
 
     quint64 getTicks() const;
 
@@ -30,10 +33,9 @@ private Q_SLOTS:
     void slotTick();
 
 private:
-    GlobalTimer();
-    GlobalTimer(const GlobalTimer &);
-    virtual ~GlobalTimer();
-    GlobalTimer &operator=(const GlobalTimer&);
+    friend class QtContext;
+    GlobalTimer(const GlobalTimer &) = delete;
+    GlobalTimer &operator=(const GlobalTimer&) = delete;
 
     std::unique_ptr<QTimer> timer;
     quint64 tickCount;

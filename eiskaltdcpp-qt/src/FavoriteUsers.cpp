@@ -13,6 +13,7 @@
 #include "FavoriteUsers.h"
 #include "WulforUtil.h"
 #include "FavoriteUsersModel.h"
+#include "QtContext.h"
 
 #include <QMenu>
 #include <QInputDialog>
@@ -29,6 +30,11 @@
 
 
 using namespace dcpp;
+
+FavoriteUsers* FavoriteUsers::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->favoriteUsers() : nullptr;
+}
 
 FavoriteUsers::FavoriteUsers(QWidget *parent) :
     QWidget(parent)

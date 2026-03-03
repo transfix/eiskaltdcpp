@@ -19,7 +19,6 @@
 
 #include <dcpp/stdinc.h>
 #include <dcpp/QueueManager.h>
-#include <dcpp/Singleton.h>
 #include "ArenaWidget.h"
 #include "WulforUtil.h"
 #include "ui_UIDownloadQueue.h"
@@ -29,12 +28,13 @@ class DownloadQueueItem;
 class DownloadQueueDelegate;
 class DownloadQueuePrivate;
 
+class QtContext;
+
 class DownloadQueue :
         public QWidget,
         public ArenaWidget,
         private Ui::UIDownloadQueue,
-        private dcpp::QueueManagerListener,
-        public dcpp::Singleton<DownloadQueue>
+        private dcpp::QueueManagerListener
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
@@ -42,7 +42,7 @@ class DownloadQueue :
 typedef QVariantMap VarMap;
 typedef QMap<QString, QMap<QString, QString> > SourceMap;
 
-friend class dcpp::Singleton<DownloadQueue>;
+friend class QtContext;
 
 class Menu{
 public:
@@ -133,9 +133,13 @@ Q_SIGNALS:
     void coreSourcesUpdated(VarMap);
     void coreStatusUpdated(VarMap);
 
-private:
+public:
     DownloadQueue(QWidget* = nullptr);
-    virtual ~DownloadQueue();
+    ~DownloadQueue() override;
+
+    static DownloadQueue* getInstance();
+
+private:
 
     void init();
     void load();

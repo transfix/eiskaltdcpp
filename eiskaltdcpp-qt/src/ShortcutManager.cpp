@@ -9,6 +9,7 @@
 
 #include "ShortcutManager.h"
 #include "WulforUtil.h"
+#include "QtContext.h"
 
 #include "dcpp/Util.h"
 
@@ -17,6 +18,11 @@
 #include <QStringList>
 
 using namespace dcpp;
+
+ShortcutManager* ShortcutManager::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->shortcutManager() : nullptr;
+}
 
 ShortcutManager::ShortcutManager(){
     load();

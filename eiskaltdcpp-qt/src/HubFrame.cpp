@@ -17,6 +17,7 @@
 #include "Antispam.h"
 #include "HubManager.h"
 #include "Notification.h"
+#include "QtContext.h"
 #include "ShellCommandRunner.h"
 #include "EmoticonDialog.h"
 #include "WulforSettings.h"
@@ -1766,9 +1767,9 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
         WBSET(WB_APP_ENABLE_ASPELL, param.trimmed() == "on");
 
         if (WBGET(WB_APP_ENABLE_ASPELL) && !SpellCheck::getInstance())
-            SpellCheck::newInstance();
+            qtContext()->createSpellCheck();
         else if (SpellCheck::getInstance())
-            SpellCheck::deleteInstance();
+            qtContext()->destroySpellCheck();
 
         if (fr == this)
             addStatus(tr("Aspell switched %1").arg((WBGET(WB_APP_ENABLE_ASPELL)? tr("on") : tr("off"))) );
@@ -3682,7 +3683,7 @@ void HubFrame::slotBoolSettingsChanged(const QString &key, int value){
         bool enable = static_cast<bool>(value);
 
         if (enable){
-            EmoticonFactory::newInstance();
+            qtContext()->createEmoticonFactory();
             EmoticonFactory::getInstance()->load();
 
             frame_SMILES->setVisible(false);
@@ -3700,7 +3701,7 @@ void HubFrame::slotBoolSettingsChanged(const QString &key, int value){
         }
         else{
             if (EmoticonFactory::getInstance())
-                EmoticonFactory::deleteInstance();
+                qtContext()->destroyEmoticonFactory();
 
             frame_SMILES->setVisible(false);
 

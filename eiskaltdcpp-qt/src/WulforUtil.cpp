@@ -14,6 +14,7 @@
 #include "Magnet.h"
 #include "WulforUtil.h"
 #include "ArenaWidgetFactory.h"
+#include "QtContext.h"
 #include "icons/gv.xpm"
 
 #ifdef HAVE_IFADDRS_H
@@ -79,6 +80,11 @@
 using namespace dcpp;
 
 const QString WulforUtil::magnetSignature = "magnet:?xt=urn:tree:tiger:";
+
+WulforUtil* WulforUtil::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->wulforUtil() : nullptr;
+}
 
 WulforUtil::WulforUtil()
 {

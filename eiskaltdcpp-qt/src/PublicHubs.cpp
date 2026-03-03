@@ -15,6 +15,7 @@
 #include "MainWindow.h"
 #include "WulforSettings.h"
 #include "AutoToolTip.h"
+#include "QtContext.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -23,6 +24,11 @@
 #include <QKeyEvent>
 
 using namespace dcpp;
+
+PublicHubs* PublicHubs::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->publicHubs() : nullptr;
+}
 
 PublicHubs::PublicHubs(QWidget *parent) :
     QWidget(parent), proxy(nullptr)

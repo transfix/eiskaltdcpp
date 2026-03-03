@@ -117,6 +117,8 @@ bool SearchStringListModel::setData(const QModelIndex &index, const QVariant &va
     return true;
 }
 
+SearchFrame::Menu* SearchFrame::Menu::instance_ = nullptr;
+
 SearchFrame::Menu::Menu() : menu(new QMenu(nullptr))
 {
     WulforUtil *WU = WulforUtil::getInstance();

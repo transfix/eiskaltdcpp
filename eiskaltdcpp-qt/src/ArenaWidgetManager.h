@@ -12,17 +12,22 @@
 #include <QObject>
 #include <QList>
 
-#include "dcpp/Singleton.h"
-
 class ArenaWidget;
 class ArenaWidgetFactory;
+class QtContext;
 
-class ArenaWidgetManager: public QObject, public dcpp::Singleton<ArenaWidgetManager>
+class ArenaWidgetManager: public QObject
 {
 Q_OBJECT
 
-friend class dcpp::Singleton<ArenaWidgetManager>;
+friend class QtContext;
 friend class ArenaWidgetFactory;
+
+public:
+    ArenaWidgetManager();
+    ~ArenaWidgetManager() override;
+
+    static ArenaWidgetManager* getInstance();
 
 public Q_SLOTS:
     void rem(ArenaWidget*);
@@ -36,13 +41,12 @@ Q_SIGNALS:
     void activated(ArenaWidget*);
     void toggled(ArenaWidget*);
 
-private:
-    ArenaWidgetManager();
-    ArenaWidgetManager(const ArenaWidgetManager &m);
-    virtual ~ArenaWidgetManager();
-    ArenaWidgetManager &operator=(const ArenaWidgetManager &);
-
+public:
     void add(ArenaWidget*);
+
+private:
+    ArenaWidgetManager(const ArenaWidgetManager &m) = delete;
+    ArenaWidgetManager &operator=(const ArenaWidgetManager &) = delete;
 
     QList<ArenaWidget*> widgets;
 };

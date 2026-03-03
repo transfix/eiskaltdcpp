@@ -10,7 +10,6 @@
 #pragma once
 
 #include "ArenaWidgetManager.h"
-#include "dcpp/Singleton.h"
 
 class ArenaWidgetFactory {
 public:
@@ -25,16 +24,6 @@ public:
         ArenaWidgetManager::getInstance()->add(t);
 
         return t;
-    }
-
-    template < template < class > class Type = dcpp::Singleton, class T >
-    inline T *create() {
-        if (!Type<T>::getInstance())
-            Type<T>::newInstance();
-
-        ArenaWidgetManager::getInstance()->add(Type<T>::getInstance());
-
-        return Type<T>::getInstance();
     }
 
 private:

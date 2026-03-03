@@ -21,6 +21,12 @@
 
 #include "WulforUtil.h"
 #include "CmdDebug.h"
+#include "QtContext.h"
+
+CmdDebug* CmdDebug::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->cmdDebug() : nullptr;
+}
 
 CmdDebug::CmdDebug(QWidget *parent)
     : QWidget(parent)

@@ -14,7 +14,6 @@
 #include <QHash>
 
 #include "dcpp/stdinc.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/UploadManager.h"
 #include "dcpp/UploadManagerListener.h"
 #include "dcpp/User.h"
@@ -85,17 +84,18 @@ private:
     QHash<QString, QueuedUserItem*> cids;
 };
 
+class QtContext;
+
 class QueuedUsers:
         public QWidget,
         public ArenaWidget,
         private Ui::UIQueuedUsers,
-        public dcpp::Singleton<QueuedUsers>,
         private dcpp::UploadManagerListener
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
 
-    friend class dcpp::Singleton<QueuedUsers>;
+    friend class QtContext;
 
 public:
     QWidget *getWidget() { return this; }
@@ -117,9 +117,13 @@ private Q_SLOTS:
 protected:
     void closeEvent(QCloseEvent *e);
 
-private:
+public:
     QueuedUsers();
-    virtual ~QueuedUsers();
+    ~QueuedUsers() override;
+
+    static QueuedUsers* getInstance();
+
+private:
 
     virtual void on(WaitingAddFile, const dcpp::HintedUser&, const std::string&) noexcept;
     virtual void on(WaitingRemoveUser, const dcpp::HintedUser&) noexcept;

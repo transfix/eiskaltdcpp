@@ -38,8 +38,8 @@ static void ensureContext() {
 // Helper: create a fresh AntiSpam, destroying any previous one
 static AntiSpam* freshAntiSpam() {
     if (AntiSpam::getInstance())
-        AntiSpam::deleteInstance();
-    AntiSpam::newInstance();
+        qtContext()->destroyAntiSpam();
+    qtContext()->createAntiSpam();
     return AntiSpam::getInstance();
 }
 

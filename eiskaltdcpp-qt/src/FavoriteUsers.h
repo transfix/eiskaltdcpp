@@ -17,7 +17,6 @@
 #include <QMetaType>
 
 #include "dcpp/stdinc.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/FavoriteManager.h"
 
 #include "ArenaWidget.h"
@@ -27,9 +26,10 @@
 
 class FavoriteUsersModel;
 
+class QtContext;
+
 class FavoriteUsers :
         public QWidget,
-        public dcpp::Singleton<FavoriteUsers>,
         public dcpp::FavoriteManagerListener,
         public ArenaWidget,
         private Ui::UIFavoriteUsers
@@ -37,7 +37,7 @@ class FavoriteUsers :
 Q_OBJECT
 Q_INTERFACES(ArenaWidget)
 
-friend class dcpp::Singleton<FavoriteUsers>;
+friend class QtContext;
 typedef QVariantMap VarMap;
 
 public:
@@ -77,9 +77,13 @@ private Q_SLOTS:
     void updateUser(const QString &, const QString &);
     void remUser(const QString &);
 
-private:
+public:
     FavoriteUsers(QWidget *parent = nullptr);
-    virtual ~FavoriteUsers();
+    ~FavoriteUsers() override;
+
+    static FavoriteUsers* getInstance();
+
+private:
 
     void handleRemove(const QString &);
     void handleDesc(const QString &);

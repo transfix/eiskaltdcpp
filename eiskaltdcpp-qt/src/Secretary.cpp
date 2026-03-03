@@ -26,6 +26,12 @@
 #include "WulforSettings.h"
 #include "WulforUtil.h"
 #include "Secretary.h"
+#include "QtContext.h"
+
+Secretary* Secretary::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->secretary() : nullptr;
+}
 
 Secretary::Secretary(QWidget *parent)
     : QWidget(parent)

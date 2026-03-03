@@ -20,6 +20,7 @@
 #include "SearchFrame.h"
 #include "DownloadQueue.h"
 #include "ArenaWidgetFactory.h"
+#include "QtContext.h"
 
 #include "dcpp/Util.h"
 #include "dcpp/User.h"
@@ -144,6 +145,11 @@ TransferView::Menu::Action TransferView::Menu::exec(){
     }
 
     return None;
+}
+
+TransferView* TransferView::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->transferView() : nullptr;
 }
 
 TransferView::TransferView(QWidget *parent):

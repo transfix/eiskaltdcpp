@@ -8,6 +8,7 @@
 ***************************************************************************/
 
 #include "ArenaWidgetManager.h"
+#include "QtContext.h"
 
 #include "ArenaWidget.h"
 #include "DebugHelper.h"
@@ -16,6 +17,11 @@
 #include <assert.h>
 
 #include <QApplication>
+
+ArenaWidgetManager* ArenaWidgetManager::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->arenaWidgetManager() : nullptr;
+}
 
 ArenaWidgetManager::ArenaWidgetManager() : QObject(nullptr) {
     DEBUG_BLOCK

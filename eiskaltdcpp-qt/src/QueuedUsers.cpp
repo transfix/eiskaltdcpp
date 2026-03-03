@@ -12,6 +12,7 @@
 
 #include "QueuedUsers.h"
 #include "WulforSettings.h"
+#include "QtContext.h"
 
 #include "dcpp/UploadManager.h"
 #include "dcpp/ClientManager.h"
@@ -23,6 +24,11 @@
 #ifdef _DEBUG_QT_UI
 #include <QDebug>
 #endif
+
+QueuedUsers* QueuedUsers::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->queuedUsers() : nullptr;
+}
 
 QueuedUsers::QueuedUsers(){
     setupUi(this);

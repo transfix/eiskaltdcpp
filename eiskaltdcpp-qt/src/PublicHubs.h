@@ -16,7 +16,6 @@
 #include <QSortFilterProxyModel>
 
 #include "dcpp/stdinc.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/FavoriteManager.h"
 
 #include "ArenaWidget.h"
@@ -25,16 +24,17 @@
 
 #include "ui_UIPublicHubs.h"
 
+class QtContext;
+
 class PublicHubs :
         public  QWidget,
-        public  dcpp::Singleton<PublicHubs>,
         public  ArenaWidget,
         public  dcpp::FavoriteManagerListener,
         private Ui::UIPublicHubs
 {
 Q_OBJECT
 Q_INTERFACES(ArenaWidget)
-friend class dcpp::Singleton<PublicHubs>;
+friend class QtContext;
 
 public:
     QString  getArenaTitle(){ return tr("Public Hubs"); }
@@ -73,9 +73,13 @@ Q_SIGNALS:
     void coreDownloadFinished(const QString&);
     void coreCacheLoaded(const QString&);
 
-private:
+public:
     PublicHubs(QWidget *parent = nullptr);
     ~PublicHubs();
+
+    static PublicHubs* getInstance();
+
+private:
 
     void updateList();
 

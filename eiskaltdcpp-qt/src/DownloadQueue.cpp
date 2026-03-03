@@ -11,6 +11,7 @@
  */
 
 #include "DownloadQueue.h"
+#include "QtContext.h"
 
 #include <QMap>
 #include <QTreeView>
@@ -205,6 +206,11 @@ DownloadQueue::Menu::Action DownloadQueue::Menu::exec(const DownloadQueue::Sourc
 
 QVariant DownloadQueue::Menu::getArg(){
     return arg;
+}
+
+DownloadQueue* DownloadQueue::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->downloadQueue() : nullptr;
 }
 
 DownloadQueue::DownloadQueue(QWidget *parent):

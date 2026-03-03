@@ -10,12 +10,18 @@
 #include "SpellCheck.h"
 #include "WulforSettings.h"
 #include "WulforUtil.h"
+#include "QtContext.h"
 #include "dcpp/stdinc.h"
 #include "dcpp/Util.h"
 
 #include <QLocale>
 #include <QDir>
 #include <QtDebug>
+
+SpellCheck* SpellCheck::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->spellCheck() : nullptr;
+}
 
 SpellCheck::SpellCheck(QObject *parent) :
     QObject(parent),

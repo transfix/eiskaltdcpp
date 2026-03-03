@@ -53,6 +53,7 @@ target_include_directories(eiskaltdcpp-qt-tests PRIVATE
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/dcpp
 )
+target_compile_definitions(eiskaltdcpp-qt-tests PRIVATE QT_CONTEXT_MINIMAL)
 if (LUA_SCRIPT)
     target_include_directories(eiskaltdcpp-qt-tests PRIVATE ${LUA_INCLUDE_DIR})
 endif()

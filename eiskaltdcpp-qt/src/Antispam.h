@@ -19,7 +19,6 @@
 
 #include "dcpp/stdinc.h"
 #include "dcpp/User.h"
-#include "dcpp/Singleton.h"
 
 enum AntiSpamObjectState {
     eIN_BLACK = 0,
@@ -27,14 +26,20 @@ enum AntiSpamObjectState {
     eIN_WHITE
 };
 
+class QtContext;
+
 class AntiSpam :
-        public QObject,
-        public dcpp::Singleton<AntiSpam>
+        public QObject
 {
     Q_OBJECT
 
-    friend class dcpp::Singleton<AntiSpam>;
+    friend class QtContext;
 public:
+    AntiSpam();
+    ~AntiSpam() override;
+
+    static AntiSpam* getInstance();
+
     void move(const QString &, AntiSpamObjectState);
 
     QList<QString> getBlack();
@@ -78,9 +83,6 @@ public slots:
     void clearAll();
 
 private:
-
-    AntiSpam();
-    virtual ~AntiSpam();
 
     inline void addToList(QList<QString>&, const QList<QString>&);
     inline void remFromList(QList<QString>&, const QList<QString>&);

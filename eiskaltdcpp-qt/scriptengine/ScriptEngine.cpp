@@ -15,6 +15,8 @@
 
 #include "ArenaWidget.h"
 #include "ArenaWidgetFactory.h"
+#include "ArenaWidgetManager.h"
+#include "QtContext.h"
 #include "MainWindow.h"
 #include "Antispam.h"
 #include "DownloadQueue.h"
@@ -116,18 +118,33 @@ QJSValue ScriptBridge::getStaticMember(const QString &className) {
     QObject *obj = nullptr;
     if (className == "AntiSpam") {
         if (!AntiSpam::getInstance()) {
-            AntiSpam::newInstance();
+            qtContext()->createAntiSpam();
             AntiSpam::getInstance()->loadSettings();
             AntiSpam::getInstance()->loadLists();
         }
         obj = qobject_cast<QObject*>(AntiSpam::getInstance());
     }
-    else if (className == "DownloadQueue")
-        obj = qobject_cast<QObject*>(ArenaWidgetFactory().create<dcpp::Singleton, DownloadQueue>());
-    else if (className == "FavoriteHubs")
-        obj = qobject_cast<QObject*>(ArenaWidgetFactory().create<dcpp::Singleton, FavoriteHubs>());
-    else if (className == "FavoriteUsers")
-        obj = qobject_cast<QObject*>(ArenaWidgetFactory().create<dcpp::Singleton, FavoriteUsers>());
+    else if (className == "DownloadQueue") {
+        if (!DownloadQueue::getInstance()) {
+            qtContext()->createDownloadQueue();
+            ArenaWidgetManager::getInstance()->add(DownloadQueue::getInstance());
+        }
+        obj = qobject_cast<QObject*>(DownloadQueue::getInstance());
+    }
+    else if (className == "FavoriteHubs") {
+        if (!FavoriteHubs::getInstance()) {
+            qtContext()->createFavoriteHubs();
+            ArenaWidgetManager::getInstance()->add(FavoriteHubs::getInstance());
+        }
+        obj = qobject_cast<QObject*>(FavoriteHubs::getInstance());
+    }
+    else if (className == "FavoriteUsers") {
+        if (!FavoriteUsers::getInstance()) {
+            qtContext()->createFavoriteUsers();
+            ArenaWidgetManager::getInstance()->add(FavoriteUsers::getInstance());
+        }
+        obj = qobject_cast<QObject*>(FavoriteUsers::getInstance());
+    }
     else if (className == "Notification") {
         if (Notification::getInstance()) {
             m_engine->globalObject().setProperty("NOTIFY_ANY", (int)Notification::ANY);

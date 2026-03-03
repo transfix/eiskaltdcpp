@@ -66,6 +66,8 @@ void AsyncRunner::setRunFunction(const std::function<void()> &f){
     runFunc = f;
 }
 
+ShareBrowser::Menu* ShareBrowser::Menu::instance_ = nullptr;
+
 ShareBrowser::Menu::Menu() : menu(new QMenu(nullptr))
 {
     WulforUtil *WU = WulforUtil::getInstance();

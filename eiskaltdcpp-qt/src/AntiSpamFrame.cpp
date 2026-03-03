@@ -12,6 +12,7 @@
 
 #include "AntiSpamFrame.h"
 #include "WulforSettings.h"
+#include "QtContext.h"
 
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -38,7 +39,7 @@ AntiSpamFrame::~AntiSpamFrame() {
 void AntiSpamFrame::InitDocument() {
    if (WBGET(WB_ANTISPAM_ENABLED)) {
         if (!AntiSpam::getInstance())
-            AntiSpam::newInstance();
+            qtContext()->createAntiSpam();
 
         AntiSpam::getInstance()->loadSettings();
         AntiSpam::getInstance()->loadLists();
@@ -105,9 +106,9 @@ void AntiSpamFrame::slotAntiSpamSwitch() {
         AntiSpam::getInstance()->saveSettings();
         AntiSpam::getInstance()->saveLists();
 
-        AntiSpam::deleteInstance();
+        qtContext()->destroyAntiSpam();
     } else if (b && !AntiSpam::getInstance()) {
-        AntiSpam::newInstance();
+        qtContext()->createAntiSpam();
 
         AntiSpam::getInstance()->loadSettings();
         AntiSpam::getInstance()->loadLists();

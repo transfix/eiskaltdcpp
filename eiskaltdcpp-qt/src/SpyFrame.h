@@ -14,7 +14,6 @@
 
 #include "dcpp/stdinc.h"
 #include "dcpp/ClientManager.h"
-#include "dcpp/Singleton.h"
 
 #include "WulforUtil.h"
 #include "ArenaWidget.h"
@@ -22,17 +21,18 @@
 
 class SpyModel;
 
+class QtContext;
+
 class SpyFrame :
         public QWidget,
         public ArenaWidget,
-        public dcpp::Singleton<SpyFrame>,
         private dcpp::ClientManagerListener,
         private Ui::UISpy
 {
 Q_OBJECT
 Q_INTERFACES(ArenaWidget)
 
-friend class dcpp::Singleton<SpyFrame>;
+friend class QtContext;
 
 public:
     QString getArenaShortTitle() { return tr("Search Spy"); }
@@ -55,9 +55,13 @@ private Q_SLOTS:
 Q_SIGNALS:
     void coreIncomingSearch(const QString&, bool);
 
-private:
+public:
     explicit SpyFrame(QWidget *parent = nullptr);
     ~SpyFrame();
+
+    static SpyFrame* getInstance();
+
+private:
 
     SpyModel *model;
 

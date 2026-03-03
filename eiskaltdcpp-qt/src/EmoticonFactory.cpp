@@ -13,6 +13,7 @@
 #include "EmoticonFactory.h"
 #include "WulforSettings.h"
 #include "WulforUtil.h"
+#include "QtContext.h"
 
 #include <QDir>
 #include <QFile>
@@ -26,6 +27,11 @@
 static const QString EmoticonSectionName = "emoticons-map";
 static const QString EmoticonSubsectionName = "emoticon";
 static const QString EmoticonTextSectionName = "name";
+
+EmoticonFactory* EmoticonFactory::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->emoticonFactory() : nullptr;
+}
 
 EmoticonFactory::EmoticonFactory() :
     QObject(nullptr)

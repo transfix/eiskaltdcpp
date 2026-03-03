@@ -16,12 +16,18 @@
 #include "WulforUtil.h"
 #include "SearchFrame.h"
 #include "ArenaWidgetFactory.h"
+#include "QtContext.h"
 
 #include <QMenu>
 #include <QMessageBox>
 #include <QItemSelectionModel>
 
 using namespace dcpp;
+
+SpyFrame* SpyFrame::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->spyFrame() : nullptr;
+}
 
 SpyFrame::SpyFrame(QWidget *parent)
     : QWidget(parent)

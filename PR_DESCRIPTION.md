@@ -1,6 +1,6 @@
 # Qt6 Migration & Architecture Modernization
 
-**Version: 2.5.0** | 98 commits | 246 files changed | +6,556 / −3,726 lines
+**Version: 2.5.0** | 114 commits | 285 files changed | +13,101 / −3,747 lines
 
 ## Summary
 
@@ -80,13 +80,46 @@ Extensive fixes for MSVC (cl.exe) compilation with vcpkg dependencies:
 - **Daemon subsystem** — removed `WIN32` from `add_executable` (daemon uses `main()`, not `WinMain`)
 - **MSVC runtime bundling** — `msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`, and `concrt140.dll` copied from `VCToolsRedistDir` so the app runs without VC Redistributable installed
 - **Buffer overrun fix** — `sanitizeUrl()` and `trimCopy()` accessed `url[0]`/`url[url.length()-1]` on empty strings, causing `0xc0000409` crashes on Windows; `trimCopy` rewritten to use `find_first_not_of`/`find_last_not_of`
+- **Static destruction ordering** — MSVC destroys file-scope statics (`settingTags[]`) before global `unique_ptr` (`g_context`), causing heap corruption in test cleanup; fixed via `atexit()` pre-destruction and `minimalMode_` flag in `DCContext`
 
 ## Test Suite
 
-- **Catch2 v3** test infrastructure (FetchContent)
-- **100 test cases** across 10 test files covering: `AdcCommand`, `CID`, `DCContext`, `Encoder`, `SimpleXML`, `StringTokenizer`, `Text`, `Util`
-- Cross-platform path tests with explicit separator handling
-- lcov/genhtml coverage reporting in CI
+**539 test cases | 2,102 assertions | 39 test files** — Catch2 v3.5.2 (FetchContent)
+
+Two separate test binaries, both run by CTest:
+
+| Binary | Scope | Files | Cases |
+|--------|-------|------:|------:|
+| `eiskaltdcpp-tests` | dcpp core library | 31 | 428 |
+| `eiskaltdcpp-qt-tests` | Qt UI model/logic | 8 | 111 |
+
+### dcpp core tests (31 files)
+
+Cryptographic & hashing (`TigerHash`, `HashBloom`, `MerkleTree`), string & pattern matching (`Wildcards`, `ADLSearch`), compression (`BZUtils`/`ZUtils`), protocol parsing (`AdcCommand`, NMDC escape sequences), XML (`SimpleXML`, `SimpleXMLReader`), file I/O (`File`, `SFVReader`), encoding (`Encoder`, `Text`, `CID`), data classes (`QueueItem`/`Segment`, `SearchResult`, `UserCommand`, `FinishedItem`, `User`), managers (`SettingsManager`, `FavoriteManager`, `LogManager`, `SearchQueue`), and `Util` (4 test files covering path handling, formatting, URL operations).
+
+### Qt UI tests (8 files)
+
+Model classes (`FavoriteHubModel`, `ADLSModel`, `IPFilterModel`, `SpyModel`), layout (`FlowLayout`), settings (`WulforSettings`), filtering (`SearchBlacklist`, `Antispam`). Runs under a real `QApplication` with the `offscreen` platform plugin for headless CI.
+
+### Test infrastructure
+
+- **`TestContext.h`** — RAII fixture that creates a temp directory, initializes `Util` path overrides, and calls `DCContext::startupMinimal()`. Registers an `std::atexit()` handler to tear down the context before C++ static destruction (critical for MSVC — see below).
+- **`DCContext::startupMinimal()`** — lightweight startup that creates only `ResourceManager`, `SettingsManager`, and `LogManager`; sets `minimalMode_` so `shutdown()` skips `save()`.
+- **`stubs_wulforutil.cpp`** — stub implementations of `WulforUtil` methods so Qt tests link without the full UI.
+- **`qt/test_qt_main.cpp`** — custom Catch2 main that constructs `QApplication` before test execution.
+
+### Cross-platform test fixes
+
+- **MSVC static destruction order fiasco** — On MSVC, `SettingsManager::settingTags[]` (file-scope static) can be destroyed before the global `g_context` `unique_ptr`. When `g_context`'s destructor fires `shutdown() → save()`, it reads freed memory (0xDD fill → heap corruption 0xc0000374). Fixed with three layers: `atexit()` pre-destruction in `TestContext`, `minimalMode_` flag to skip save, and null-guards in `FavoriteManager::~FavoriteManager()`.
+- **Non-ASCII test names** — Catch2 test names containing `→`, `ä`, etc. caused `0xc0000409` on MSVC's narrow `main()`. Replaced with ASCII equivalents.
+- **Path separator handling** — Tests use explicit `'/'` separators or `std::filesystem::path::preferred_separator` instead of hardcoded Unix paths.
+- **AdcHub `const_cast` UB** — Replaced `const_cast<AdcCommand&>` with a mutable copy to avoid undefined behavior.
+- **GCC 15 / MSYS2** — Added `<semaphore>` polyfill header for MinGW GCC 15+ where `std::counting_semaphore` is missing from default includes.
+- **Headless Qt** — `QT_QPA_PLATFORM=offscreen` set in CTest environment for Qt test binary.
+
+### Coverage reporting
+
+- `test-coverage` CI job: GCC `--coverage` flags, lcov/genhtml HTML report uploaded as artifact.
 
 ## CI/CD Pipeline
 
@@ -107,7 +140,16 @@ Full GitHub Actions workflow with 8 jobs:
 - All packaging uses `cmake --install` to produce a clean install tree — no build artifacts, no headers, no `.lib` files
 - Windows install layout: `dist/EiskaltDC++.exe` + `dist/*.dll` + `dist/resources/` (icons, translations, sounds, emoticons)
 - `-DWITH_DEV_FILES=OFF` ensures no development headers or pkg-config files are installed
-- NSIS installer built via CPack on Release builds (installed via Chocolatey on CI)
+
+**Windows NSIS installer** (Qt6 Release only):
+- NSIS installed via Chocolatey (`choco install nsis`) on the CI runner
+- CPack NSIS generator (`cpack -G NSIS`) packages the `dist/` install tree into a single `.exe` installer
+- Installs to `C:\Program Files\EiskaltDC++` (64-bit via `$PROGRAMFILES64`)
+- Creates Start Menu shortcut (`EiskaltDC++.lnk`), includes uninstaller with automatic removal of previous installs (`CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL`)
+- Executables at install root (no `bin/` subdirectory) — `CPACK_NSIS_EXECUTABLES_DIRECTORY=.`
+- Version dynamically extracted from `CMakeLists.txt` → output: `EiskaltDC++-<version>-win64.exe`
+- Does NOT modify system `PATH`
+- The legacy `windows/EiskaltDC++.nsi` script (MUI2, 21 languages, from 2016) is preserved but unused — CI uses CPack's built-in NSIS generator instead
 
 **Caching:**
 - vcpkg installed directory cached via `actions/cache` (keyed on workflow hash)
@@ -134,10 +176,9 @@ Tags containing `-rc`, `-beta`, or `-alpha` are automatically marked as pre-rele
 - `FindGettext.cmake` updated for vcpkg compatibility (searches `CMAKE_PREFIX_PATH`, `tools/gettext/bin/`, `libintl` as alternative name)
 - `FindLua.cmake` and `FindGTK3.cmake` fixes for MSYS2/MinGW
 - **`cmake --install` based packaging** — clean install tree with no build artifacts
-- **CPack NSIS configuration** — Windows installer via `cpack -G NSIS` with proper install directories, start-menu shortcuts, and uninstaller
+- **CPack configuration consolidated in root `CMakeLists.txt`** — `include(CPack)` moved from `eiskaltdcpp-qt/CMakeLists.txt` to root; platform-specific generators: `NSIS;ZIP` (Windows), `DragNDrop` (macOS), `DEB;TGZ` (Linux)
+- **NSIS installer variables** — `CPACK_NSIS_INSTALL_ROOT=$PROGRAMFILES64`, `CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL=ON`, Start Menu shortcut creation/deletion via `CPACK_NSIS_CREATE_ICONS_EXTRA`/`DELETE_ICONS_EXTRA`, license from `COPYING`
 - **dcpp install rules fixed** — `RUNTIME DESTINATION` for DLLs on Windows, `LIBRARY DESTINATION` with `NAMELINK_SKIP` for shared libs, static archives only installed with `WITH_DEV_FILES=ON`
-- **`include(CPack)` moved to root** `CMakeLists.txt` (removed duplicate from `eiskaltdcpp-qt/CMakeLists.txt`)
-- CPack generators: NSIS + ZIP (Windows), DragNDrop (macOS), DEB + TGZ (Linux)
 - Minimum CMake version 3.10
 
 ## Version Bump

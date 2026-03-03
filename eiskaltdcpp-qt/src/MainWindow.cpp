@@ -84,11 +84,11 @@
 
 #include "dcpp/ShareManager.h"
 #include "dcpp/ConnectivityManager.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/SettingsManager.h"
 #include "dcpp/DCPlusPlus.h"
 #include "WulforSettings.h"
 #include "WulforUtil.h"
+#include "QtContext.h"
 
 using namespace std;
 
@@ -229,6 +229,11 @@ static const QString &TOOLBUTTON_STYLE = "mainwindow/toolbar-toolbutton-style";
 static const QString &EMPTY_SETTINGS = "mainwindow/empty-settings";
 static const QString &SIDEBAR_SHOW_CLOSEBUTTONS = "mainwindow/sidebar-with-close-buttons";
 
+MainWindow* MainWindow::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->mainWindow() : nullptr;
+}
+
 MainWindow::MainWindow (QWidget *parent):
         QMainWindow(parent),
         d_ptr(new MainWindowPrivate())
@@ -249,13 +254,13 @@ MainWindow::MainWindow (QWidget *parent):
     d->exitBegin = false;
 
     if (WBGET(WB_ANTISPAM_ENABLED)){
-        AntiSpam::newInstance();
+        qtContext()->createAntiSpam();
 
         AntiSpam::getInstance()->loadLists();
         AntiSpam::getInstance()->loadSettings();
     }
 
-    ShortcutManager::newInstance();
+    qtContext()->createShortcutManager();
 
     init();
 
@@ -269,7 +274,7 @@ MainWindow::MainWindow (QWidget *parent):
 
     setStatusMessage(tr("Ready"));
 
-    TransferView::newInstance();
+    qtContext()->createTransferView();
 
     d->transfer_dock->setWidget(TransferView::getInstance());
     d->toolsTransfers->setChecked(d->transfer_dock->isVisible());
@@ -310,7 +315,7 @@ MainWindow::~MainWindow(){
     if (AntiSpam::getInstance()){
         AntiSpam::getInstance()->saveLists();
         AntiSpam::getInstance()->saveSettings();
-        AntiSpam::deleteInstance();
+        qtContext()->destroyAntiSpam();
     }
 
     Q_D(MainWindow);
@@ -319,7 +324,7 @@ MainWindow::~MainWindow(){
     delete d->fBar;
     delete d->sBar;
 
-    ShortcutManager::deleteInstance();
+    // ShortcutManager is destroyed by QtContext
 
     delete d_ptr;
 }
@@ -384,7 +389,7 @@ void MainWindow::closeEvent(QCloseEvent *c_e){
 
     if (TransferView::getInstance()){
         TransferView::getInstance()->close();
-        TransferView::deleteInstance();
+        // TransferView is destroyed by QtContext
     }
 
     if (dcpp::getContext()->getSearchManager())
@@ -394,7 +399,7 @@ void MainWindow::closeEvent(QCloseEvent *c_e){
         dcpp::getContext()->getConnectionManager()->disconnect();
 
     if (Notification::getInstance()){
-        Notification::deleteInstance();
+        qtContext()->destroyNotification();
     }
 
     d->arena->hide();
@@ -1587,81 +1592,126 @@ QObject *MainWindow::getToolBar(){
 ArenaWidget *MainWindow::widgetForRole(ArenaWidget::Role r) const{
     ArenaWidget *awgt = nullptr;
     Q_D(const MainWindow);
+    auto *ctx = qtContext();
 
     switch (r){
     case ArenaWidget::Downloads:
         {
-            awgt = ArenaWidgetFactory().create<dcpp::Singleton, DownloadQueue>();
+            if (!DownloadQueue::getInstance()) {
+                ctx->createDownloadQueue();
+                ArenaWidgetManager::getInstance()->add(DownloadQueue::getInstance());
+            }
+            awgt = DownloadQueue::getInstance();
             awgt->setToolButton(d->toolsDownloadQueue);
 
             break;
         }
     case ArenaWidget::FinishedUploads:
         {
-            awgt = ArenaWidgetFactory().create<dcpp::Singleton, FinishedUploads>();
+            if (!ctx->finishedUploads()) {
+                ctx->createFinishedUploads();
+                ArenaWidgetManager::getInstance()->add(ctx->finishedUploads());
+            }
+            awgt = ctx->finishedUploads();
             awgt->setToolButton(d->toolsFinishedUploads);
 
             break;
         }
     case ArenaWidget::FinishedDownloads:
         {
-            awgt = ArenaWidgetFactory().create<dcpp::Singleton, FinishedDownloads>();
+            if (!ctx->finishedDownloads()) {
+                ctx->createFinishedDownloads();
+                ArenaWidgetManager::getInstance()->add(ctx->finishedDownloads());
+            }
+            awgt = ctx->finishedDownloads();
             awgt->setToolButton(d->toolsFinishedDownloads);
 
             break;
         }
     case ArenaWidget::FavoriteHubs:
         {
-            awgt = ArenaWidgetFactory().create<dcpp::Singleton, FavoriteHubs>();
+            if (!FavoriteHubs::getInstance()) {
+                ctx->createFavoriteHubs();
+                ArenaWidgetManager::getInstance()->add(FavoriteHubs::getInstance());
+            }
+            awgt = FavoriteHubs::getInstance();
             awgt->setToolButton(d->hubsFavoriteHubs);
 
             break;
         }
     case ArenaWidget::FavoriteUsers:
         {
-            awgt = ArenaWidgetFactory().create<dcpp::Singleton, FavoriteUsers>();
+            if (!FavoriteUsers::getInstance()) {
+                ctx->createFavoriteUsers();
+                ArenaWidgetManager::getInstance()->add(FavoriteUsers::getInstance());
+            }
+            awgt = FavoriteUsers::getInstance();
             awgt->setToolButton(d->hubsFavoriteUsers);
 
             break;
         }
     case ArenaWidget::PublicHubs:
         {
-            awgt = ArenaWidgetFactory().create<dcpp::Singleton, PublicHubs>();
+            if (!PublicHubs::getInstance()) {
+                ctx->createPublicHubs();
+                ArenaWidgetManager::getInstance()->add(PublicHubs::getInstance());
+            }
+            awgt = PublicHubs::getInstance();
             awgt->setToolButton(d->hubsPublicHubs);
 
             break;
         }
     case ArenaWidget::SearchSpy:
         {
-            awgt = ArenaWidgetFactory().create<dcpp::Singleton, SpyFrame>();
+            if (!SpyFrame::getInstance()) {
+                ctx->createSpyFrame();
+                ArenaWidgetManager::getInstance()->add(SpyFrame::getInstance());
+            }
+            awgt = SpyFrame::getInstance();
             awgt->setToolButton(d->toolsSearchSpy);
 
             break;
         }
     case ArenaWidget::ADLS:
         {
-            awgt = ArenaWidgetFactory().create<dcpp::Singleton, ADLS>();
+            if (!ADLS::getInstance()) {
+                ctx->createADLS();
+                ArenaWidgetManager::getInstance()->add(ADLS::getInstance());
+            }
+            awgt = ADLS::getInstance();
             awgt->setToolButton(d->toolsADLS);
 
             break;
         }
     case ArenaWidget::CmdDebug:
     {
-        awgt = ArenaWidgetFactory().create<dcpp::Singleton, CmdDebug>();
+        if (!CmdDebug::getInstance()) {
+            ctx->createCmdDebug();
+            ArenaWidgetManager::getInstance()->add(CmdDebug::getInstance());
+        }
+        awgt = CmdDebug::getInstance();
         awgt->setToolButton(d->toolsCmdDebug);
 
         break;
     }
     case ArenaWidget::Secretary:
     {
-        awgt = ArenaWidgetFactory().create<dcpp::Singleton, Secretary>();
+        if (!Secretary::getInstance()) {
+            ctx->createSecretary();
+            ArenaWidgetManager::getInstance()->add(Secretary::getInstance());
+        }
+        awgt = Secretary::getInstance();
         awgt->setToolButton(d->toolsSecretary);
 
         break;
     }
     case ArenaWidget::QueuedUsers:
         {
-            awgt = ArenaWidgetFactory().create<dcpp::Singleton, QueuedUsers>();
+            if (!QueuedUsers::getInstance()) {
+                ctx->createQueuedUsers();
+                ArenaWidgetManager::getInstance()->add(QueuedUsers::getInstance());
+            }
+            awgt = QueuedUsers::getInstance();
             awgt->setToolButton(d->toolsQueuedUsers);
 
             break;

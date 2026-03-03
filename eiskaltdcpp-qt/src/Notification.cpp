@@ -11,6 +11,7 @@
  */
 
 #include "Notification.h"
+#include "QtContext.h"
 
 #include <QMenu>
 #include <QList>
@@ -33,6 +34,11 @@ static int getBitPos(unsigned eventId){
     }
 
     return -1;
+}
+
+Notification* Notification::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->notification() : nullptr;
 }
 
 Notification::Notification(QObject *parent) :

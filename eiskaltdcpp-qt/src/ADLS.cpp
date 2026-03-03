@@ -14,6 +14,7 @@
 #include "ADLSModel.h"
 #include "WulforUtil.h"
 #include "WulforSettings.h"
+#include "QtContext.h"
 #include "dcpp/stdinc.h"
 #include "dcpp/ADLSearch.h"
 #include "dcpp/DCPlusPlus.h"
@@ -26,6 +27,11 @@
 #include <QtDebug>
 
 using namespace dcpp;
+
+ADLS* ADLS::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->adls() : nullptr;
+}
 
 ADLS::ADLS(QWidget *parent):
         QWidget(parent),
@@ -198,7 +204,7 @@ void ADLS::slotClicked(const QModelIndex &index){
     StrMap mapcheck;
     mapcheck["SSTRING"] = item->data(COLUMN_SSTRING).toString();
     mapcheck["DIRECTORY"] = item->data(COLUMN_DIRECTORY).toString();
-    VectorSize i = findEntry(mapcheck);
+    int i = findEntry(mapcheck);
     ADLSearch entry = collection[i];
 
         bool check = !item->data(COLUMN_CHECK).toBool();
@@ -243,7 +249,7 @@ void ADLS::slotChangeButtonClicked(){
     StrMap mapcheck;
     mapcheck["SSTRING"] = item->data(COLUMN_SSTRING).toString();
     mapcheck["DIRECTORY"] = item->data(COLUMN_DIRECTORY).toString();
-    VectorSize i = findEntry(mapcheck);
+    int i = findEntry(mapcheck);
     ADLSEditor editor;
     ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
     ADLSearch search = collection[i];
@@ -273,7 +279,7 @@ void ADLS::slotRemoveButtonClicked(){
     StrMap mapcheck;
     mapcheck["SSTRING"] = item->data(COLUMN_SSTRING).toString();
     mapcheck["DIRECTORY"] = item->data(COLUMN_DIRECTORY).toString();
-    VectorSize i = findEntry(mapcheck);
+    int i = findEntry(mapcheck);
     ADLSearchManager::SearchCollection &collection = dcpp::getContext()->getADLSearchManager()->collection;
 
     if (i < collection.size()) {

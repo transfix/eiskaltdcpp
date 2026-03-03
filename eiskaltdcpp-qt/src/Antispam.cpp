@@ -16,6 +16,7 @@
 
 #include "Antispam.h"
 #include "WulforUtil.h"
+#include "QtContext.h"
 #include "dcpp/stdinc.h"
 #include "dcpp/Util.h"
 #include "dcpp/ClientManager.h"
@@ -54,6 +55,11 @@ AntiSpam& operator <<(AntiSpam &sp, const QString &list){
     sp << users.split(",", Qt::SkipEmptyParts);
 
     return sp;
+}
+
+AntiSpam* AntiSpam::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->antiSpam() : nullptr;
 }
 
 AntiSpam::AntiSpam():

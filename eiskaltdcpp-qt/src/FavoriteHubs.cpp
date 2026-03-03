@@ -16,6 +16,7 @@
 #include "WulforSettings.h"
 #include "VersionGlobal.h"
 #include "MainWindow.h"
+#include "QtContext.h"
 
 #include "dcpp/version.h"
 #include "dcpp/stdinc.h"
@@ -31,6 +32,11 @@
 #include <QPushButton>
 
 using namespace dcpp;
+
+FavoriteHubs* FavoriteHubs::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->favoriteHubs() : nullptr;
+}
 
 FavoriteHubs::FavoriteHubs(QWidget *parent):
     QWidget(parent),

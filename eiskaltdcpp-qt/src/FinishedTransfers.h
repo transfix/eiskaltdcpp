@@ -31,7 +31,6 @@
 #include "dcpp/Util.h"
 #include "dcpp/FinishedItem.h"
 #include "dcpp/User.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/DCPlusPlus.h"
 
 #include "ui_UIFinishedTransfers.h"
@@ -70,18 +69,19 @@ public Q_SLOTS:
     virtual void slotSettingsChanged(const QString &key, const QString &) = 0;
 };
 
+class QtContext;
+
 template <bool isUpload>
 class FinishedTransfers :
         public dcpp::FinishedManagerListener,
         private Ui::UIFinishedTransfers,
-        public dcpp::Singleton< FinishedTransfers<isUpload> >,
         public ArenaWidget,
         public FinishedTransferProxy
 {
 Q_INTERFACES(ArenaWidget)
 
 typedef QVariantMap VarMap;
-friend class dcpp::Singleton< FinishedTransfers<isUpload> >;
+friend class QtContext;
 
 public:
     QWidget *getWidget() { return this;}
@@ -102,7 +102,7 @@ protected:
         isUnload()? e->accept() : e->ignore();
     }
 
-private:
+public:
     FinishedTransfers(QWidget *parent = nullptr) :
         FinishedTransferProxy(parent), db_opened(false)
     {
@@ -180,6 +180,8 @@ private:
         delete proxy;
         delete model;
     }
+
+    static FinishedTransfers<isUpload>* getInstance();
 
     void loadList(){
         VarMap params;
@@ -601,3 +603,18 @@ inline ArenaWidget::Role FinishedTransfers<true>::role() const { return ArenaWid
 
 typedef FinishedTransfers<true>  FinishedUploads;
 typedef FinishedTransfers<false> FinishedDownloads;
+
+// getInstance() specializations — delegate to QtContext
+#include "QtContext.h"
+
+template <>
+inline FinishedTransfers<true>* FinishedTransfers<true>::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->finishedUploads() : nullptr;
+}
+
+template <>
+inline FinishedTransfers<false>* FinishedTransfers<false>::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->finishedDownloads() : nullptr;
+}

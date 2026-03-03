@@ -28,7 +28,6 @@
 #include "dcpp/SearchManager.h"
 #include "dcpp/SettingsManager.h"
 #include "dcpp/ClientManagerListener.h"
-#include "dcpp/Singleton.h"
 
 using namespace dcpp;
 
@@ -59,9 +58,11 @@ class SearchFrame : public QWidget,
 
     typedef QVariantMap VarMap;
 
-    class Menu : public dcpp::Singleton<Menu> {
-        friend class dcpp::Singleton<Menu>;
+    class Menu {
     public:
+        static Menu* getInstance() { return instance_; }
+        static void newInstance() { if (!instance_) instance_ = new Menu(); }
+        static void deleteInstance() { delete instance_; instance_ = nullptr; }
         enum Action {
             Download=0,
             DownloadTo,
@@ -92,7 +93,9 @@ class SearchFrame : public QWidget,
 
     private:
         Menu();
-        virtual ~Menu();
+        ~Menu();
+
+        static Menu* instance_;
 
         QMap<QAction*, Action> actions;
         QList<QAction*> action_list;
