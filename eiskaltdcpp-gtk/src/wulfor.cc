@@ -303,7 +303,6 @@ int main(int argc, char *argv[])
 #if !GLIB_CHECK_VERSION(2,32,0)
     g_thread_init(NULL);
 #endif
-    gdk_threads_init();
 
 #ifdef _WIN32
     setupGtkEnvironmentWin32();
@@ -318,10 +317,8 @@ int main(int argc, char *argv[])
 
     WulforSettingsManager::newInstance();
     WulforManager::start(argc, argv);
-    gdk_threads_enter();
     gtk_main();
     bacon_message_connection_free(connection);
-    gdk_threads_leave();
     WulforManager::stop();
     WulforSettingsManager::deleteInstance();
 

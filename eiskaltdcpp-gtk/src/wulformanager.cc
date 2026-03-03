@@ -47,9 +47,7 @@ void WulforManager::start(int argc, char **argv)
     if (!lang.empty())
         dcpp::Util::setLang(lang);
 
-    gdk_threads_enter();
     manager->createMainWindow();
-    gdk_threads_leave();
     dcpp::Text::hubDefaultCharset = WGETS("default-charset");
 }
 
@@ -67,38 +65,28 @@ WulforManager *WulforManager::get()
 }
 
 WulforManager::WulforManager()
-    : guiCondValue(0)
-    , clientCondValue(0)
+    : clientCondValue(0)
     , abort(false)
 {
 #if !GLIB_CHECK_VERSION(2,32,0)
-    guiCond = g_cond_new();
     clientCond = g_cond_new();
-    guiCondMutex = g_mutex_new();
     clientCondMutex = g_mutex_new();
 
     clientCallMutex = g_mutex_new();
-    guiQueueMutex = g_mutex_new();
     clientQueueMutex = g_mutex_new();
 
     g_static_rw_lock_init(&entryMutex);
 #else
-    guiCond = new GCond();
     clientCond = new GCond();
-    guiCondMutex = new GMutex();
     clientCondMutex = new GMutex();
 
     clientCallMutex = new GMutex();
-    guiQueueMutex = new GMutex();
     clientQueueMutex = new GMutex();
 
-    g_cond_init(guiCond);
     g_cond_init(clientCond);
-    g_mutex_init(guiCondMutex);
     g_mutex_init(clientCondMutex);
 
     g_mutex_init(clientCallMutex);
-    g_mutex_init(guiQueueMutex);
     g_mutex_init(clientQueueMutex);
 
     g_rw_lock_init(&entryMutex);
@@ -106,16 +94,6 @@ WulforManager::WulforManager()
 
 #if !GLIB_CHECK_VERSION(2,32,0)
     GError *error = NULL;
-    guiThread = g_thread_create(threadFunc_gui, (gpointer)this, true, &error);
-    if (error)
-    {
-        cerr << "Unable to create gui thread: " << error->message << endl;
-        g_error_free(error);
-        exit(EXIT_FAILURE);
-    }
-
-    g_clear_error(&error);
-
     clientThread = g_thread_create(threadFunc_client, (gpointer)this, true, &error);
     if (error)
     {
@@ -124,7 +102,6 @@ WulforManager::WulforManager()
         exit(EXIT_FAILURE);
     }
 #else
-    guiThread = g_thread_new("gtkgui", threadFunc_gui, (gpointer)this);
     clientThread = g_thread_new("gtkclient",threadFunc_client, (gpointer)this);
 #endif
 
@@ -150,44 +127,29 @@ WulforManager::~WulforManager()
 {
     abort = true;
 
-    g_mutex_lock(guiCondMutex);
-    guiCondValue++;
-    g_cond_signal(guiCond);
-    g_mutex_unlock(guiCondMutex);
-
     g_mutex_lock(clientCondMutex);
     clientCondValue++;
     g_cond_signal(clientCond);
     g_mutex_unlock(clientCondMutex);
 
-    g_thread_join(guiThread);
     g_thread_join(clientThread);
 
 #if !GLIB_CHECK_VERSION(2,32,0)
-    g_cond_free(guiCond);
     g_cond_free(clientCond);
     g_mutex_free(clientCondMutex);
-    g_mutex_free(guiCondMutex);
     g_mutex_free(clientCallMutex);
-    g_mutex_free(guiQueueMutex);
     g_mutex_free(clientQueueMutex);
 
     g_static_rw_lock_free(&entryMutex);
 #else
-    g_cond_clear(guiCond);
     g_cond_clear(clientCond);
     g_mutex_clear(clientCondMutex);
-    g_mutex_clear(guiCondMutex);
     g_mutex_clear(clientCallMutex);
-    g_mutex_clear(guiQueueMutex);
     g_mutex_clear(clientQueueMutex);
 
-    delete guiCond;
     delete clientCond;
     delete clientCondMutex;
-    delete guiCondMutex;
     delete clientCallMutex;
-    delete guiQueueMutex;
     delete clientQueueMutex;
 
     g_rw_lock_clear(&entryMutex);
@@ -222,11 +184,32 @@ void WulforManager::deleteMainWindow()
     gtk_main_quit();
 }
 
-gpointer WulforManager::threadFunc_gui(gpointer data)
+gboolean WulforManager::idleCallback_gui(gpointer data)
 {
-    WulforManager *man = (WulforManager *)data;
-    man->processGuiQueue();
-    return NULL;
+    FuncBase *func = static_cast<FuncBase *>(data);
+
+    // Re-check the entry still exists (it may have been deleted between
+    // dispatch and this callback firing on the main thread).
+    WulforManager *man = WulforManager::get();
+    if (man && !man->abort)
+    {
+#if !GLIB_CHECK_VERSION(2,32,0)
+        g_static_rw_lock_reader_lock(&man->entryMutex);
+#else
+        g_rw_lock_reader_lock(&man->entryMutex);
+#endif
+        bool valid = man->entries.find(func->getID()) != man->entries.end();
+#if !GLIB_CHECK_VERSION(2,32,0)
+        g_static_rw_lock_reader_unlock(&man->entryMutex);
+#else
+        g_rw_lock_reader_unlock(&man->entryMutex);
+#endif
+        if (valid)
+            func->call();
+    }
+
+    delete func;
+    return G_SOURCE_REMOVE; // one-shot
 }
 
 gpointer WulforManager::threadFunc_client(gpointer data)
@@ -234,41 +217,6 @@ gpointer WulforManager::threadFunc_client(gpointer data)
     WulforManager *man = (WulforManager *)data;
     man->processClientQueue();
     return NULL;
-}
-
-void WulforManager::processGuiQueue()
-{
-    FuncBase *func;
-
-    while (!abort)
-    {
-        g_mutex_lock(guiCondMutex);
-        while (guiCondValue < 1)
-            g_cond_wait(guiCond, guiCondMutex);
-        guiCondValue--;
-        g_mutex_unlock(guiCondMutex);
-
-        // This must be taken before the queuelock to avoid deadlock.
-        gdk_threads_enter();
-
-        g_mutex_lock(guiQueueMutex);
-        while (!guiFuncs.empty())
-        {
-            func = guiFuncs.front();
-            guiFuncs.pop_front();
-            g_mutex_unlock(guiQueueMutex);
-
-            func->call();
-            delete func;
-
-            g_mutex_lock(guiQueueMutex);
-        }
-        g_mutex_unlock(guiQueueMutex);
-
-        gdk_threads_leave();
-    }
-
-    g_thread_exit(NULL);
 }
 
 void WulforManager::processClientQueue()
@@ -315,14 +263,9 @@ void WulforManager::dispatchGuiFunc(FuncBase *func)
     // Make sure we're not adding functions to deleted objects.
     if (entries.find(func->getID()) != entries.end())
     {
-        g_mutex_lock(guiQueueMutex);
-        guiFuncs.push_back(func);
-        g_mutex_unlock(guiQueueMutex);
-
-        g_mutex_lock(guiCondMutex);
-        guiCondValue++;
-        g_cond_signal(guiCond);
-        g_mutex_unlock(guiCondMutex);
+        // Schedule func to run on the GTK main thread via g_idle_add.
+        // The callback will re-check entry validity before calling.
+        g_idle_add(idleCallback_gui, func);
     }
     else
         delete func;
@@ -402,7 +345,7 @@ void WulforManager::insertEntry_gui(Entry *entry)
 
 }
 
-// Should be called from a callback, so gdk_threads_enter/leave is called automatically.
+// Should be called from the GTK main thread (e.g. from a signal handler or idle callback).
 void WulforManager::deleteEntry_gui(Entry *entry)
 {
     const string &id = entry->getID();
@@ -425,20 +368,9 @@ void WulforManager::deleteEntry_gui(Entry *entry)
     }
     g_mutex_unlock(clientQueueMutex);
 
-    g_mutex_lock(guiQueueMutex);
-    fIt = guiFuncs.begin();
-    while (fIt != guiFuncs.end())
-    {
-        if ((*fIt)->getID() == id)
-        {
-            delete *fIt;
-            fIt = guiFuncs.erase(fIt);
-        }
-        else
-            ++fIt;
-    }
-
-    g_mutex_unlock(guiQueueMutex);
+    // NOTE: Pending GUI idle callbacks for this entry cannot be cancelled,
+    // but idleCallback_gui() re-checks entry existence before calling, so
+    // they will safely no-op once the entry is removed below.
 
     // Remove the bookentry from the list.
 
