@@ -30,6 +30,8 @@
 #include <iostream>
 #ifdef _WIN32
 #include <windows.h>
+#include <fstream>
+#include <sstream>
 #include <string>
 #else
 #include <signal.h>
@@ -85,21 +87,94 @@ void callBack(void *, const std::string &a)
 /**
  * Set GTK3 runtime environment variables relative to the executable's
  * directory so that double-clicking the .exe works without a launcher script.
+ *
+ * Also rewrites the gdk-pixbuf loaders.cache so module paths are absolute.
+ * The shipped cache has relative paths like "loaders/foo.dll" which fail on
+ * Windows because LoadLibrary() resolves them relative to CWD, not the
+ * cache file's directory.
+ *
  * Must be called before gtk_init().
  */
-void setupGtkEnvironmentWin32()
+static std::string getExeDirectory()
 {
-    // Get the directory containing the exe
     char modulePath[MAX_PATH];
     DWORD len = GetModuleFileNameA(NULL, modulePath, MAX_PATH);
     if (len == 0 || len >= MAX_PATH)
-        return;
+        return {};
 
-    std::string exeDir(modulePath);
-    auto pos = exeDir.find_last_of("\\/");
+    std::string dir(modulePath);
+    auto pos = dir.find_last_of("\\/");
     if (pos != std::string::npos)
-        exeDir.erase(pos);
+        dir.erase(pos);
     else
+        return {};
+    return dir;
+}
+
+/**
+ * Read loaders.cache from the bundled location, replace relative module
+ * paths with absolute ones, and write the fixed cache to %TEMP%.
+ * Returns the path to the fixed cache, or empty on failure.
+ */
+static std::string fixLoadersCacheWin32(const std::string& exeDir)
+{
+    std::string srcCache = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders.cache";
+    std::string loadersDir = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders\\";
+
+    std::ifstream in(srcCache);
+    if (!in.is_open())
+        return {};
+
+    // Build fixed cache content: replace relative "loaders/..." paths
+    // with absolute paths.  Module paths in the cache are quoted strings
+    // on their own line, e.g.:  "loaders/libpixbufloader-svg.dll"
+    std::ostringstream fixed;
+    std::string line;
+    while (std::getline(in, line)) {
+        // Lines containing module paths start with a quoted string
+        if (!line.empty() && line[0] == '"') {
+            // Extract the path between quotes
+            auto endQuote = line.find('"', 1);
+            if (endQuote != std::string::npos) {
+                std::string modPath = line.substr(1, endQuote - 1);
+                // Replace forward slashes with backslashes
+                for (auto& c : modPath) {
+                    if (c == '/') c = '\\';
+                }
+                // If relative (starts with "loaders\"), make absolute
+                if (modPath.find("loaders\\") == 0) {
+                    modPath = loadersDir + modPath.substr(8); // skip "loaders\"
+                }
+                fixed << '"' << modPath << '"' << line.substr(endQuote + 1) << '\n';
+                continue;
+            }
+        }
+        fixed << line << '\n';
+    }
+    in.close();
+
+    // Write fixed cache to %TEMP%
+    const char* tmpDir = getenv("TEMP");
+    if (!tmpDir) tmpDir = getenv("TMP");
+    if (!tmpDir) tmpDir = ".";
+
+    std::string dstDir = std::string(tmpDir) + "\\eiskaltdcpp-gtk";
+    CreateDirectoryA(dstDir.c_str(), NULL);
+    std::string dstCache = dstDir + "\\loaders.cache";
+
+    std::ofstream out(dstCache, std::ios::trunc);
+    if (!out.is_open())
+        return {};
+
+    out << fixed.str();
+    out.close();
+    return dstCache;
+}
+
+void setupGtkEnvironmentWin32()
+{
+    std::string exeDir = getExeDirectory();
+    if (exeDir.empty())
         return;
 
     // Only set env vars that aren't already set (allow manual overrides)
@@ -108,16 +183,22 @@ void setupGtkEnvironmentWin32()
             g_setenv(var, value.c_str(), FALSE);
     };
 
-    std::string loadersCachePath = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders.cache";
-    std::string loadersDir = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders";
-    std::string schemasDir = exeDir + "\\share\\glib-2.0\\schemas";
-    std::string dataDir = exeDir + "\\share";
+    // Fix loaders.cache to have absolute paths, write to temp location
+    std::string fixedCache = fixLoadersCacheWin32(exeDir);
+    if (!fixedCache.empty()) {
+        setIfEmpty("GDK_PIXBUF_MODULE_FILE", fixedCache);
+    } else {
+        // Fallback: point to the bundled cache as-is
+        setIfEmpty("GDK_PIXBUF_MODULE_FILE",
+            exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders.cache");
+    }
 
-    setIfEmpty("GDK_PIXBUF_MODULE_FILE", loadersCachePath);
-    setIfEmpty("GDK_PIXBUF_MODULEDIR", loadersDir);
-    setIfEmpty("GSETTINGS_SCHEMA_DIR", schemasDir);
+    setIfEmpty("GDK_PIXBUF_MODULEDIR",
+        exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders");
+    setIfEmpty("GSETTINGS_SCHEMA_DIR",
+        exeDir + "\\share\\glib-2.0\\schemas");
     setIfEmpty("GTK_EXE_PREFIX", exeDir);
-    setIfEmpty("XDG_DATA_DIRS", dataDir);
+    setIfEmpty("XDG_DATA_DIRS", exeDir + "\\share");
 }
 #endif /* _WIN32 */
 

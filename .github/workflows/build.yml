@@ -223,7 +223,7 @@ jobs:
         $exePath = Get-ChildItem dist/*.exe | Select-Object -First 1
         if (-not $exePath) { Write-Error "No exe found in dist/"; exit 1 }
         Write-Host "Running windeployqt on $($exePath.FullName)"
-        windeployqt $deployFlag --no-translations $exePath.FullName
+        windeployqt $deployFlag --no-translations --no-compiler-runtime $exePath.FullName
 
     - name: Resolve and copy DLL dependencies (dumpbin)
       shell: pwsh

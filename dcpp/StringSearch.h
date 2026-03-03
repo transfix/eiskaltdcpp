@@ -52,7 +52,7 @@ public:
         return *this;
     }
 
-    bool operator==(const StringSearch& rhs) { return pattern == rhs.pattern; }
+    bool operator==(const StringSearch& rhs) const { return pattern == rhs.pattern; }
 
     const string& getPattern() const { return pattern; }
 
