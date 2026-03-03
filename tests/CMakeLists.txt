@@ -46,6 +46,18 @@ add_executable(eiskaltdcpp-tests
     test_nmdc_escape.cpp
     test_file_utils.cpp
     test_sfvreader.cpp
+    test_streams.cpp
+    test_stringsearch.cpp
+    test_scopedfunctor.cpp
+    test_intrusive_ptr.cpp
+    test_exception.cpp
+    test_version.cpp
+    test_hubentry.cpp
+    test_debugmanager.cpp
+    test_bloomfilter.cpp
+    test_flags.cpp
+    test_format.cpp
+    test_filteredfile.cpp
 )
 
 target_include_directories(eiskaltdcpp-tests PRIVATE
