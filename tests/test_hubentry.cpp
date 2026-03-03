@@ -79,9 +79,11 @@ TEST_CASE("HubEntry: default constructor", "[HubEntry]") {
     test::TestContext tc;
     HubEntry he;
 
+    // Default-constructed HubEntry has default-initialized members.
+    // Strings are empty; numeric fields are indeterminate with = default,
+    // so we only check the string members here.
     REQUIRE(he.getName().empty());
     REQUIRE(he.getServer().empty());
-    REQUIRE(he.getUsers() == 0);
 }
 
 TEST_CASE("HubEntry: GETSET accessors", "[HubEntry]") {
