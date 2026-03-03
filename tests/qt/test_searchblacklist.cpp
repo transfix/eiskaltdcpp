@@ -13,13 +13,21 @@
 
 #include <memory>
 
+// Clean up SearchBlacklist before static destruction
+static void cleanupSearchBlacklist() {
+    if (SearchBlacklist::getInstance())
+        SearchBlacklist::deleteInstance();
+}
+
 // Lazy-init dcpp context + WulforSettings
 static std::unique_ptr<dcpp::test::TestContext> g_tc;
 static void ensureContext() {
     if (!g_tc)
         g_tc = std::make_unique<dcpp::test::TestContext>();
-    if (!WulforSettings::getInstance())
+    if (!WulforSettings::getInstance()) {
         WulforSettings::newInstance();
+        std::atexit(cleanupSearchBlacklist);
+    }
 }
 
 // Helper: create a fresh SearchBlacklist with empty lists

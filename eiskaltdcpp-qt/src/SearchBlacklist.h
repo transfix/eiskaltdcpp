@@ -18,22 +18,22 @@
 #include <QString>
 
 #include "dcpp/stdinc.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/NonCopyable.h"
 
 class SearchBlacklist:
-        public QObject,
-        public dcpp::Singleton<SearchBlacklist>
+        public QObject
 {
     Q_OBJECT
-
-    friend class dcpp::Singleton<SearchBlacklist>;
 
 public:
     enum Argument {
         NAME,
         TTH
     };
+
+    static SearchBlacklist* getInstance()  { return instance_; }
+    static void newInstance()    { delete instance_; instance_ = new SearchBlacklist(); }
+    static void deleteInstance() { delete instance_; instance_ = nullptr; }
 
     bool ok(const QString &exp, Argument type);
     QList<QString> getList(Argument arg) const { return (list[arg]); }
@@ -42,6 +42,8 @@ public:
 private:
     SearchBlacklist();
     virtual ~SearchBlacklist();
+
+    static SearchBlacklist* instance_;
 
     void loadLists();
     void saveLists();

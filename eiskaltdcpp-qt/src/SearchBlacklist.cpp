@@ -18,6 +18,8 @@
 
 #include "dcpp/Util.h"
 
+SearchBlacklist* SearchBlacklist::instance_ = nullptr;
+
 SearchBlacklist::SearchBlacklist(){
     list[NAME] = {};
     list[TTH]  = {};
