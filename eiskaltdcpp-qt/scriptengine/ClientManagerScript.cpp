@@ -11,7 +11,13 @@
  */
 
 #include "ClientManagerScript.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
+
+ClientManagerScript* ClientManagerScript::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->clientManagerScript() : nullptr;
+}
 
 #include "dcpp/CID.h"
 #include "dcpp/User.h"

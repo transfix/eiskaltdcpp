@@ -49,6 +49,12 @@ using FinishedDownloads = FinishedTransfers<false>;
 #ifdef USE_ASPELL
 class SpellCheck;
 #endif
+#ifdef USE_JS
+class ScriptEngine;
+class ClientManagerScript;
+class HashManagerScript;
+class LogManagerScript;
+#endif
 #endif // QT_CONTEXT_MINIMAL
 
 /**
@@ -118,6 +124,15 @@ public:
     void createSpellCheck();
     void destroySpellCheck();        // runtime toggle support
 #endif
+#ifdef USE_JS
+    void createScriptEngine();
+    void createClientManagerScript();
+    void destroyClientManagerScript();
+    void createHashManagerScript();
+    void destroyHashManagerScript();
+    void createLogManagerScript();
+    void destroyLogManagerScript();
+#endif
 #endif // QT_CONTEXT_MINIMAL
 
     // ── Typed accessors (non-owning raw pointers) ──────────────────────
@@ -148,6 +163,12 @@ public:
     [[nodiscard]] FinishedDownloads*  finishedDownloads()  const noexcept;
 #ifdef USE_ASPELL
     [[nodiscard]] SpellCheck*         spellCheck()         const noexcept { return spellCheck_.get(); }
+#endif
+#ifdef USE_JS
+    [[nodiscard]] ScriptEngine*       scriptEngine()       const noexcept { return scriptEngine_.get(); }
+    [[nodiscard]] ClientManagerScript* clientManagerScript() const noexcept { return clientManagerScript_.get(); }
+    [[nodiscard]] HashManagerScript*   hashManagerScript()  const noexcept { return hashManagerScript_.get(); }
+    [[nodiscard]] LogManagerScript*    logManagerScript()   const noexcept { return logManagerScript_.get(); }
 #endif
 #endif // QT_CONTEXT_MINIMAL
 
@@ -181,6 +202,12 @@ private:
     std::unique_ptr<FinishedDownloads>  finishedDownloads_;
 #ifdef USE_ASPELL
     std::unique_ptr<SpellCheck>         spellCheck_;
+#endif
+#ifdef USE_JS
+    std::unique_ptr<ScriptEngine>       scriptEngine_;
+    std::unique_ptr<ClientManagerScript> clientManagerScript_;
+    std::unique_ptr<HashManagerScript>   hashManagerScript_;
+    std::unique_ptr<LogManagerScript>    logManagerScript_;
 #endif
 #endif // QT_CONTEXT_MINIMAL
 };

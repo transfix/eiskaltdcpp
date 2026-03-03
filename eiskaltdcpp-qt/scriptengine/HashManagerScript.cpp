@@ -11,7 +11,13 @@
  */
 
 #include "HashManagerScript.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
+
+HashManagerScript* HashManagerScript::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->hashManagerScript() : nullptr;
+}
 
 #include "dcpp/MerkleTree.h"
 #include "dcpp/DCPlusPlus.h"

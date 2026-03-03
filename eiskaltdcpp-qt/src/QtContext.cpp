@@ -43,6 +43,12 @@
 #ifdef USE_ASPELL
 #include "SpellCheck.h"
 #endif
+#ifdef USE_JS
+#include "ScriptEngine.h"
+#include "scriptengine/ClientManagerScript.h"
+#include "scriptengine/HashManagerScript.h"
+#include "scriptengine/LogManagerScript.h"
+#endif
 #endif // QT_CONTEXT_MINIMAL
 
 // ── Global context pointer (NOT owned — caller manages lifetime) ────────
@@ -90,5 +96,14 @@ FinishedDownloads* QtContext::finishedDownloads() const noexcept { return finish
 #ifdef USE_ASPELL
 void QtContext::createSpellCheck()         { spellCheck_         = std::make_unique<SpellCheck>(); }
 void QtContext::destroySpellCheck()        { spellCheck_.reset(); }
+#endif
+#ifdef USE_JS
+void QtContext::createScriptEngine()       { scriptEngine_       = std::make_unique<ScriptEngine>(); }
+void QtContext::createClientManagerScript() { clientManagerScript_ = std::make_unique<ClientManagerScript>(); }
+void QtContext::destroyClientManagerScript() { clientManagerScript_.reset(); }
+void QtContext::createHashManagerScript()  { hashManagerScript_  = std::make_unique<HashManagerScript>(); }
+void QtContext::destroyHashManagerScript() { hashManagerScript_.reset(); }
+void QtContext::createLogManagerScript()   { logManagerScript_   = std::make_unique<LogManagerScript>(); }
+void QtContext::destroyLogManagerScript()  { logManagerScript_.reset(); }
 #endif
 #endif // QT_CONTEXT_MINIMAL

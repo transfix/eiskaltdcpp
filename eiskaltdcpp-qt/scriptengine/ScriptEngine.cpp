@@ -11,7 +11,13 @@
  */
 
 #include "ScriptEngine.h"
+#include "QtContext.h"
 #include "dcpp/DCPlusPlus.h"
+
+ScriptEngine* ScriptEngine::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->scriptEngine() : nullptr;
+}
 
 #include "ArenaWidget.h"
 #include "ArenaWidgetFactory.h"
@@ -155,21 +161,21 @@ QJSValue ScriptBridge::getStaticMember(const QString &className) {
         obj = qobject_cast<QObject*>(HubManager::getInstance());
     else if (className == "ClientManagerScript") {
         if (!ClientManagerScript::getInstance()) {
-            ClientManagerScript::newInstance();
+            qtContext()->createClientManagerScript();
             ClientManagerScript::getInstance()->moveToThread(MainWindow::getInstance()->thread());
         }
         obj = qobject_cast<QObject*>(ClientManagerScript::getInstance());
     }
     else if (className == "HashManagerScript") {
         if (!HashManagerScript::getInstance()) {
-            HashManagerScript::newInstance();
+            qtContext()->createHashManagerScript();
             HashManagerScript::getInstance()->moveToThread(MainWindow::getInstance()->thread());
         }
         obj = qobject_cast<QObject*>(HashManagerScript::getInstance());
     }
     else if (className == "LogManagerScript") {
         if (!LogManagerScript::getInstance()) {
-            LogManagerScript::newInstance();
+            qtContext()->createLogManagerScript();
             LogManagerScript::getInstance()->moveToThread(MainWindow::getInstance()->thread());
         }
         obj = qobject_cast<QObject*>(LogManagerScript::getInstance());
@@ -235,8 +241,9 @@ ScriptEngine::~ScriptEngine(){
 
     stopScripts();
 
-    ClientManagerScript::deleteInstance();
-    HashManagerScript::deleteInstance();
+    qtContext()->destroyClientManagerScript();
+    qtContext()->destroyHashManagerScript();
+    qtContext()->destroyLogManagerScript();
 }
 
 void ScriptEngine::loadScripts(){

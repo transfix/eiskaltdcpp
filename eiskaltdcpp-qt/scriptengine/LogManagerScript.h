@@ -13,17 +13,17 @@
 
 #include "dcpp/stdinc.h"
 #include "dcpp/DCPlusPlus.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/LogManager.h"
 #include "dcpp/LogManagerListener.h"
 
+class QtContext;
+
 class LogManagerScript :
         public QObject,
-        public dcpp::Singleton<LogManagerScript>,
         public dcpp::LogManagerListener
 {
 Q_OBJECT
-friend class dcpp::Singleton<LogManagerScript>;
+friend class QtContext;
 
 Q_SIGNALS:
     void message(const QString &tstamp, const QString &msg);
@@ -31,9 +31,12 @@ Q_SIGNALS:
 protected:
     virtual void on(Message, time_t, const dcpp::string&) throw();
 
-private:
+public:
+    static LogManagerScript* getInstance();
     LogManagerScript(QObject *parent = nullptr);
-    LogManagerScript(const LogManagerScript&){}
     ~LogManagerScript();
+
+private:
+    LogManagerScript(const LogManagerScript&){}
     LogManagerScript &operator=(const LogManagerScript&){ return *this; }
 };

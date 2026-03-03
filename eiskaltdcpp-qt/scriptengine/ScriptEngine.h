@@ -25,7 +25,6 @@
 
 #include "dcpp/stdinc.h"
 #include "dcpp/DCPlusPlus.h"
-#include "dcpp/Singleton.h"
 
 #include "ScriptBridge.h"
 
@@ -35,12 +34,13 @@ struct ScriptObject {
     QString path;
 };
 
+class QtContext;
+
 class ScriptEngine :
-        public QObject,
-        public dcpp::Singleton<ScriptEngine>
+        public QObject
 {
 Q_OBJECT
-friend class dcpp::Singleton<ScriptEngine>;
+friend class QtContext;
 
 public:
 
@@ -61,9 +61,12 @@ private Q_SLOTS:
     void slotScriptChanged(const QString &script);
     void slotProcessChangedFiles();
 
-private:
+public:
+    static ScriptEngine* getInstance();
     ScriptEngine();
     virtual ~ScriptEngine();
+
+private:
 
     void loadJSScript(const QString&);
 #ifdef USE_QML

@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
     qtCtx.createNotification();
 
 #ifdef USE_JS
-    ScriptEngine::newInstance();
+    qtCtx.createScriptEngine();
     QObject::connect(ScriptEngine::getInstance(), SIGNAL(scriptChanged(QString)), MainWindow::getInstance(), SLOT(slotJSFileChanged(QString)));
 #endif
 
@@ -233,10 +233,6 @@ int main(int argc, char *argv[])
     std::cout << QObject::tr("Shutting down libeiskaltdcpp...").toStdString() << std::endl;
 
     WulforSettings::getInstance()->save();
-
-#ifdef USE_JS
-    ScriptEngine::deleteInstance();
-#endif
 
     setQtContext(nullptr);
     // qtCtx destructor destroys all services in reverse declaration order

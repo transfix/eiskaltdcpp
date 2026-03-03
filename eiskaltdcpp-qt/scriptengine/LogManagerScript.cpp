@@ -11,7 +11,13 @@
  */
 
 #include "LogManagerScript.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
+
+LogManagerScript* LogManagerScript::getInstance() {
+    auto* ctx = qtContext();
+    return ctx ? ctx->logManagerScript() : nullptr;
+}
 
 #include <QDateTime>
 
