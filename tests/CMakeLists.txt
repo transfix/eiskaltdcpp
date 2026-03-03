@@ -1,11 +1,13 @@
 project(eiskaltdcpp-tests)
 
-# Fetch Catch2 v3
+# Fetch Catch2 v3 — use source archive instead of git clone for speed
+# and resilience against transient git-protocol failures.
 include(FetchContent)
 FetchContent_Declare(
     Catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v3.5.2
+    URL        https://github.com/catchorg/Catch2/archive/refs/tags/v3.5.2.tar.gz
+    URL_HASH   SHA256=269543a49eb76f40b3f93ff231d4c24c27a7e16c90e47d2e45bcc564de470c6e
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable(Catch2)
 
