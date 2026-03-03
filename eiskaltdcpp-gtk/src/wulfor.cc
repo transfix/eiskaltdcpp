@@ -28,7 +28,10 @@
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
 #include <iostream>
-#ifndef _WIN32
+#ifdef _WIN32
+#include <windows.h>
+#include <string>
+#else
 #include <signal.h>
 #endif
 
@@ -77,6 +80,46 @@ void callBack(void *, const std::string &a)
 {
     std::cout << _("Loading: ") << a << std::endl;
 }
+
+#ifdef _WIN32
+/**
+ * Set GTK3 runtime environment variables relative to the executable's
+ * directory so that double-clicking the .exe works without a launcher script.
+ * Must be called before gtk_init().
+ */
+void setupGtkEnvironmentWin32()
+{
+    // Get the directory containing the exe
+    char modulePath[MAX_PATH];
+    DWORD len = GetModuleFileNameA(NULL, modulePath, MAX_PATH);
+    if (len == 0 || len >= MAX_PATH)
+        return;
+
+    std::string exeDir(modulePath);
+    auto pos = exeDir.find_last_of("\\/");
+    if (pos != std::string::npos)
+        exeDir.erase(pos);
+    else
+        return;
+
+    // Only set env vars that aren't already set (allow manual overrides)
+    auto setIfEmpty = [](const char *var, const std::string &value) {
+        if (!g_getenv(var))
+            g_setenv(var, value.c_str(), FALSE);
+    };
+
+    std::string loadersCachePath = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders.cache";
+    std::string loadersDir = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders";
+    std::string schemasDir = exeDir + "\\share\\glib-2.0\\schemas";
+    std::string dataDir = exeDir + "\\share";
+
+    setIfEmpty("GDK_PIXBUF_MODULE_FILE", loadersCachePath);
+    setIfEmpty("GDK_PIXBUF_MODULEDIR", loadersDir);
+    setIfEmpty("GSETTINGS_SCHEMA_DIR", schemasDir);
+    setIfEmpty("GTK_EXE_PREFIX", exeDir);
+    setIfEmpty("XDG_DATA_DIRS", dataDir);
+}
+#endif /* _WIN32 */
 
 #ifndef _WIN32
 void catchSIG(int sigNum) {
@@ -180,6 +223,11 @@ int main(int argc, char *argv[])
     g_thread_init(NULL);
 #endif
     gdk_threads_init();
+
+#ifdef _WIN32
+    setupGtkEnvironmentWin32();
+#endif
+
     gtk_init(&argc, &argv);
     g_set_application_name("EiskaltDC++ Gtk");
 

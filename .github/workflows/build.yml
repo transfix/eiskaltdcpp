@@ -429,9 +429,19 @@ jobs:
         cp -r /ucrt64/lib/gdk-pixbuf-2.0 dist/lib/ 2>/dev/null || true
         LOADERS_DIR="dist/lib/gdk-pixbuf-2.0/2.10.0/loaders"
         if [ -d "$LOADERS_DIR" ]; then
+          # Bundle DLL dependencies of pixbuf loader modules (e.g. librsvg for SVG)
+          for loader_dll in "$LOADERS_DIR"/*.dll; do
+            ldd "$loader_dll" 2>/dev/null \
+              | grep -i '/ucrt64/' \
+              | awk '{print $3}' \
+              | while read -r dep; do
+                  cp -n "$dep" dist/ 2>/dev/null || true
+                done
+          done
+          # Generate loaders.cache with paths relative to the cache file's dir
           /ucrt64/bin/gdk-pixbuf-query-loaders.exe "$LOADERS_DIR"/*.dll > \
             "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
-          sed -i 's|.*/loaders/|lib/gdk-pixbuf-2.0/2.10.0/loaders/|g' \
+          sed -i 's|.*/loaders/|loaders/|g' \
             "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
         fi
         mkdir -p dist/share/glib-2.0
