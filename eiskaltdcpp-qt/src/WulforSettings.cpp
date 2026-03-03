@@ -40,6 +40,17 @@
 
 using namespace dcpp;
 
+WulforSettings* WulforSettings::instance_ = nullptr;
+
+void WulforSettings::newInstance() {
+    delete instance_;
+    instance_ = new WulforSettings();
+}
+
+void WulforSettings::deleteInstance() {
+    delete instance_;
+    instance_ = nullptr;
+}
 
 
 WulforSettings::WulforSettings()

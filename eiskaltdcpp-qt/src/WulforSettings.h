@@ -16,7 +16,6 @@
 #include <QSettings>
 
 #include "dcpp/stdinc.h"
-#include "dcpp/Singleton.h"
 
 static const QString & WS_CHAT_OP_COLOR           = "chat-op-color";
 static const QString & WS_CHAT_USER_COLOR         = "chat-us-color";
@@ -154,17 +153,20 @@ static const QString & WI_NOTIFY_MODULE           = "notify-module";
 static const QString & WI_OUT_IN_HIST             = "number-of-output-messages-in-history";
 
 class WulforSettings :
-        public QObject,
-        public dcpp::Singleton<WulforSettings>
+        public QObject
 {
     Q_OBJECT
 
     typedef QMap<QString, int> WIntMap;
     typedef QMap<QString, QString> WStrMap;
 
-friend class dcpp::Singleton<WulforSettings>;
-
 public:
+    /// Lifecycle — replaces dcpp::Singleton<WulforSettings>.
+    /// getInstance() returns nullptr before newInstance() / after deleteInstance().
+    static WulforSettings* getInstance() { return instance_; }
+    static void newInstance();
+    static void deleteInstance();
+
     void load();
     void save();
 
@@ -215,6 +217,8 @@ private:
     QTranslator appTranslator;
     QTranslator qtTranslator;
     QTranslator qtBaseTranslator;
+
+    static WulforSettings* instance_;
 };
 
 static const auto WSGET = [](const QString &key, const QString &default_value = "") -> QString { return WulforSettings::getInstance()->getStr(key, default_value); };

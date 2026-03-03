@@ -20,11 +20,19 @@ static void ensureContext() {
         g_tc = std::make_unique<dcpp::test::TestContext>();
 }
 
-// Lazy-init WulforSettings singleton (depends on dcpp context)
+// Cleanup: destroy WulforSettings before TestContext static destruction.
+// Registered via atexit() so it runs in LIFO order before g_tc's destructor.
+static void cleanupWulforSettings() {
+    WulforSettings::deleteInstance();
+}
+
+// Lazy-init WulforSettings (depends on dcpp context)
 static void ensureSettings() {
     ensureContext();
-    if (!WulforSettings::getInstance())
+    if (!WulforSettings::getInstance()) {
         WulforSettings::newInstance();
+        std::atexit(cleanupWulforSettings);
+    }
 }
 
 // ─── Construction ───────────────────────────────────────────────────────
