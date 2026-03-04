@@ -23,22 +23,32 @@
 
 #include <string>
 #include <map>
+#include <memory>
 #include <dcpp/stdinc.h>
-#include <dcpp/Singleton.h>
 #include "dcpp/DCPlusPlus.h"
 
+#include "GtkSettingsModel.h"
+
+// ── Forward-compatible macros ──
+// Phase 5: these continue to work via WulforSettingsManager::getInstance()
+// which now delegates to the underlying GtkSettingsModel.
 #define WSET(key, value) WulforSettingsManager::getInstance()->set(key, value)
 #define WGETI(key) WulforSettingsManager::getInstance()->getInt(key)
 #define WGETS(key) WulforSettingsManager::getInstance()->getString(key)
 #define WGETB(key) WulforSettingsManager::getInstance()->getBool(key)
 #define WSCMD(cmd) WulforSettingsManager::getInstance()->parseCmd(cmd);
 
-/* default font theme */
-#define TEXT_WEIGHT_NORMAL PANGO_WEIGHT_NORMAL
-#define TEXT_WEIGHT_BOLD   PANGO_WEIGHT_BOLD
-#define TEXT_STYLE_NORMAL  PANGO_STYLE_NORMAL
-#define TEXT_STYLE_ITALIC  PANGO_STYLE_ITALIC
+/* default font theme — now use widget-independent constants */
+#define TEXT_WEIGHT_NORMAL gtk_settings::TEXT_WEIGHT_NORMAL
+#define TEXT_WEIGHT_BOLD   gtk_settings::TEXT_WEIGHT_BOLD
+#define TEXT_STYLE_NORMAL  gtk_settings::TEXT_STYLE_NORMAL
+#define TEXT_STYLE_ITALIC  gtk_settings::TEXT_STYLE_ITALIC
 
+/**
+ * Legacy PreviewApp class — kept for API compatibility with existing
+ * GTK views that use PreviewApp pointers.  New code should use
+ * gtk_settings::PreviewApp (value semantics) instead.
+ */
 class PreviewApp
 {
 public:
@@ -55,12 +65,32 @@ public:
     std::string ext;
 };
 
-class WulforSettingsManager : public dcpp::Singleton<WulforSettingsManager>
+/**
+ * WulforSettingsManager — thin wrapper that delegates to GtkSettingsModel.
+ *
+ * Phase 5 migration: the Singleton<> inheritance is removed.  A global
+ * instance pointer is maintained for backward compatibility with the
+ * WGETI/WGETS/WSET/WGETB/WSCMD macros.  The instance is created in
+ * wulfor.cc and the pointer set via setInstance().
+ *
+ * Eventually (Phase 6+), the macros and this wrapper can be removed
+ * entirely, with consumers using GtkSettingsModel directly.
+ */
+class WulforSettingsManager
 {
 public:
     WulforSettingsManager();
-    virtual ~WulforSettingsManager();
+    ~WulforSettingsManager();
 
+    WulforSettingsManager(const WulforSettingsManager&) = delete;
+    WulforSettingsManager& operator=(const WulforSettingsManager&) = delete;
+
+    // ── Global instance management (replaces Singleton<>) ──
+    static WulforSettingsManager *getInstance() { return instance_; }
+    static void newInstance();
+    static void deleteInstance();
+
+    // ── Delegated API (same signatures as before) ──
     int getInt(const std::string &key, bool useDefault = false);
     bool getBool(const std::string &key, bool useDefault = false);
     std::string getString(const std::string &key, bool useDefault = false);
@@ -71,23 +101,30 @@ public:
     void load();
     void save();
 
+    // ── Preview app API (legacy pointer interface) ──
     PreviewApp* applyPreviewApp(std::string &oldName, std::string &newName, std::string &app, std::string &ext);
     PreviewApp* addPreviewApp(std::string name, std::string app, std::string ext);
     bool getPreviewApp(std::string &name, PreviewApp::size &index);
     bool getPreviewApp(std::string &name);
     bool removePreviewApp(std::string &name);
-
     const PreviewApp::List& getPreviewApps() const {return previewApps;}
 
-private:
-    typedef std::map<std::string, int> IntMap;
-    typedef std::map<std::string, std::string> StringMap;
+    /// Access the underlying model (for new code).
+    gtk_settings::GtkSettingsModel &model() { return model_; }
+    const gtk_settings::GtkSettingsModel &model() const { return model_; }
 
-    IntMap intMap;
-    StringMap stringMap;
-    IntMap defaultInt;
-    StringMap defaultString;
+private:
+    static WulforSettingsManager *instance_;
+
+    gtk_settings::GtkSettingsModel model_;
     std::string configFile;
 
+    /// Legacy pointer list kept in sync with model_.previewApps().
     PreviewApp::List previewApps;
+
+    /// Rebuild the legacy pointer list from the model.
+    void syncPreviewAppsFromModel();
+
+    /// Free all legacy PreviewApp pointers.
+    void freePreviewApps();
 };

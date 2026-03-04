@@ -3,8 +3,22 @@
  */
 #include <catch2/catch_test_macros.hpp>
 #include "SettingsValidation.h"
+#include <dcpp/stdinc.h>
+#include <dcpp/Util.h> // PATH_SEPARATOR
+#include <algorithm>
 
 using namespace gtk_settings_validate;
+
+namespace {
+/// Convert a Unix-style hardcoded path to the platform's native separator.
+inline std::string nativePath(const char* p) {
+    std::string s(p);
+#ifdef _WIN32
+    std::replace(s.begin(), s.end(), '/', '\\');
+#endif
+    return s;
+}
+} // anon
 
 // ── isValidPort ──
 
@@ -50,12 +64,12 @@ TEST_CASE("Validation: adjustDhtPort when same", "[gtk][validate]")
 
 TEST_CASE("Validation: path already has separator", "[gtk][validate]")
 {
-    REQUIRE(ensureTrailingPathSep("/home/user/") == "/home/user/");
+    REQUIRE(ensureTrailingPathSep(nativePath("/home/user/")) == nativePath("/home/user/"));
 }
 
 TEST_CASE("Validation: path missing separator", "[gtk][validate]")
 {
-    REQUIRE(ensureTrailingPathSep("/home/user") == "/home/user/");
+    REQUIRE(ensureTrailingPathSep(nativePath("/home/user")) == nativePath("/home/user/"));
 }
 
 TEST_CASE("Validation: empty path unchanged", "[gtk][validate]")

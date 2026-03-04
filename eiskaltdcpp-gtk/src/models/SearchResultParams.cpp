@@ -70,8 +70,11 @@ map<string, string> paramsFromResult(
         }
         else
         {
-            params["Filename"] = dcpp::Util::getFileName(file);
-            params["Path"] = dcpp::Util::getFilePath(file);
+            // Path was normalized to '/' by linuxSeparator —
+            // must pass '/' explicitly so getFileName/getFilePath
+            // work correctly on Windows where PATH_SEPARATOR is '\\'.
+            params["Filename"] = dcpp::Util::getFileName(file, '/');
+            params["Path"] = dcpp::Util::getFilePath(file, '/');
         }
 
         params["File Order"] = fileOrderKey(params["Filename"], false);
@@ -85,11 +88,11 @@ map<string, string> paramsFromResult(
     }
     else
     {
-        // Directory result
+        // Directory result — path normalized to '/' by linuxSeparator.
         string path = gtk_util::linuxSeparator(result.getFile());
-        params["Filename"] = dcpp::Util::getLastDir(path) + PATH_SEPARATOR;
+        params["Filename"] = dcpp::Util::getLastDir(path, '/') + "/";
         string chopPath = path.substr(0, path.length() > 0 ? path.length() - 1 : 0);
-        params["Path"] = dcpp::Util::getFilePath(chopPath);
+        params["Path"] = dcpp::Util::getFilePath(chopPath, '/');
         if (params["Path"].find("/") == string::npos)
             params["Path"] = "";
         params["File Order"] = fileOrderKey(params["Filename"], true);

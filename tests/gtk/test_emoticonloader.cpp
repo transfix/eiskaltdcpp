@@ -26,8 +26,8 @@ void createTestPack(const std::string &baseDir,
     namespace fs = std::filesystem;
 
     // Create pack XML file
-    std::string xmlPath = baseDir + "/" + packName + ".xml";
-    std::string packDir = baseDir + "/" + packName + "/";
+    std::string xmlPath = baseDir + PATH_SEPARATOR_STR + packName + ".xml";
+    std::string packDir = baseDir + PATH_SEPARATOR_STR + packName + PATH_SEPARATOR_STR;
     fs::create_directories(packDir);
 
     std::string xml;
@@ -65,7 +65,7 @@ void createTestPack(const std::string &baseDir,
 TEST_CASE("EmoticonLoader: listPacks", "[gtk][emoticons]")
 {
     TestContext tc;
-    std::string emoticonDir = tc.tmpDir.string() + "/emoticons";
+    std::string emoticonDir = tc.tmpDir.string() + PATH_SEPARATOR_STR "emoticons";
     std::filesystem::create_directories(emoticonDir);
 
     SECTION("empty directory") {
@@ -95,12 +95,12 @@ TEST_CASE("EmoticonLoader: listPacks", "[gtk][emoticons]")
 TEST_CASE("EmoticonLoader: loadPack", "[gtk][emoticons]")
 {
     TestContext tc;
-    std::string emoticonDir = tc.tmpDir.string() + "/emoticons";
+    std::string emoticonDir = tc.tmpDir.string() + PATH_SEPARATOR_STR "emoticons";
     std::filesystem::create_directories(emoticonDir);
 
     SECTION("valid pack with images") {
         createTestPack(emoticonDir, "testpack");
-        auto pack = gtk_emoticon::loadPack(emoticonDir + "/testpack.xml", emoticonDir, true);
+        auto pack = gtk_emoticon::loadPack(emoticonDir + PATH_SEPARATOR_STR "testpack.xml", emoticonDir, true);
 
         REQUIRE(pack.packName == "testpack");
         REQUIRE(pack.entries.size() == 3);
@@ -115,7 +115,7 @@ TEST_CASE("EmoticonLoader: loadPack", "[gtk][emoticons]")
 
     SECTION("pack without images (checkFileExists=false)") {
         createTestPack(emoticonDir, "noimg", false);
-        auto pack = gtk_emoticon::loadPack(emoticonDir + "/noimg.xml", emoticonDir, false);
+        auto pack = gtk_emoticon::loadPack(emoticonDir + PATH_SEPARATOR_STR "noimg.xml", emoticonDir, false);
 
         REQUIRE(pack.packName == "noimg");
         REQUIRE(pack.entries.size() == 3);
@@ -123,7 +123,7 @@ TEST_CASE("EmoticonLoader: loadPack", "[gtk][emoticons]")
 
     SECTION("pack without images (checkFileExists=true) skips missing") {
         createTestPack(emoticonDir, "noimg2", false);
-        auto pack = gtk_emoticon::loadPack(emoticonDir + "/noimg2.xml", emoticonDir, true);
+        auto pack = gtk_emoticon::loadPack(emoticonDir + PATH_SEPARATOR_STR "noimg2.xml", emoticonDir, true);
 
         // All entries should be skipped because image files don't exist
         REQUIRE(pack.entries.empty());
@@ -143,11 +143,11 @@ TEST_CASE("EmoticonLoader: loadPack", "[gtk][emoticons]")
 TEST_CASE("EmoticonLoader: collectTriggers", "[gtk][emoticons]")
 {
     TestContext tc;
-    std::string emoticonDir = tc.tmpDir.string() + "/emoticons";
+    std::string emoticonDir = tc.tmpDir.string() + PATH_SEPARATOR_STR "emoticons";
     std::filesystem::create_directories(emoticonDir);
     createTestPack(emoticonDir, "triggertest");
 
-    auto pack = gtk_emoticon::loadPack(emoticonDir + "/triggertest.xml", emoticonDir, true);
+    auto pack = gtk_emoticon::loadPack(emoticonDir + PATH_SEPARATOR_STR "triggertest.xml", emoticonDir, true);
     auto triggers = gtk_emoticon::collectTriggers(pack);
 
     REQUIRE(triggers.size() == 5); // :) :-) :( :-( ;)
@@ -161,8 +161,8 @@ TEST_CASE("EmoticonLoader: collectTriggers", "[gtk][emoticons]")
 TEST_CASE("EmoticonLoader: name deduplication", "[gtk][emoticons]")
 {
     TestContext tc;
-    std::string emoticonDir = tc.tmpDir.string() + "/emoticons";
-    std::string packDir = emoticonDir + "/dedup/";
+    std::string emoticonDir = tc.tmpDir.string() + PATH_SEPARATOR_STR "emoticons";
+    std::string packDir = emoticonDir + PATH_SEPARATOR_STR "dedup" PATH_SEPARATOR_STR;
     std::filesystem::create_directories(packDir);
 
     // Create a pack with duplicate names across emoticons
@@ -180,7 +180,7 @@ TEST_CASE("EmoticonLoader: name deduplication", "[gtk][emoticons]")
 )XML";
 
     {
-        std::ofstream ofs(emoticonDir + "/dedup.xml");
+        std::ofstream ofs(emoticonDir + PATH_SEPARATOR_STR "dedup.xml");
         ofs << xml;
     }
     for (const char *f : {"a.png", "b.png"}) {
@@ -188,7 +188,7 @@ TEST_CASE("EmoticonLoader: name deduplication", "[gtk][emoticons]")
         ofs << "STUB";
     }
 
-    auto pack = gtk_emoticon::loadPack(emoticonDir + "/dedup.xml", emoticonDir, true);
+    auto pack = gtk_emoticon::loadPack(emoticonDir + PATH_SEPARATOR_STR "dedup.xml", emoticonDir, true);
 
     // :) should only appear once (in the first emoticon)
     auto triggers = gtk_emoticon::collectTriggers(pack);

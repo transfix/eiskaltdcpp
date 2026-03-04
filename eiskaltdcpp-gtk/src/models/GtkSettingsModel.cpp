@@ -16,6 +16,8 @@
  */
 
 #include <dcpp/stdinc.h>
+#include <dcpp/File.h>
+#include <dcpp/SimpleXML.h>
 #include <dcpp/Util.h>
 
 #include "GtkSettingsModel.h"
@@ -41,8 +43,13 @@ void GtkSettingsModel::set(const string &key, int value)
     intMap_[key] = value;
 }
 
-int GtkSettingsModel::getInt(const string &key) const
+int GtkSettingsModel::getInt(const string &key, bool useDefault) const
 {
+    if (useDefault) {
+        auto dit = defaultInt_.find(key);
+        return (dit != defaultInt_.end()) ? dit->second : 0;
+    }
+
     auto it = intMap_.find(key);
     if (it != intMap_.end())
         return it->second;
@@ -52,9 +59,9 @@ int GtkSettingsModel::getInt(const string &key) const
     return 0;
 }
 
-bool GtkSettingsModel::getBool(const string &key) const
+bool GtkSettingsModel::getBool(const string &key, bool useDefault) const
 {
-    return getInt(key) != 0;
+    return getInt(key, useDefault) != 0;
 }
 
 // ── String settings ──
@@ -69,8 +76,13 @@ void GtkSettingsModel::set(const string &key, const string &value)
     stringMap_[key] = value;
 }
 
-string GtkSettingsModel::getString(const string &key) const
+string GtkSettingsModel::getString(const string &key, bool useDefault) const
 {
+    if (useDefault) {
+        auto dit = defaultString_.find(key);
+        return (dit != defaultString_.end()) ? dit->second : string();
+    }
+
     auto it = stringMap_.find(key);
     if (it != stringMap_.end())
         return it->second;
@@ -153,6 +165,114 @@ const PreviewApp *GtkSettingsModel::findPreviewApp(const string &name) const
     return nullptr;
 }
 
+// ── XML serialization ──
+
+bool GtkSettingsModel::loadFromXml(const string &path)
+{
+    try
+    {
+        dcpp::SimpleXML xml;
+        xml.fromXML(dcpp::File(path, dcpp::File::READ, dcpp::File::OPEN).read());
+        xml.resetCurrentChild();
+        xml.stepIn();
+
+        if (xml.findChild("Settings"))
+        {
+            xml.stepIn();
+
+            for (auto iit = defaultInt_.begin(); iit != defaultInt_.end(); ++iit)
+            {
+                if (xml.findChild(iit->first))
+                    intMap_.insert(map<string, int>::value_type(
+                        iit->first, dcpp::Util::toInt(xml.getChildData())));
+                xml.resetCurrentChild();
+            }
+
+            for (auto sit = defaultString_.begin(); sit != defaultString_.end(); ++sit)
+            {
+                if (xml.findChild(sit->first))
+                    stringMap_.insert(map<string, string>::value_type(
+                        sit->first, xml.getChildData()));
+                xml.resetCurrentChild();
+            }
+
+            xml.stepOut();
+        }
+
+        if (xml.findChild("PreviewApps"))
+        {
+            xml.stepIn();
+
+            for (; xml.findChild("Application");)
+                addPreviewApp(xml.getChildAttrib("Name"),
+                              xml.getChildAttrib("Application"),
+                              xml.getChildAttrib("Extension"));
+
+            xml.stepOut();
+        }
+
+        return true;
+    }
+    catch (const dcpp::Exception &)
+    {
+        return false;
+    }
+}
+
+bool GtkSettingsModel::saveToXml(const string &path) const
+{
+    dcpp::SimpleXML xml;
+    xml.addTag("EiskaltDC++_Gtk");
+    xml.stepIn();
+    xml.addTag("Settings");
+    xml.stepIn();
+
+    for (auto iit = intMap_.begin(); iit != intMap_.end(); ++iit)
+    {
+        xml.addTag(iit->first, iit->second);
+        xml.addChildAttrib(string("type"), string("int"));
+    }
+
+    for (auto sit = stringMap_.begin(); sit != stringMap_.end(); ++sit)
+    {
+        xml.addTag(sit->first, sit->second);
+        xml.addChildAttrib(string("type"), string("string"));
+    }
+
+    xml.stepOut();
+
+    xml.addTag("PreviewApps");
+    xml.stepIn();
+
+    for (const auto &app : previewApps_)
+    {
+        xml.addTag("Application");
+        xml.addChildAttrib("Name", app.name);
+        xml.addChildAttrib("Application", app.application);
+        xml.addChildAttrib("Extension", app.extension);
+    }
+
+    xml.stepOut();
+
+    try
+    {
+        dcpp::File out(path + ".tmp", dcpp::File::WRITE,
+                       dcpp::File::CREATE | dcpp::File::TRUNCATE);
+        dcpp::BufferedOutputStream<false> f(&out);
+        f.write(dcpp::SimpleXML::utf8Header);
+        xml.toXML(&f);
+        f.flush();
+        out.close();
+        dcpp::File::deleteFile(path);
+        dcpp::File::renameFile(path + ".tmp", path);
+        return true;
+    }
+    catch (const dcpp::FileException &)
+    {
+        return false;
+    }
+}
+
 // ── Parse command ──
 
 string GtkSettingsModel::parseCmd(const string &cmd)
@@ -181,6 +301,23 @@ string GtkSettingsModel::parseCmd(const string &cmd)
         return value;
     }
     return "Unknown setting: " + key;
+}
+
+// ── Bulk operations ──
+
+void GtkSettingsModel::clearOverrides()
+{
+    intMap_.clear();
+    stringMap_.clear();
+}
+
+void GtkSettingsModel::clear()
+{
+    intMap_.clear();
+    stringMap_.clear();
+    defaultInt_.clear();
+    defaultString_.clear();
+    previewApps_.clear();
 }
 
 } // namespace gtk_settings

@@ -1,10 +1,10 @@
 # Qt6 Migration & Architecture Modernization
 
-**Version: 2.5.0** | 114 commits | 285 files changed | +13,101 / −3,747 lines
+**Version: 2.5.0** | 126 commits | 332 files changed | +17,046 / −4,110 lines
 
 ## Summary
 
-Complete migration from Qt5 to Qt6 with architectural modernization of the core library, a new test suite, full cross-platform CI/CD pipeline (Linux + Windows), and packaging for both platforms.
+Complete migration from Qt5 to Qt6 with architectural modernization of the core library, a new test suite, full cross-platform CI/CD pipeline (Linux + Windows), packaging for both platforms, and a working Windows GTK3 build.
 
 ---
 
@@ -66,6 +66,12 @@ Phased migration ensuring each step compiled and tested:
 - Non-standard `uint` → `unsigned int` for MinGW compatibility
 - `arpa/inet.h` include guarded for Windows
 
+## GTK3 Windows Runtime Fixes
+
+- **Pixbuf loader crash** — The shipped `loaders.cache` contained relative paths (`"loaders/libpixbufloader-svg.dll"`), but Windows `LoadLibrary()` resolves relative paths against CWD, not the cache file's directory. When users double-click the exe from a Downloads folder (especially with spaces/parens in the path), the loaders can't be found. Fixed: `setupGtkEnvironmentWin32()` now reads the shipped cache at startup, rewrites all relative module paths to absolute paths using the exe's directory, writes the fixed cache to `%TEMP%\eiskaltdcpp-gtk\loaders.cache`, and points `GDK_PIXBUF_MODULE_FILE` there.
+- **Hub connection hang (deadlock)** — The GTK frontend used a dedicated GUI worker thread that acquired the GDK global lock (`gdk_threads_enter`) to execute queued UI updates. On Linux/X11, `gtk_main()` briefly releases the lock during `poll()`, giving the worker a window. On Windows, the lock is held continuously — deadlock on any hub event. Fixed: replaced the entire `gdk_threads`-based mechanism with `g_idle_add()`, which dispatches callbacks directly on the GTK main thread. Removed the GUI worker thread, its condition variable, mutex, and queue. Removed all deprecated `gdk_threads_init()`/`gdk_threads_enter()`/`gdk_threads_leave()` calls.
+- **GTK environment variables** — `GDK_PIXBUF_MODULE_FILE`, `GDK_PIXBUF_MODULEDIR`, `GSETTINGS_SCHEMA_DIR`, `GTK_EXE_PREFIX`, `XDG_DATA_DIRS` all set relative to exe path before `gtk_init()`, with `g_getenv()` checks to allow manual overrides.
+
 ## MSVC / Windows Portability
 
 Extensive fixes for MSVC (cl.exe) compilation with vcpkg dependencies:
@@ -81,21 +87,24 @@ Extensive fixes for MSVC (cl.exe) compilation with vcpkg dependencies:
 - **MSVC runtime bundling** — `msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`, and `concrt140.dll` copied from `VCToolsRedistDir` so the app runs without VC Redistributable installed
 - **Buffer overrun fix** — `sanitizeUrl()` and `trimCopy()` accessed `url[0]`/`url[url.length()-1]` on empty strings, causing `0xc0000409` crashes on Windows; `trimCopy` rewritten to use `find_first_not_of`/`find_last_not_of`
 - **Static destruction ordering** — MSVC destroys file-scope statics (`settingTags[]`) before global `unique_ptr` (`g_context`), causing heap corruption in test cleanup; fixed via `atexit()` pre-destruction and `minimalMode_` flag in `DCContext`
+- **`std::nullptr_t`** — explicit `std::` qualification in `intrusive_ptr.h` for GCC 15 modules-ts compatibility on MSYS2
+- **`StringSearch::operator==` const** — added `const` qualifier to fix C++20 reversed-candidate ambiguity
+- **`--no-compiler-runtime`** — added to `windeployqt` since the dumpbin dependency walker already copies VC runtime DLLs from System32, making the bundled vc_redist installer redundant
 
 ## Test Suite
 
-**539 test cases | 2,102 assertions | 39 test files** — Catch2 v3.5.2 (FetchContent)
+**684 test cases | 2,398 assertions | 50 test files** — Catch2 v3.5.2 (FetchContent, URL tarball with SHA256 verification)
 
 Two separate test binaries, both run by CTest:
 
 | Binary | Scope | Files | Cases |
 |--------|-------|------:|------:|
-| `eiskaltdcpp-tests` | dcpp core library | 31 | 428 |
+| `eiskaltdcpp-tests` | dcpp core library | 42 | 573 |
 | `eiskaltdcpp-qt-tests` | Qt UI model/logic | 8 | 111 |
 
-### dcpp core tests (31 files)
+### dcpp core tests (42 files)
 
-Cryptographic & hashing (`TigerHash`, `HashBloom`, `MerkleTree`), string & pattern matching (`Wildcards`, `ADLSearch`), compression (`BZUtils`/`ZUtils`), protocol parsing (`AdcCommand`, NMDC escape sequences), XML (`SimpleXML`, `SimpleXMLReader`), file I/O (`File`, `SFVReader`), encoding (`Encoder`, `Text`, `CID`), data classes (`QueueItem`/`Segment`, `SearchResult`, `UserCommand`, `FinishedItem`, `User`), managers (`SettingsManager`, `FavoriteManager`, `LogManager`, `SearchQueue`), and `Util` (4 test files covering path handling, formatting, URL operations).
+Cryptographic & hashing (`TigerHash`, `HashBloom`, `MerkleTree`), string & pattern matching (`Wildcards`, `ADLSearch`, `StringSearch`), compression (`BZUtils`/`ZUtils`), protocol parsing (`AdcCommand`, NMDC escape sequences), XML (`SimpleXML`, `SimpleXMLReader`), file I/O (`File`, `SFVReader`, `FilteredFile`, `Streams`), encoding (`Encoder`, `Text`, `CID`), data classes (`QueueItem`/`Segment`, `SearchResult`, `UserCommand`, `FinishedItem`, `User`, `HubEntry`), managers (`SettingsManager`, `FavoriteManager`, `LogManager`, `SearchQueue`, `DebugManager`), utilities (`ScopedFunctor`, `intrusive_ptr`, `Exception`, `BloomFilter`, `Flags`, `format`, version macros), and `Util` (4 test files covering path handling, formatting, URL operations).
 
 ### Qt UI tests (8 files)
 
@@ -116,6 +125,7 @@ Model classes (`FavoriteHubModel`, `ADLSModel`, `IPFilterModel`, `SpyModel`), la
 - **AdcHub `const_cast` UB** — Replaced `const_cast<AdcCommand&>` with a mutable copy to avoid undefined behavior.
 - **GCC 15 / MSYS2** — Added `<semaphore>` polyfill header for MinGW GCC 15+ where `std::counting_semaphore` is missing from default includes.
 - **Headless Qt** — `QT_QPA_PLATFORM=offscreen` set in CTest environment for Qt test binary.
+- **Catch2 fetch resilience** — Switched from `GIT_REPOSITORY`/`GIT_TAG` to `URL`/`URL_HASH` tarball download to avoid transient GitHub 500 errors during CI `git clone`.
 
 ### Coverage reporting
 
@@ -157,8 +167,8 @@ Full GitHub Actions workflow with 8 jobs:
 - Qt6 cached via `jurplel/install-qt-action` built-in cache
 
 **Windows DLL bundling:**
-- Qt6 build: `windeployqt` + recursive `dumpbin`-based dependency walk copies all vcpkg runtime DLLs
-- GTK3 build: `ldd`-based automatic DLL discovery + GTK3 runtime data (pixbuf loaders, GLib schemas, Adwaita/hicolor icons) + `.cmd` launcher script
+- Qt6 build: `windeployqt --no-compiler-runtime` + recursive `dumpbin`-based dependency walk copies all vcpkg runtime DLLs (VC runtime from System32, no redundant vc_redist installer)
+- GTK3 build: `ldd`-based automatic DLL discovery + GTK3 runtime data (pixbuf loaders with runtime cache rewriting, GLib schemas, Adwaita/hicolor icons)
 
 **Release artifacts** (published to GitHub Releases on `v*` tag push):
 - `EiskaltDC++-Qt6-<tag>-windows-x64-Release.zip` — Windows Qt6 build (MSVC, bundled via windeployqt)

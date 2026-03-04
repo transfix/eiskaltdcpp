@@ -40,6 +40,7 @@ add_executable(eiskaltdcpp-gtk-tests
     test_adlsearchdisplay.cpp
     test_sharebrowsermodel.cpp
     test_settingsvalidation.cpp
+    test_gtksettingsmanager.cpp
 )
 
 target_include_directories(eiskaltdcpp-gtk-tests PRIVATE

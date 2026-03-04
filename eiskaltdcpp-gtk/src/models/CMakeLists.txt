@@ -17,6 +17,7 @@ set(GTKMODELS_SOURCES
     DownloadQueueModel.cpp
     SearchResultsModel.cpp
     GtkSettingsModel.cpp
+    GtkSettingsDefaults.cpp
     ChatFormatter.cpp
     PublicHubFilter.cpp
     AdlSearchDisplay.cpp
@@ -43,6 +44,7 @@ set(GTKMODELS_HEADERS
     DownloadQueueModel.h
     SearchResultsModel.h
     GtkSettingsModel.h
+    GtkSettingsDefaults.h
     ChatFormatter.h
     PublicHubFilter.h
     AdlSearchDisplay.h

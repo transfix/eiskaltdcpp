@@ -28,6 +28,7 @@
 #include <dcpp/debug.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <sys/stat.h>
 
 using namespace std;
@@ -47,7 +48,10 @@ vector<string> listPacks(const string &emoticonDir)
 
         StringList files = File::findFiles(dir, "*.xml");
         for (auto &it : files) {
-            string file = Util::getFileName(it);
+            // Use std::filesystem to reliably extract just the filename,
+            // regardless of mixed separator styles (e.g. Windows paths
+            // containing both '/' and '\\').
+            string file = std::filesystem::path(it).filename().string();
             string::size_type pos = file.rfind('.');
             if (pos != string::npos) {
                 packs.push_back(file.substr(0, pos));

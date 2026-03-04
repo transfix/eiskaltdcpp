@@ -10,6 +10,7 @@
 #include <dcpp/User.h>
 #include <dcpp/CID.h>
 #include <dcpp/HintedUser.h>
+#include <algorithm>
 
 using namespace gtk_finished;
 using dcpp::FinishedFileItem;
@@ -19,6 +20,17 @@ using dcpp::UserPtr;
 using dcpp::User;
 using dcpp::CID;
 using dcpp::HintedUser;
+
+namespace {
+/// Convert a Unix-style hardcoded path to the platform's native separator.
+inline std::string nativePath(const char* p) {
+    std::string s(p);
+#ifdef _WIN32
+    std::replace(s.begin(), s.end(), '/', '\\');
+#endif
+    return s;
+}
+} // anon
 
 // ── paramsFromFile ──
 
@@ -38,12 +50,12 @@ TEST_CASE("FinishedTransferParams: paramsFromFile basic", "[gtk][finishedparams]
         /*crc32Checked*/true,
         hu);
 
-    auto p = paramsFromFile(item, "/downloads/music/song.mp3", "TestNick");
+    auto p = paramsFromFile(item, nativePath("/downloads/music/song.mp3"), "TestNick");
 
     REQUIRE(p["Filename"] == "song.mp3");
-    REQUIRE(p["Path"] == "/downloads/music/");
+    REQUIRE(p["Path"] == nativePath("/downloads/music/"));
     REQUIRE(p["Nicks"] == "TestNick");
-    REQUIRE(p["Target"] == "/downloads/music/song.mp3");
+    REQUIRE(p["Target"] == nativePath("/downloads/music/song.mp3"));
     REQUIRE(p["CRC Checked"] == "Yes");
     REQUIRE(p["Transferred"] == "1048576");
     REQUIRE(p["Elapsed Time"] == "5000");
@@ -64,7 +76,7 @@ TEST_CASE("FinishedTransferParams: paramsFromFile CRC not checked", "[gtk][finis
 
     FinishedFileItem item(500, 1000, 1700000000, 500, 500, false, hu);
 
-    auto p = paramsFromFile(item, "/tmp/file.dat", "Nick");
+    auto p = paramsFromFile(item, nativePath("/tmp/file.dat"), "Nick");
 
     REQUIRE(p["CRC Checked"] == "No");
     // Full (transferred == fileSize)

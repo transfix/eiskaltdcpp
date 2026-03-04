@@ -690,9 +690,9 @@ namespace gtk_settings_validate {
 
 ---
 
-## Phase 5 — WulforSettingsManager Singleton Removal (~2 days, ~20 test cases)
+## Phase 5 — WulforSettingsManager Singleton Removal ✅ (~2 days, 18 test cases actual)
 
-### 5.1 Migrate `WulforSettingsManager` from `Singleton<>` to context-owned
+### 5.1 Migrate `WulforSettingsManager` from `Singleton<>` to context-owned ✅
 
 Currently the GTK frontend's `WulforSettingsManager` still inherits `dcpp::Singleton<WulforSettingsManager>`, accessed via `getInstance()` / `WGETI()` / `WGETS()` macros throughout all 33 source files.
 
@@ -777,18 +777,18 @@ Phase 6 is the only **modification** phase and carries the most risk. It should 
 
 ## Estimated Test Coverage
 
-| Phase | New test files | New test cases | Est. assertions |
-|-------|---------------|---------------|-----------------|
-| 0 | 0 | 0 | 0 |
-| 1 | 6 | ~80 | ~200 |
-| 2 | 6 | ~120 | ~300 |
-| 3 | 6 | ~150 | ~400 |
-| 4 | 5 | ~100 | ~250 |
-| 5 | 1 | ~20 | ~50 |
-| **Total** | **24** | **~470** | **~1,200** |
+| Phase | New test files | New test cases | Est. assertions | Actual |
+|-------|---------------|---------------|-----------------|--------|
+| 0 | 0 | 0 | 0 | ✅ 0 |
+| 1 | 6 | ~80 | ~200 | ✅ 28 tests, 303 assertions |
+| 2 | 6 | ~120 | ~300 | ✅ 68 tests |
+| 3 | 6 | ~150 | ~400 | ✅ 92 tests |
+| 4 | 5 | ~100 | ~250 | ✅ 94 tests |
+| 5 | 1 | ~20 | ~50 | ✅ 18 tests, 83 assertions |
+| **Total** | **24** | **~470** | **~1,200** | **300 tests, 986 assertions** |
 
-Combined with the existing test suite (539 cases / 2,102 assertions / 39 files), this would bring the project to:
-- **~1,009 test cases** | **~3,302 assertions** | **~63 test files**
+Combined with the existing test suite (573 cases / 2,186 assertions), this brings the project to:
+- **873 test cases** | **3,172 assertions**
 - Three test binaries: `eiskaltdcpp-tests`, `eiskaltdcpp-qt-tests`, `eiskaltdcpp-gtk-tests`
 
 ---
@@ -914,6 +914,8 @@ tests/gtk/test_settingsvalidation.cpp
 
 ### Phase 5
 ```
+eiskaltdcpp-gtk/src/models/GtkSettingsDefaults.h
+eiskaltdcpp-gtk/src/models/GtkSettingsDefaults.cpp
 tests/gtk/test_gtksettingsmanager.cpp
-(+ modifications to existing WulforSettingsManager)
+(+ modifications to existing GtkSettingsModel.h/.cpp, settingsmanager.hh/.cc)
 ```

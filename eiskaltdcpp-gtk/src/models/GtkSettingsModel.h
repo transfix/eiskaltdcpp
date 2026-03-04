@@ -26,7 +26,7 @@
  *
  * Mirrors the logic of WulforSettingsManager (settingsmanager.cc) without
  * GTK/Pango dependencies. Provides get/set for int and string settings
- * with defaults, and preview application management.
+ * with defaults, preview application management, and XML serialization.
  *
  * Text weight and style constants are defined as plain ints rather than
  * Pango macros so tests can run without GTK.
@@ -57,25 +57,27 @@ public:
     /// Define a default int value for a key.
     void setDefault(const std::string &key, int value);
 
-    /// Set an int value (key must exist in defaults).
+    /// Set an int value.
     void set(const std::string &key, int value);
 
-    /// Get an int value. Returns default if not explicitly set.
-    int getInt(const std::string &key) const;
+    /// Get an int value. If useDefault is true, always returns the default.
+    /// Otherwise returns the explicitly-set value, falling back to default.
+    int getInt(const std::string &key, bool useDefault = false) const;
 
-    /// Get as bool (int != 0).
-    bool getBool(const std::string &key) const;
+    /// Get as bool (int != 0). If useDefault is true, returns default value.
+    bool getBool(const std::string &key, bool useDefault = false) const;
 
     // ── String settings ──
 
     /// Define a default string value for a key.
     void setDefault(const std::string &key, const std::string &value);
 
-    /// Set a string value (key must exist in defaults).
+    /// Set a string value.
     void set(const std::string &key, const std::string &value);
 
-    /// Get a string value. Returns default if not explicitly set.
-    std::string getString(const std::string &key) const;
+    /// Get a string value. If useDefault is true, always returns the default.
+    /// Otherwise returns the explicitly-set value, falling back to default.
+    std::string getString(const std::string &key, bool useDefault = false) const;
 
     // ── Defaults management ──
 
@@ -113,12 +115,32 @@ public:
     /// Number of preview apps.
     size_t previewAppCount() const { return previewApps_.size(); }
 
+    // ── XML serialization ──
+
+    /// Load settings and preview apps from an XML file (EiskaltDC++_Gtk.xml format).
+    /// Only loads keys that have defaults defined. Preview apps are appended.
+    /// Returns true on success, false on file/parse error (model is unchanged on error).
+    bool loadFromXml(const std::string &path);
+
+    /// Save all explicitly-set settings and preview apps to an XML file.
+    /// Uses atomic write (write to .tmp, then rename).
+    /// Returns true on success, false on file error.
+    bool saveToXml(const std::string &path) const;
+
     // ── Serialization support (parse command) ──
 
     /// Parse a "key [value]" command string.
     /// With value: sets the setting. Without value: returns current as string.
     /// Returns the value as string (whether retrieved or set).
     std::string parseCmd(const std::string &cmd);
+
+    // ── Bulk operations ──
+
+    /// Clear all explicitly-set values (defaults and preview apps are kept).
+    void clearOverrides();
+
+    /// Clear everything (defaults, overrides, preview apps).
+    void clear();
 
 private:
     std::map<std::string, int> intMap_;
