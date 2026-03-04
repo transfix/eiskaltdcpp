@@ -73,6 +73,9 @@ if (LUA_SCRIPT)
     list (APPEND LIBS ${LUA_LIBRARIES})
 endif (LUA_SCRIPT)
 
+# Build the widget-independent models library (no GTK dependency)
+add_subdirectory(src/models)
+
 add_executable (${PROJECT_NAME} MACOSX_BUNDLE ${gtk_srcs})
 
 if (USE_LIBNOTIFY)
@@ -117,9 +120,9 @@ else (APPLE)
 endif (APPLE)
 
 if (APPLE)
-    target_link_libraries (${PROJECT_NAME} ${LIBS} dcpp iconv intl)
+    target_link_libraries (${PROJECT_NAME} ${LIBS} gtkmodels dcpp iconv intl)
 else (APPLE)
-    target_link_libraries (${PROJECT_NAME} ${LIBS} dcpp)
+    target_link_libraries (${PROJECT_NAME} ${LIBS} gtkmodels dcpp)
 endif (APPLE)
 
 if (UNIX)

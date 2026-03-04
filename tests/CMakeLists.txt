@@ -89,3 +89,8 @@ catch_discover_tests(eiskaltdcpp-tests)
 if (USE_QT6)
     add_subdirectory(qt)
 endif()
+
+# GTK-based tests (separate binary, no GTK dependency — tests model layer only)
+if (USE_GTK3)
+    add_subdirectory(gtk)
+endif()

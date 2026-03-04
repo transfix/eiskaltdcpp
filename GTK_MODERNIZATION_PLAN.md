@@ -71,9 +71,9 @@
 
 ---
 
-## Phase 0 — Infrastructure & Build System (~1 day)
+## Phase 0 — Infrastructure & Build System (~1 day) ✅ COMPLETE
 
-### 0.1 Create `models/` directory structure
+### 0.1 Create `models/` directory structure ✅
 ```
 eiskaltdcpp-gtk/src/models/
 ├── CMakeLists.txt          # builds libgtkmodels STATIC library
@@ -84,7 +84,7 @@ eiskaltdcpp-gtk/src/models/
 └── ... (added incrementally in later phases)
 ```
 
-### 0.2 CMake changes
+### 0.2 CMake changes ✅
 - Add `add_library(gtkmodels STATIC ...)` in `eiskaltdcpp-gtk/src/models/CMakeLists.txt`
 - `gtkmodels` links against `dcpp` only — **no GTK3 dependency**
 - `eiskaltdcpp-gtk` links against `gtkmodels` + GTK3
@@ -98,19 +98,21 @@ eiskaltdcpp-gtk/src/models/
       gtkmodels dcpp Catch2::Catch2WithMain)
   ```
 
-### 0.3 CI integration
+### 0.3 CI integration ✅
 - Add `eiskaltdcpp-gtk-tests` to CTest in the Linux GTK3 job
 - Mirror the pattern from `tests/qt/CMakeLists.txt`
 
-**Deliverable:** Empty `gtkmodels` library builds, empty test binary runs, CI passes.
+**Deliverable:** Empty `gtkmodels` library builds, empty test binary runs, CI passes. ✅ **Done.**
 
 ---
 
-## Phase 1 — Pure Functions & Formatters (~2 days, ~80 test cases)
+## Phase 1 — Pure Functions & Formatters (~2 days, ~80 test cases) ✅ COMPLETE
+
+> **Result:** 28 test cases, 303 assertions, 100% pass. No regressions in core tests (428 cases).
 
 Extract functions that are already pure (no widget, no state) but trapped inside GTK-coupled classes.
 
-### 1.1 GtkFormatters (from TreeView data functions)
+### 1.1 GtkFormatters (from TreeView data functions) ✅
 
 Currently in `treeview.cc` lines 209-260, three cell-renderer callbacks embed formatting:
 
@@ -145,7 +147,7 @@ void TreeView::speedDataFunc(...) {
 
 **Tests:** ~20 cases — boundary values (0, negative, INT64_MAX), formatting precision, locale-independent output.
 
-### 1.2 GtkWulforUtil (from WulforUtil static methods)
+### 1.2 GtkWulforUtil (from WulforUtil static methods) ✅
 
 Extract the widget-independent half of `WulforUtil` (602 lines). The class has a clean split:
 
@@ -176,13 +178,13 @@ Extract the widget-independent half of `WulforUtil` (602 lines). The class has a
 
 **Tests:** ~30 cases — magnet parsing round-trips, link detection edge cases, path separator conversion, string splitting.
 
-### 1.3 Message enums (already pure — just relocate)
+### 1.3 Message enums (already pure — just relocate) ✅
 
 `message.hh` defines `Msg::TypeMsg` and `Tag::TypeTag` — pure enums with no GTK dependency. Move/copy to `models/GtkMessageTypes.h` so the model layer can reference message types without pulling in any GTK headers.
 
 **Tests:** ~5 cases — exhaustive enum value checks.
 
-### 1.4 EmoticonLoader (from Emoticons class)
+### 1.4 EmoticonLoader (from Emoticons class) ✅
 
 Extract the XML pack-loading logic from `emoticons.cc` (191 lines):
 - `create()` — enumerate emoticon packs from filesystem
@@ -193,7 +195,7 @@ Extract the XML pack-loading logic from `emoticons.cc` (191 lines):
 
 **Tests:** ~15 cases — parse sample emoticon XML, pack discovery with temp dirs, malformed XML handling.
 
-### 1.5 SoundDispatch / NotifyDispatch (from Sound/Notify)
+### 1.5 SoundDispatch / NotifyDispatch (from Sound/Notify) ✅
 
 Extract the `TypeSound → settings_key_name` and `TypeNotify → settings_key_name` mapping tables. These are pure lookup tables currently embedded in classes that also do platform-specific playback.
 
@@ -207,15 +209,17 @@ namespace gtk_sound {
 
 **Tests:** ~10 cases — every enum value maps to a valid key, enable/disable logic.
 
-**Phase 1 total: ~80 test cases across ~6 test files.**
+**Phase 1 total: ~80 test cases across ~6 test files.** ✅ **Actual: 28 cases / 303 assertions / 6 test files.**
 
 ---
 
-## Phase 2 — Data Transformation Functions (~3 days, ~120 test cases)
+## Phase 2 — Data Transformation Functions (~3 days, ~120 test cases) ✅ COMPLETE
+
+Result: 68 new test cases (506 total assertions across 96 GTK tests), 100% pass. No regressions in 573 core tests.
 
 Extract the `getParams_client()` family — pure data transformations from dcpp objects to `StringMap`.
 
-### 2.1 TransferParams (from transfers.cc)
+### 2.1 TransferParams (from transfers.cc) ✅
 
 Two `getParams_client()` overloads at lines 860-900 transform `ConnectionQueueItem` and `Transfer` objects into `StringMap`. They call `WulforUtil::getNicks()` and `WulforUtil::getHubNames()` (which we'll have extracted in Phase 1).
 
@@ -232,7 +236,7 @@ namespace gtk_transfer {
 
 **Tests:** ~25 cases — mock dcpp objects, verify all StringMap keys populated correctly, edge cases (empty paths, zero size, partial lists).
 
-### 2.2 HubUserParams (from hub.cc)
+### 2.2 HubUserParams (from hub.cc) ✅
 
 `Hub::getParams_client()` at line 3151 transforms `Identity` → `ParamMap`. Contains user categorization logic (icon selection, op detection, nick ordering).
 
@@ -250,7 +254,7 @@ namespace gtk_hub {
 
 **Tests:** ~25 cases — operator detection, passive user icon suffix, bot detection, favorite user overlay, CID formatting.
 
-### 2.3 SearchResultParams (from search.cc)
+### 2.3 SearchResultParams (from search.cc) ✅
 
 `Search::parseSearchResult_gui()` transforms `SearchResultPtr` → `StringMap`. `getGroupingColumn()` maps `GroupType` → column name.
 
@@ -267,7 +271,7 @@ namespace gtk_search {
 
 **Tests:** ~25 cases — result parsing, all 9 grouping types, filter matching with size/type/name criteria.
 
-### 2.4 DownloadQueueParams (from downloadqueue.cc)
+### 2.4 DownloadQueueParams (from downloadqueue.cc) ✅
 
 `getQueueParams_client()` + priority mapping + status text formatting.
 
@@ -282,7 +286,7 @@ namespace gtk_queue {
 
 **Tests:** ~15 cases — priority mapping, status formatting with various download states.
 
-### 2.5 FavoriteHubParams (from favoritehubs.cc)
+### 2.5 FavoriteHubParams (from favoritehubs.cc) ✅
 
 ```cpp
 // models/FavoriteHubParams.h
@@ -295,7 +299,7 @@ namespace gtk_favhub {
 
 **Tests:** ~10 cases — entry serialization, validation (empty name, invalid address, duplicate detection).
 
-### 2.6 FinishedTransferParams (from finishedtransfers.cc)
+### 2.6 FinishedTransferParams (from finishedtransfers.cc) ✅
 
 ```cpp
 // models/FinishedTransferParams.h
@@ -313,11 +317,13 @@ namespace gtk_finished {
 
 ---
 
-## Phase 3 — Model Classes (Stateful Logic) (~5 days, ~150 test cases)
+## Phase 3 — Model Classes (Stateful Logic) ✅ COMPLETE
+
+Result: 92 new test cases (699 total assertions across 188 GTK tests), 100% pass. No regressions in 573 core tests (2186 assertions).
 
 Extract stateful model classes that currently live as member variables scattered across BookEntry subclasses. These models own the data that the GTK views display.
 
-### 3.1 HubUserListModel
+### 3.1 HubUserListModel ✅
 
 Currently, Hub has `UserMap` / `UserIters` / `userFavoriteMap` managed via GtkListStore. Extract:
 
@@ -357,7 +363,7 @@ private:
 
 **Tests:** ~35 cases — add/update/remove users, favorite tracking, chat history navigation, user categorization, count, find by CID.
 
-### 3.2 SearchResultsModel
+### 3.2 SearchResultsModel ✅
 
 Currently, Search stores results in `unordered_map<string, vector<SearchResultPtr>>` and groups them via GtkTreeStore parent/child relationships.
 
@@ -400,7 +406,7 @@ private:
 
 **Tests:** ~30 cases — add results, grouping by each of 9 types, filter by size range/file type/hub/free slots, clear, result count.
 
-### 3.3 TransferListModel
+### 3.3 TransferListModel ✅
 
 Transfers currently manages a GtkTreeStore with parent (user) / child (file) grouping.
 
@@ -439,7 +445,7 @@ private:
 
 **Tests:** ~25 cases — add/update/remove transfers, user summaries, progress calculation, find by CID.
 
-### 3.4 DownloadQueueModel
+### 3.4 DownloadQueueModel ✅
 
 DownloadQueue manages a dual-pane view: directory tree (left) + file list (right). The directory hierarchy and file-to-dir association is pure logic.
 
@@ -480,7 +486,7 @@ private:
 
 **Tests:** ~25 cases — add/remove items, directory tree construction, files-in-dir, stats, priority updates.
 
-### 3.5 FavoriteHubListModel
+### 3.5 FavoriteHubListModel ✅
 
 ```cpp
 // models/FavoriteHubListModel.h
@@ -507,7 +513,7 @@ private:
 
 **Tests:** ~20 cases — CRUD, group filtering, find by address, duplicate detection.
 
-### 3.6 GtkSettingsModel (refactor WulforSettingsManager)
+### 3.6 GtkSettingsModel ✅
 
 The existing `WulforSettingsManager` (528 lines) is already 90% widget-independent — it's a string/int map with XML serialization. The only GTK dependency is Pango constants in the header (`TEXT_WEIGHT_BOLD` etc.).
 
@@ -544,13 +550,15 @@ private:
 
 **Tests:** ~15 cases — get/set, defaults, XML round-trip, preview app CRUD.
 
-**Phase 3 total: ~150 test cases across ~6 test files.**
+**Phase 3 total: 92 test cases across 6 test files (actual), 699 total assertions across 188 GTK tests.**
 
 ---
 
-## Phase 4 — Complex Logic Extraction (~4 days, ~100 test cases)
+## Phase 4 — Complex Logic Extraction ✅ COMPLETE
 
-### 4.1 Chat Formatting Logic (from hub.cc)
+Result: 94 new test cases (903 total assertions across 282 GTK tests), 100% pass. No regressions in 573 core tests (2186 assertions).
+
+### 4.1 Chat Formatting Logic (from hub.cc) ✅
 
 Hub's chat message processing includes:
 - Timestamp formatting
@@ -586,7 +594,7 @@ private:
 
 **Tests:** ~30 cases — BBCode parsing, nested formatting, URL extraction, magnet detection, nick highlighting, timestamp, emoticon matching, malformed BBCode, empty messages.
 
-### 4.2 Public Hub List Filter (from publichubs.cc)
+### 4.2 Public Hub List Filter (from publichubs.cc) ✅
 
 PublicHubs has a filtering/sorting/paging system for the public hub list (~500 lines). The filter applies criteria (min/max users, name substring, country) to an `HubEntryList`.
 
@@ -616,7 +624,7 @@ private:
 
 **Tests:** ~20 cases — filter by each criterion, combined criteria, empty list, no matches, all match.
 
-### 4.3 ADL Search View Logic (from adlsearch.cc)
+### 4.3 ADL Search View Logic (from adlsearch.cc) ✅
 
 The ADL Search tab displays and edits `ADLSearch` rules. The display logic (formatting rules as strings, priority display) is extractable.
 
@@ -638,7 +646,7 @@ namespace gtk_adl {
 
 **Tests:** ~10 cases — source type to string mapping, rule display formatting.
 
-### 4.4 Share Browser Item Comparison (from sharebrowser.cc)
+### 4.4 Share Browser Item Comparison (from sharebrowser.cc) ✅
 
 ShareBrowser has an `ItemInfo` inner class with `compareItems()` used for sorting. The comparison and size computation logic is extractable.
 
@@ -658,7 +666,7 @@ namespace gtk_share {
 
 **Tests:** ~15 cases — sort by name/size/type, total size computation.
 
-### 4.5 Settings Validation (from settingsdialog.cc)
+### 4.5 Settings Validation (from settingsdialog.cc) ✅
 
 The 4,600-line settings dialog has validation logic buried in widget callbacks. Extract validators:
 
@@ -678,7 +686,7 @@ namespace gtk_settings_validate {
 
 **Tests:** ~25 cases — each validator with valid/invalid inputs.
 
-**Phase 4 total: ~100 test cases across ~5 test files.**
+**Phase 4 total: 94 test cases across 5 test files (actual), 903 total assertions across 282 GTK tests.**
 
 ---
 
@@ -892,7 +900,9 @@ eiskaltdcpp-gtk/src/models/ChatFormatter.cpp
 eiskaltdcpp-gtk/src/models/PublicHubFilter.h
 eiskaltdcpp-gtk/src/models/PublicHubFilter.cpp
 eiskaltdcpp-gtk/src/models/AdlSearchDisplay.h
+eiskaltdcpp-gtk/src/models/AdlSearchDisplay.cpp
 eiskaltdcpp-gtk/src/models/ShareBrowserModel.h
+eiskaltdcpp-gtk/src/models/ShareBrowserModel.cpp
 eiskaltdcpp-gtk/src/models/SettingsValidation.h
 eiskaltdcpp-gtk/src/models/SettingsValidation.cpp
 tests/gtk/test_chatformatter.cpp
