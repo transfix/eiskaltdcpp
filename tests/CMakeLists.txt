@@ -2,11 +2,16 @@ project(eiskaltdcpp-tests)
 
 # Fetch Catch2 v3 — use source archive instead of git clone for speed
 # and resilience against transient git-protocol failures.
+# Multiple mirror URLs let CMake fall back if one CDN returns a transient
+# 5xx error (GitHub 502s are common on Actions runners).
 include(FetchContent)
+set(CATCH2_VERSION "3.5.2")
+set(CATCH2_SHA256 "269543a49eb76f40b3f93ff231d4c24c27a7e16c90e47d2e45bcc564de470c6e")
 FetchContent_Declare(
     Catch2
-    URL        https://github.com/catchorg/Catch2/archive/refs/tags/v3.5.2.tar.gz
-    URL_HASH   SHA256=269543a49eb76f40b3f93ff231d4c24c27a7e16c90e47d2e45bcc564de470c6e
+    URL        https://github.com/catchorg/Catch2/archive/refs/tags/v${CATCH2_VERSION}.tar.gz
+               https://codeload.github.com/catchorg/Catch2/tar.gz/refs/tags/v${CATCH2_VERSION}
+    URL_HASH   SHA256=${CATCH2_SHA256}
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable(Catch2)
