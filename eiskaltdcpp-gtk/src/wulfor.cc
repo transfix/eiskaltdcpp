@@ -125,28 +125,37 @@ static std::string fixLoadersCacheWin32(const std::string& exeDir)
     if (!in.is_open())
         return {};
 
-    // Build fixed cache content: replace relative "loaders/..." paths
-    // with absolute paths.  Module paths in the cache are quoted strings
-    // on their own line, e.g.:  "loaders/libpixbufloader-svg.dll"
+    // Build fixed cache content: for every module-path line (starts with '"'),
+    // extract just the DLL filename and reconstruct an absolute path under our
+    // local loadersDir.  This handles any path format the CI might produce:
+    //   - relative "loaders/foo.dll"
+    //   - absolute CI paths "D:/a/.../loaders/foo.dll"
+    //   - Windows backslash paths "D:\a\...\loaders\foo.dll"
     std::ostringstream fixed;
     std::string line;
     while (std::getline(in, line)) {
-        // Lines containing module paths start with a quoted string
+        // Module path lines start with a quoted string containing a DLL path.
+        // Data lines also start with '"' but contain short names like "svg",
+        // "image/svg+xml" — we detect module paths by the .dll extension.
         if (!line.empty() && line[0] == '"') {
-            // Extract the path between quotes
             auto endQuote = line.find('"', 1);
             if (endQuote != std::string::npos) {
                 std::string modPath = line.substr(1, endQuote - 1);
-                // Replace forward slashes with backslashes
-                for (auto& c : modPath) {
-                    if (c == '/') c = '\\';
+                // Check if this looks like a DLL path (module path)
+                if (modPath.size() > 4 &&
+                    (modPath.compare(modPath.size() - 4, 4, ".dll") == 0 ||
+                     modPath.compare(modPath.size() - 4, 4, ".DLL") == 0))
+                {
+                    // Extract just the filename from any path format
+                    auto lastSlash = modPath.find_last_of("\\/");
+                    std::string dllName = (lastSlash != std::string::npos)
+                        ? modPath.substr(lastSlash + 1)
+                        : modPath;
+                    // Construct absolute path under our loadersDir
+                    fixed << '"' << loadersDir << dllName << '"'
+                          << line.substr(endQuote + 1) << '\n';
+                    continue;
                 }
-                // If relative (starts with "loaders\"), make absolute
-                if (modPath.find("loaders\\") == 0) {
-                    modPath = loadersDir + modPath.substr(8); // skip "loaders\"
-                }
-                fixed << '"' << modPath << '"' << line.substr(endQuote + 1) << '\n';
-                continue;
             }
         }
         fixed << line << '\n';

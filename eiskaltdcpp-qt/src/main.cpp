@@ -104,6 +104,29 @@ void migrateConfig();
 
 #else //WIN32
 #include <locale.h>
+#include <windows.h>
+#include <string>
+#include <sstream>
+
+/**
+ * Show a diagnostic MessageBox when the Qt GUI app fails to start.
+ * WIN32 subsystem apps have no console, so a missing DLL or early
+ * crash is completely silent without explicit error reporting.
+ */
+static LONG WINAPI earlyExceptionHandler(EXCEPTION_POINTERS *ep)
+{
+    char buf[512];
+    snprintf(buf, sizeof(buf),
+             "EiskaltDC++ crashed during startup.\n\n"
+             "Exception code: 0x%08lX\nAddress: %p\n\n"
+             "This may indicate a missing DLL or incompatible library.\n"
+             "Please report this to the developers.",
+             ep->ExceptionRecord->ExceptionCode,
+             ep->ExceptionRecord->ExceptionAddress);
+    MessageBoxA(nullptr, buf, "EiskaltDC++ — Fatal Error",
+                MB_OK | MB_ICONERROR);
+    return EXCEPTION_EXECUTE_HANDLER;
+}
 #endif
 
 #if defined(Q_OS_MAC)
@@ -123,6 +146,12 @@ bool dockClickHandler(id self,SEL _cmd,...)
 
 int main(int argc, char *argv[])
 {
+#if defined(Q_OS_WIN)
+    // Install an early crash handler so WIN32 subsystem apps don't
+    // die silently when a DLL is missing or initialization fails.
+    SetUnhandledExceptionFilter(earlyExceptionHandler);
+#endif
+
     setlocale(LC_ALL, "");
 
     EiskaltApp app(argc, argv, _q(dcpp::Util::getLoginName()+"EDCPP"));

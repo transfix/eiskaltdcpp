@@ -223,7 +223,18 @@ jobs:
         $exePath = Get-ChildItem dist/*.exe | Select-Object -First 1
         if (-not $exePath) { Write-Error "No exe found in dist/"; exit 1 }
         Write-Host "Running windeployqt on $($exePath.FullName)"
-        windeployqt $deployFlag --no-translations --no-compiler-runtime $exePath.FullName
+        # Deploy Qt DLLs, plugins, AND compiler runtime (VC++ redistributable DLLs).
+        # Including the compiler runtime avoids silent startup crashes on machines
+        # that don't have the VC++ Redistributable installed system-wide.
+        windeployqt $deployFlag --no-translations $exePath.FullName
+
+        # Create qt.conf so Qt finds plugins relative to the exe directory.
+        # Without this, Qt falls back to the hardcoded install prefix from
+        # the CI build machine, which doesn't exist on the user's machine.
+        @"
+        [Paths]
+        Plugins = .
+        "@ -replace '^\s+','' | Set-Content "$($exePath.DirectoryName)/qt.conf" -Encoding UTF8
 
     - name: Resolve and copy DLL dependencies (dumpbin)
       shell: pwsh
@@ -438,10 +449,14 @@ jobs:
                   cp -n "$dep" dist/ 2>/dev/null || true
                 done
           done
-          # Generate loaders.cache with paths relative to the cache file's dir
+          # Generate loaders.cache — the runtime fixLoadersCacheWin32() in
+          # wulfor.cc rewrites all DLL paths to absolute, so the exact format
+          # from gdk-pixbuf-query-loaders doesn't matter much.  We still strip
+          # paths to just "loaders/filename.dll" for readability.
           /ucrt64/bin/gdk-pixbuf-query-loaders.exe "$LOADERS_DIR"/*.dll > \
             "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
-          sed -i 's|.*/loaders/|loaders/|g' \
+          # Handle both forward-slash and backslash paths from query-loaders
+          sed -i -E 's|"[^"]*[/\\]loaders[/\\]([^"]+\.dll)"|"loaders/\1"|g' \
             "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache" 2>/dev/null || true
         fi
         mkdir -p dist/share/glib-2.0

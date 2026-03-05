@@ -1,6 +1,6 @@
 # Qt6 Migration & Architecture Modernization
 
-**Version: 2.5.0** | 126 commits | 332 files changed | +17,046 / −4,110 lines
+**Version: 2.5.0** | 128 commits | 404 files changed | +27,272 / −4,514 lines
 
 ## Summary
 
@@ -59,12 +59,16 @@ Phased migration ensuring each step compiled and tested:
 - Icon loading for dev builds (symlinks from source tree)
 - 106 files changed (+2,038 / −1,926)
 
-## GTK3 / DHT
+## GTK3 Frontend Modernization (`eiskaltdcpp-gtk/`)
 
 - `getInstance()` → `ctx()->` migration (26 GTK files, 8 DHT files)
 - POSIX-only guards (`#ifndef _WIN32`) for Unix domain socket IPC, `flock`/`fcntl`, signal handlers
 - Non-standard `uint` → `unsigned int` for MinGW compatibility
 - `arpa/inet.h` include guarded for Windows
+- **Model-View extraction** — 24 new model classes in `eiskaltdcpp-gtk/src/models/` containing all business logic previously embedded in GTK widget code. Models depend only on `dcpp` + standard C++, no GTK dependency. Built as `libgtkmodels` static library.
+- **Phase 1–4** (data transformations, formatting, list models, complex logic): `GtkFormatters`, `GtkWulforUtil`, `EmoticonLoader`, `HubUserParams`, `SearchResultParams`, `DownloadQueueParams`, `FavoriteHubParams`, `FinishedTransferParams`, `TransferParams`, `FavoriteHubListModel`, `HubUserListModel`, `TransferListModel`, `DownloadQueueModel`, `SearchResultsModel`, `GtkSettingsModel`, `ChatFormatter`, `PublicHubFilter`, `AdlSearchDisplay`, `ShareBrowserModel`, `SettingsValidation`, plus dispatch tables (`SoundDispatch`, `NotifyDispatch`, `GtkMessageTypes`)
+- **Phase 5** (WulforSettingsManager singleton removal): `GtkSettingsDefaults.h/.cpp` extracts all 122 int + 123 string defaults into a widget-independent function. `WulforSettingsManager` migrated from `Singleton<>` to static `instance_` with `newInstance()`/`deleteInstance()`, delegating entirely to `GtkSettingsModel`. XML serialization (`loadFromXml`/`saveToXml`), `useDefault` parameter, `clearOverrides()`/`clear()` bulk operations added.
+- 300 GTK test cases, 986 assertions in 24 test files — all run without any GTK dependency
 
 ## GTK3 Windows Runtime Fixes
 
@@ -89,24 +93,27 @@ Extensive fixes for MSVC (cl.exe) compilation with vcpkg dependencies:
 - **Static destruction ordering** — MSVC destroys file-scope statics (`settingTags[]`) before global `unique_ptr` (`g_context`), causing heap corruption in test cleanup; fixed via `atexit()` pre-destruction and `minimalMode_` flag in `DCContext`
 - **`std::nullptr_t`** — explicit `std::` qualification in `intrusive_ptr.h` for GCC 15 modules-ts compatibility on MSYS2
 - **`StringSearch::operator==` const** — added `const` qualifier to fix C++20 reversed-candidate ambiguity
-- **`--no-compiler-runtime`** — added to `windeployqt` since the dumpbin dependency walker already copies VC runtime DLLs from System32, making the bundled vc_redist installer redundant
+- **Application manifest** — `windows/eiskaltdcpp.manifest` embedded in the Qt exe via RC file; declares `supportedOS` GUIDs (Windows 8/8.1/10/11), `PerMonitorV2` DPI awareness, `asInvoker` execution level, `longPathAware`, and `SegmentHeap`. Prevents Windows compatibility shims that can interfere with DLL loading.
+- **Early crash handler** — `SetUnhandledExceptionFilter()` installed before `QApplication` construction shows a diagnostic `MessageBox` with exception code and address, preventing the completely silent startup crashes typical of WIN32 subsystem apps
+- **`qt.conf` deployment** — CI generates `qt.conf` with `Plugins = .` next to the exe so Qt finds platform plugins relative to the exe directory instead of falling back to the hardcoded CI build prefix
 
 ## Test Suite
 
-**684 test cases | 2,398 assertions | 50 test files** — Catch2 v3.5.2 (FetchContent, URL tarball with SHA256 verification)
+**984 test cases | 3,172 assertions | 77 test files** — Catch2 v3.5.2 (FetchContent, URL tarball with SHA256 verification)
 
-Two separate test binaries, both run by CTest:
+Three separate test binaries, all run by CTest:
 
-| Binary | Scope | Files | Cases |
-|--------|-------|------:|------:|
-| `eiskaltdcpp-tests` | dcpp core library | 42 | 573 |
-| `eiskaltdcpp-qt-tests` | Qt UI model/logic | 8 | 111 |
+| Binary | Scope | Files | Cases | Assertions |
+|--------|-------|------:|------:|-----------:|
+| `eiskaltdcpp-tests` | dcpp core library | 43 | 573 | 2,186 |
+| `eiskaltdcpp-qt-tests` | Qt UI model/logic | 10 | 111 | — |
+| `eiskaltdcpp-gtk-tests` | GTK model layer | 24 | 300 | 986 |
 
-### dcpp core tests (42 files)
+### dcpp core tests (43 files)
 
 Cryptographic & hashing (`TigerHash`, `HashBloom`, `MerkleTree`), string & pattern matching (`Wildcards`, `ADLSearch`, `StringSearch`), compression (`BZUtils`/`ZUtils`), protocol parsing (`AdcCommand`, NMDC escape sequences), XML (`SimpleXML`, `SimpleXMLReader`), file I/O (`File`, `SFVReader`, `FilteredFile`, `Streams`), encoding (`Encoder`, `Text`, `CID`), data classes (`QueueItem`/`Segment`, `SearchResult`, `UserCommand`, `FinishedItem`, `User`, `HubEntry`), managers (`SettingsManager`, `FavoriteManager`, `LogManager`, `SearchQueue`, `DebugManager`), utilities (`ScopedFunctor`, `intrusive_ptr`, `Exception`, `BloomFilter`, `Flags`, `format`, version macros), and `Util` (4 test files covering path handling, formatting, URL operations).
 
-### Qt UI tests (8 files)
+### Qt UI tests (10 files)
 
 Model classes (`FavoriteHubModel`, `ADLSModel`, `IPFilterModel`, `SpyModel`), layout (`FlowLayout`), settings (`WulforSettings`), filtering (`SearchBlacklist`, `Antispam`). Runs under a real `QApplication` with the `offscreen` platform plugin for headless CI.
 
@@ -117,11 +124,15 @@ Model classes (`FavoriteHubModel`, `ADLSModel`, `IPFilterModel`, `SpyModel`), la
 - **`stubs_wulforutil.cpp`** — stub implementations of `WulforUtil` methods so Qt tests link without the full UI.
 - **`qt/test_qt_main.cpp`** — custom Catch2 main that constructs `QApplication` before test execution.
 
+### GTK model tests (24 files)
+
+Data transformation (`HubUserParams`, `SearchResultParams`, `DownloadQueueParams`, `FavoriteHubParams`, `FinishedTransferParams`, `TransferParams`), formatting (`GtkFormatters`, `GtkWulforUtil`), message/sound/notify dispatch tables, emoticon pack loading (`EmoticonLoader`), list models (`FavoriteHubListModel`, `HubUserListModel`, `TransferListModel`, `DownloadQueueModel`, `SearchResultsModel`), settings (`GtkSettingsModel`, `GtkSettingsManager` with XML round-trip), chat formatting (`ChatFormatter`), public hub filtering (`PublicHubFilter`), ADL search display, share browser model, settings validation. Tests link only against `libgtkmodels` + `dcpp` + Catch2 — no GTK dependency.
+
 ### Cross-platform test fixes
 
 - **MSVC static destruction order fiasco** — On MSVC, `SettingsManager::settingTags[]` (file-scope static) can be destroyed before the global `g_context` `unique_ptr`. When `g_context`'s destructor fires `shutdown() → save()`, it reads freed memory (0xDD fill → heap corruption 0xc0000374). Fixed with three layers: `atexit()` pre-destruction in `TestContext`, `minimalMode_` flag to skip save, and null-guards in `FavoriteManager::~FavoriteManager()`.
 - **Non-ASCII test names** — Catch2 test names containing `→`, `ä`, etc. caused `0xc0000409` on MSVC's narrow `main()`. Replaced with ASCII equivalents.
-- **Path separator handling** — Tests use explicit `'/'` separators or `std::filesystem::path::preferred_separator` instead of hardcoded Unix paths.
+- **Path separator handling** — Tests use `nativePath()` helpers to convert hardcoded `/` paths to `\` when `_WIN32` is defined. Production code (`SearchResultParams.cpp`) passes explicit `'/'` to `Util::getFileName`/`getFilePath` for protocol-level paths normalized by `linuxSeparator()`. `EmoticonLoader.cpp` uses `std::filesystem::path::filename()` to handle mixed separator styles.
 - **AdcHub `const_cast` UB** — Replaced `const_cast<AdcCommand&>` with a mutable copy to avoid undefined behavior.
 - **GCC 15 / MSYS2** — Added `<semaphore>` polyfill header for MinGW GCC 15+ where `std::counting_semaphore` is missing from default includes.
 - **Headless Qt** — `QT_QPA_PLATFORM=offscreen` set in CTest environment for Qt test binary.
@@ -167,7 +178,7 @@ Full GitHub Actions workflow with 8 jobs:
 - Qt6 cached via `jurplel/install-qt-action` built-in cache
 
 **Windows DLL bundling:**
-- Qt6 build: `windeployqt --no-compiler-runtime` + recursive `dumpbin`-based dependency walk copies all vcpkg runtime DLLs (VC runtime from System32, no redundant vc_redist installer)
+- Qt6 build: `windeployqt` (with compiler runtime) + recursive `dumpbin`-based dependency walk copies all vcpkg runtime DLLs + `qt.conf` for plugin discovery
 - GTK3 build: `ldd`-based automatic DLL discovery + GTK3 runtime data (pixbuf loaders with runtime cache rewriting, GLib schemas, Adwaita/hicolor icons)
 
 **Release artifacts** (published to GitHub Releases on `v*` tag push):
