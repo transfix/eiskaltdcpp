@@ -180,26 +180,87 @@ static std::string fixLoadersCacheWin32(const std::string& exeDir)
     return dstCache;
 }
 
+/**
+ * Fallback when %TEMP% writing fails: overwrite the bundled loaders.cache
+ * in-place with absolute paths.  Returns the path on success, empty on failure.
+ */
+static std::string fixLoadersCacheInPlace(const std::string& exeDir,
+                                          const std::string& cacheFile)
+{
+    std::string loadersDir = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders\\";
+
+    std::ifstream in(cacheFile);
+    if (!in.is_open())
+        return {};
+
+    std::ostringstream buf;
+    std::string line;
+    while (std::getline(in, line)) {
+        if (!line.empty() && line[0] == '"') {
+            auto endQuote = line.find('"', 1);
+            if (endQuote != std::string::npos) {
+                std::string modPath = line.substr(1, endQuote - 1);
+                if (modPath.size() > 4 &&
+                    (modPath.compare(modPath.size() - 4, 4, ".dll") == 0 ||
+                     modPath.compare(modPath.size() - 4, 4, ".DLL") == 0))
+                {
+                    auto lastSlash = modPath.find_last_of("\\/");
+                    std::string dllName = (lastSlash != std::string::npos)
+                        ? modPath.substr(lastSlash + 1) : modPath;
+                    buf << '"' << loadersDir << dllName << '"'
+                        << line.substr(endQuote + 1) << '\n';
+                    continue;
+                }
+            }
+        }
+        buf << line << '\n';
+    }
+    in.close();
+
+    std::ofstream out(cacheFile, std::ios::trunc);
+    if (!out.is_open())
+        return {};
+
+    out << buf.str();
+    out.close();
+    return cacheFile;
+}
+
 void setupGtkEnvironmentWin32()
 {
     std::string exeDir = getExeDirectory();
     if (exeDir.empty())
         return;
 
-    // Only set env vars that aren't already set (allow manual overrides)
+    // Ensure DLLs in the exe directory are findable by loader modules
+    // (e.g. pixbufloader_svg.dll depends on librsvg, libxml2, etc.)
+    SetDllDirectoryA(exeDir.c_str());
+
+    // Helper: set env var if not already set (allows manual overrides)
     auto setIfEmpty = [](const char *var, const std::string &value) {
         if (!g_getenv(var))
             g_setenv(var, value.c_str(), FALSE);
     };
 
-    // Fix loaders.cache to have absolute paths, write to temp location
+    // Fix loaders.cache to have absolute paths, write to temp location.
+    // MUST force-set GDK_PIXBUF_MODULE_FILE even if already set (e.g. by
+    // the launcher .cmd script) because the bundled cache has relative
+    // paths that resolve against CWD, not the cache file's directory.
     std::string fixedCache = fixLoadersCacheWin32(exeDir);
     if (!fixedCache.empty()) {
-        setIfEmpty("GDK_PIXBUF_MODULE_FILE", fixedCache);
+        g_setenv("GDK_PIXBUF_MODULE_FILE", fixedCache.c_str(), TRUE);
     } else {
-        // Fallback: point to the bundled cache as-is
-        setIfEmpty("GDK_PIXBUF_MODULE_FILE",
-            exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders.cache");
+        // fixLoadersCacheWin32 failed (can't read source or write temp).
+        // Try to overwrite the bundled cache in-place as a last resort.
+        std::string bundledCache = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders.cache";
+        std::string retryCache = fixLoadersCacheInPlace(exeDir, bundledCache);
+        if (!retryCache.empty()) {
+            g_setenv("GDK_PIXBUF_MODULE_FILE", retryCache.c_str(), TRUE);
+        } else {
+            // All attempts failed.  Set to bundled cache and hope for the best.
+            setIfEmpty("GDK_PIXBUF_MODULE_FILE", bundledCache);
+            fprintf(stderr, "eiskaltdcpp-gtk: WARNING: could not fix loaders.cache paths\n");
+        }
     }
 
     setIfEmpty("GDK_PIXBUF_MODULEDIR",

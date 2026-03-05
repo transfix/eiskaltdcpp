@@ -163,3 +163,49 @@ TEST_CASE("Text::toDOS handles string with no newlines", "[Text]") {
     std::string result = Text::toDOS("hello world");
     REQUIRE(result == "hello world");
 }
+
+// ── toUtf8 / fromUtf8 / convert (iconv-based charset conversion) ────────
+
+TEST_CASE("Text::toUtf8 converts Latin-1 to UTF-8", "[Text]") {
+    // Latin-1 byte 0xE9 is 'e with acute' = U+00E9 = UTF-8 C3 A9
+    std::string latin1 = {'\xe9'};
+    std::string result = Text::toUtf8(latin1, "ISO-8859-1");
+    REQUIRE(result == "\xc3\xa9");
+}
+
+TEST_CASE("Text::toUtf8 converts CP1251 Cyrillic to UTF-8", "[Text]") {
+    // CP1251: 0xCF 0xF0 0xE8 0xE2 0xE5 0xF2 = "Привет" (Privet)
+    std::string cp1251 = {'\xcf', '\xf0', '\xe8', '\xe2', '\xe5', '\xf2'};
+    std::string result = Text::toUtf8(cp1251, "CP1251");
+    // Expected UTF-8: П=D0 9F, р=D1 80, и=D0 B8, в=D0 B2, е=D0 B5, т=D1 82
+    REQUIRE(result == "\xd0\x9f\xd1\x80\xd0\xb8\xd0\xb2\xd0\xb5\xd1\x82");
+}
+
+TEST_CASE("Text::fromUtf8 converts UTF-8 to Latin-1", "[Text]") {
+    std::string utf8str = "\xc3\xa9"; // é in UTF-8
+    std::string result = Text::fromUtf8(utf8str, "ISO-8859-1");
+    REQUIRE(result == std::string(1, '\xe9'));
+}
+
+TEST_CASE("Text::toUtf8 returns UTF-8 input unchanged", "[Text]") {
+    std::string utf8str = "\xd0\x9f\xd1\x80\xd0\xb8\xd0\xb2\xd0\xb5\xd1\x82";
+    std::string result = Text::toUtf8(utf8str, "UTF-8");
+    REQUIRE(result == utf8str);
+}
+
+TEST_CASE("Text::convert handles ASCII passthrough", "[Text]") {
+    std::string ascii = "Hello";
+    std::string tmp;
+    const std::string& result = Text::convert(ascii, tmp, "ASCII", "UTF-8");
+    REQUIRE(result == "Hello");
+}
+
+TEST_CASE("Text::convert replaces unconvertible chars with underscore", "[Text]") {
+    // Cyrillic П = UTF-8 0xD0 0x9F cannot be represented in ASCII;
+    // each source byte that fails produces one '_' replacement.
+    std::string utf8_cyrillic = "\xd0\x9f"; // П in UTF-8
+    std::string tmp;
+    const std::string& result = Text::convert(utf8_cyrillic, tmp, "UTF-8", "ASCII");
+    REQUIRE(result == "__");
+}
+

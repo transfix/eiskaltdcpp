@@ -466,16 +466,11 @@ jobs:
         cp -r /ucrt64/share/icons/Adwaita dist/share/icons/ 2>/dev/null || true
         cp -r /ucrt64/share/icons/hicolor dist/share/icons/ 2>/dev/null || true
 
-        # Create launcher script
+        # Create launcher script — the exe sets its own GTK env vars via
+        # setupGtkEnvironmentWin32(), so the script just needs to start it.
         printf '%s\r\n' \
           '@echo off' \
-          'set "HERE=%~dp0"' \
-          'set "GDK_PIXBUF_MODULE_FILE=%HERE%lib\gdk-pixbuf-2.0\2.10.0\loaders.cache"' \
-          'set "GDK_PIXBUF_MODULEDIR=%HERE%lib\gdk-pixbuf-2.0\2.10.0\loaders"' \
-          'set "GSETTINGS_SCHEMA_DIR=%HERE%share\glib-2.0\schemas"' \
-          'set "GTK_EXE_PREFIX=%HERE%"' \
-          'set "XDG_DATA_DIRS=%HERE%share"' \
-          'start "" "%HERE%eiskaltdcpp-gtk.exe" %*' \
+          'start "" "%~dp0eiskaltdcpp-gtk.exe" %*' \
           > dist/eiskaltdcpp-gtk.cmd
 
         echo "=== Install directory ==="

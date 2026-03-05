@@ -18,7 +18,8 @@ include_directories (${PROJECT_BINARY_DIR}
                      ${BZIP2_INCLUDE_DIR}
                      ${ZLIB_INCLUDE_DIR}
                      ${OPENSSL_INCLUDE_DIR}
-                     ${GETTEXT_INCLUDE_DIR})
+                     ${GETTEXT_INCLUDE_DIR}
+                     ${ICONV_INCLUDE_DIR})
 if (LUA_SCRIPT)
     include_directories (${LUA_INCLUDE_DIR})
 endif ()
