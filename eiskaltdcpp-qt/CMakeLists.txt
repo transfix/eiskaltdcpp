@@ -322,6 +322,15 @@ add_executable (${PROJECT_NAME} MACOSX_BUNDLE WIN32 src/main.cpp
                 ${WIN_RESOURCES}
                 translations)
 
+# Embed application manifest for proper DLL loading, DPI awareness, and
+# Windows version compatibility.  For MSVC, CMake passes .manifest sources
+# to mt.exe for merging with its auto-generated manifest.  Embedding via
+# the RC file would cause a duplicate-resource link error (LNK1123).
+if (WIN32 AND MSVC)
+    target_sources (${PROJECT_NAME} PRIVATE
+        ${CMAKE_SOURCE_DIR}/windows/eiskaltdcpp.manifest)
+endif ()
+
 add_definitions (-DCLIENT_DATA_DIR="${CLIENT_DATA_DIR}")
 add_definitions (-DCLIENT_SOUNDS_DIR="${CLIENT_SOUNDS_DEST}")
 add_definitions (-DCLIENT_TRANSLATIONS_DIR="${CLIENT_TRANSLATIONS_DEST}")

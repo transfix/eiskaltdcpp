@@ -1,11 +1,1 @@
 IDI_ICON1               ICON    DISCARDABLE     "../data/icons/eiskaltdcpp.ico"
-
-/* Embed application manifest for proper DLL loading, DPI awareness,
-   and Windows version compatibility declarations */
-#ifndef RT_MANIFEST
-#define RT_MANIFEST 24
-#endif
-#ifndef CREATEPROCESS_MANIFEST_RESOURCE_ID
-#define CREATEPROCESS_MANIFEST_RESOURCE_ID 1
-#endif
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "../windows/eiskaltdcpp.manifest"

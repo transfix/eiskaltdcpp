@@ -93,7 +93,7 @@ Extensive fixes for MSVC (cl.exe) compilation with vcpkg dependencies:
 - **Static destruction ordering** — MSVC destroys file-scope statics (`settingTags[]`) before global `unique_ptr` (`g_context`), causing heap corruption in test cleanup; fixed via `atexit()` pre-destruction and `minimalMode_` flag in `DCContext`
 - **`std::nullptr_t`** — explicit `std::` qualification in `intrusive_ptr.h` for GCC 15 modules-ts compatibility on MSYS2
 - **`StringSearch::operator==` const** — added `const` qualifier to fix C++20 reversed-candidate ambiguity
-- **Application manifest** — `windows/eiskaltdcpp.manifest` embedded in the Qt exe via RC file; declares `supportedOS` GUIDs (Windows 8/8.1/10/11), `PerMonitorV2` DPI awareness, `asInvoker` execution level, `longPathAware`, and `SegmentHeap`. Prevents Windows compatibility shims that can interfere with DLL loading.
+- **Application manifest** — `windows/eiskaltdcpp.manifest` declares `supportedOS` GUIDs (Windows 8/8.1/10/11), `PerMonitorV2` DPI awareness, `asInvoker` execution level, `longPathAware`, and `SegmentHeap`. Added as a CMake source for MSVC (merged by `mt.exe`); prevents Windows compatibility shims that can interfere with DLL loading.
 - **Early crash handler** — `SetUnhandledExceptionFilter()` installed before `QApplication` construction shows a diagnostic `MessageBox` with exception code and address, preventing the completely silent startup crashes typical of WIN32 subsystem apps
 - **`qt.conf` deployment** — CI generates `qt.conf` with `Plugins = .` next to the exe so Qt finds platform plugins relative to the exe directory instead of falling back to the hardcoded CI build prefix
 
