@@ -117,7 +117,7 @@ void WulforSettings::load(){
             settings.setValue(WS_CHAT_SEPARATOR,        ":");
             settings.setValue(WS_CHAT_TIMESTAMP,        "hh:mm:ss");
             settings.setValue(WS_QCONNECT_HISTORY,      "");
-            settings.setValue(WS_DEFAULT_LOCALE,        "UTF-8");
+            settings.setValue(WS_DEFAULT_LOCALE,        "System default");
             settings.setValue(WS_DOWNLOAD_DIR_HISTORY,  "");
             settings.setValue(WS_DQUEUE_STATE,          "");
             settings.setValue(WS_SEARCH_STATE,          "");
@@ -253,7 +253,7 @@ void WulforSettings::loadOldConfig(){
         strmap.insert(WS_CHAT_SEPARATOR,        ":");
         strmap.insert(WS_CHAT_TIMESTAMP,        "hh:mm:ss");
         strmap.insert(WS_QCONNECT_HISTORY,      "");
-        strmap.insert(WS_DEFAULT_LOCALE,        "UTF-8");
+        strmap.insert(WS_DEFAULT_LOCALE,        "System default");
         strmap.insert(WS_DOWNLOAD_DIR_HISTORY,  "");
         strmap.insert(WS_DQUEUE_STATE,          "");
         strmap.insert(WS_SEARCH_STATE,          "");

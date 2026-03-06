@@ -402,6 +402,19 @@ void MainWindow::closeEvent(QCloseEvent *c_e){
         qtContext()->destroyNotification();
     }
 
+    // Close all hub connections before quitting.  This triggers each
+    // HubFrame::closeEvent() which properly disconnects and releases
+    // the dcpp Client, preventing use-after-free crashes during
+    // dcpp::shutdown().
+    if (HubManager::getInstance()) {
+        QList<QObject*> hubList = HubManager::getInstance()->getHubs();
+        for (QObject *obj : hubList) {
+            HubFrame *hub = qobject_cast<HubFrame*>(obj);
+            if (hub)
+                hub->close();
+        }
+    }
+
     d->arena->hide();
     d->arena->setWidget(nullptr);
 

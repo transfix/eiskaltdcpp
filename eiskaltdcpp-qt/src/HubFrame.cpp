@@ -839,6 +839,20 @@ HubFrame::HubFrame(QWidget *parent, QString hub="", QString encoding="")
 HubFrame::~HubFrame(){
     Q_D(HubFrame);
 
+    // Safety: if the destructor runs without closeEvent() (e.g. the
+    // parent widget is destroyed directly), make sure the dcpp Client
+    // is disconnected and released.  Without this the Client object
+    // outlives the HubFrame and its dangling listener pointers cause
+    // use-after-free crashes during dcpp::shutdown().
+    if (d->client) {
+        d->client->removeListener(this);
+        d->client->disconnect(true);
+        auto *cm = dcpp::getContext()->getClientManager();
+        if (cm)
+            cm->putClient(d->client);
+        d->client = nullptr;
+    }
+
     Menu::deleteInstance();
 
     treeView_USERS->setModel(nullptr);
@@ -1082,6 +1096,7 @@ void HubFrame::closeEvent(QCloseEvent *e){
     d->client->removeListener(this);
     d->client->disconnect(true);
     dcpp::getContext()->getClientManager()->putClient(d->client);
+    d->client = nullptr;  // prevent double-cleanup in ~HubFrame()
 
     save();
 

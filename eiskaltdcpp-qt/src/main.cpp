@@ -201,6 +201,11 @@ int main(int argc, char *argv[])
 #endif
 
     Text::hubDefaultCharset = WulforUtil::getInstance()->qtEnc2DcEnc(WSGET(WS_DEFAULT_LOCALE)).toStdString();
+    // Safety: if the conversion returned an empty string (should not happen
+    // after the qtEnc2DcEnc fix, but guard against it), fall back to the
+    // system charset so NMDC hubs get a real encoding for iconv.
+    if (Text::hubDefaultCharset.empty())
+        Text::hubDefaultCharset = Text::systemCharset;
 
     if (WulforUtil::getInstance()->loadUserIcons())
         std::cout << QObject::tr("UserList icons has been loaded").toStdString() << std::endl;

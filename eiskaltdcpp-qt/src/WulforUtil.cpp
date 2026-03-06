@@ -29,6 +29,7 @@
 #include "dcpp/Util.h"
 #include "dcpp/AdcHub.h"
 #include "dcpp/DCPlusPlus.h"
+#include "dcpp/Text.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -751,8 +752,12 @@ const QPixmap &WulforUtil::getPixmapForFile(const QString &file){
 QString WulforUtil::qtEnc2DcEnc(QString name){
     if (QtEnc2DCEnc.contains(name))
         return QtEnc2DCEnc[name].left(QtEnc2DCEnc[name].indexOf(" "));
-    else
-        return "";
+
+    // "System default" (or any unknown encoding) → use the OS charset
+    // detected by dcpp at startup (e.g. "CP1252" on Western-European
+    // Windows, "UTF-8" on modern Linux).  Returning an empty string
+    // would cause iconv_open("UTF-8", "") to fail silently.
+    return QString::fromStdString(dcpp::Text::systemCharset);
 }
 
 QString WulforUtil::dcEnc2QtEnc(QString name){
