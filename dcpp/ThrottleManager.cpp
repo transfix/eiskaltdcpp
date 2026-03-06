@@ -181,17 +181,11 @@ ThrottleManager::~ThrottleManager()
     dcpp::getContext()->getTimerManager()->removeListener(this);
 }
 
-#ifdef _WIN32
-
-void ThrottleManager::shutdown() {
-    Lock l(stateCS);
-    if (activeWaiter != -1) {
-        waitCS[activeWaiter].unlock();
-        activeWaiter = -1;
-    }
-}
-#else //*nix
-
+// Cooperatively shut down the throttle mechanism.  The timer callback
+// thread owns the waitCS locks, so we cannot unlock them directly from
+// this thread (that would be UB with std::recursive_mutex and crashes
+// in MSVC debug builds).  Instead, set a flag and wait for the timer
+// callback to release the locks on our behalf.
 void ThrottleManager::shutdown()
 {
     bool wait = false;
@@ -206,13 +200,12 @@ void ThrottleManager::shutdown()
         }
     }
 
-    // wait shutdown...
+    // Wait for the timer callback to see halt==1 and release the locks.
     if (wait)
     {
         Lock l(shutdownCS);
     }
 }
-#endif //*nix
 
 // TimerManagerListener
 void ThrottleManager::on(TimerManagerListener::Second, uint64_t /* aTick */) noexcept
@@ -224,8 +217,6 @@ void ThrottleManager::on(TimerManagerListener::Second, uint64_t /* aTick */) noe
 
     {
         Lock l(stateCS);
-
-#ifndef _WIN32 //*nix
 
         if (halt == 1)
         {
@@ -242,18 +233,15 @@ void ThrottleManager::on(TimerManagerListener::Second, uint64_t /* aTick */) noe
         {
             return;
         }
-#endif
+
         if (activeWaiter == -1)
         {
             // This will create slight weirdness for the read/write calls between
             // here and the first activeWaiter-toggle below.
             waitCS[activeWaiter = 0].lock();
 
-        #ifndef _WIN32 //*nix
-
-                    // lock shutdown
-                    shutdownCS.lock();
-        #endif
+            // lock shutdown
+            shutdownCS.lock();
         }
         }
 

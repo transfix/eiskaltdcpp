@@ -61,11 +61,12 @@ private:
     CriticalSection waitCS[2];
     long activeWaiter;
 
-#ifndef _WIN32
-    // shutdown wait
+    // shutdown synchronization — the timer callback thread owns the
+    // waitCS locks, so shutdown() must cooperatively ask it to release
+    // them rather than calling unlock() from a non-owning thread (which
+    // is undefined behavior with std::recursive_mutex).
     CriticalSection shutdownCS;
     long n_lock, halt;
-#endif
 
     // download limiter
     CriticalSection downCS;
@@ -76,11 +77,8 @@ private:
     int64_t         upTokens;
 
 public:
-    ThrottleManager() : activeWaiter(-1), downTokens(0), upTokens(0)
+    ThrottleManager() : activeWaiter(-1), n_lock(0), halt(0), downTokens(0), upTokens(0)
     {
-#ifndef _WIN32
-        n_lock = halt = 0;
-#endif
         dcpp::getContext()->getTimerManager()->addListener(this);
     }
 
