@@ -30,6 +30,7 @@
 #include <iostream>
 #ifdef _WIN32
 #include <windows.h>
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -116,10 +117,19 @@ static std::string getExeDirectory()
  * paths with absolute ones, and write the fixed cache to %TEMP%.
  * Returns the path to the fixed cache, or empty on failure.
  */
+// GDK's loaders.cache parser interprets C-style escape sequences inside
+// quoted strings (\t → tab, \n → newline, etc.).  Windows paths contain
+// backslashes that collide with this (e.g. C:\temp → C:<TAB>emp), so we
+// must use forward slashes in all paths written to the cache.
+static std::string toForwardSlash(std::string s) {
+    std::replace(s.begin(), s.end(), '\\', '/');
+    return s;
+}
+
 static std::string fixLoadersCacheWin32(const std::string& exeDir)
 {
     std::string srcCache = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders.cache";
-    std::string loadersDir = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders\\";
+    std::string loadersDir = toForwardSlash(exeDir + "/lib/gdk-pixbuf-2.0/2.10.0/loaders/");
 
     std::ifstream in(srcCache);
     if (!in.is_open())
@@ -187,7 +197,7 @@ static std::string fixLoadersCacheWin32(const std::string& exeDir)
 static std::string fixLoadersCacheInPlace(const std::string& exeDir,
                                           const std::string& cacheFile)
 {
-    std::string loadersDir = exeDir + "\\lib\\gdk-pixbuf-2.0\\2.10.0\\loaders\\";
+    std::string loadersDir = toForwardSlash(exeDir + "/lib/gdk-pixbuf-2.0/2.10.0/loaders/");
 
     std::ifstream in(cacheFile);
     if (!in.is_open())
