@@ -533,17 +533,10 @@ void IPFilter::clearRules() {
 }
 
 void IPFilter::load() {
-    if (IPFilter::getInstance())
-        IPFilter::getInstance()->loadList();
-    else {
-        IPFilter::newInstance();
-        IPFilter::getInstance()->loadList();
-    }
+    loadList();
 }
 
 void IPFilter::shutdown() {
-    if (IPFilter::getInstance()) {
-        IPFilter::getInstance()->saveList();
-        IPFilter::deleteInstance();
-    }
+    saveList();
+    clearRules();
 }

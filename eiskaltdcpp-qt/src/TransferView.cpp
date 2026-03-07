@@ -601,8 +601,8 @@ void TransferView::on(dcpp::DownloadManagerListener::Requesting, dcpp::Download*
 
     getParams(params, dl);
 
-    if (IPFilter::getInstance()){
-        if (!IPFilter::getInstance()->OK(vstr(params["IP"]).toStdString(), eDIRECTION_IN)){
+    if (dcpp::getContext()->getIPFilter()){
+        if (!dcpp::getContext()->getIPFilter()->OK(vstr(params["IP"]).toStdString(), eDIRECTION_IN)){
             closeConection(vstr(params["CID"]), true);
             return;
         }
@@ -792,8 +792,8 @@ void TransferView::on(dcpp::UploadManagerListener::Starting, dcpp::Upload* ul) n
 
     getParams(params, ul);
 
-    if (IPFilter::getInstance()){
-        if (!IPFilter::getInstance()->OK(vstr(params["IP"]).toStdString(), eDIRECTION_OUT)){
+    if (dcpp::getContext()->getIPFilter()){
+        if (!dcpp::getContext()->getIPFilter()->OK(vstr(params["IP"]).toStdString(), eDIRECTION_OUT)){
             closeConection(vstr(params["CID"]), false);
             return;
         }

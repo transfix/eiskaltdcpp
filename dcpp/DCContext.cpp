@@ -136,6 +136,7 @@ void DCContext::startup(ProgressFn progress) {
     mappingManager_      = makeManager<MappingManager>(this);
     debugManager_        = makeManager<DebugManager>(this);
     dynDNS_              = makeManager<DynDNS>(this);
+    ipFilter_            = makeManager<IPFilter>(this);
 #ifdef LUA_SCRIPT
     scriptManager_       = makeManager<ScriptManager>(this);
 #endif
@@ -151,8 +152,7 @@ void DCContext::startup(ProgressFn progress) {
     dynDNS_->load();
 
     if (BOOLSETTING(IPFILTER)) {
-        IPFilter::newInstance();
-        IPFilter::getInstance()->load();
+        ipFilter_->load();
     }
 
     favoriteManager_->load();
@@ -220,8 +220,8 @@ void DCContext::shutdown() {
     if (!minimalMode_) {
         if (queueManager_) queueManager_->saveQueue(true);
         if (clientManager_) clientManager_->saveUsers();
-        if (IPFilter::getInstance()) {
-            IPFilter::getInstance()->shutdown();
+        if (ipFilter_) {
+            ipFilter_->shutdown();
         }
         if (settingsManager_) settingsManager_->save();
     }
@@ -231,6 +231,7 @@ void DCContext::shutdown() {
     mappingManager_.reset();
     connectivityManager_.reset();
     dynDNS_.reset();
+    ipFilter_.reset();
     adlSearchManager_.reset();
     finishedManager_.reset();
     shareManager_.reset();

@@ -22,6 +22,8 @@
 #include <memory>
 #include <string>
 
+class IPFilter;  // defined in extra/ipfilter.h (global scope)
+
 namespace dcpp {
 
 // Forward declarations — avoids pulling every manager header into every TU.
@@ -139,6 +141,7 @@ public:
     [[nodiscard]] MappingManager*      getMappingManager()      const noexcept { return mappingManager_.get(); }
     [[nodiscard]] DebugManager*        getDebugManager()        const noexcept { return debugManager_.get(); }
     [[nodiscard]] DynDNS*               getDynDNS()              const noexcept { return dynDNS_.get(); }
+    [[nodiscard]] ::IPFilter*            getIPFilter()            const noexcept { return ipFilter_.get(); }
 #ifdef LUA_SCRIPT
     [[nodiscard]] ScriptManager*        getScriptManager()       const noexcept { return scriptManager_.get(); }
 #endif
@@ -170,6 +173,7 @@ private:
     std::unique_ptr<MappingManager>      mappingManager_;
     std::unique_ptr<DebugManager>        debugManager_;
     std::unique_ptr<DynDNS>              dynDNS_;
+    std::unique_ptr<::IPFilter>          ipFilter_;
 #ifdef LUA_SCRIPT
     std::unique_ptr<ScriptManager>       scriptManager_;
 #endif

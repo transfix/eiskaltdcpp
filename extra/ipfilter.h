@@ -15,7 +15,6 @@
 #include <string>
 
 #include "dcpp/stdinc.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/DCContext.h"
 
 enum eDIRECTION {
@@ -40,11 +39,8 @@ typedef struct _IPFilterElem {
 typedef std::unordered_map<uint32_t, IPFilterElem*> IPHash;
 typedef std::vector<IPFilterElem*> IPList;
 
-class IPFilter :
-        public dcpp::Singleton<IPFilter>, public dcpp::ContextAware
+class IPFilter : public dcpp::ContextAware
 {
-    friend class dcpp::Singleton<IPFilter>;
-
 public:
     IPFilter();
     virtual ~IPFilter();
