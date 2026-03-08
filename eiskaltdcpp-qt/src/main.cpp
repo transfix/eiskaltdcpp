@@ -72,6 +72,7 @@ using namespace std;
 #include <QMainWindow>
 #include <QRegularExpression>
 #include <QObject>
+#include <QScopeGuard>
 
 #ifdef DBUS_NOTIFY
 #include <QtDBus>
@@ -184,8 +185,15 @@ int main(int argc, char *argv[])
     app.setApplicationName("EiskaltDC++ Qt");
     app.setApplicationVersion(QString::fromStdString(eiskaltdcppVersionString));
     
+    { // Begin Qt-widget scope: everything inside is destroyed before dcpp::shutdown()
     QtContext qtCtx;
     setQtContext(&qtCtx);
+    // Guard: ensure settings are saved and global pointer cleared on scope exit.
+    // Destructors run in reverse declaration order: cleanupGuard first, then qtCtx.
+    auto cleanupGuard = qScopeGuard([&]() {
+        WulforSettings::getInstance()->save();
+        setQtContext(nullptr);
+    });
 
     qtCtx.createGlobalTimer();
     qtCtx.createSettings();
@@ -266,10 +274,11 @@ int main(int argc, char *argv[])
 
     std::cout << QObject::tr("Shutting down libeiskaltdcpp...").toStdString() << std::endl;
 
-    WulforSettings::getInstance()->save();
-
-    setQtContext(nullptr);
-    // qtCtx destructor destroys all services in reverse declaration order
+    // qtCtx and its cleanupGuard are destroyed here (reverse declaration
+    // order): first saves settings and clears the global QtContext pointer,
+    // then destroys all Qt widgets (MainWindow, HashProgress, HubFrames,
+    // etc.) so no Qt timer callbacks can reach into dcpp managers.
+    }
 
     dcpp::shutdown();
 
