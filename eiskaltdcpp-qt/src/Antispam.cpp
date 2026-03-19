@@ -16,6 +16,7 @@
 
 #include "Antispam.h"
 #include "WulforUtil.h"
+#include "WulforSettings.h"
 #include "QtContext.h"
 #include "QtContextAware.h"
 #include "dcpp/stdinc.h"
@@ -26,6 +27,16 @@
 #include "dcpp/DCPlusPlus.h"
 
 using namespace dcpp;
+
+namespace {
+QString nickForCid(const QString &cid) {
+#ifndef QT_CONTEXT_MINIMAL
+    return qtCtx()->wulforUtil()->getNicks(cid);
+#else
+    return cid;
+#endif
+}
+} // anonymous namespace
 
 AntiSpam& operator<<(AntiSpam &sp, AntiSpamObjectState st){
     sp.state = st;
@@ -144,7 +155,7 @@ void AntiSpam::checkUser(const QString &cid, const QString &msg, const QString &
         return;
     }
 
-    log(tr("Checking user %1 (message: %2, cid: %3)...").arg(qtCtx()->wulforUtil()->getNicks(cid)).arg(msg).arg(cid));
+    log(tr("Checking user %1 (message: %2, cid: %3)...").arg(nickForCid(cid)).arg(msg).arg(cid));
 
     if (sandbox.contains(cid)){
         int counter = sandbox[cid];
@@ -154,7 +165,7 @@ void AntiSpam::checkUser(const QString &cid, const QString &msg, const QString &
 
         for (auto key : keys){
             if (key.toUpper() == msg.toUpper()){
-                (*this) << eIN_GRAY << qtCtx()->wulforUtil()->getNicks(cid);
+                (*this) << eIN_GRAY << nickForCid(cid);
                 log(tr("%1: Moving user to GRAY.").arg(cid));
 
                 sandbox.remove(cid);
@@ -164,7 +175,7 @@ void AntiSpam::checkUser(const QString &cid, const QString &msg, const QString &
         }
 
         if (counter > try_count){
-            (*this) << eIN_BLACK << qtCtx()->wulforUtil()->getNicks(cid);
+            (*this) << eIN_BLACK << nickForCid(cid);
             log(tr("%1: Moving user to BLACK.").arg(cid));
 
             sandbox.remove(cid);

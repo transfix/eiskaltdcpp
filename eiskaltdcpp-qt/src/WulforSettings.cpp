@@ -409,6 +409,7 @@ void WulforSettings::parseCmd(const QString &cmd, QString& res) {
     res = tr("Change GUI setting %1 to %2").arg(sname).arg(svalue);
 }
 
+#ifndef QT_CONTEXT_MINIMAL
 void WulforSettings::loadTranslation(){
     const QString appTranslationFile =
             QDir::fromNativeSeparators(getStr(WS_TRANSLATION_FILE));
@@ -470,6 +471,8 @@ void WulforSettings::loadQtTranslation(const QString &lcName){
     installTranslator(qtTranslator, "qt_" + lcName, "qt_en", translationsPath);
     installTranslator(qtBaseTranslator, "qtbase_" + lcName, "qtbase_en", translationsPath);
 }
+
+#endif // QT_CONTEXT_MINIMAL
 
 void WulforSettings::installTranslator(QTranslator &translator,
                                        const QString &defualtName,
