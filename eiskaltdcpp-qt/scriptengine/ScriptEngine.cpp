@@ -240,10 +240,6 @@ ScriptEngine::~ScriptEngine(){
     DEBUG_BLOCK
 
     stopScripts();
-
-    qtContext()->destroyClientManagerScript();
-    qtContext()->destroyHashManagerScript();
-    qtContext()->destroyLogManagerScript();
 }
 
 void ScriptEngine::loadScripts(){

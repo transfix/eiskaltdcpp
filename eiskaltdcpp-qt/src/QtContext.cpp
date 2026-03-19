@@ -61,7 +61,20 @@ void setQtContext(QtContext* ctx) noexcept { g_qtContext = ctx; }
 // ── QtContext implementation ────────────────────────────────────────────
 
 QtContext::QtContext() = default;
-QtContext::~QtContext() = default;
+
+QtContext::~QtContext() {
+#if !defined(QT_CONTEXT_MINIMAL) && defined(USE_JS)
+    // ScriptEngine must be destroyed before the script manager objects
+    // it references (ClientManagerScript, HashManagerScript, LogManagerScript).
+    // Explicit reset here instead of relying on member declaration order.
+    scriptEngine_.reset();
+    clientManagerScript_.reset();
+    hashManagerScript_.reset();
+    logManagerScript_.reset();
+#endif
+    // Remaining members destroyed in reverse declaration order by the
+    // compiler-generated sequence.
+}
 
 void QtContext::createSettings()           { settings_           = std::make_unique<WulforSettings>(); }
 void QtContext::createSearchBlacklist()    { searchBlacklist_    = std::make_unique<SearchBlacklist>(); }

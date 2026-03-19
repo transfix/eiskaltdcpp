@@ -204,14 +204,10 @@ private:
     std::unique_ptr<SpellCheck>         spellCheck_;
 #endif
 #ifdef USE_JS
-    // ScriptEngine must be declared LAST among these so it is destroyed FIRST
-    // (C++ destroys members in reverse declaration order).  Its destructor
-    // calls destroyClientManagerScript/Hash/Log, which reset the unique_ptrs
-    // below — those must still be alive at that point.
-    std::unique_ptr<ClientManagerScript> clientManagerScript_;
-    std::unique_ptr<HashManagerScript>   hashManagerScript_;
-    std::unique_ptr<LogManagerScript>    logManagerScript_;
-    std::unique_ptr<ScriptEngine>       scriptEngine_;
+    std::unique_ptr<ScriptEngine>        scriptEngine_;
+    std::unique_ptr<ClientManagerScript>  clientManagerScript_;
+    std::unique_ptr<HashManagerScript>    hashManagerScript_;
+    std::unique_ptr<LogManagerScript>     logManagerScript_;
 #endif
 #endif // QT_CONTEXT_MINIMAL
 };
