@@ -16,6 +16,7 @@
  */
 
 #include "QtContext.h"
+#include "QtContextAware.h"
 #include "WulforSettings.h"
 #include "SearchBlacklist.h"
 #include "Antispam.h"
@@ -51,16 +52,11 @@
 #endif
 #endif // QT_CONTEXT_MINIMAL
 
-// ── Global context pointer (NOT owned — caller manages lifetime) ────────
-
-static QtContext* g_qtContext = nullptr;
-
-QtContext* qtContext() noexcept        { return g_qtContext; }
-void setQtContext(QtContext* ctx) noexcept { g_qtContext = ctx; }
-
 // ── QtContext implementation ────────────────────────────────────────────
 
-QtContext::QtContext() = default;
+QtContext::QtContext() {
+    QtContextAware::setCurrent(this);
+}
 
 QtContext::~QtContext() {
 #if !defined(QT_CONTEXT_MINIMAL) && defined(USE_JS)
@@ -73,50 +69,51 @@ QtContext::~QtContext() {
     logManagerScript_.reset();
 #endif
     // Remaining members destroyed in reverse declaration order by the
-    // compiler-generated sequence.
+    // compiler-generated sequence.  Deregister after all services are gone.
+    QtContextAware::setCurrent(nullptr);
 }
 
-void QtContext::createSettings()           { settings_           = std::make_unique<WulforSettings>(); }
-void QtContext::createSearchBlacklist()    { searchBlacklist_    = std::make_unique<SearchBlacklist>(); }
-void QtContext::createAntiSpam()           { antiSpam_           = std::make_unique<AntiSpam>(); }
+void QtContext::createSettings()           { settings_           = std::make_unique<WulforSettings>(); settings_->setQtContext(this); }
+void QtContext::createSearchBlacklist()    { searchBlacklist_    = std::make_unique<SearchBlacklist>(); searchBlacklist_->setQtContext(this); }
+void QtContext::createAntiSpam()           { antiSpam_           = std::make_unique<AntiSpam>(); antiSpam_->setQtContext(this); }
 void QtContext::destroyAntiSpam()          { antiSpam_.reset(); }
 
 #ifndef QT_CONTEXT_MINIMAL
-void QtContext::createGlobalTimer()        { globalTimer_        = std::make_unique<GlobalTimer>(); }
-void QtContext::createWulforUtil()         { wulforUtil_         = std::make_unique<WulforUtil>(); }
-void QtContext::createArenaWidgetManager() { arenaWidgetManager_ = std::make_unique<ArenaWidgetManager>(); }
-void QtContext::createMainWindow()         { mainWindow_         = std::make_unique<MainWindow>(); }
-void QtContext::createHubManager()         { hubManager_         = std::make_unique<HubManager>(); }
-void QtContext::createEmoticonFactory()    { emoticonFactory_    = std::make_unique<EmoticonFactory>(); }
+void QtContext::createGlobalTimer()        { globalTimer_        = std::make_unique<GlobalTimer>(); globalTimer_->setQtContext(this); }
+void QtContext::createWulforUtil()         { wulforUtil_         = std::make_unique<WulforUtil>(); wulforUtil_->setQtContext(this); }
+void QtContext::createArenaWidgetManager() { arenaWidgetManager_ = std::make_unique<ArenaWidgetManager>(); arenaWidgetManager_->setQtContext(this); }
+void QtContext::createMainWindow()         { mainWindow_         = std::make_unique<MainWindow>(); mainWindow_->setQtContext(this); }
+void QtContext::createHubManager()         { hubManager_         = std::make_unique<HubManager>(); hubManager_->setQtContext(this); }
+void QtContext::createEmoticonFactory()    { emoticonFactory_    = std::make_unique<EmoticonFactory>(); emoticonFactory_->setQtContext(this); }
 void QtContext::destroyEmoticonFactory()   { emoticonFactory_.reset(); }
-void QtContext::createNotification()       { notification_       = std::make_unique<Notification>(); }
+void QtContext::createNotification()       { notification_       = std::make_unique<Notification>(); notification_->setQtContext(this); }
 void QtContext::destroyNotification()      { notification_.reset(); }
-void QtContext::createShortcutManager()    { shortcutManager_    = std::make_unique<ShortcutManager>(); }
-void QtContext::createTransferView()       { transferView_       = std::make_unique<TransferView>(); }
-void QtContext::createFavoriteHubs()       { favoriteHubs_       = std::make_unique<FavoriteHubs>(); }
-void QtContext::createPublicHubs()         { publicHubs_         = std::make_unique<PublicHubs>(); }
-void QtContext::createFavoriteUsers()      { favoriteUsers_      = std::make_unique<FavoriteUsers>(); }
-void QtContext::createDownloadQueue()      { downloadQueue_      = std::make_unique<DownloadQueue>(); }
-void QtContext::createSpyFrame()           { spyFrame_           = std::make_unique<SpyFrame>(); }
-void QtContext::createADLS()               { adls_               = std::make_unique<ADLS>(); }
-void QtContext::createCmdDebug()           { cmdDebug_           = std::make_unique<CmdDebug>(); }
-void QtContext::createSecretary()          { secretary_          = std::make_unique<Secretary>(); }
-void QtContext::createQueuedUsers()        { queuedUsers_        = std::make_unique<QueuedUsers>(); }
-void QtContext::createFinishedUploads()    { finishedUploads_    = std::make_unique<FinishedUploads>(); }
-void QtContext::createFinishedDownloads()  { finishedDownloads_  = std::make_unique<FinishedDownloads>(); }
+void QtContext::createShortcutManager()    { shortcutManager_    = std::make_unique<ShortcutManager>(); shortcutManager_->setQtContext(this); }
+void QtContext::createTransferView()       { transferView_       = std::make_unique<TransferView>(); transferView_->setQtContext(this); }
+void QtContext::createFavoriteHubs()       { favoriteHubs_       = std::make_unique<FavoriteHubs>(); favoriteHubs_->setQtContext(this); }
+void QtContext::createPublicHubs()         { publicHubs_         = std::make_unique<PublicHubs>(); publicHubs_->setQtContext(this); }
+void QtContext::createFavoriteUsers()      { favoriteUsers_      = std::make_unique<FavoriteUsers>(); favoriteUsers_->setQtContext(this); }
+void QtContext::createDownloadQueue()      { downloadQueue_      = std::make_unique<DownloadQueue>(); downloadQueue_->setQtContext(this); }
+void QtContext::createSpyFrame()           { spyFrame_           = std::make_unique<SpyFrame>(); spyFrame_->setQtContext(this); }
+void QtContext::createADLS()               { adls_               = std::make_unique<ADLS>(); adls_->setQtContext(this); }
+void QtContext::createCmdDebug()           { cmdDebug_           = std::make_unique<CmdDebug>(); cmdDebug_->setQtContext(this); }
+void QtContext::createSecretary()          { secretary_          = std::make_unique<Secretary>(); secretary_->setQtContext(this); }
+void QtContext::createQueuedUsers()        { queuedUsers_        = std::make_unique<QueuedUsers>(); queuedUsers_->setQtContext(this); }
+void QtContext::createFinishedUploads()    { finishedUploads_    = std::make_unique<FinishedUploads>(); finishedUploads_->setQtContext(this); }
+void QtContext::createFinishedDownloads()  { finishedDownloads_  = std::make_unique<FinishedDownloads>(); finishedDownloads_->setQtContext(this); }
 FinishedUploads*   QtContext::finishedUploads()   const noexcept { return finishedUploads_.get(); }
 FinishedDownloads* QtContext::finishedDownloads() const noexcept { return finishedDownloads_.get(); }
 #ifdef USE_ASPELL
-void QtContext::createSpellCheck()         { spellCheck_         = std::make_unique<SpellCheck>(); }
+void QtContext::createSpellCheck()         { spellCheck_         = std::make_unique<SpellCheck>(); spellCheck_->setQtContext(this); }
 void QtContext::destroySpellCheck()        { spellCheck_.reset(); }
 #endif
 #ifdef USE_JS
-void QtContext::createScriptEngine()       { scriptEngine_       = std::make_unique<ScriptEngine>(); }
-void QtContext::createClientManagerScript() { clientManagerScript_ = std::make_unique<ClientManagerScript>(); }
+void QtContext::createScriptEngine()       { scriptEngine_       = std::make_unique<ScriptEngine>(); scriptEngine_->setQtContext(this); }
+void QtContext::createClientManagerScript() { clientManagerScript_ = std::make_unique<ClientManagerScript>(); clientManagerScript_->setQtContext(this); }
 void QtContext::destroyClientManagerScript() { clientManagerScript_.reset(); }
-void QtContext::createHashManagerScript()  { hashManagerScript_  = std::make_unique<HashManagerScript>(); }
+void QtContext::createHashManagerScript()  { hashManagerScript_  = std::make_unique<HashManagerScript>(); hashManagerScript_->setQtContext(this); }
 void QtContext::destroyHashManagerScript() { hashManagerScript_.reset(); }
-void QtContext::createLogManagerScript()   { logManagerScript_   = std::make_unique<LogManagerScript>(); }
+void QtContext::createLogManagerScript()   { logManagerScript_   = std::make_unique<LogManagerScript>(); logManagerScript_->setQtContext(this); }
 void QtContext::destroyLogManagerScript()  { logManagerScript_.reset(); }
 #endif
 #endif // QT_CONTEXT_MINIMAL

@@ -17,6 +17,7 @@
 #include "Antispam.h"
 #include "WulforUtil.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 #include "dcpp/stdinc.h"
 #include "dcpp/Util.h"
 #include "dcpp/ClientManager.h"
@@ -55,11 +56,6 @@ AntiSpam& operator <<(AntiSpam &sp, const QString &list){
     sp << users.split(",", Qt::SkipEmptyParts);
 
     return sp;
-}
-
-AntiSpam* AntiSpam::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->antiSpam() : nullptr;
 }
 
 AntiSpam::AntiSpam():
@@ -127,11 +123,11 @@ bool AntiSpam::isInBlack(const QString &obj) const {
 }
 
 bool AntiSpam::isInGray(const QString &obj) const {
-    return ( gray_list.contains(obj) || WBGET(WB_ANTISPAM_AS_FILTER));
+    return ( gray_list.contains(obj) || qtCtx()->settings()->getBool(WB_ANTISPAM_AS_FILTER));
 }
 
 bool AntiSpam::isInWhite(const QString &obj) const {
-    return ( white_list.contains(obj) || WBGET(WB_ANTISPAM_AS_FILTER));
+    return ( white_list.contains(obj) || qtCtx()->settings()->getBool(WB_ANTISPAM_AS_FILTER));
 }
 
 bool AntiSpam::isInSandBox(const QString &obj_cid) const {
@@ -148,7 +144,7 @@ void AntiSpam::checkUser(const QString &cid, const QString &msg, const QString &
         return;
     }
 
-    log(tr("Checking user %1 (message: %2, cid: %3)...").arg(WulforUtil::getInstance()->getNicks(cid)).arg(msg).arg(cid));
+    log(tr("Checking user %1 (message: %2, cid: %3)...").arg(qtCtx()->wulforUtil()->getNicks(cid)).arg(msg).arg(cid));
 
     if (sandbox.contains(cid)){
         int counter = sandbox[cid];
@@ -158,7 +154,7 @@ void AntiSpam::checkUser(const QString &cid, const QString &msg, const QString &
 
         for (auto key : keys){
             if (key.toUpper() == msg.toUpper()){
-                (*this) << eIN_GRAY << WulforUtil::getInstance()->getNicks(cid);
+                (*this) << eIN_GRAY << qtCtx()->wulforUtil()->getNicks(cid);
                 log(tr("%1: Moving user to GRAY.").arg(cid));
 
                 sandbox.remove(cid);
@@ -168,7 +164,7 @@ void AntiSpam::checkUser(const QString &cid, const QString &msg, const QString &
         }
 
         if (counter > try_count){
-            (*this) << eIN_BLACK << WulforUtil::getInstance()->getNicks(cid);
+            (*this) << eIN_BLACK << qtCtx()->wulforUtil()->getNicks(cid);
             log(tr("%1: Moving user to BLACK.").arg(cid));
 
             sandbox.remove(cid);

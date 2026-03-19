@@ -11,6 +11,8 @@
  */
 
 #include "IPFilterFrame.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "dcpp/DCPlusPlus.h"
 
 #include <QTreeWidget>
@@ -142,7 +144,7 @@ void IPFilterFrame::slotTreeViewContextMenu(QPoint){
     if (!dcpp::getContext()->getIPFilter() || !model)
         return;
 
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     eTableAction act = etaACPT;
     eDIRECTION   direction = eDIRECTION_OUT;

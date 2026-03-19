@@ -85,13 +85,14 @@ public:
 class HashProgress;
 class MainWindowPrivate;
 
-class QtContext;
+#include "QtContextAware.h"
 
 class MainWindow:
         public QMainWindow,
         private dcpp::LogManagerListener,
         private dcpp::TimerManagerListener,
-        private dcpp::QueueManagerListener
+        private dcpp::QueueManagerListener,
+        public QtContextAware
 {
     Q_OBJECT
 
@@ -257,7 +258,6 @@ friend class QtContext;
         MainWindow (QWidget *parent=nullptr);
         ~MainWindow() override;
 
-        static MainWindow* getInstance();
 
     private:
 

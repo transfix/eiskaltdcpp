@@ -11,6 +11,8 @@
  */
 
 #include "SettingsLog.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 
 #include "dcpp/SettingsManager.h"
@@ -65,7 +67,7 @@ void SettingsLog::init(){
     lineEdit_CMD_DEBUGFMT->setText(_q(SETTING(LOG_FORMAT_CMD_DEBUG)));
     lineEdit_FILE_CMD_DEBUGFMT->setText(_q(SETTING(LOG_FILE_CMD_DEBUG)));
 
-    toolButton_BROWSE->setIcon(WulforUtil::getInstance()->getPixmap(WulforUtil::eiFOLDER_BLUE));
+    toolButton_BROWSE->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE));
 
     connect(toolButton_BROWSE, &QToolButton::clicked, this, &SettingsLog::slotBrowse);
 }

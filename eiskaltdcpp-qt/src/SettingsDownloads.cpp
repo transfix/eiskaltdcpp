@@ -11,6 +11,8 @@
  */
 
 #include "SettingsDownloads.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 #include "PublicHubsList.h"
 
@@ -105,8 +107,8 @@ void SettingsDownloads::init(){
         spinBox_MAXDL->setValue(SETTING(DOWNLOAD_SLOTS));
         spinBox_NONEWDL->setValue(SETTING(MAX_DOWNLOAD_SPEED));
 
-        toolButton_BROWSE->setIcon(WICON(WulforUtil::eiFOLDER_BLUE));
-        toolButton_BROWSE1->setIcon(WICON(WulforUtil::eiFOLDER_BLUE));
+        toolButton_BROWSE->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE));
+        toolButton_BROWSE1->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE));
 
         connect(toolButton_BROWSE, &QToolButton::clicked, this, &SettingsDownloads::slotBrowse);
         connect(toolButton_BROWSE1, &QToolButton::clicked, this, &SettingsDownloads::slotBrowse);
@@ -115,8 +117,8 @@ void SettingsDownloads::init(){
     {//Download to
         QString aliases, paths;
 
-        aliases = QByteArray::fromBase64(WSGET(WS_DOWNLOADTO_ALIASES).toUtf8());
-        paths   = QByteArray::fromBase64(WSGET(WS_DOWNLOADTO_PATHS).toUtf8());
+        aliases = QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_DOWNLOADTO_ALIASES).toUtf8());
+        paths   = QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_DOWNLOADTO_PATHS).toUtf8());
 
         QStringList a = aliases.split("\n", Qt::SkipEmptyParts);
         QStringList p = paths.split("\n", Qt::SkipEmptyParts);
@@ -177,12 +179,12 @@ void SettingsDownloads::slotDownloadTo(){
 
     QMenu *m = new QMenu(this);
     QAction *new_alias = new QAction(tr("New"), m);
-    new_alias->setIcon(WICON(WulforUtil::eiEDITADD));
+    new_alias->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITADD));
 
     m->addAction(new_alias);
 
     if (!selected.isEmpty())
-        m->addAction(WICON(WulforUtil::eiEDITDELETE), tr("Delete"));
+        m->addAction(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE), tr("Delete"));
 
     QAction *ret = m->exec(QCursor::pos());
 
@@ -203,14 +205,14 @@ void SettingsDownloads::slotDownloadTo(){
 
         QString aliases, paths;
 
-        aliases = QByteArray::fromBase64(WSGET(WS_DOWNLOADTO_ALIASES).toUtf8());
-        paths   = QByteArray::fromBase64(WSGET(WS_DOWNLOADTO_PATHS).toUtf8());
+        aliases = QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_DOWNLOADTO_ALIASES).toUtf8());
+        paths   = QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_DOWNLOADTO_PATHS).toUtf8());
 
         aliases += alias + "\n";
         paths   += dir + "\n";
 
-        WSSET(WS_DOWNLOADTO_ALIASES, aliases.toUtf8().toBase64());
-        WSSET(WS_DOWNLOADTO_PATHS, paths.toUtf8().toBase64());
+        qtCtx()->settings()->setStr(WS_DOWNLOADTO_ALIASES, aliases.toUtf8().toBase64());
+        qtCtx()->settings()->setStr(WS_DOWNLOADTO_PATHS, paths.toUtf8().toBase64());
 
         QTreeWidgetItem *item = new QTreeWidgetItem(treeWidget);
 
@@ -219,8 +221,8 @@ void SettingsDownloads::slotDownloadTo(){
     }
     else if (ret){
         QString aliases, paths;
-        aliases = QByteArray::fromBase64(WSGET(WS_DOWNLOADTO_ALIASES).toUtf8());
-        paths   = QByteArray::fromBase64(WSGET(WS_DOWNLOADTO_PATHS).toUtf8());
+        aliases = QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_DOWNLOADTO_ALIASES).toUtf8());
+        paths   = QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_DOWNLOADTO_PATHS).toUtf8());
 
         for (const auto &i : selected){
             QString alias = i->text(1);
@@ -232,8 +234,8 @@ void SettingsDownloads::slotDownloadTo(){
             delete i;
         }
 
-        WSSET(WS_DOWNLOADTO_ALIASES, aliases.toUtf8().toBase64());
-        WSSET(WS_DOWNLOADTO_PATHS, paths.toUtf8().toBase64());
+        qtCtx()->settings()->setStr(WS_DOWNLOADTO_ALIASES, aliases.toUtf8().toBase64());
+        qtCtx()->settings()->setStr(WS_DOWNLOADTO_PATHS, paths.toUtf8().toBase64());
     }
 }
 

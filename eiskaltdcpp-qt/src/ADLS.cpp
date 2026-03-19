@@ -15,6 +15,7 @@
 #include "WulforUtil.h"
 #include "WulforSettings.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 #include "dcpp/stdinc.h"
 #include "dcpp/ADLSearch.h"
 #include "dcpp/DCPlusPlus.h"
@@ -27,11 +28,6 @@
 #include <QtDebug>
 
 using namespace dcpp;
-
-ADLS* ADLS::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->adls() : nullptr;
-}
 
 ADLS::ADLS(QWidget *parent):
         QWidget(parent),
@@ -73,11 +69,11 @@ QMenu *ADLS::getMenu(){
 }
 
 void ADLS::load(){
-    treeView->header()->restoreState(WVGET(WS_ADLS_STATE, QByteArray()).toByteArray());
+    treeView->header()->restoreState(qtCtx()->settings()->getVar(WS_ADLS_STATE, QByteArray()).toByteArray());
 }
 
 void ADLS::save(){
-    WVSET(WS_ADLS_STATE, treeView->header()->saveState());
+    qtCtx()->settings()->setVar(WS_ADLS_STATE, treeView->header()->saveState());
 }
 
 void ADLS::init(){
@@ -100,7 +96,7 @@ void ADLS::init(){
     treeView->setAcceptDrops(false); // temporary
     //treeView->setDragDropMode(QAbstractItemView::InternalMove);
 
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     add_newButton->setIcon(WU->getPixmap(WulforUtil::eiBOOKMARK_ADD));
     changeButton->setIcon(WU->getPixmap(WulforUtil::eiEDIT));
@@ -129,7 +125,7 @@ void ADLS::init(){
     connect(treeView->header(), &QWidget::customContextMenuRequested, this, &ADLS::slotHeaderMenu);
     connect(treeView, &QTreeView::doubleClicked, this, &ADLS::slotDblClicked);
 
-    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &ADLS::slotSettingsChanged);
+    connect(qtCtx()->settings(), &WulforSettings::strValueChanged, this, &ADLS::slotSettingsChanged);
 
     connect(add_newButton, &QPushButton::clicked, this, &ADLS::slotAdd_newButtonClicked);
     connect(changeButton,  &QPushButton::clicked, this, &ADLS::slotChangeButtonClicked);
@@ -141,7 +137,7 @@ void ADLS::init(){
 void ADLS::slotContexMenu(const QPoint &){
     QItemSelectionModel *s_model = treeView->selectionModel();
     QModelIndexList list = s_model->selectedRows(0);
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
     bool empty = list.empty();
     QMenu *menu = new QMenu(this);
 

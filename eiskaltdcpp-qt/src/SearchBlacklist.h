@@ -20,10 +20,11 @@
 #include "dcpp/stdinc.h"
 #include "dcpp/NonCopyable.h"
 
-class QtContext;
+#include "QtContextAware.h"
 
 class SearchBlacklist:
-        public QObject
+        public QObject,
+        public QtContextAware
 {
     Q_OBJECT
 
@@ -38,7 +39,6 @@ public:
 
     /// Access through QtContext — NOT a singleton.
     /// Returns nullptr if no QtContext is active or blacklist not yet created.
-    static SearchBlacklist* getInstance();
 
     bool ok(const QString &exp, Argument type);
     QList<QString> getList(Argument arg) const { return (list[arg]); }

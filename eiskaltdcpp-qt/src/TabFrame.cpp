@@ -11,6 +11,8 @@
  */
 
 #include "TabFrame.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 #include "FlowLayout.h"
 #include "TabButton.h"
@@ -55,7 +57,7 @@ TabFrame::TabFrame(QWidget *parent) :
         connect(s, &QShortcut::activated, this, &TabFrame::slotShorcuts);
     }
 
-    connect(GlobalTimer::getInstance(), &GlobalTimer::second, this, &TabFrame::redraw);
+    connect(qtCtx()->globalTimer(), &GlobalTimer::second, this, &TabFrame::redraw);
 }
 
 
@@ -134,7 +136,7 @@ void TabFrame::insertWidget(ArenaWidget *awgt){
 
     TabButton *btn = new TabButton();
     btn->setText(awgt->getArenaShortTitle().left(32));
-    btn->setToolTip(WulforUtil::getInstance()->compactToolTipText(awgt->getArenaTitle(), 60, "\n"));
+    btn->setToolTip(qtCtx()->wulforUtil()->compactToolTipText(awgt->getArenaTitle(), 60, "\n"));
     btn->setWidgetIcon(awgt->getPixmap());
     btn->setContextMenuPolicy(Qt::CustomContextMenu);
     btn->installEventFilter(this);
@@ -192,7 +194,7 @@ void TabFrame::redraw() {
         ArenaWidget *awgt = const_cast<ArenaWidget*>(it.value());
 
         btn->setText(awgt->getArenaShortTitle().left(32));
-        btn->setToolTip(WulforUtil::getInstance()->compactToolTipText(awgt->getArenaTitle(), 60, "\n"));
+        btn->setToolTip(qtCtx()->wulforUtil()->compactToolTipText(awgt->getArenaTitle(), 60, "\n"));
         btn->setWidgetIcon(awgt->getPixmap());
 
         if (awgt->state() & ArenaWidget::Hidden)
@@ -229,19 +231,19 @@ void TabFrame::historyPop(){
         TabButton *btn = qobject_cast<TabButton*>(item->widget());
 
         if (btn)
-            ArenaWidgetManager::getInstance()->activate(tbtn_map[btn]);
+            qtCtx()->arenaWidgetManager()->activate(tbtn_map[btn]);
 
         return;
     }
     else if (history.isEmpty()){
-        ArenaWidgetManager::getInstance()->activate(nullptr);
+        qtCtx()->arenaWidgetManager()->activate(nullptr);
         
         return;
     }
 
     ArenaWidget *awgt = history.takeLast();
 
-    ArenaWidgetManager::getInstance()->activate(awgt);
+    qtCtx()->arenaWidgetManager()->activate(awgt);
 }
 
 void TabFrame::buttonClicked(){
@@ -254,7 +256,7 @@ void TabFrame::buttonClicked(){
 
     btn->setFocus();
 
-    ArenaWidgetManager::getInstance()->activate(tbtn_map[btn]);
+    qtCtx()->arenaWidgetManager()->activate(tbtn_map[btn]);
 }
 
 void TabFrame::closeRequsted() {
@@ -266,7 +268,7 @@ void TabFrame::closeRequsted() {
         return;
 
     ArenaWidget *awgt = const_cast<ArenaWidget*>(tbtn_map[btn]);
-    ArenaWidgetManager::getInstance()->rem(awgt);
+    qtCtx()->arenaWidgetManager()->rem(awgt);
 }
 
 void TabFrame::nextTab(){
@@ -291,7 +293,7 @@ void TabFrame::nextTab(){
     if (!next)
         return;
 
-    ArenaWidgetManager::getInstance()->activate(tbtn_map[next]);
+    qtCtx()->arenaWidgetManager()->activate(tbtn_map[next]);
 }
 
 void TabFrame::prevTab(){
@@ -316,7 +318,7 @@ void TabFrame::prevTab(){
     if (!next)
         return;
 
-   ArenaWidgetManager::getInstance()->activate(tbtn_map[next]);
+   qtCtx()->arenaWidgetManager()->activate(tbtn_map[next]);
 }
 
 void TabFrame::slotShorcuts(){
@@ -335,7 +337,7 @@ void TabFrame::slotShorcuts(){
         if (!next)
             return;
 
-        ArenaWidgetManager::getInstance()->activate(tbtn_map[next]);
+        qtCtx()->arenaWidgetManager()->activate(tbtn_map[next]);
     }
 }
 
@@ -355,10 +357,10 @@ void TabFrame::slotContextMenu() {
             widget_menu->exec(btn->mapToGlobal(btn->rect().bottomLeft()));
         } else {
             widget_menu = new QMenu(this);
-            widget_menu->addAction(WulforUtil::getInstance()->getPixmap(WulforUtil::eiEDITDELETE), tr("Close"));
+            widget_menu->addAction(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE), tr("Close"));
 
             if (widget_menu->exec(QCursor::pos()))
-                ArenaWidgetManager::getInstance()->rem(awgt);
+                qtCtx()->arenaWidgetManager()->rem(awgt);
 
             delete widget_menu;
         }
@@ -416,8 +418,8 @@ void TabFrame::toggled ( ArenaWidget* awgt ) {
         return;
     
     if (awgt->state() & ArenaWidget::Hidden)
-        ArenaWidgetManager::getInstance()->activate(awgt);
+        qtCtx()->arenaWidgetManager()->activate(awgt);
     else
-        ArenaWidgetManager::getInstance()->rem(awgt);
+        qtCtx()->arenaWidgetManager()->rem(awgt);
 }
 

@@ -34,8 +34,6 @@
 #define USERLIST_XPM_COLUMNS    9
 #define USERLIST_XPM_ROWS       32
 
-#define WICON(x)(WulforUtil::getInstance()->getPixmap((x)))
-
 using namespace dcpp;
 
 static const auto _q = [](const std::string &s) { return QString::fromStdString(s); };
@@ -43,10 +41,11 @@ static const auto _tq = [](const QString &s) { return s.toStdString(); };
 
 typedef QVariantMap VarMap;
 
-class QtContext;
+#include "QtContextAware.h"
 
 class WulforUtil :
-        public QObject
+        public QObject,
+        public QtContextAware
 {
     Q_OBJECT
 
@@ -56,7 +55,6 @@ public:
     WulforUtil();
     ~WulforUtil() override;
 
-    static WulforUtil* getInstance();
 
     enum Icons {
         eiADLS = 0,

@@ -17,7 +17,7 @@
 
 #include "dcpp/stdinc.h"
 
-class QtContext;
+#include "QtContextAware.h"
 
 static const QString & WS_CHAT_OP_COLOR           = "chat-op-color";
 static const QString & WS_CHAT_USER_COLOR         = "chat-us-color";
@@ -155,7 +155,8 @@ static const QString & WI_NOTIFY_MODULE           = "notify-module";
 static const QString & WI_OUT_IN_HIST             = "number-of-output-messages-in-history";
 
 class WulforSettings :
-        public QObject
+        public QObject,
+        public QtContextAware
 {
     Q_OBJECT
 
@@ -168,7 +169,6 @@ public:
 
     /// Access through QtContext — NOT a singleton.
     /// Returns nullptr if no QtContext is active or settings not yet created.
-    static WulforSettings* getInstance();
 
     void load();
     void save();
@@ -220,17 +220,3 @@ private:
     QTranslator qtTranslator;
     QTranslator qtBaseTranslator;
 };
-
-static const auto WSGET = [](const QString &key, const QString &default_value = "") -> QString { return WulforSettings::getInstance()->getStr(key, default_value); };
-static const auto WSSET = [](const QString &key, const QString &value) { WulforSettings::getInstance()->setStr(key, value); };
-
-static const auto WIGET = [](const QString &key, const int &default_value = -1) -> int { return WulforSettings::getInstance()->getInt(key, default_value); };
-static const auto WISET = [](const QString &key, const int &value) { WulforSettings::getInstance()->setInt(key, value); };
-
-static const auto WBGET = [](const QString &key, const bool &default_value = false) -> bool { return WulforSettings::getInstance()->getBool(key, default_value); };
-static const auto WBSET = [](const QString &key, const bool &value){ WulforSettings::getInstance()->setBool(key, value); };
-
-static const auto WVGET = [](const QString &key, const QVariant &default_value = QVariant()) -> QVariant { return WulforSettings::getInstance()->getVar(key, default_value); };
-static const auto WVSET = [](const QString &key, const QVariant &value){ WulforSettings::getInstance()->setVar(key, value); };
-
-static const auto WSCMD = [](const QString &cmd, QString &res){ WulforSettings::getInstance()->parseCmd(cmd,res); };

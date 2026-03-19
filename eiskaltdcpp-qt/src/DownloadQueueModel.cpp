@@ -11,6 +11,8 @@
  */
 
 #include "DownloadQueueModel.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 
 #include <QtWidgets>
@@ -116,9 +118,9 @@ QVariant DownloadQueueModel::data(const QModelIndex &index, int role) const
         case Qt::DecorationRole:
         {
             if (item->dir && index.column() == COLUMN_DOWNLOADQUEUE_NAME)
-                return WICON(WulforUtil::eiFOLDER_BLUE).scaled(16, 16);
+                return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE).scaled(16, 16);
             else if (index.column() == COLUMN_DOWNLOADQUEUE_NAME)
-                return WulforUtil::getInstance()->getPixmapForFile(item->data(COLUMN_DOWNLOADQUEUE_NAME).toString()).scaled(16, 16);
+                return qtCtx()->wulforUtil()->getPixmapForFile(item->data(COLUMN_DOWNLOADQUEUE_NAME).toString()).scaled(16, 16);
             break;
         }
         case Qt::DisplayRole:

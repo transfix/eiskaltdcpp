@@ -11,6 +11,8 @@
  */
 
 #include "TabButton.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 #include <QResizeEvent>
 #include <QLabel>
@@ -50,7 +52,7 @@ TabButton::TabButton(QWidget *parent) :
     parentHeight = QPushButton::sizeHint().height();
 
     label = new QLabel(this);
-    label->setPixmap(WulforUtil::getInstance()->getPixmap(WulforUtil::eiEDITDELETE).scaled(CLOSEPXWIDTH, CLOSEPXWIDTH, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    label->setPixmap(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE).scaled(CLOSEPXWIDTH, CLOSEPXWIDTH, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     label->setFixedSize(QSize(LABELWIDTH, LABELWIDTH));
     label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
 
@@ -228,7 +230,7 @@ void TabButton::updateStyles() {
     QString styleText_pressed = "QPushButton:checked {\n";
     QString styleText_button = "QPushButton {\n";
 
-    if (WBGET(WB_APP_TBAR_SHOW_CL_BTNS)){
+    if (qtCtx()->settings()->getBool(WB_APP_TBAR_SHOW_CL_BTNS)){
         styleText_pressed += QString("padding-right: %1;\n padding-left: %1;\n").arg(LABELWIDTH);
         styleText_button += QString("padding-right: %1;\n padding-left: %1;\n").arg(LABELWIDTH);
     }
@@ -244,7 +246,7 @@ void TabButton::updateStyles() {
 }
 
 void TabButton::updateGeometry() {
-    if (WBGET(WB_APP_TBAR_SHOW_CL_BTNS)){
+    if (qtCtx()->settings()->getBool(WB_APP_TBAR_SHOW_CL_BTNS)){
         if (!label->isVisible())
             label->show();
 

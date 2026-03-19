@@ -28,12 +28,14 @@ public:
     int maxLines;
 };
 
-class QtContext;
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 class CmdDebug : public QWidget,
         private Ui::UICmdDebug,
         public ArenaWidget,
-        private dcpp::DebugManagerListener
+        private dcpp::DebugManagerListener,
+        public QtContextAware
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
@@ -43,12 +45,11 @@ public:
     explicit CmdDebug(QWidget *parent = nullptr);
     ~CmdDebug() override;
 
-    static CmdDebug* getInstance();
     QWidget *getWidget();
     QString getArenaTitle();
     QString getArenaShortTitle();
     QMenu *getMenu();
-    const QPixmap &getPixmap(){ return WICON(WulforUtil::eiCONSOLE); }
+    const QPixmap &getPixmap(){ return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiCONSOLE); }
     void requestClear() { plainTextEdit_DEBUG->clear(); }
     void requestFilter() { slotShowSearchBar(); }
     void requestFocus() { pushButton_ClearLog->setFocus(); }

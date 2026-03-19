@@ -21,6 +21,7 @@
 #include "DownloadQueue.h"
 #include "ArenaWidgetFactory.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 
 #include "dcpp/Util.h"
 #include "dcpp/User.h"
@@ -47,7 +48,7 @@
 TransferView::Menu::Menu(bool showTransferredFilesOnly):
         menu(new QMenu(nullptr)), selectedColumn(0)
 {
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = ::qtCtx()->wulforUtil();
 
     QAction *browse     = new QAction(tr("Browse files"), menu);
     browse->setIcon(WU->getPixmap(WulforUtil::eiFOLDER_BLUE));
@@ -147,11 +148,6 @@ TransferView::Menu::Action TransferView::Menu::exec(){
     return None;
 }
 
-TransferView* TransferView::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->transferView() : nullptr;
-}
-
 TransferView::TransferView(QWidget *parent):
         QWidget(parent),
         model(nullptr)
@@ -185,32 +181,32 @@ void TransferView::resizeEvent(QResizeEvent *e){
     e->accept();
 
     if (isVisible())
-        WISET(WI_TRANSFER_HEIGHT, height());
+        qtCtx()->settings()->setInt(WI_TRANSFER_HEIGHT, height());
 }
 
 void TransferView::hideEvent(QHideEvent *e){
     save();
 
-    WISET(WI_TRANSFER_HEIGHT, height());
+    qtCtx()->settings()->setInt(WI_TRANSFER_HEIGHT, height());
 
     e->accept();
 }
 
 void TransferView::save(){
-    WSSET(WS_TRANSFERS_STATE, treeView_TRANSFERS->header()->saveState().toBase64());
+    qtCtx()->settings()->setStr(WS_TRANSFERS_STATE, treeView_TRANSFERS->header()->saveState().toBase64());
 }
 
 void TransferView::load(){
-    int h = WIGET(WI_TRANSFER_HEIGHT);
+    int h = qtCtx()->settings()->getInt(WI_TRANSFER_HEIGHT);
 
     if (h >= 0)
         resize(this->width(), h);
 
-    treeView_TRANSFERS->header()->restoreState(QByteArray::fromBase64(WSGET(WS_TRANSFERS_STATE).toUtf8()));
+    treeView_TRANSFERS->header()->restoreState(QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_TRANSFERS_STATE).toUtf8()));
 }
 
 QSize TransferView::sizeHint() const{
-    int h = WIGET(WI_TRANSFER_HEIGHT);
+    int h = qtCtx()->settings()->getInt(WI_TRANSFER_HEIGHT);
 
     if (h > 0)
         return QSize(300, h);
@@ -355,7 +351,7 @@ void TransferView::searchAlternates(const QString &tth){
 }
 
 void TransferView::downloadComplete(QString target){
-    Notification::getInstance()->showMessage(Notification::TRANSFER, tr("Download complete"), target);
+    qtCtx()->notification()->showMessage(Notification::TRANSFER, tr("Download complete"), target);
 }
 
 QString TransferView::getTTHFromItem(const TransferViewItem *item){
@@ -375,7 +371,7 @@ QString TransferView::getTTHFromItem(const TransferViewItem *item){
 
 void TransferView::getParams(TransferView::VarMap &params, const dcpp::ConnectionQueueItem *item){
     const dcpp::UserPtr &user = item->getUser();
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     params["CID"]   = _q(user->getCID().toBase32());
     params["USER"]  = WU->getNicks(user->getCID());
@@ -387,7 +383,7 @@ void TransferView::getParams(TransferView::VarMap &params, const dcpp::Connectio
 
 void TransferView::getParams(TransferView::VarMap &params, const dcpp::Transfer *trf){
     const UserPtr& user = trf->getUser();
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
     double percent = 0.0;
 
     params["CID"]   = _q(user->getCID().toBase32());
@@ -536,7 +532,7 @@ void TransferView::slotContextMenu(const QPoint &){
                 }
 
                 if (!tth_str.isEmpty())
-                    data += WulforUtil::getInstance()->makeMagnet(fi.fileName(), fi.size(), tth_str) + "\n";
+                    data += qtCtx()->wulforUtil()->makeMagnet(fi.fileName(), fi.size(), tth_str) + "\n";
             }
         }
 
@@ -579,7 +575,7 @@ void TransferView::slotContextMenu(const QPoint &){
             dcpp::CID cid(_tq(i->cid));
             QString hubUrl = i->data(COLUMN_TRANSFER_HOST).toString();
 
-            fr = qobject_cast<HubFrame*>(HubManager::getInstance()->getHub(hubUrl));
+            fr = qobject_cast<HubFrame*>(qtCtx()->hubManager()->getHub(hubUrl));
 
             if (fr)
                 fr->createPMWindow(cid);

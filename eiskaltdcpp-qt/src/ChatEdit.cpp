@@ -11,6 +11,8 @@
  */
 
 #include "ChatEdit.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 
 #include "dcpp/HashManager.h"
@@ -271,7 +273,7 @@ void ChatEdit::dropEvent(QDropEvent *e)
                         tth = dcpp::getContext()->getHashManager()->getFileTTHif(str.toStdString());
                     }
                     if (tth)
-                        urlStr = WulforUtil::getInstance()->makeMagnet(fi.fileName(), fi.size(), _q(tth->toBase32()));
+                        urlStr = qtCtx()->wulforUtil()->makeMagnet(fi.fileName(), fi.size(), _q(tth->toBase32()));
                 }
             };
 

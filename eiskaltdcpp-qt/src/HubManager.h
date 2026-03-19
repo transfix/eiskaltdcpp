@@ -20,10 +20,11 @@
 #include "dcpp/stdinc.h"
 
 class HubFrame;
-class QtContext;
+#include "QtContextAware.h"
 
 class HubManager :
-        public QObject
+        public QObject,
+        public QtContextAware
 {
 Q_OBJECT
 
@@ -35,7 +36,6 @@ public:
     explicit HubManager();
     ~HubManager() override;
 
-    static HubManager* getInstance();
 
 Q_SIGNALS:
     void hubRegistered(QObject*);

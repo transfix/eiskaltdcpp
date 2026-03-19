@@ -11,6 +11,7 @@
 #include "Antispam.h"
 #include "WulforSettings.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 #include "../TestContext.h"
 
 #include <memory>
@@ -20,27 +21,25 @@ static std::unique_ptr<dcpp::test::TestContext> g_tc;
 static std::unique_ptr<QtContext> g_qtCtx;
 
 static void cleanupQtContext() {
-    setQtContext(nullptr);
-    g_qtCtx.reset();
+    g_qtCtx.reset();     // ~QtContext auto-deregisters
 }
 
 static void ensureContext() {
     if (!g_tc)
         g_tc = std::make_unique<dcpp::test::TestContext>();
-    if (!qtContext()) {
-        g_qtCtx = std::make_unique<QtContext>();
+    if (!qtCtx()) {
+        g_qtCtx = std::make_unique<QtContext>();  // auto-registers
         g_qtCtx->createSettings();
-        setQtContext(g_qtCtx.get());
         std::atexit(cleanupQtContext);
     }
 }
 
 // Helper: create a fresh AntiSpam, destroying any previous one
 static AntiSpam* freshAntiSpam() {
-    if (AntiSpam::getInstance())
-        qtContext()->destroyAntiSpam();
-    qtContext()->createAntiSpam();
-    return AntiSpam::getInstance();
+    if (qtCtx()->antiSpam())
+        qtCtx()->destroyAntiSpam();
+    qtCtx()->createAntiSpam();
+    return qtCtx()->antiSpam();
 }
 
 // ─── Construction ───────────────────────────────────────────────────────

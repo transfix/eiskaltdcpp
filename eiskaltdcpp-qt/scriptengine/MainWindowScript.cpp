@@ -11,6 +11,8 @@
  */
 
 #include "MainWindowScript.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "MainWindow.h"
 
 #include <QtDebug>
@@ -36,14 +38,14 @@ bool MainWindowScript::addToolButton(const QString &name, const QString &title, 
     if (name.isEmpty())
         return false;
 
-    QAction *act = new QAction(icon, title, MainWindow::getInstance());
+    QAction *act = new QAction(icon, title, qtCtx()->mainWindow());
     act->setObjectName("scriptToolbarButton" + name);
     actions.insert(name, act);
 
     QJSValue act_val = engine->newQObject(act);
     mwToolBar.setProperty(name, act_val);
 
-    MainWindow::getInstance()->addActionOnToolBar(act);
+    qtCtx()->mainWindow()->addActionOnToolBar(act);
 
     return true;
 }
@@ -63,7 +65,7 @@ bool MainWindowScript::remToolButton(const QString &name) {
 
     mwToolBar.setProperty(name, QJSValue());
 
-    MainWindow::getInstance()->remActionFromToolBar(act);
+    qtCtx()->mainWindow()->remActionFromToolBar(act);
     actions.remove(name);
 
     act->deleteLater();
@@ -75,10 +77,10 @@ bool MainWindowScript::addMenu(QMenu *menu) {
     if (!menu || menus.contains(menu) || menu->title().isEmpty())
         return false;
 
-    QMenuBar *menuBar = MainWindow::getInstance()->menuBar();
+    QMenuBar *menuBar = qtCtx()->mainWindow()->menuBar();
     QAction *act = menuBar->addMenu(menu);
 
-    MainWindow::getInstance()->toggleMainMenu(menuBar->isVisible());
+    qtCtx()->mainWindow()->toggleMainMenu(menuBar->isVisible());
 
     menus.insert(menu, act);
 
@@ -92,7 +94,7 @@ bool MainWindowScript::remMenu(QMenu *menu) {
     if (!(menu && menus.contains(menu)))
         return false;
 
-    QMenuBar *menuBar = MainWindow::getInstance()->menuBar();
+    QMenuBar *menuBar = qtCtx()->mainWindow()->menuBar();
     menuBar->removeAction(menus[menu]);
 
     menus.remove(menu);
@@ -101,7 +103,7 @@ bool MainWindowScript::remMenu(QMenu *menu) {
 
     engine->globalObject().property("MainWindow").property("MenuBar").setProperty(menu->title(), QJSValue());
 
-    MainWindow::getInstance()->toggleMainMenu(menuBar->isVisible());
+    qtCtx()->mainWindow()->toggleMainMenu(menuBar->isVisible());
 
     return true;
 }

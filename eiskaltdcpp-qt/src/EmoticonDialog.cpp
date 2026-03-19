@@ -11,6 +11,8 @@
  */
 
 #include "EmoticonDialog.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 #include <QLabel>
 #include <QLayout>
@@ -30,7 +32,7 @@ EmoticonDialog::EmoticonDialog(QWidget * parent, Qt::WindowFlags f)
     setWindowTitle(tr("Select emoticon"));
 
     QSize s;
-    EmoticonFactory::getInstance()->fillLayout(m_pLayout, s);
+    qtCtx()->emoticonFactory()->fillLayout(m_pLayout, s);
 
     setMinimumSize(s);
     resize(s);

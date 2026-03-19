@@ -28,13 +28,15 @@ class DownloadQueueItem;
 class DownloadQueueDelegate;
 class DownloadQueuePrivate;
 
-class QtContext;
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 class DownloadQueue :
         public QWidget,
         public ArenaWidget,
         private Ui::UIDownloadQueue,
-        private dcpp::QueueManagerListener
+        private dcpp::QueueManagerListener,
+        public QtContextAware
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
@@ -89,7 +91,7 @@ public:
     QString  getArenaShortTitle(){ return getArenaTitle(); }
     QWidget *getWidget(){ return this; }
     QMenu   *getMenu(){ return nullptr; }
-    const QPixmap &getPixmap(){ return WICON(WulforUtil::eiDOWNLOAD); }
+    const QPixmap &getPixmap(){ return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiDOWNLOAD); }
 
     ArenaWidget::Role role() const { return ArenaWidget::Downloads; }
 
@@ -137,7 +139,6 @@ public:
     DownloadQueue(QWidget* = nullptr);
     ~DownloadQueue() override;
 
-    static DownloadQueue* getInstance();
 
 private:
 

@@ -10,6 +10,7 @@
 
 #include "WulforSettings.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 #include "../TestContext.h"
 
 #include <memory>
@@ -19,17 +20,15 @@ static std::unique_ptr<dcpp::test::TestContext> g_tc;
 static std::unique_ptr<QtContext> g_qtCtx;
 
 static void cleanupQtContext() {
-    setQtContext(nullptr);
-    g_qtCtx.reset();
+    g_qtCtx.reset();     // ~QtContext auto-deregisters
 }
 
 static void ensureSettings() {
     if (!g_tc)
         g_tc = std::make_unique<dcpp::test::TestContext>();
-    if (!qtContext()) {
-        g_qtCtx = std::make_unique<QtContext>();
+    if (!qtCtx()) {
+        g_qtCtx = std::make_unique<QtContext>();  // auto-registers
         g_qtCtx->createSettings();
-        setQtContext(g_qtCtx.get());
         std::atexit(cleanupQtContext);
     }
 }
@@ -38,14 +37,14 @@ static void ensureSettings() {
 
 TEST_CASE("WulforSettings: exists after context creation", "[qt][wulforsettings]") {
     ensureSettings();
-    REQUIRE(WulforSettings::getInstance() != nullptr);
+    REQUIRE(qtCtx()->settings() != nullptr);
 }
 
 // ─── String get/set ─────────────────────────────────────────────────────
 
 TEST_CASE("WulforSettings: setStr and getStr", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     ws->setStr("test-str-key", "hello_world");
     REQUIRE(ws->getStr("test-str-key") == "hello_world");
@@ -53,7 +52,7 @@ TEST_CASE("WulforSettings: setStr and getStr", "[qt][wulforsettings]") {
 
 TEST_CASE("WulforSettings: getStr default value", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     REQUIRE(ws->getStr("nonexistent-str-key", "default_val") == "default_val");
 }
@@ -62,7 +61,7 @@ TEST_CASE("WulforSettings: getStr default value", "[qt][wulforsettings]") {
 
 TEST_CASE("WulforSettings: setInt and getInt", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     ws->setInt("test-int-key", 42);
     REQUIRE(ws->getInt("test-int-key") == 42);
@@ -70,7 +69,7 @@ TEST_CASE("WulforSettings: setInt and getInt", "[qt][wulforsettings]") {
 
 TEST_CASE("WulforSettings: getInt default value", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     REQUIRE(ws->getInt("nonexistent-int-key", -99) == -99);
 }
@@ -79,7 +78,7 @@ TEST_CASE("WulforSettings: getInt default value", "[qt][wulforsettings]") {
 
 TEST_CASE("WulforSettings: setBool and getBool", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     ws->setBool("test-bool-key", true);
     REQUIRE(ws->getBool("test-bool-key") == true);
@@ -90,7 +89,7 @@ TEST_CASE("WulforSettings: setBool and getBool", "[qt][wulforsettings]") {
 
 TEST_CASE("WulforSettings: getBool default value", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     REQUIRE(ws->getBool("nonexistent-bool-key", true) == true);
     REQUIRE(ws->getBool("nonexistent-bool-key-2", false) == false);
@@ -100,7 +99,7 @@ TEST_CASE("WulforSettings: getBool default value", "[qt][wulforsettings]") {
 
 TEST_CASE("WulforSettings: setVar and getVar", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     QVariant v(QStringList({"a", "b", "c"}));
     ws->setVar("test-var-key", v);
@@ -111,7 +110,7 @@ TEST_CASE("WulforSettings: setVar and getVar", "[qt][wulforsettings]") {
 
 TEST_CASE("WulforSettings: getVar default value", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     QVariant def(123);
     REQUIRE(ws->getVar("nonexistent-var-key", def).toInt() == 123);
@@ -121,7 +120,7 @@ TEST_CASE("WulforSettings: getVar default value", "[qt][wulforsettings]") {
 
 TEST_CASE("WulforSettings: hasKey checks intmap/strmap (old config)", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     // hasKey only checks intmap/strmap (old XML config), not QSettings
     // setStr goes to QSettings, so hasKey won't find it
@@ -134,7 +133,7 @@ TEST_CASE("WulforSettings: hasKey checks intmap/strmap (old config)", "[qt][wulf
 
 TEST_CASE("WulforSettings: strValueChanged signal on setStr", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     QSignalSpy spy(ws, &WulforSettings::strValueChanged);
     ws->setStr("signal-test-str", "new_value");
@@ -147,7 +146,7 @@ TEST_CASE("WulforSettings: strValueChanged signal on setStr", "[qt][wulforsettin
 
 TEST_CASE("WulforSettings: intValueChanged signal on setInt", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     QSignalSpy spy(ws, &WulforSettings::intValueChanged);
     ws->setInt("signal-test-int", 77);
@@ -160,7 +159,7 @@ TEST_CASE("WulforSettings: intValueChanged signal on setInt", "[qt][wulforsettin
 
 TEST_CASE("WulforSettings: varValueChanged signal on setVar", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     QSignalSpy spy(ws, &WulforSettings::varValueChanged);
     ws->setVar("signal-test-var", QVariant("test_val"));
@@ -174,7 +173,7 @@ TEST_CASE("WulforSettings: varValueChanged signal on setVar", "[qt][wulforsettin
 
 TEST_CASE("WulforSettings: parseCmd sets a key-value pair", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     // parseCmd("key value", res) → sets key=value in QSettings
     QString result;
@@ -188,7 +187,7 @@ TEST_CASE("WulforSettings: parseCmd sets a key-value pair", "[qt][wulforsettings
 
 TEST_CASE("WulforSettings: parseCmd with one arg returns current value", "[qt][wulforsettings]") {
     ensureSettings();
-    auto *ws = WulforSettings::getInstance();
+    auto *ws = qtCtx()->settings();
 
     ws->setStr("my-setting", "my-value");
     QString result;

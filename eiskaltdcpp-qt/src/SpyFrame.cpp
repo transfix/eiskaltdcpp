@@ -17,17 +17,13 @@
 #include "SearchFrame.h"
 #include "ArenaWidgetFactory.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 
 #include <QMenu>
 #include <QMessageBox>
 #include <QItemSelectionModel>
 
 using namespace dcpp;
-
-SpyFrame* SpyFrame::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->spyFrame() : nullptr;
-}
 
 SpyFrame::SpyFrame(QWidget *parent)
     : QWidget(parent)
@@ -39,19 +35,19 @@ SpyFrame::SpyFrame(QWidget *parent)
 
     treeView->setModel(model);
     treeView->setContextMenuPolicy(Qt::CustomContextMenu);
-    treeView->header()->restoreState(WVGET("spyframe-header-state", QByteArray()).toByteArray());
+    treeView->header()->restoreState(qtCtx()->settings()->getVar("spyframe-header-state", QByteArray()).toByteArray());
 
     connect(this, SIGNAL(coreIncomingSearch(QString,bool)), model, SLOT(addResult(QString,bool)), Qt::QueuedConnection);
     connect(pushButton, &QPushButton::clicked, this, &SpyFrame::slotStartStop);
     connect(pushButton_CLEAR, &QPushButton::clicked, this, &SpyFrame::slotClear);
     connect(treeView, &QWidget::customContextMenuRequested, this, &SpyFrame::contextMenu);
-    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &SpyFrame::slotSettingsChanged);
+    connect(qtCtx()->settings(), &WulforSettings::strValueChanged, this, &SpyFrame::slotSettingsChanged);
     
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
 }
 
 SpyFrame::~SpyFrame(){
-    WVSET("spyframe-header-state", treeView->header()->saveState());
+    qtCtx()->settings()->setVar("spyframe-header-state", treeView->header()->saveState());
     
     dcpp::getContext()->getClientManager()->removeListener(this);
 }

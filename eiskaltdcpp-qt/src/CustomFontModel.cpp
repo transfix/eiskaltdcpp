@@ -11,6 +11,8 @@
  */
 
 #include "CustomFontModel.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 
 #include <QtWidgets>
@@ -38,7 +40,7 @@ CustomFontModel::CustomFontModel(QObject *parent)
     addNewFont(WS_CHAT_ULIST_FONT,  tr("Public Chat: Userlist"));
     addNewFont(WS_CHAT_PM_FONT,     tr("Private Chat"));
 
-    connect(this, &CustomFontModel::fontChanged, WulforSettings::getInstance(), &WulforSettings::fontChanged);
+    connect(this, &CustomFontModel::fontChanged, qtCtx()->settings(), &WulforSettings::fontChanged);
 }
 
 CustomFontModel::~CustomFontModel()
@@ -154,7 +156,7 @@ void CustomFontModel::addNewFont(const QString &wkey, const QString &desc){
     if (wkey.isEmpty() || desc.isEmpty())
         return;
 
-    QString font_desc = WSGET(wkey.toUtf8().constData());
+    QString font_desc = qtCtx()->settings()->getStr(wkey.toUtf8().constData());
     QFont f;
 
     if (font_desc.isEmpty())
@@ -192,7 +194,7 @@ void CustomFontModel::itemDoubleClicked(const QModelIndex &i){
 void CustomFontModel::ok(){
     for (const auto &i : rootItem->childItems){
         if (!i->custom_font.isEmpty()){
-			WSSET(i->key.toUtf8().constData(), i->custom_font);
+			qtCtx()->settings()->setStr(i->key.toUtf8().constData(), i->custom_font);
 
             emit fontChanged(i->key, i->custom_font);
         }

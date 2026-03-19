@@ -21,10 +21,11 @@
 
 #include "dcpp/stdinc.h"
 
-class QtContext;
+#include "QtContextAware.h"
 
 class EmoticonFactory :
-        public QObject
+        public QObject,
+        public QtContextAware
 {
 Q_OBJECT
 typedef QList<QDomNode> DomNodeList;
@@ -36,7 +37,6 @@ public:
     EmoticonFactory();
     ~EmoticonFactory() override;
 
-    static EmoticonFactory* getInstance();
 
     void load();
     void unload(){ this->clear(); }

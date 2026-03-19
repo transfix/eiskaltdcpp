@@ -11,6 +11,8 @@
  */
 
 #include "UCModel.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "MainWindow.h"
 #include "WulforUtil.h"
 
@@ -165,7 +167,7 @@ void UCModel::addUC(const dcpp::UserCommand &uc){
 }
 
 void UCModel::newUC(){
-    UCDialog ucd(MainWindow::getInstance());
+    UCDialog ucd(qtCtx()->mainWindow());
 
     if (ucd.exec() == QDialog::Accepted){
         addUC(dcpp::getContext()->getFavoriteManager()->addUserCommand(ucd.getType(),
@@ -188,7 +190,7 @@ void UCModel::changeUC(const QModelIndex &i){
     if (!rootItem->childItems.contains(item))
         return;
 
-    UCDialog ucd(MainWindow::getInstance());
+    UCDialog ucd(qtCtx()->mainWindow());
 
     initDlgFromItem(ucd, *item);
 

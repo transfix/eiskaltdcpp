@@ -11,6 +11,8 @@
  */
 
 #include "FileHasher.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 #include <QFile>
 #include <QFileInfo>
@@ -44,9 +46,9 @@ FileHasher::FileHasher(QWidget *parent) :
     setupUi(this);
     hasher = new HashThread();
 
-    toolButton_COPY_MAGNET->setIcon(WICON(WulforUtil::eiMAGNET));
-    toolButton_COPY_SEARCH_LINK->setIcon(WICON(WulforUtil::eiMAGNET));
-    toolButton_BROWSE->setIcon(WICON(WulforUtil::eiFOLDER_BLUE));
+    toolButton_COPY_MAGNET->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiMAGNET));
+    toolButton_COPY_SEARCH_LINK->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiMAGNET));
+    toolButton_BROWSE->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE));
 
     connect(hasher, &QThread::finished, this, &FileHasher::slotDone);
     connect(pushButton_SEARCH, &QPushButton::clicked, this, qOverload<>(&FileHasher::search));
@@ -56,8 +58,8 @@ FileHasher::FileHasher(QWidget *parent) :
     connect(toolButton_COPY_SEARCH_LINK, &QToolButton::clicked, this, &FileHasher::slotCopySearchString);
     connect(this, &QDialog::finished, this, &FileHasher::saveWindowSize);
 
-    if (WVGET(DIALOG_SIZE).isValid()) {
-        resize(WVGET(DIALOG_SIZE).toSize());
+    if (qtCtx()->settings()->getVar(DIALOG_SIZE).isValid()) {
+        resize(qtCtx()->settings()->getVar(DIALOG_SIZE).toSize());
     }
 }
 
@@ -71,7 +73,7 @@ FileHasher::~FileHasher() {
 }
 
 void FileHasher::saveWindowSize(){
-    WVSET(DIALOG_SIZE, size());
+    qtCtx()->settings()->setVar(DIALOG_SIZE, size());
 }
 
 void FileHasher::slotStart(){
@@ -144,7 +146,7 @@ void FileHasher::slotCopyMagnet(){
     }
 
     const qulonglong &&fileSize = sizeStr.left(sizeStr.indexOf(" (")).toULongLong();
-    const QString &&urlStr = WulforUtil::getInstance()->makeMagnet(fname, fileSize, tth);
+    const QString &&urlStr = qtCtx()->wulforUtil()->makeMagnet(fname, fileSize, tth);
     qApp->clipboard()->setText(urlStr);
 }
 

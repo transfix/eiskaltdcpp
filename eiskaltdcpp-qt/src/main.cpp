@@ -41,6 +41,7 @@ using namespace std;
 #include "WulforUtil.h"
 #include "WulforSettings.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 #include "HubManager.h"
 #include "Notification.h"
 #include "VersionGlobal.h"
@@ -138,7 +139,7 @@ bool dockClickHandler(id self,SEL _cmd,...)
 {
     Q_UNUSED(self)
     Q_UNUSED(_cmd)
-    Notification *N = Notification::getInstance();
+    Notification *N = qtCtx()->notification();
     if (N)
         N->slotShowHide();
     return true;
@@ -186,89 +187,87 @@ int main(int argc, char *argv[])
     app.setApplicationVersion(QString::fromStdString(eiskaltdcppVersionString));
     
     { // Begin Qt-widget scope: everything inside is destroyed before dcpp::shutdown()
-    QtContext qtCtx;
-    setQtContext(&qtCtx);
+    QtContext ctx;
     // Guard: ensure settings are saved on scope exit.
-    // The guard runs before ~QtContext, so the global pointer must remain
-    // valid here — it is cleared after the scope closes (see below).
+    // The guard runs before ~QtContext.
     auto cleanupGuard = qScopeGuard([&]() {
-        WulforSettings::getInstance()->save();
+        qtCtx()->settings()->save();
     });
 
-    qtCtx.createGlobalTimer();
-    qtCtx.createSettings();
+    ctx.createGlobalTimer();
+    ctx.createSettings();
 
-    qtCtx.settings()->load();
-    qtCtx.settings()->loadTheme();
+    ctx.settings()->load();
+    ctx.settings()->loadTheme();
 
-    qtCtx.createWulforUtil();
-    qtCtx.settings()->loadTranslation();
+    ctx.createWulforUtil();
+    ctx.settings()->loadTranslation();
 #if defined(Q_OS_MAC)
     // Disable system tray functionality in Mac OS X:
-    WBSET(WB_TRAY_ENABLED, false);
+    qtCtx()->settings()->setBool(WB_TRAY_ENABLED, false);
 #endif
 
-    Text::hubDefaultCharset = WulforUtil::getInstance()->qtEnc2DcEnc(WSGET(WS_DEFAULT_LOCALE)).toStdString();
+    Text::hubDefaultCharset = qtCtx()->wulforUtil()->qtEnc2DcEnc(qtCtx()->settings()->getStr(WS_DEFAULT_LOCALE)).toStdString();
     // Safety: if the conversion returned an empty string (should not happen
     // after the qtEnc2DcEnc fix, but guard against it), fall back to the
     // system charset so NMDC hubs get a real encoding for iconv.
     if (Text::hubDefaultCharset.empty())
         Text::hubDefaultCharset = Text::systemCharset;
 
-    if (WulforUtil::getInstance()->loadUserIcons())
+    if (qtCtx()->wulforUtil()->loadUserIcons())
         std::cout << QObject::tr("UserList icons has been loaded").toStdString() << std::endl;
 
-    if (WulforUtil::getInstance()->loadIcons())
+    if (qtCtx()->wulforUtil()->loadIcons())
         std::cout << QObject::tr("Application icons has been loaded").toStdString() << std::endl;
 
-    app.setWindowIcon(WICON(WulforUtil::eiICON_APPL));
+    app.setWindowIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiICON_APPL));
 
-    qtCtx.createArenaWidgetManager();
+    ctx.createArenaWidgetManager();
 
-    qtCtx.createMainWindow();
+    ctx.createMainWindow();
 #if defined(Q_OS_MAC)
-    MainWindow::getInstance()->setUnload(false);
+    qtCtx()->mainWindow()->setUnload(false);
     QObject::connect(&app, &EiskaltApp::clickedOnDock,
-                     MainWindow::getInstance(), &MainWindow::show);
+                     qtCtx()->mainWindow(), &MainWindow::show);
 #else // defined(Q_OS_MAC)
-    MainWindow::getInstance()->setUnload(!WBGET(WB_TRAY_ENABLED));
+    qtCtx()->mainWindow()->setUnload(!qtCtx()->settings()->getBool(WB_TRAY_ENABLED));
 #endif // defined(Q_OS_MAC)
 
-    QObject::connect(&app, &QtSingleCoreApplication::messageReceived, MainWindow::getInstance(), &MainWindow::parseInstanceLine);
+    QObject::connect(&app, &QtSingleCoreApplication::messageReceived, qtCtx()->mainWindow(), &MainWindow::parseInstanceLine);
 
-    qtCtx.createHubManager();
+    ctx.createHubManager();
 
-    WulforSettings::getInstance()->loadTheme();
+    qtCtx()->settings()->loadTheme();
 
-    if (WBGET(WB_APP_ENABLE_EMOTICON)){
-        qtCtx.createEmoticonFactory();
-        EmoticonFactory::getInstance()->load();
+    if (qtCtx()->settings()->getBool(WB_APP_ENABLE_EMOTICON)){
+        ctx.createEmoticonFactory();
+        qtCtx()->emoticonFactory()->load();
     }
 
 #ifdef USE_ASPELL
-    if (WBGET(WB_APP_ENABLE_ASPELL))
-        qtCtx.createSpellCheck();
+    if (qtCtx()->settings()->getBool(WB_APP_ENABLE_ASPELL))
+        ctx.createSpellCheck();
 #endif
 
-    qtCtx.createNotification();
+    ctx.createNotification();
 
 #ifdef USE_JS
-    qtCtx.createScriptEngine();
-    QObject::connect(ScriptEngine::getInstance(), SIGNAL(scriptChanged(QString)), MainWindow::getInstance(), SLOT(slotJSFileChanged(QString)));
+    ctx.createScriptEngine();
+    QObject::connect(qtCtx()->scriptEngine(), SIGNAL(scriptChanged(QString)), qtCtx()->mainWindow(), SLOT(slotJSFileChanged(QString)));
 #endif
 
-    qtCtx.createFinishedUploads();
-    ArenaWidgetManager::getInstance()->add(qtCtx.finishedUploads());
-    qtCtx.createFinishedDownloads();
-    ArenaWidgetManager::getInstance()->add(qtCtx.finishedDownloads());
-    qtCtx.createQueuedUsers();
-    ArenaWidgetManager::getInstance()->add(qtCtx.queuedUsers());
+    ctx.createFinishedUploads();
+    qtCtx()->arenaWidgetManager()->add(ctx.finishedUploads());
+    ctx.createFinishedDownloads();
+    qtCtx()->arenaWidgetManager()->add(ctx.finishedDownloads());
+    ctx.createQueuedUsers();
+    qtCtx()->arenaWidgetManager()->add(ctx.queuedUsers());
 
-    MainWindow::getInstance()->autoconnect();
-    MainWindow::getInstance()->parseCmdLine(app.arguments());
+    qtCtx()->mainWindow()->autoconnect();
+    qtCtx()->mainWindow()->parseCmdLine(app.arguments());
 
-    if (!WBGET(WB_MAINWINDOW_HIDE) || !WBGET(WB_TRAY_ENABLED))
-        MainWindow::getInstance()->show();
+    if (!qtCtx()->settings()->getBool(WB_MAINWINDOW_HIDE) || !qtCtx()->settings()->getBool(WB_TRAY_ENABLED))
+        qtCtx()->mainWindow()->show();
 
     ret = app.exec();
 
@@ -276,13 +275,9 @@ int main(int argc, char *argv[])
 
     // Destruction order (reverse of declaration):
     //   1. cleanupGuard → saves settings
-    //   2. ~QtContext   → destroys ScriptEngine (which calls
-    //      destroyClientManagerScript/Hash/Log via qtContext()),
-    //      then all other Qt widgets.  The global pointer must
-    //      still be valid during this step.
+    //   2. ~QtContext   → destroys ScriptEngine then all other
+    //      Qt widgets, and deregisters the process-wide context.
     }
-    // QtContext is now fully destroyed — clear the dangling global pointer.
-    setQtContext(nullptr);
 
     dcpp::shutdown();
 

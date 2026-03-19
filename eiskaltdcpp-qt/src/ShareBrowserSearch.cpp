@@ -11,6 +11,8 @@
  */
 
 #include "ShareBrowserSearch.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 #include "ShareBrowser.h"
 #include "FileBrowserModel.h"
@@ -27,11 +29,11 @@ ShareBrowserSearch::ShareBrowserSearch(FileBrowserModel *model, QWidget *parent)
     
     this->model = model;
 
-    if (WVGET("sharebrowsersearch/size").isValid())
-        resize(WVGET("sharebrowsersearch/size").toSize());
+    if (qtCtx()->settings()->getVar("sharebrowsersearch/size").isValid())
+        resize(qtCtx()->settings()->getVar("sharebrowsersearch/size").toSize());
 
-    comboBox_TYPE_SEARCH->setCurrentIndex(WVGET("sharebrowsersearch/currenttype").toInt());
-    treeWidget->header()->restoreState(WVGET("sharebrowsersearch/columnstate").toByteArray());
+    comboBox_TYPE_SEARCH->setCurrentIndex(qtCtx()->settings()->getVar("sharebrowsersearch/currenttype").toInt());
+    treeWidget->header()->restoreState(qtCtx()->settings()->getVar("sharebrowsersearch/columnstate").toByteArray());
 
     setAttribute(Qt::WA_DeleteOnClose, true);
 
@@ -49,9 +51,9 @@ ShareBrowserSearch::~ShareBrowserSearch(){
 }
 
 void ShareBrowserSearch::closeEvent(QCloseEvent *e){
-    WVSET("sharebrowsersearch/size", size());
-    WVSET("sharebrowsersearch/columnstate", treeWidget->header()->saveState());
-    WVSET("sharebrowsersearch/currenttype", comboBox_TYPE_SEARCH->currentIndex());
+    qtCtx()->settings()->setVar("sharebrowsersearch/size", size());
+    qtCtx()->settings()->setVar("sharebrowsersearch/columnstate", treeWidget->header()->saveState());
+    qtCtx()->settings()->setVar("sharebrowsersearch/currenttype", comboBox_TYPE_SEARCH->currentIndex());
 
     QDialog::closeEvent(e);
 }

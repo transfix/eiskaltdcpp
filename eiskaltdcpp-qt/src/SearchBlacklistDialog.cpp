@@ -11,6 +11,8 @@
  */
 
 #include "SearchBlacklistDialog.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "SearchBlacklist.h"
 #include "WulforUtil.h"
 
@@ -58,8 +60,8 @@ void SearchBlackListDialog::slotContextMenu(){
     QModelIndexList indexes = s_m->selectedRows(0);
 
     QMenu *menu = new QMenu(this);
-    QAction *add = new QAction(WICON(WulforUtil::eiEDITADD), tr("Add new"), nullptr);
-    QAction *rem = new QAction(WICON(WulforUtil::eiEDITDELETE), tr("Remove"), nullptr);
+    QAction *add = new QAction(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITADD), tr("Add new"), nullptr);
+    QAction *rem = new QAction(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE), tr("Remove"), nullptr);
 
     menu->addActions(QList<QAction*>() << add << rem);
 
@@ -90,7 +92,7 @@ SearchBlackListModel::SearchBlackListModel(QObject * parent) :
 {
     rootItem = new SearchBlackListItem(nullptr);
 
-    SearchBlacklist *SB = SearchBlacklist::getInstance();
+    SearchBlacklist *SB = qtCtx()->searchBlacklist();
 
     QList<QString> names = SB->getList(SearchBlacklist::NAME);
     QList<QString> tths  = SB->getList(SearchBlacklist::TTH);
@@ -129,7 +131,7 @@ void SearchBlackListModel::save(){
         l.push_back(item->title);
     }
 
-    SearchBlacklist *SB = SearchBlacklist::getInstance();
+    SearchBlacklist *SB = qtCtx()->searchBlacklist();
     SB->setList(SearchBlacklist::NAME, names);
     SB->setList(SearchBlacklist::TTH, tths);
 }

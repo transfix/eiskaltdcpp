@@ -19,11 +19,6 @@
 
 using namespace dcpp;
 
-ShortcutManager* ShortcutManager::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->shortcutManager() : nullptr;
-}
-
 ShortcutManager::ShortcutManager(){
     load();
 }

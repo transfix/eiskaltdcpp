@@ -17,6 +17,8 @@
 #include <QTimer>
 #include <QSessionManager>
 #include "WulforSettings.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "MainWindow.h"
 #include "qtsingleapp/qtsinglecoreapplication.h"
 #include <objc/objc.h>
@@ -82,8 +84,8 @@ private Q_SLOTS:
         if (!has_activity)
             ++counter;
 
-        if (WBGET(WB_APP_AUTOAWAY_BY_TIMER)){
-            int mins = WIGET(WI_APP_AUTOAWAY_INTERVAL);
+        if (qtCtx()->settings()->getBool(WB_APP_AUTOAWAY_BY_TIMER)){
+            int mins = qtCtx()->settings()->getInt(WI_APP_AUTOAWAY_INTERVAL);
 
             if (!mins)
                 return;
@@ -120,9 +122,9 @@ public:
     }
 
     void commitData(QSessionManager& manager){
-        if (MainWindow::getInstance()){
-            MainWindow::getInstance()->beginExit();
-            MainWindow::getInstance()->close();
+        if (qtCtx()->mainWindow()){
+            qtCtx()->mainWindow()->beginExit();
+            qtCtx()->mainWindow()->close();
         }
 
         manager.release();

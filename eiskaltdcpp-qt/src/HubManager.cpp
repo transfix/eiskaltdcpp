@@ -13,11 +13,6 @@
 
 #include <QtDebug>
 
-HubManager* HubManager::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->hubManager() : nullptr;
-}
-
 HubManager::HubManager():
         active(nullptr)
 {

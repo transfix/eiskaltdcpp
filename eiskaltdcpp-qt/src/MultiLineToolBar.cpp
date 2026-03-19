@@ -11,6 +11,8 @@
  */
 
 #include "MultiLineToolBar.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforSettings.h"
 #include "ArenaWidgetManager.h"
 
@@ -29,11 +31,11 @@ MultiLineToolBar::MultiLineToolBar(QWidget *parent) :
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
     setContextMenuPolicy(Qt::CustomContextMenu);
 
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::added,     frame, &TabFrame::insertWidget);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::removed,   frame, &TabFrame::removeWidget);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::updated,   frame, &TabFrame::updated);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::activated, frame, &TabFrame::mapped);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::toggled,   frame, &TabFrame::toggled);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::added,     frame, &TabFrame::insertWidget);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::removed,   frame, &TabFrame::removeWidget);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::updated,   frame, &TabFrame::updated);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::activated, frame, &TabFrame::mapped);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::toggled,   frame, &TabFrame::toggled);
     connect(this, &MultiLineToolBar::nextTab, frame, &TabFrame::nextTab);
     connect(this, &MultiLineToolBar::prevTab, frame, &TabFrame::prevTab);
     connect(this, &MultiLineToolBar::moveTabLeft, frame, &TabFrame::moveLeft);
@@ -59,12 +61,12 @@ void MultiLineToolBar::slotContextMenu(){
     QAction *act = new QAction(tr("Show close buttons"), m);
 
     act->setCheckable(true);
-    act->setChecked(WBGET(WB_APP_TBAR_SHOW_CL_BTNS));
+    act->setChecked(qtCtx()->settings()->getBool(WB_APP_TBAR_SHOW_CL_BTNS));
 
     m->addAction(act);
 
     if (m->exec(QCursor::pos())){
-        WBSET(WB_APP_TBAR_SHOW_CL_BTNS, act->isChecked());
+        qtCtx()->settings()->setBool(WB_APP_TBAR_SHOW_CL_BTNS, act->isChecked());
     }
 
     m->deleteLater();

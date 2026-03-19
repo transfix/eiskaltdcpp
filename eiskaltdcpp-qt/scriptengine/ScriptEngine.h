@@ -34,10 +34,11 @@ struct ScriptObject {
     QString path;
 };
 
-class QtContext;
+#include "QtContextAware.h"
 
 class ScriptEngine :
-        public QObject
+        public QObject,
+        public QtContextAware
 {
 Q_OBJECT
 friend class QtContext;
@@ -62,7 +63,6 @@ private Q_SLOTS:
     void slotProcessChangedFiles();
 
 public:
-    static ScriptEngine* getInstance();
     ScriptEngine();
     virtual ~ScriptEngine();
 

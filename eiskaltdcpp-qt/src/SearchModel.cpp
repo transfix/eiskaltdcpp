@@ -19,6 +19,8 @@
 #include <QDir>
 
 #include "SearchModel.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "SearchFrame.h"
 #include "WulforUtil.h"
 
@@ -81,9 +83,9 @@ QVariant SearchModel::data(const QModelIndex &index, int role) const
         case Qt::DecorationRole: // icon
         {
             if (index.column() == COLUMN_SF_FILENAME && !item->isDir)
-                return WulforUtil::getInstance()->getPixmapForFile(item->data(COLUMN_SF_FILENAME).toString()).scaled(16, 16);
+                return qtCtx()->wulforUtil()->getPixmapForFile(item->data(COLUMN_SF_FILENAME).toString()).scaled(16, 16);
             else if (index.column() == COLUMN_SF_FILENAME && item->isDir)
-                return WICON(WulforUtil::eiFOLDER_BLUE).scaled(16, 16);
+                return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE).scaled(16, 16);
             break;
         }
         case Qt::DisplayRole:
@@ -110,8 +112,8 @@ QVariant SearchModel::data(const QModelIndex &index, int role) const
                 if (dcpp::getContext()->getShareManager()->isTTHShared(t)){
                     static QColor c;
 
-                    c.setNamedColor(WSGET(WS_APP_SHARED_FILES_COLOR));
-                    c.setAlpha(WIGET(WI_APP_SHARED_FILES_ALPHA));
+                    c.setNamedColor(qtCtx()->settings()->getStr(WS_APP_SHARED_FILES_COLOR));
+                    c.setAlpha(qtCtx()->settings()->getInt(WI_APP_SHARED_FILES_ALPHA));
 
                     return c;
                 }

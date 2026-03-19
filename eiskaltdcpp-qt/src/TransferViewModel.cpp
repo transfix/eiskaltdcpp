@@ -11,6 +11,8 @@
  */
 
 #include "TransferViewModel.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 #include "WulforUtil.h"
 
@@ -95,11 +97,11 @@ QVariant TransferViewModel::data(const QModelIndex &index, int role) const
                 break;
 
             if (item->download && index.column() == COLUMN_TRANSFER_USERS)
-                return WICON(WulforUtil::eiDOWN).scaled(18, 18, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+                return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiDOWN).scaled(18, 18, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
             else if (index.column() != COLUMN_TRANSFER_FNAME)
-                return WICON(WulforUtil::eiUP).scaled(18, 18, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+                return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiUP).scaled(18, 18, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
             else
-                return WulforUtil::getInstance()->getPixmapForFile(item->data(COLUMN_TRANSFER_FNAME).toString()).scaled(16, 16);
+                return qtCtx()->wulforUtil()->getPixmapForFile(item->data(COLUMN_TRANSFER_FNAME).toString()).scaled(16, 16);
             break;
         }
         case Qt::DisplayRole:
@@ -745,10 +747,10 @@ void TransferViewItem::updateColumn(int column, QVariant var){
 TransferViewDelegate::TransferViewDelegate(QObject *parent):
         QStyledItemDelegate(parent)
 {
-    download_bar_color = qvariant_cast<QColor>(WVGET("transferview/download-bar-color", QColor()));
-    upload_bar_color = qvariant_cast<QColor>(WVGET("transferview/upload-bar-color", QColor()));
+    download_bar_color = qvariant_cast<QColor>(qtCtx()->settings()->getVar("transferview/download-bar-color", QColor()));
+    upload_bar_color = qvariant_cast<QColor>(qtCtx()->settings()->getVar("transferview/upload-bar-color", QColor()));
 
-    connect(WulforSettings::getInstance(), &WulforSettings::varValueChanged, this, &TransferViewDelegate::wsVarValueChanged);
+    connect(qtCtx()->settings(), &WulforSettings::varValueChanged, this, &TransferViewDelegate::wsVarValueChanged);
 }
 
 TransferViewDelegate::~TransferViewDelegate(){

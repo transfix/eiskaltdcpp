@@ -12,6 +12,7 @@
 
 #include "DownloadQueue.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 
 #include <QMap>
 #include <QTreeView>
@@ -60,7 +61,7 @@ public:
 
 DownloadQueue::Menu::Menu() : menu(new QMenu(nullptr))
 {
-    QMenu *menu_magnet = new QMenu(tr("Magnet"), DownloadQueue::getInstance());
+    QMenu *menu_magnet = new QMenu(tr("Magnet"), ::qtCtx()->downloadQueue());
 
     QAction *search_alt  = new QAction(tr("Search for alternates"), menu);
     QAction *copy_magnet = new QAction(tr("Copy magnet"), menu_magnet);
@@ -208,11 +209,6 @@ QVariant DownloadQueue::Menu::getArg(){
     return arg;
 }
 
-DownloadQueue* DownloadQueue::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->downloadQueue() : nullptr;
-}
-
 DownloadQueue::DownloadQueue(QWidget *parent):
         QWidget(parent), d_ptr(new DownloadQueuePrivate())
 {
@@ -322,12 +318,12 @@ void DownloadQueue::init(){
 }
 
 void DownloadQueue::load(){
-    treeView_TARGET->header()->restoreState(WVGET(WS_DQUEUE_STATE, QByteArray()).toByteArray());
+    treeView_TARGET->header()->restoreState(qtCtx()->settings()->getVar(WS_DQUEUE_STATE, QByteArray()).toByteArray());
     treeView_TARGET->setSortingEnabled(true);
 }
 
 void DownloadQueue::save(){
-    WVSET(WS_DQUEUE_STATE, treeView_TARGET->header()->saveState());
+    qtCtx()->settings()->setVar(WS_DQUEUE_STATE, treeView_TARGET->header()->saveState());
 }
 
 void DownloadQueue::getParams(DownloadQueue::VarMap &params, const QueueItem *item){
@@ -353,7 +349,7 @@ void DownloadQueue::getParams(DownloadQueue::VarMap &params, const QueueItem *it
         if (usr.user->isOnline())
             ++online;
 
-        nick = WulforUtil::getInstance()->getNicks(cid, _q(usr.hint));
+        nick = qtCtx()->wulforUtil()->getNicks(cid, _q(usr.hint));
 
         if (!nick.isEmpty()){
             source[nick] = _q(cid.toBase32());
@@ -387,7 +383,7 @@ void DownloadQueue::getParams(DownloadQueue::VarMap &params, const QueueItem *it
         QString errors = params["ERRORS"].toString();
         UserPtr usr = src.getUser();
 
-        nick = WulforUtil::getInstance()->getNicks(usr->getCID());
+        nick = qtCtx()->wulforUtil()->getNicks(usr->getCID());
         source[nick] = _q(usr->getCID().toBase32());
 
         if (!src.isSet(QueueItem::Source::FLAG_REMOVED)){
@@ -600,7 +596,7 @@ void DownloadQueue::slotContextMenu(const QPoint &){
             QString magnet = "";
 
             for (const auto &i : items)
-                magnet += WulforUtil::getInstance()->makeMagnet(
+                magnet += qtCtx()->wulforUtil()->makeMagnet(
                         i->data(COLUMN_DOWNLOADQUEUE_NAME).toString().trimmed(),
                         i->data(COLUMN_DOWNLOADQUEUE_ESIZE).toLongLong(),
                         i->data(COLUMN_DOWNLOADQUEUE_TTH).toString()) + "\n";
@@ -616,7 +612,7 @@ void DownloadQueue::slotContextMenu(const QPoint &){
 
             for (const auto &i : items){
                 magnet += "[magnet=\"" +
-                    WulforUtil::getInstance()->makeMagnet(
+                    qtCtx()->wulforUtil()->makeMagnet(
                         i->data(COLUMN_DOWNLOADQUEUE_NAME).toString().trimmed(),
                         i->data(COLUMN_DOWNLOADQUEUE_ESIZE).toLongLong(),
                         i->data(COLUMN_DOWNLOADQUEUE_TTH).toString()) +
@@ -631,7 +627,7 @@ void DownloadQueue::slotContextMenu(const QPoint &){
         case Menu::MagnetInfo:
         {
             for (const auto &i : items){
-                const QString &&magnet = WulforUtil::getInstance()->makeMagnet(
+                const QString &&magnet = qtCtx()->wulforUtil()->makeMagnet(
                             i->data(COLUMN_DOWNLOADQUEUE_NAME).toString().trimmed(),
                             i->data(COLUMN_DOWNLOADQUEUE_ESIZE).toLongLong(),
                             i->data(COLUMN_DOWNLOADQUEUE_TTH).toString());
@@ -700,7 +696,7 @@ void DownloadQueue::slotContextMenu(const QPoint &){
             auto it = rmap.constBegin();
             dcpp::CID cid(_tq(getCID(rmap)));
             QString nick = ((++it).key());
-            QList<QObject*> list = HubManager::getInstance()->getHubs();
+            QList<QObject*> list = qtCtx()->hubManager()->getHubs();
 
             for (const auto &obj : list){
                 HubFrame *fr = qobject_cast<HubFrame*>(obj);

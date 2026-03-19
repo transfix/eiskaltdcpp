@@ -19,11 +19,6 @@
 
 #include "dcpp/Util.h"
 
-SearchBlacklist* SearchBlacklist::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->searchBlacklist() : nullptr;
-}
-
 SearchBlacklist::SearchBlacklist(){
     list[NAME] = {};
     list[TTH]  = {};

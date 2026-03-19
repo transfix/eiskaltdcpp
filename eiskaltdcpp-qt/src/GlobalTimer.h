@@ -12,16 +12,17 @@
 #include <QObject>
 #include <memory>
 
-class QtContext;
+#include "QtContextAware.h"
 class QTimer;
 
-class GlobalTimer: public QObject {
+class GlobalTimer: public QObject,
+        public QtContextAware
+{
     Q_OBJECT
 public:
     GlobalTimer();
     ~GlobalTimer() override;
 
-    static GlobalTimer* getInstance();
 
     quint64 getTicks() const;
 

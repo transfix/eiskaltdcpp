@@ -17,10 +17,11 @@
 
 #include "dcpp/stdinc.h"
 
-class QtContext;
+#include "QtContextAware.h"
 
 class SpellCheck :
-        public QObject
+        public QObject,
+        public QtContextAware
 {
 Q_OBJECT
 friend class QtContext;
@@ -29,7 +30,6 @@ public:
     SpellCheck(QObject *parent = nullptr);
     ~SpellCheck() override;
 
-    static SpellCheck* getInstance();
 
     bool ok(const QString &word);
     void suggestions(const QString &word, QStringList &list);

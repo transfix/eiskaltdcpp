@@ -11,6 +11,8 @@
  */
 
 #include "SettingsShortcuts.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "ShortcutManager.h"
 #include "MainWindow.h"
 #include "ShortcutGetter.h"
@@ -31,7 +33,7 @@ SettingsShortcuts::SettingsShortcuts(QWidget *parent) :
 
     model = new ShortcutsModel(this);
     treeView->setModel(model);
-    treeView->header()->restoreState(QByteArray::fromBase64(WSGET(TREEVIEW_STATE_KEY).toUtf8()));
+    treeView->header()->restoreState(QByteArray::fromBase64(qtCtx()->settings()->getStr(TREEVIEW_STATE_KEY).toUtf8()));
 
     connect(treeView, &QTreeView::clicked, this, &SettingsShortcuts::slotIndexClicked);
 }
@@ -43,7 +45,7 @@ SettingsShortcuts::~SettingsShortcuts(){
 void SettingsShortcuts::ok(){
     model->save();
 
-    WSSET(TREEVIEW_STATE_KEY, treeView->header()->saveState().toBase64());
+    qtCtx()->settings()->setStr(TREEVIEW_STATE_KEY, treeView->header()->saveState().toBase64());
 }
 
 void SettingsShortcuts::slotIndexClicked(const QModelIndex &index){
@@ -55,7 +57,7 @@ void SettingsShortcuts::slotIndexClicked(const QModelIndex &index){
     if (!item)
         return;
 
-    ShortcutGetter getter(MainWindow::getInstance());
+    ShortcutGetter getter(qtCtx()->mainWindow());
     QString ret;
 
     if ((ret = getter.exec(item->shortcut)).isNull())
@@ -69,9 +71,9 @@ void SettingsShortcuts::slotIndexClicked(const QModelIndex &index){
 ShortcutsModel::ShortcutsModel(QObject * parent) : QAbstractItemModel(parent) {
     rootItem = new ShortcutItem(nullptr);
 
-    MainWindow *MW = MainWindow::getInstance();
+    MainWindow *MW = qtCtx()->mainWindow();
     QMap<QString, QKeySequence> shs;
-    shs = ShortcutManager::getInstance()->getShortcuts();
+    shs = qtCtx()->shortcutManager()->getShortcuts();
 
     const QAction *act = nullptr;
     for (auto it = shs.begin(); it != shs.end(); ++it) {
@@ -98,7 +100,7 @@ ShortcutsModel::~ShortcutsModel() {
 }
 
 void ShortcutsModel::save(){
-    MainWindow *MW = MainWindow::getInstance();
+    MainWindow *MW = qtCtx()->mainWindow();
     QAction *act = nullptr;
 
     for (auto it = items.begin(); it != items.end(); ++it) {
@@ -107,10 +109,10 @@ void ShortcutsModel::save(){
         if (!act)
             continue;
 
-        ShortcutManager::getInstance()->updateShortcut(act, ((it.key())->shortcut));
+        qtCtx()->shortcutManager()->updateShortcut(act, ((it.key())->shortcut));
     }
 
-    ShortcutManager::getInstance()->save();
+    qtCtx()->shortcutManager()->save();
 }
 
 int ShortcutsModel::rowCount(const QModelIndex & ) const {

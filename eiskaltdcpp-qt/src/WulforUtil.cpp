@@ -15,6 +15,7 @@
 #include "WulforUtil.h"
 #include "ArenaWidgetFactory.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 #include "icons/gv.xpm"
 
 #ifdef HAVE_IFADDRS_H
@@ -82,11 +83,6 @@ using namespace dcpp;
 
 const QString WulforUtil::magnetSignature = "magnet:?xt=urn:tree:tiger:";
 
-WulforUtil* WulforUtil::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->wulforUtil() : nullptr;
-}
-
 WulforUtil::WulforUtil()
 {
     qRegisterMetaType< QMap<QString,QVariant> >("VarMap");
@@ -149,7 +145,7 @@ bool WulforUtil::loadUserIcons(){
 QString WulforUtil::findAppIconsPath() const
 {
     // Try to find application icons directory
-    const QString icon_theme = WSGET(WS_APP_ICONTHEME);
+    const QString icon_theme = qtCtx()->settings()->getStr(WS_APP_ICONTHEME);
 
     QStringList settings_path_list = {
         QDir::currentPath() + "/icons/appl/" + icon_theme,
@@ -179,7 +175,7 @@ QString WulforUtil::findAppIconsPath() const
 QString WulforUtil::findUserIconsPath() const
 {
     // Try to find icons directory
-    const QString user_theme = WSGET(WS_APP_USERTHEME);
+    const QString user_theme = qtCtx()->settings()->getStr(WS_APP_USERTHEME);
 
     QStringList settings_path_list = {
         QDir::currentPath() + "/icons/user/" + user_theme,
@@ -272,7 +268,7 @@ QString WulforUtil::getAspellDataPath() const
 
 QString WulforUtil::getClientResourcesPath() const
 {
-    const QString icon_theme = WSGET(WS_APP_ICONTHEME);
+    const QString icon_theme = qtCtx()->settings()->getStr(WS_APP_ICONTHEME);
 
 #if defined(Q_OS_WIN) || defined(Q_OS_HAIKU)
     const QString client_res_path = bin_path + CLIENT_RES_DIR "/" + icon_theme + ".rcc";
@@ -378,7 +374,7 @@ bool WulforUtil::loadIcons(){
 
     const QString fname = getClientResourcesPath();
     bool resourceFound = false;
-    if (QFile(fname).exists() && !WBGET("app/use-icon-theme", false))
+    if (QFile(fname).exists() && !qtCtx()->settings()->getBool("app/use-icon-theme", false))
         resourceFound = QResource::registerResource(fname);
 
     m_PixmapMap.clear();
@@ -781,14 +777,14 @@ bool WulforUtil::openUrl(const QString &url){
             QDesktopServices::openUrl(QUrl::fromEncoded(url.toUtf8()));
     }
     else if (url.startsWith("adc://") || url.startsWith("adcs://")){
-        MainWindow::getInstance()->newHubFrame(url, "UTF-8");
+        qtCtx()->mainWindow()->newHubFrame(url, "UTF-8");
     }
     else if (url.startsWith("dchub://") || url.startsWith("nmdcs://")){
-        MainWindow::getInstance()->newHubFrame(url, WSGET(WS_DEFAULT_LOCALE));
+        qtCtx()->mainWindow()->newHubFrame(url, qtCtx()->settings()->getStr(WS_DEFAULT_LOCALE));
     }
     else if (url.startsWith("magnet:") && url.contains("urn:tree:tiger")){
         QString magnet = url;
-        Magnet *m = new Magnet(MainWindow::getInstance());
+        Magnet *m = new Magnet(qtCtx()->mainWindow());
 
         m->setLink(magnet);
         m->exec();
@@ -858,7 +854,7 @@ bool WulforUtil::getUserCommandParams(const UserCommand& uc, StringMap& params) 
     if (names.empty())
         return true;
 
-    QDialog dlg(MainWindow::getInstance());
+    QDialog dlg(qtCtx()->mainWindow());
     dlg.setWindowTitle(_q(uc.getDisplayName().back()));
 
     QVBoxLayout *vlayout = new QVBoxLayout(&dlg);

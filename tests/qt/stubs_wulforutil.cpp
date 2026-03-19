@@ -8,10 +8,6 @@
 #include <QString>
 #include "WulforUtil.h"
 
-WulforUtil* WulforUtil::getInstance() {
-    return nullptr;  // Tests don't create WulforUtil
-}
-
 QString WulforUtil::getTranslationsPath() const {
     return QString();
 }

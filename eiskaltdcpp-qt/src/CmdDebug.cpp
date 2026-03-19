@@ -22,11 +22,7 @@
 #include "WulforUtil.h"
 #include "CmdDebug.h"
 #include "QtContext.h"
-
-CmdDebug* CmdDebug::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->cmdDebug() : nullptr;
-}
+#include "QtContextAware.h"
 
 CmdDebug::CmdDebug(QWidget *parent)
     : QWidget(parent)
@@ -35,7 +31,7 @@ CmdDebug::CmdDebug(QWidget *parent)
     setupUi(this);
     Q_D(CmdDebug);
 
-    toolButton_HIDE->setIcon(WICON(WulforUtil::eiEDITDELETE));
+    toolButton_HIDE->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE));
     searchFrame->hide();
 
     installEventFilter(this);
@@ -56,7 +52,7 @@ CmdDebug::CmdDebug(QWidget *parent)
     connect(toolButton_ALL, &QToolButton::clicked, this, &CmdDebug::slotFindAll);
     dcpp::getContext()->getDebugManager()->addListener(this);
 
-    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &CmdDebug::slotSettingsChanged);
+    connect(qtCtx()->settings(), &WulforSettings::strValueChanged, this, &CmdDebug::slotSettingsChanged);
 
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
 }
@@ -140,7 +136,7 @@ bool CmdDebug::eventFilter(QObject *obj, QEvent *e){
         if (isChat && (m_e->button() == Qt::LeftButton)){
             QString pressedParagraph = plainTextEdit_DEBUG->anchorAt(plainTextEdit_DEBUG->mapFromGlobal(QCursor::pos()));
 
-            if (!WulforUtil::getInstance()->openUrl(pressedParagraph)){
+            if (!qtCtx()->wulforUtil()->openUrl(pressedParagraph)){
                 /**
                   Do nothing
                 */
@@ -214,8 +210,8 @@ void CmdDebug::slotFindAll(){
         QTextEdit::ExtraSelection selection;
 
         QColor color;
-        color.setNamedColor(WSGET(WS_CHAT_FIND_COLOR));
-        color.setAlpha(WIGET(WI_CHAT_FIND_COLOR_ALPHA));
+        color.setNamedColor(qtCtx()->settings()->getStr(WS_CHAT_FIND_COLOR));
+        color.setAlpha(qtCtx()->settings()->getInt(WI_CHAT_FIND_COLOR_ALPHA));
 
         selection.format.setBackground(color);
 

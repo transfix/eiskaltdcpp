@@ -11,6 +11,8 @@
  */
 
 #include "ToolBar.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 
 #include <QMenu>
@@ -86,7 +88,7 @@ void ToolBar::showEvent(QShowEvent *e){
 void ToolBar::initTabs(){
     tabbar = new QTabBar(parentWidget());
     tabbar->setObjectName("arenaTabbar");
-    tabbar->setTabsClosable(WBGET(WB_APP_TBAR_SHOW_CL_BTNS));
+    tabbar->setTabsClosable(qtCtx()->settings()->getBool(WB_APP_TBAR_SHOW_CL_BTNS));
     tabbar->setDocumentMode(true);
     tabbar->setMovable(true);
     tabbar->setSelectionBehaviorOnRemove(QTabBar::SelectPreviousTab);
@@ -119,13 +121,13 @@ void ToolBar::initTabs(){
     connect(tabbar, &QTabBar::tabCloseRequested, this, &ToolBar::slotClose);
     connect(tabbar, &QWidget::customContextMenuRequested, this, &ToolBar::slotContextMenu);
     
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::added,     this, &ToolBar::insertWidget);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::removed,   this, &ToolBar::removeWidget);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::activated, this, &ToolBar::mapped);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::updated,   this, &ToolBar::updated);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::toggled,   this, &ToolBar::toggled);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::added,     this, &ToolBar::insertWidget);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::removed,   this, &ToolBar::removeWidget);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::activated, this, &ToolBar::mapped);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::updated,   this, &ToolBar::updated);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::toggled,   this, &ToolBar::toggled);
        
-    connect(GlobalTimer::getInstance(), &GlobalTimer::second, this, &ToolBar::redraw);
+    connect(qtCtx()->globalTimer(), &GlobalTimer::second, this, &ToolBar::redraw);
 
     addWidget(tabbar);
 }
@@ -145,7 +147,7 @@ void ToolBar::insertWidget(ArenaWidget *awgt){
         if (tabbar->isHidden())
             tabbar->show();
 
-        if (!(typeid(*awgt) == typeid(PMWindow) && WBGET(WB_CHAT_KEEPFOCUS)))
+        if (!(typeid(*awgt) == typeid(PMWindow) && qtCtx()->settings()->getBool(WB_CHAT_KEEPFOCUS)))
             tabbar->setCurrentIndex(index);
     }
 }
@@ -191,7 +193,7 @@ void ToolBar::slotIndexChanged(int index){
     if (!awgt || !awgt->getWidget())
         return;
 
-    ArenaWidgetManager::getInstance()->activate(awgt);
+    qtCtx()->arenaWidgetManager()->activate(awgt);
 }
 
 void ToolBar::toggled ( ArenaWidget *awgt) {
@@ -202,9 +204,9 @@ void ToolBar::toggled ( ArenaWidget *awgt) {
         return;
     
     if (awgt->state() & ArenaWidget::Hidden)
-        ArenaWidgetManager::getInstance()->activate(awgt);
+        qtCtx()->arenaWidgetManager()->activate(awgt);
     else
-        ArenaWidgetManager::getInstance()->rem(awgt);
+        qtCtx()->arenaWidgetManager()->rem(awgt);
 }
 
 void ToolBar::slotTabMoved(int from, int to){
@@ -238,7 +240,7 @@ void ToolBar::slotClose(int index){
     if (!awgt || !awgt->getWidget())
         return;
 
-    ArenaWidgetManager::getInstance()->rem(awgt);
+    qtCtx()->arenaWidgetManager()->rem(awgt);
 }
 
 void ToolBar::slotContextMenu(const QPoint &p){
@@ -250,12 +252,12 @@ void ToolBar::slotContextMenu(const QPoint &p){
         QAction *act = new QAction(tr("Show close buttons"), m);
 
         act->setCheckable(true);
-        act->setChecked(WBGET(WB_APP_TBAR_SHOW_CL_BTNS));
+        act->setChecked(qtCtx()->settings()->getBool(WB_APP_TBAR_SHOW_CL_BTNS));
 
         m->addAction(act);
 
         if (m->exec(QCursor::pos())){
-            WBSET(WB_APP_TBAR_SHOW_CL_BTNS, act->isChecked());
+            qtCtx()->settings()->setBool(WB_APP_TBAR_SHOW_CL_BTNS, act->isChecked());
             tabbar->setTabsClosable(act->isChecked());
         }
 
@@ -297,7 +299,7 @@ ArenaWidget *ToolBar::findWidgetForIndex(const int index){
 void ToolBar::redraw(){
     for (auto it = map.begin(); it != map.end(); ++it){
         tabbar->setTabText(it.value(), it.key()->getArenaShortTitle().left(32));
-        tabbar->setTabToolTip(it.value(), WulforUtil::getInstance()->compactToolTipText(it.key()->getArenaTitle(), 60, "\n"));
+        tabbar->setTabToolTip(it.value(), qtCtx()->wulforUtil()->compactToolTipText(it.key()->getArenaTitle(), 60, "\n"));
         tabbar->setTabIcon(it.value(), it.key()->getPixmap());
     }
 
@@ -306,7 +308,7 @@ void ToolBar::redraw(){
     ArenaWidget *awgt = findWidgetForIndex(tabbar->currentIndex());
 
     if (awgt)
-        MainWindow::getInstance()->setWindowTitle(awgt->getArenaTitle() +
+        qtCtx()->mainWindow()->setWindowTitle(awgt->getArenaTitle() +
                                    " :: " + QString::fromStdString(eiskaltdcppAppNameString));
 }
 

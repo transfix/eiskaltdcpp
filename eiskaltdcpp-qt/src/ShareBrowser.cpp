@@ -11,6 +11,8 @@
  */
 
 #include "ShareBrowser.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 #include "FileBrowserModel.h"
 #include "MainWindow.h"
@@ -66,14 +68,12 @@ void AsyncRunner::setRunFunction(const std::function<void()> &f){
     runFunc = f;
 }
 
-ShareBrowser::Menu* ShareBrowser::Menu::instance_ = nullptr;
-
 ShareBrowser::Menu::Menu() : menu(new QMenu(nullptr))
 {
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     rest_menu = new QMenu(tr("Restrictions"));
-    QMenu *magnet_menu = new QMenu(tr("Magnet"), MainWindow::getInstance());
+    QMenu *magnet_menu = new QMenu(tr("Magnet"), qtCtx()->mainWindow());
 
     QAction *down    = new QAction(tr("Download"), menu);
     down->setIcon(WU->getPixmap(WulforUtil::eiDOWNLOAD));
@@ -138,11 +138,11 @@ ShareBrowser::Menu::Action ShareBrowser::Menu::exec(const dcpp::UserPtr &user){
     qDeleteAll(down_to->actions());
     down_to->clear();
 
-    const QPixmap &dir_px = WICON(WulforUtil::eiFOLDER_BLUE);
+    const QPixmap &dir_px = qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE);
     QString aliases, paths;
 
-    aliases = QByteArray::fromBase64(WSGET(WS_DOWNLOADTO_ALIASES).toUtf8());
-    paths   = QByteArray::fromBase64(WSGET(WS_DOWNLOADTO_PATHS).toUtf8());
+    aliases = QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_DOWNLOADTO_ALIASES).toUtf8());
+    paths   = QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_DOWNLOADTO_PATHS).toUtf8());
 
     QStringList a = aliases.split("\n", Qt::SkipEmptyParts);
     QStringList p = paths.split("\n", Qt::SkipEmptyParts);
@@ -151,7 +151,7 @@ ShareBrowser::Menu::Action ShareBrowser::Menu::exec(const dcpp::UserPtr &user){
 
     if (!temp_pathes.isEmpty()){
         for (const auto &t : temp_pathes){
-            QAction *act = new QAction(WICON(WulforUtil::eiFOLDER_BLUE), QDir(t).dirName(), down_to);
+            QAction *act = new QAction(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE), QDir(t).dirName(), down_to);
             act->setToolTip(t);
             act->setData(t);
 
@@ -173,7 +173,7 @@ ShareBrowser::Menu::Action ShareBrowser::Menu::exec(const dcpp::UserPtr &user){
         down_to->addSeparator();
     }
 
-    QAction *browse = new QAction(WICON(WulforUtil::eiFOLDER_BLUE), tr("Browse"), down_to);
+    QAction *browse = new QAction(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE), tr("Browse"), down_to);
     browse->setIcon(dir_px);
     browse->setData("");
 
@@ -196,7 +196,7 @@ ShareBrowser::Menu::Action ShareBrowser::Menu::exec(const dcpp::UserPtr &user){
 }
 
 ShareBrowser::ShareBrowser(UserPtr _user, const QString &_file, const QString &_jump_to):
-        QWidget(MainWindow::getInstance()),
+        QWidget(qtCtx()->mainWindow()),
         proxy(nullptr),
         file(_file),
         jump_to(_jump_to),
@@ -211,7 +211,7 @@ ShareBrowser::ShareBrowser(UserPtr _user, const QString &_file, const QString &_
         list_root(nullptr)
 
 {
-    nick = WulforUtil::getInstance()->getNicks(user->getCID());
+    nick = qtCtx()->wulforUtil()->getNicks(user->getCID());
 
     if (nick.indexOf(_q(user->getCID().toBase32())) >= 0) { // User offline
         nick = _q(dcpp::getContext()->getClientManager()->getNicks(HintedUser(user, ""))[0]);
@@ -250,8 +250,6 @@ ShareBrowser::~ShareBrowser(){
     delete proxy;
 
     pathHistory.clear();
-
-    Menu::deleteInstance();
 
 #if (HAVE_MALLOC_TRIM)
     malloc_trim(0);
@@ -295,9 +293,9 @@ void ShareBrowser::init(){
 
     setAttribute(Qt::WA_DeleteOnClose);
 
-    toolButton_UP->setIcon(WICON(WulforUtil::eiTOP));
-    toolButton_FORWARD->setIcon(WICON(WulforUtil::eiNEXT));
-    toolButton_BACK->setIcon(WICON(WulforUtil::eiPREVIOUS));
+    toolButton_UP->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiTOP));
+    toolButton_FORWARD->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiNEXT));
+    toolButton_BACK->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiPREVIOUS));
 
     frame_FILTER->setVisible(false);
 
@@ -324,13 +322,13 @@ void ShareBrowser::init(){
     treeView_RPANE->header()->setContextMenuPolicy(Qt::CustomContextMenu);
     treeView_RPANE->installEventFilter(this);
 
-    toolButton_CLOSEFILTER->setIcon(WICON(WulforUtil::eiEDITDELETE));
-    toolButton_SEARCH->setIcon(WICON(WulforUtil::eiFIND));
-    toolButton_MATCHLIST->setIcon(WICON(WulforUtil::eiDOWNLIST));
+    toolButton_CLOSEFILTER->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE));
+    toolButton_SEARCH->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFIND));
+    toolButton_MATCHLIST->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiDOWNLIST));
 
     arena_menu = new QMenu(tr("Filebrowser"));
 
-    QAction *close_wnd = new QAction(WICON(WulforUtil::eiFILECLOSE), tr("Close"), arena_menu);
+    QAction *close_wnd = new QAction(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFILECLOSE), tr("Close"), arena_menu);
     arena_menu->addAction(close_wnd);
 
     connect(treeView_LPANE, &QWidget::customContextMenuRequested, this, &ShareBrowser::slotCustomContextMenu);
@@ -346,7 +344,7 @@ void ShareBrowser::init(){
     connect(treeView_RPANE->header(), &QWidget::customContextMenuRequested, this, &ShareBrowser::slotHeaderMenu);
     connect(treeView_RPANE, &QTreeView::doubleClicked, this, &ShareBrowser::slotRightPaneClicked);
     connect(tree_model, &QAbstractItemModel::layoutChanged, this, &ShareBrowser::slotLayoutUpdated);
-    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &ShareBrowser::slotSettingsChanged);
+    connect(qtCtx()->settings(), &WulforSettings::strValueChanged, this, &ShareBrowser::slotSettingsChanged);
     connect(toolButton_SEARCH, &QToolButton::clicked, this, &ShareBrowser::slotStartSearch);
     connect(toolButton_BACK, &QToolButton::clicked, this, &ShareBrowser::slotButtonBack);
     connect(toolButton_FORWARD, &QToolButton::clicked, this, &ShareBrowser::slotButtonForward);
@@ -384,13 +382,13 @@ void ShareBrowser::continueInit(){
 
     pathHistory.clear();
 
-    ArenaWidgetManager::getInstance()->activate(this);
+    qtCtx()->arenaWidgetManager()->activate(this);
 }
 
 
 void ShareBrowser::load(){
-    int w = WIGET(WI_SHARE_WIDTH);
-    int wr= WIGET(WI_SHARE_RPANE_WIDTH);
+    int w = qtCtx()->settings()->getInt(WI_SHARE_WIDTH);
+    int wr= qtCtx()->settings()->getInt(WI_SHARE_RPANE_WIDTH);
 
     if (w >= 0 && wr >= 0){
         QList<int> frames;
@@ -400,8 +398,8 @@ void ShareBrowser::load(){
         splitter->setSizes(frames);
     }
 
-    treeView_LPANE->header()->restoreState(QByteArray::fromBase64(WSGET(WS_SHARE_LPANE_STATE).toUtf8()));
-    treeView_RPANE->header()->restoreState(QByteArray::fromBase64(WSGET(WS_SHARE_RPANE_STATE).toUtf8()));
+    treeView_LPANE->header()->restoreState(QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_SHARE_LPANE_STATE).toUtf8()));
+    treeView_RPANE->header()->restoreState(QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_SHARE_RPANE_STATE).toUtf8()));
 
     treeView_LPANE->header()->hideSection(COLUMN_FILEBROWSER_ESIZE);
     treeView_LPANE->header()->hideSection(COLUMN_FILEBROWSER_TTH);
@@ -422,11 +420,11 @@ void ShareBrowser::load(){
 }
 
 void ShareBrowser::save(){
-    WSSET(WS_SHARE_LPANE_STATE, treeView_LPANE->header()->saveState().toBase64());
-    WSSET(WS_SHARE_RPANE_STATE, treeView_RPANE->header()->saveState().toBase64());
+    qtCtx()->settings()->setStr(WS_SHARE_LPANE_STATE, treeView_LPANE->header()->saveState().toBase64());
+    qtCtx()->settings()->setStr(WS_SHARE_RPANE_STATE, treeView_RPANE->header()->saveState().toBase64());
 
-    WISET(WI_SHARE_RPANE_WIDTH, treeView_RPANE->width());
-    WISET(WI_SHARE_WIDTH, treeView_RPANE->width() + treeView_LPANE->width());
+    qtCtx()->settings()->setInt(WI_SHARE_RPANE_WIDTH, treeView_RPANE->width());
+    qtCtx()->settings()->setInt(WI_SHARE_WIDTH, treeView_RPANE->width() + treeView_LPANE->width());
 }
 
 QString ShareBrowser::getArenaTitle(){
@@ -518,7 +516,7 @@ void ShareBrowser::download(dcpp::DirectoryListing::Directory *dir, const QStrin
             listing.download(dir, target.toStdString(), false);
         }
         catch (const Exception &e){
-            MainWindow::getInstance()->setStatusMessage(_q(e.getError()));
+            qtCtx()->mainWindow()->setStatusMessage(_q(e.getError()));
         }
     }
 }
@@ -531,7 +529,7 @@ void ShareBrowser::download(dcpp::DirectoryListing::File *file, const QString &t
             listing.download(file, (target+name).toStdString(), false, false);
         }
         catch (const Exception &e){
-            MainWindow::getInstance()->setStatusMessage(_q(e.getError()));
+            qtCtx()->mainWindow()->setStatusMessage(_q(e.getError()));
         }
     }
 }
@@ -818,10 +816,10 @@ void ShareBrowser::slotCustomContextMenu(const QPoint &){
     else
         list = selected;
 
-    if (!Menu::getInstance())
-        Menu::newInstance();
+    if (!menu_)
+        menu_ = std::make_unique<Menu>();
 
-    Menu::Action act = Menu::getInstance()->exec(view == treeView_LPANE? user : dcpp::UserPtr(nullptr));
+    Menu::Action act = menu_->exec(view == treeView_LPANE? user : dcpp::UserPtr(nullptr));
     QString target = _q(SETTING(DOWNLOAD_DIRECTORY));
 
     switch (act){
@@ -845,7 +843,7 @@ void ShareBrowser::slotCustomContextMenu(const QPoint &){
         case Menu::DownloadTo:
         {
             static QString old_target = QDir::homePath();
-            target = Menu::getInstance()->getTarget();
+            target = menu_->getTarget();
 
             if (!QDir(target).exists() || target.isEmpty())
                 target = QFileDialog::getExistingDirectory(this, tr("Select directory"), old_target);
@@ -908,7 +906,7 @@ void ShareBrowser::slotCustomContextMenu(const QPoint &){
                 tth  = item->data(COLUMN_FILEBROWSER_TTH).toString();
                 size = item->data(COLUMN_FILEBROWSER_ESIZE).toLongLong();
 
-                magnet = WulforUtil::getInstance()->makeMagnet(path, size, tth);
+                magnet = qtCtx()->wulforUtil()->makeMagnet(path, size, tth);
 
                 if (!magnet.isEmpty())
                     magnets += (magnet + "\n");
@@ -933,7 +931,7 @@ void ShareBrowser::slotCustomContextMenu(const QPoint &){
                 tth  = item->data(COLUMN_FILEBROWSER_TTH).toString();
                 size = item->data(COLUMN_FILEBROWSER_ESIZE).toLongLong();
 
-                magnet = "[magnet=\"" + WulforUtil::getInstance()->makeMagnet(path, size, tth) + "\"]"+path+"[/magnet]";
+                magnet = "[magnet=\"" + qtCtx()->wulforUtil()->makeMagnet(path, size, tth) + "\"]"+path+"[/magnet]";
 
                 if (!magnet.isEmpty())
                     magnets += (magnet + "\n");
@@ -957,7 +955,7 @@ void ShareBrowser::slotCustomContextMenu(const QPoint &){
                 tth  = item->data(COLUMN_FILEBROWSER_TTH).toString();
                 size = item->data(COLUMN_FILEBROWSER_ESIZE).toLongLong();
 
-                magnet = WulforUtil::getInstance()->makeMagnet(path, size, tth);
+                magnet = qtCtx()->wulforUtil()->makeMagnet(path, size, tth);
 
                 if (!magnet.isEmpty()){
                     Magnet m(this);
@@ -1112,11 +1110,11 @@ void ShareBrowser::slotSettingsChanged(const QString &key, const QString&){
 }
 
 void ShareBrowser::slotClose() {
-    ArenaWidgetManager::getInstance()->rem(this);
+    qtCtx()->arenaWidgetManager()->rem(this);
 }
 
 void ShareBrowser::slotDie(const QString &msg){
-    QMessageBox::warning(MainWindow::getInstance(), tr("Share browser"), msg, QMessageBox::Ok);
+    QMessageBox::warning(qtCtx()->mainWindow(), tr("Share browser"), msg, QMessageBox::Ok);
 
     slotClose();
 }

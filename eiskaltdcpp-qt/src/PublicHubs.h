@@ -24,13 +24,15 @@
 
 #include "ui_UIPublicHubs.h"
 
-class QtContext;
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 class PublicHubs :
         public  QWidget,
         public  ArenaWidget,
         public  dcpp::FavoriteManagerListener,
-        private Ui::UIPublicHubs
+        private Ui::UIPublicHubs,
+        public QtContextAware
 {
 Q_OBJECT
 Q_INTERFACES(ArenaWidget)
@@ -41,7 +43,7 @@ public:
     QString  getArenaShortTitle(){ return getArenaTitle(); }
     QWidget *getWidget(){ return this; }
     QMenu   *getMenu(){ return nullptr; }
-    const QPixmap &getPixmap(){ return WICON(WulforUtil::eiSERVER); }
+    const QPixmap &getPixmap(){ return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiSERVER); }
     void requestFilter() { slotFilter(); }
     ArenaWidget::Role role() const { return ArenaWidget::PublicHubs; }
 
@@ -77,7 +79,6 @@ public:
     PublicHubs(QWidget *parent = nullptr);
     ~PublicHubs();
 
-    static PublicHubs* getInstance();
 
 private:
 

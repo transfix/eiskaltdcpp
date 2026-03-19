@@ -14,9 +14,10 @@
 
 class ArenaWidget;
 class ArenaWidgetFactory;
-class QtContext;
+#include "QtContextAware.h"
 
-class ArenaWidgetManager: public QObject
+class ArenaWidgetManager: public QObject,
+        public QtContextAware
 {
 Q_OBJECT
 
@@ -27,7 +28,6 @@ public:
     ArenaWidgetManager();
     ~ArenaWidgetManager() override;
 
-    static ArenaWidgetManager* getInstance();
 
 public Q_SLOTS:
     void rem(ArenaWidget*);

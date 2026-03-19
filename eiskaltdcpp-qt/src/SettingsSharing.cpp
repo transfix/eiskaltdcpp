@@ -11,6 +11,8 @@
  */
 
 #include "SettingsSharing.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "HashProgress.h"
 #include "WulforUtil.h"
 #include "WulforSettings.h"
@@ -53,7 +55,7 @@ SettingsSharing::~SettingsSharing(){
 void SettingsSharing::showEvent(QShowEvent *e){
     e->accept();
 
-    if (WSGET(WS_SHAREHEADER_STATE).isEmpty() && model){
+    if (qtCtx()->settings()->getStr(WS_SHAREHEADER_STATE).isEmpty() && model){
         for (int i = 0; i < model->columnCount(); i++)
             treeView->setColumnWidth(i, treeView->width()/4);
     }
@@ -83,18 +85,18 @@ void SettingsSharing::ok(){
 
     SM->set(SettingsManager::SKIPLIST_SHARE, (list.isEmpty()? "|" : _tq(list.join("|"))));
 
-    WBSET(WB_SIMPLE_SHARE_MODE, checkBox_SIMPLE_SHARE_MODE->isChecked());
+    qtCtx()->settings()->setBool(WB_SIMPLE_SHARE_MODE, checkBox_SIMPLE_SHARE_MODE->isChecked());
 
     if (checkBox_SIMPLE_SHARE_MODE->isChecked())
         SM->save();
 
-    WSSET(WS_SHAREHEADER_STATE, treeView->header()->saveState().toBase64());
-    WSSET("settings-simple-share-headerstate", treeWidget_SIMPLE_MODE->header()->saveState().toBase64());
-    WBSET(WB_APP_REMOVE_NOT_EX_DIRS, checkBox_AUTOREMOVE->isChecked());
+    qtCtx()->settings()->setStr(WS_SHAREHEADER_STATE, treeView->header()->saveState().toBase64());
+    qtCtx()->settings()->setStr("settings-simple-share-headerstate", treeWidget_SIMPLE_MODE->header()->saveState().toBase64());
+    qtCtx()->settings()->setBool(WB_APP_REMOVE_NOT_EX_DIRS, checkBox_AUTOREMOVE->isChecked());
 }
 
 void SettingsSharing::init(){
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     toolButton_ADD->setIcon(WU->getPixmap(WulforUtil::eiBOOKMARK_ADD));
     toolButton_EDIT->setIcon(WU->getPixmap(WulforUtil::eiEDIT));
@@ -112,7 +114,7 @@ void SettingsSharing::init(){
     spinBox_EXTRA->setValue(SETTING(MIN_UPLOAD_SPEED));
     spinBox_REFRESH_TIME->setValue(SETTING(AUTO_REFRESH_TIME));
     spinBox_HASHING_START_DELAY->setValue(SETTING(HASHING_START_DELAY));
-    checkBox_AUTOREMOVE->setChecked(WBGET(WB_APP_REMOVE_NOT_EX_DIRS));
+    checkBox_AUTOREMOVE->setChecked(qtCtx()->settings()->getBool(WB_APP_REMOVE_NOT_EX_DIRS));
     checkBox_SHARE_SKIP_ZERO_BYTE->setChecked(BOOLSETTING(SHARE_SKIP_ZERO_BYTE));
     checkBox_FASTHASH->setChecked(BOOLSETTING(FAST_HASH));
     groupBox_FASTHASH->setEnabled(BOOLSETTING(FAST_HASH));
@@ -122,10 +124,10 @@ void SettingsSharing::init(){
     label_TOTALSHARED->setText(tr("Total shared: %1")
                                .arg(WulforUtil::formatBytes(dcpp::getContext()->getShareManager()->getShareSize())));
 
-    checkBox_SIMPLE_SHARE_MODE->setChecked(WBGET(WB_SIMPLE_SHARE_MODE));
-    treeWidget_SIMPLE_MODE->setVisible(WBGET(WB_SIMPLE_SHARE_MODE));
+    checkBox_SIMPLE_SHARE_MODE->setChecked(qtCtx()->settings()->getBool(WB_SIMPLE_SHARE_MODE));
+    treeWidget_SIMPLE_MODE->setVisible(qtCtx()->settings()->getBool(WB_SIMPLE_SHARE_MODE));
     treeWidget_SIMPLE_MODE->setContextMenuPolicy(Qt::CustomContextMenu);
-    treeView->setHidden(WBGET(WB_SIMPLE_SHARE_MODE));
+    treeView->setHidden(qtCtx()->settings()->getBool(WB_SIMPLE_SHARE_MODE));
 
     checkBox_MAPNORESERVE->setChecked(SETTING(HASH_BUFFER_NORESERVE));
     checkBox_MAPPOPULATE->setChecked(SETTING(HASH_BUFFER_POPULATE));
@@ -266,8 +268,8 @@ void SettingsSharing::slotSimpleShareModeChanged(){
             treeView->header()->hideSection(1);
             treeView->header()->hideSection(2);
 
-            if (!WSGET(WS_SHAREHEADER_STATE).isEmpty())
-                treeView->header()->restoreState(QByteArray::fromBase64(WSGET(WS_SHAREHEADER_STATE).toUtf8()));
+            if (!qtCtx()->settings()->getStr(WS_SHAREHEADER_STATE).isEmpty())
+                treeView->header()->restoreState(QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_SHAREHEADER_STATE).toUtf8()));
 
             connect(model, &ShareDirModel::getName, this, &SettingsSharing::slotGetName);
             connect(model, &ShareDirModel::expandMe, treeView, &QTreeView::expand);
@@ -279,7 +281,7 @@ void SettingsSharing::slotSimpleShareModeChanged(){
         }
     }
     else{
-        treeWidget_SIMPLE_MODE->header()->restoreState(QByteArray::fromBase64((WSGET("settings-simple-share-headerstate").toUtf8())));
+        treeWidget_SIMPLE_MODE->header()->restoreState(QByteArray::fromBase64((qtCtx()->settings()->getStr("settings-simple-share-headerstate").toUtf8())));
 
         updateShareView();
     }
@@ -289,7 +291,7 @@ void SettingsSharing::slotContextMenu(const QPoint &){
     QList<QTreeWidgetItem*> selected = treeWidget_SIMPLE_MODE->selectedItems();
     QMenu *menu = new QMenu(nullptr);
     QAction *add_new = nullptr, *rem = nullptr, *rename = nullptr;
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     add_new = new QAction(WU->getPixmap(WulforUtil::eiEDITADD), tr("Add"), menu);
     menu->addAction(add_new);

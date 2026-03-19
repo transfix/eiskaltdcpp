@@ -19,7 +19,7 @@
 
 #include "WulforUtil.h"
 
-class QtContext;
+#include "QtContextAware.h"
 
 class NotifyModule {
 public:
@@ -38,7 +38,8 @@ public:
 };
 #endif
 class Notification :
-        public QObject
+        public QObject,
+        public QtContextAware
 {
 Q_OBJECT
 friend class QtContext;
@@ -47,7 +48,6 @@ public:
     explicit Notification(QObject *parent = nullptr);
     ~Notification() override;
 
-    static Notification* getInstance();
 
 public:
 

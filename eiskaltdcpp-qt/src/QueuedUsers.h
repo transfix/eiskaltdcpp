@@ -84,13 +84,15 @@ private:
     QHash<QString, QueuedUserItem*> cids;
 };
 
-class QtContext;
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 class QueuedUsers:
         public QWidget,
         public ArenaWidget,
         private Ui::UIQueuedUsers,
-        private dcpp::UploadManagerListener
+        private dcpp::UploadManagerListener,
+        public QtContextAware
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
@@ -102,7 +104,7 @@ public:
     QString getArenaTitle() { return tr("Queued Users"); }
     QString getArenaShortTitle() { return getArenaTitle(); }
     QMenu *getMenu() { return nullptr; }
-    const QPixmap &getPixmap(){ return WulforUtil::getInstance()->getPixmap(WulforUtil::eiUSERS); }
+    const QPixmap &getPixmap(){ return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiUSERS); }
     ArenaWidget::Role role() const { return ArenaWidget::QueuedUsers; }
 
 Q_SIGNALS:
@@ -121,7 +123,6 @@ public:
     QueuedUsers();
     ~QueuedUsers() override;
 
-    static QueuedUsers* getInstance();
 
 private:
 

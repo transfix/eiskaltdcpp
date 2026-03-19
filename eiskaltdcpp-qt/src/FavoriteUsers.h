@@ -26,13 +26,15 @@
 
 class FavoriteUsersModel;
 
-class QtContext;
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 class FavoriteUsers :
         public QWidget,
         public dcpp::FavoriteManagerListener,
         public ArenaWidget,
-        private Ui::UIFavoriteUsers
+        private Ui::UIFavoriteUsers,
+        public QtContextAware
 {
 Q_OBJECT
 Q_INTERFACES(ArenaWidget)
@@ -46,7 +48,7 @@ public:
     virtual QString getArenaTitle() { return tr("Favourite users"); }
     virtual QString getArenaShortTitle() { return getArenaTitle(); }
     virtual QMenu *getMenu() { return nullptr; }
-    const QPixmap &getPixmap(){ return WICON(WulforUtil::eiFAVUSERS); }
+    const QPixmap &getPixmap(){ return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFAVUSERS); }
     ArenaWidget::Role role() const { return ArenaWidget::FavoriteUsers; }
 
 Q_SIGNALS:
@@ -70,7 +72,7 @@ public Q_SLOTS:
 private Q_SLOTS:
     void slotContextMenu();
     void slotHeaderMenu();
-    void slotAutoGrant(bool b){ WBSET(WB_FAVUSERS_AUTOGRANT, b); }
+    void slotAutoGrant(bool b){ qtCtx()->settings()->setBool(WB_FAVUSERS_AUTOGRANT, b); }
     void slotSettingsChanged(const QString &key, const QString &);
 
     void addUser(const VarMap &);
@@ -81,7 +83,6 @@ public:
     FavoriteUsers(QWidget *parent = nullptr);
     ~FavoriteUsers() override;
 
-    static FavoriteUsers* getInstance();
 
 private:
 

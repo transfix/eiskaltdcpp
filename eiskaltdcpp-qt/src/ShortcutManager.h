@@ -16,9 +16,10 @@
 #include <QAction>
 #include <QShortcut>
 
-class QtContext;
+#include "QtContextAware.h"
 
-class ShortcutManager: public QObject
+class ShortcutManager: public QObject,
+        public QtContextAware
 {
     Q_OBJECT
 
@@ -28,7 +29,6 @@ public:
     ShortcutManager();
     ~ShortcutManager() override;
 
-    static ShortcutManager* getInstance();
 
     bool registerShortcut(QAction *act, const QString &key);
     bool updateShortcut(QAction *act, const QString &key);

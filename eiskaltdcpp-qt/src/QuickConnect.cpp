@@ -12,6 +12,8 @@
 
 #include <QList>
 #include "dcpp/DCPlusPlus.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 #include "QuickConnect.h"
 #include "HubFrame.h"
@@ -21,7 +23,7 @@
 QuickConnect::QuickConnect(QWidget *parent) : QDialog(parent) {
     setupUi(this);
 
-    comboBox_HUB->addItems(WulforSettings::getInstance()->getStr(WS_QCONNECT_HISTORY).split(" ", Qt::SkipEmptyParts));
+    comboBox_HUB->addItems(qtCtx()->settings()->getStr(WS_QCONNECT_HISTORY).split(" ", Qt::SkipEmptyParts));
 
     connect(buttonBox, &QDialogButtonBox::accepted, this, &QuickConnect::slotAccept);
     connect(comboBox_HUB, qOverload<int>(&QComboBox::activated), this, &QuickConnect::slotAccept);
@@ -52,12 +54,12 @@ void QuickConnect::slotAccept() {
             FavoriteHubEntry* entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(_tq(hub));
 
             if (entry)
-                encoding = WulforUtil::getInstance()->dcEnc2QtEnc(_q(entry->getEncoding()));
+                encoding = qtCtx()->wulforUtil()->dcEnc2QtEnc(_q(entry->getEncoding()));
         }
 
-        MainWindow::getInstance()->newHubFrame(hub, (encoding.isEmpty())? (WSGET(WS_DEFAULT_LOCALE)) : (encoding));
+        qtCtx()->mainWindow()->newHubFrame(hub, (encoding.isEmpty())? (qtCtx()->settings()->getStr(WS_DEFAULT_LOCALE)) : (encoding));
 
-        QStringList list = WulforSettings::getInstance()->getStr(WS_QCONNECT_HISTORY).split(" ", Qt::SkipEmptyParts);
+        QStringList list = qtCtx()->settings()->getStr(WS_QCONNECT_HISTORY).split(" ", Qt::SkipEmptyParts);
 
         if (!list.contains(hub))
             list.push_back(hub);
@@ -71,7 +73,7 @@ void QuickConnect::slotAccept() {
         for (const auto &i : list)
             hist += (i + " ");
 
-        WulforSettings::getInstance()->setStr(WS_QCONNECT_HISTORY, hist);
+        qtCtx()->settings()->setStr(WS_QCONNECT_HISTORY, hist);
     }
 
     accept();

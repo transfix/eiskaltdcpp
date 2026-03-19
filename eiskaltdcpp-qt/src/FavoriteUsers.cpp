@@ -14,6 +14,7 @@
 #include "WulforUtil.h"
 #include "FavoriteUsersModel.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 
 #include <QMenu>
 #include <QInputDialog>
@@ -31,11 +32,6 @@
 
 using namespace dcpp;
 
-FavoriteUsers* FavoriteUsers::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->favoriteUsers() : nullptr;
-}
-
 FavoriteUsers::FavoriteUsers(QWidget *parent) :
     QWidget(parent)
 {
@@ -49,7 +45,7 @@ FavoriteUsers::FavoriteUsers(QWidget *parent) :
     treeView->installEventFilter(this);
     treeView->setModel(model);
     treeView->header()->setContextMenuPolicy(Qt::CustomContextMenu);
-    treeView->header()->restoreState(WVGET(WS_FAVUSERS_STATE, QByteArray()).toByteArray());
+    treeView->header()->restoreState(qtCtx()->settings()->getVar(WS_FAVUSERS_STATE, QByteArray()).toByteArray());
     treeView->setSortingEnabled(true);
 
     connect(treeView, &QWidget::customContextMenuRequested, this, &FavoriteUsers::slotContextMenu);
@@ -60,7 +56,7 @@ FavoriteUsers::FavoriteUsers(QWidget *parent) :
     connect(this, &FavoriteUsers::coreUserRemoved, this, &FavoriteUsers::remUser, Qt::QueuedConnection);
     connect(this, &FavoriteUsers::coreStatusChanged, this, &FavoriteUsers::updateUser, Qt::QueuedConnection);
 
-    WulforSettings *WS = WulforSettings::getInstance();
+    WulforSettings *WS = qtCtx()->settings();
     connect(WS, &WulforSettings::strValueChanged, this, &FavoriteUsers::slotSettingsChanged);
 
     FavoriteManager::FavoriteMap ul = dcpp::getContext()->getFavoriteManager()->getFavoriteUsers();
@@ -69,7 +65,7 @@ FavoriteUsers::FavoriteUsers(QWidget *parent) :
     for (auto &i : ul) {
         dcpp::FavoriteUser &u = i.second;
 
-        if (WBGET(WB_FAVUSERS_AUTOGRANT)){
+        if (qtCtx()->settings()->getBool(WB_FAVUSERS_AUTOGRANT)){
             u.setFlag(FavoriteUser::FLAG_GRANTSLOT);
             dcpp::getContext()->getFavoriteManager()->setAutoGrant(u.getUser(), true);
         }
@@ -78,7 +74,7 @@ FavoriteUsers::FavoriteUsers(QWidget *parent) :
         addUser(params);
     }
 
-    checkBox_AUTOGRANT->setChecked(WBGET(WB_FAVUSERS_AUTOGRANT));
+    checkBox_AUTOGRANT->setChecked(qtCtx()->settings()->getBool(WB_FAVUSERS_AUTOGRANT));
 
     dcpp::getContext()->getFavoriteManager()->addListener(this);
 
@@ -86,7 +82,7 @@ FavoriteUsers::FavoriteUsers(QWidget *parent) :
 }
 
 FavoriteUsers::~FavoriteUsers(){
-    WVSET(WS_FAVUSERS_STATE, treeView->header()->saveState());
+    qtCtx()->settings()->setVar(WS_FAVUSERS_STATE, treeView->header()->saveState());
     
     dcpp::getContext()->getFavoriteManager()->removeListener(this);
     
@@ -125,7 +121,7 @@ void FavoriteUsers::getParams(VarMap &params, const FavoriteUser &user){
 
     params["CID"]   = _q(u->getCID().toBase32());
     params["NICK"]  = _q(user.getNick());
-    params["HUB"]   = u->isOnline()? (WulforUtil::getInstance()->getHubNames(u)) : _q(user.getUrl());
+    params["HUB"]   = u->isOnline()? (qtCtx()->wulforUtil()->getHubNames(u)) : _q(user.getUrl());
     params["SEEN"]  = u->isOnline()? tr("Online") : _q(Util::formatTime("%Y-%m-%d %H:%M", user.getLastSeen()));
     params["DESC"]  = _q(user.getDescription());
     params["SLOT"]  = user.isSet(FavoriteUser::FLAG_GRANTSLOT);
@@ -177,7 +173,7 @@ void FavoriteUsers::updateUser(const QString &_cid, const QString &stat){
 
     QString userUrl = user ? _q(dcpp::getContext()->getFavoriteManager()->getUserURL(user)) : QString();
     model->updateUserStatus(_cid, stat,
-        (user && user->isOnline()) ? (WulforUtil::getInstance()->getHubNames(user)) : userUrl);
+        (user && user->isOnline()) ? (qtCtx()->wulforUtil()->getHubNames(user)) : userUrl);
 }
 
 void FavoriteUsers::remUser(const QString &cid){
@@ -277,16 +273,16 @@ void FavoriteUsers::slotContextMenu(){
     menu->deleteLater();
 
     QAction *remove = new QAction(tr("Remove"), menu);
-    remove->setIcon(WICON(WulforUtil::eiEDITDELETE));
+    remove->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE));
 
     QAction *desc   = new QAction(tr("Description"), menu);
-    desc->setIcon(WICON(WulforUtil::eiEDIT));
+    desc->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDIT));
 
     QAction *grant  = new QAction(tr("Grant/Remove slot"), menu);
-    grant->setIcon(WICON(WulforUtil::eiBALL_GREEN));
+    grant->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiBALL_GREEN));
 
     QAction *browse  = new QAction(tr("Browse Files"), menu);
-    browse->setIcon(WICON(WulforUtil::eiFOLDER_BLUE));
+    browse->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE));
 
     menu->addActions(QList<QAction*>() << browse << desc << grant << remove);
 
@@ -323,7 +319,7 @@ void FavoriteUsers::slotSettingsChanged(const QString &key, const QString &){
 }
 
 void FavoriteUsers::on(UserAdded, const FavoriteUser& aUser) noexcept {
-    if (WBGET(WB_FAVUSERS_AUTOGRANT))
+    if (qtCtx()->settings()->getBool(WB_FAVUSERS_AUTOGRANT))
         dcpp::getContext()->getFavoriteManager()->setAutoGrant(aUser.getUser(), true);
 
     VarMap params;

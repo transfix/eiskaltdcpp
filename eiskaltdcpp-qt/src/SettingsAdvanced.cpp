@@ -11,6 +11,8 @@
  */
 
 #include "SettingsAdvanced.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "dcpp/DCPlusPlus.h"
 #include "MainWindow.h"
 #include "WulforSettings.h"
@@ -38,7 +40,7 @@ void SettingsAdvanced::ok() {
 
 void SettingsAdvanced::init() {
     lineEdit_MIME->setText(_q(SETTING(MIME_HANDLER)));
-    toolButton_BROWSE->setIcon(WICON(WulforUtil::eiFOLDER_BLUE));
+    toolButton_BROWSE->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE));
 
     connect(toolButton_BROWSE, &QToolButton::clicked, this, &SettingsAdvanced::slotBrowse);
 }

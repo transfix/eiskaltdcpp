@@ -27,11 +27,7 @@
 #include "WulforUtil.h"
 #include "Secretary.h"
 #include "QtContext.h"
-
-Secretary* Secretary::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->secretary() : nullptr;
-}
+#include "QtContextAware.h"
 
 Secretary::Secretary(QWidget *parent)
     : QWidget(parent)
@@ -40,7 +36,7 @@ Secretary::Secretary(QWidget *parent)
     setupUi(this);
     Q_D(Secretary);
 
-    toolButton_HIDE->setIcon(WICON(WulforUtil::eiEDITDELETE));
+    toolButton_HIDE->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE));
     searchFrame->hide();
 
     installEventFilter(this);
@@ -54,8 +50,8 @@ Secretary::Secretary(QWidget *parent)
     textEdit_MESSAGES->viewport()->installEventFilter(this); // QTextEdit don't receive all mouse events
     textEdit_MESSAGES->setMouseTracking(true);
 
-    if (WBGET(WB_APP_ENABLE_EMOTICON) && EmoticonFactory::getInstance())
-        EmoticonFactory::getInstance()->addEmoticons(textEdit_MESSAGES->document());
+    if (qtCtx()->settings()->getBool(WB_APP_ENABLE_EMOTICON) && qtCtx()->emoticonFactory())
+        qtCtx()->emoticonFactory()->addEmoticons(textEdit_MESSAGES->document());
 
 
     connect(this, &Secretary::coreStatusMsg,
@@ -75,7 +71,7 @@ Secretary::Secretary(QWidget *parent)
     connect(lineEdit_FIND, &QLineEdit::textEdited, this, &Secretary::slotFindTextEdited);
     connect(toolButton_ALL, &QToolButton::clicked, this, &Secretary::slotFindAll);
 
-    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &Secretary::slotSettingsChanged);
+    connect(qtCtx()->settings(), &WulforSettings::strValueChanged, this, &Secretary::slotSettingsChanged);
 
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
     updateStyles();
@@ -158,7 +154,7 @@ bool Secretary::eventFilter(QObject *obj, QEvent *e){
         if (isChat && (m_e->button() == Qt::LeftButton)){
             QString pressedParagraph = textEdit_MESSAGES->anchorAt(textEdit_MESSAGES->mapFromGlobal(QCursor::pos()));
 
-            if (!WulforUtil::getInstance()->openUrl(pressedParagraph)){
+            if (!qtCtx()->wulforUtil()->openUrl(pressedParagraph)){
                 /**
                   Do nothing
                 */
@@ -234,7 +230,7 @@ bool Secretary::eventFilter(QObject *obj, QEvent *e){
 }
 
 void Secretary::updateStyles() {
-    QString custom_font_desc = WSGET(WS_CHAT_FONT);
+    QString custom_font_desc = qtCtx()->settings()->getStr(WS_CHAT_FONT);
     QFont custom_font;
 
     if (!custom_font_desc.isEmpty() && custom_font.fromString(custom_font_desc)){
@@ -258,8 +254,8 @@ void Secretary::clearNotes(){
 
     updateStyles();
 
-    if (WBGET(WB_APP_ENABLE_EMOTICON) && EmoticonFactory::getInstance())
-        EmoticonFactory::getInstance()->addEmoticons(textEdit_MESSAGES->document());
+    if (qtCtx()->settings()->getBool(WB_APP_ENABLE_EMOTICON) && qtCtx()->emoticonFactory())
+        qtCtx()->emoticonFactory()->addEmoticons(textEdit_MESSAGES->document());
 }
 
 void Secretary::searchMagnetLinks(bool value){
@@ -314,7 +310,7 @@ void Secretary::slotChatMenu(const QPoint &){
     title->setFont(f);
     title->setEnabled(false);
 
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
     QAction *copy_text    = new QAction(WU->getPixmap(WulforUtil::eiEDITCOPY), tr("Copy"), menu);
     QAction *search_text  = new QAction(WU->getPixmap(WulforUtil::eiFIND), tr("Search text"), menu);
     QAction *copy_nick    = new QAction(WU->getPixmap(WulforUtil::eiEDITCOPY), tr("Copy nick"), menu);
@@ -494,8 +490,8 @@ void Secretary::slotFindAll(){
         QTextEdit::ExtraSelection selection;
 
         QColor color;
-        color.setNamedColor(WSGET(WS_CHAT_FIND_COLOR));
-        color.setAlpha(WIGET(WI_CHAT_FIND_COLOR_ALPHA));
+        color.setNamedColor(qtCtx()->settings()->getStr(WS_CHAT_FIND_COLOR));
+        color.setAlpha(qtCtx()->settings()->getInt(WI_CHAT_FIND_COLOR_ALPHA));
 
         selection.format.setBackground(color);
 

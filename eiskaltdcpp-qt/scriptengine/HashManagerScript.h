@@ -17,11 +17,12 @@
 #include "dcpp/HashManagerListener.h"
 #include "dcpp/HashValue.h"
 
-class QtContext;
+#include "QtContextAware.h"
 
 class HashManagerScript :
         public QObject,
-        public dcpp::HashManagerListener
+        public dcpp::HashManagerListener,
+        public QtContextAware
 {
 Q_OBJECT
 friend class QtContext;
@@ -44,7 +45,6 @@ protected:
     virtual void on(TTHDone, const dcpp::string& , const dcpp::TTHValue&) throw();
 
 public:
-    static HashManagerScript* getInstance();
     HashManagerScript(QObject *parent = nullptr);
     ~HashManagerScript();
 

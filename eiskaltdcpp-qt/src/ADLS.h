@@ -39,12 +39,14 @@ class ADLSEditor:
         }
 };
 
-class QtContext;
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 class ADLS :
         public QWidget,
         private Ui::UIADLS,
-        public ArenaWidget
+        public ArenaWidget,
+        public QtContextAware
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
@@ -57,7 +59,7 @@ public:
     QString getArenaTitle();
     QString getArenaShortTitle();
     QMenu *getMenu();
-    const QPixmap &getPixmap(){ return WICON(WulforUtil::eiADLS); }
+    const QPixmap &getPixmap(){ return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiADLS); }
     ArenaWidget::Role role() const { return ArenaWidget::ADLS; }
 
 protected:
@@ -81,7 +83,6 @@ public:
     ADLS(QWidget* = nullptr);
     ~ADLS() override;
 
-    static ADLS* getInstance();
 
 private:
 

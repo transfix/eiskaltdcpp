@@ -11,6 +11,8 @@
  */
 
 #include "FavoriteUsersModel.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 #include "WulforUtil.h"
 
@@ -67,7 +69,7 @@ QVariant FavoriteUsersModel::data(const QModelIndex &index, int role) const
 
                     if (_q(u.getUser()->getCID().toBase32()) == item->cid){
                         if (u.isSet(FavoriteUser::FLAG_GRANTSLOT))
-                            return WICON(WulforUtil::eiBALL_GREEN).scaled(16, 16);
+                            return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiBALL_GREEN).scaled(16, 16);
                     }
                 }
             }

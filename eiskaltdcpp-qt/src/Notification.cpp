@@ -12,6 +12,7 @@
 
 #include "Notification.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 
 #include <QMenu>
 #include <QList>
@@ -36,23 +37,18 @@ static int getBitPos(unsigned eventId){
     return -1;
 }
 
-Notification* Notification::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->notification() : nullptr;
-}
-
 Notification::Notification(QObject *parent) :
     QObject(parent), tray(nullptr), notify(nullptr), suppressSnd(false), suppressTxt(false)
 {
-    switchModule(static_cast<unsigned>(WIGET(WI_NOTIFY_MODULE)));
+    switchModule(static_cast<unsigned>(qtCtx()->settings()->getInt(WI_NOTIFY_MODULE)));
 
     checkSystemTrayCounter = 0;
 
     reloadSounds();
 
-    enableTray(WBGET(WB_TRAY_ENABLED));
+    enableTray(qtCtx()->settings()->getBool(WB_TRAY_ENABLED));
 
-    connect(MainWindow::getInstance(), &MainWindow::notifyMessage, this, &Notification::showMessage, Qt::QueuedConnection);
+    connect(qtCtx()->mainWindow(), &MainWindow::notifyMessage, this, &Notification::showMessage, Qt::QueuedConnection);
 }
 
 Notification::~Notification(){
@@ -70,12 +66,12 @@ void Notification::enableTray(bool enable){
         tray = nullptr;
 
 #if defined(Q_OS_MAC)
-        MainWindow::getInstance()->setUnload(false);
+        qtCtx()->mainWindow()->setUnload(false);
 #else // defined(Q_OS_MAC)
-        MainWindow::getInstance()->setUnload(true);
+        qtCtx()->mainWindow()->setUnload(true);
 #endif // defined(Q_OS_MAC)
 
-        //WBSET(WB_TRAY_ENABLED, false);
+        //qtCtx()->settings()->setBool(WB_TRAY_ENABLED, false);
     }
     else {
         delete tray;
@@ -96,7 +92,7 @@ void Notification::enableTray(bool enable){
             return;
         }
         else if (!QSystemTrayIcon::isSystemTrayAvailable()){
-            MainWindow::getInstance()->show();
+            qtCtx()->mainWindow()->show();
 
             return;
         }
@@ -104,13 +100,13 @@ void Notification::enableTray(bool enable){
         checkSystemTrayCounter = 0;
 
         tray = new QSystemTrayIcon(this);
-        tray->setIcon(WICON(WulforUtil::eiICON_APPL)
+        tray->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiICON_APPL)
                     .scaled(22, 22, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
 
-        QMenu *menu = new QMenu(MainWindow::getInstance());
+        QMenu *menu = new QMenu(qtCtx()->mainWindow());
         menu->setTitle("EiskaltDC++");
 
-        QMenu *menuAdditional = new QMenu(tr("Additional"), MainWindow::getInstance());
+        QMenu *menuAdditional = new QMenu(tr("Additional"), qtCtx()->mainWindow());
         QAction *actSuppressSnd = new QAction(tr("Suppress sound notifications"), menuAdditional);
         QAction *actSuppressTxt = new QAction(tr("Suppress text notifications"), menuAdditional);
 
@@ -128,9 +124,9 @@ void Notification::enableTray(bool enable){
         QAction *sep = new QAction(menu);
         sep->setSeparator(true);
 
-        setup_speed_lim->setIcon(WICON(WulforUtil::eiSPEED_LIMIT_ON));
-        show_hide->setIcon(WICON(WulforUtil::eiHIDEWINDOW));
-        close_app->setIcon(WICON(WulforUtil::eiEXIT));
+        setup_speed_lim->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiSPEED_LIMIT_ON));
+        show_hide->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiHIDEWINDOW));
+        close_app->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEXIT));
 
         connect(show_hide, &QAction::triggered, this, &Notification::slotShowHide);
         connect(close_app, &QAction::triggered, this, &Notification::slotExit);
@@ -149,9 +145,9 @@ void Notification::enableTray(bool enable){
 
         tray->show();
 
-        MainWindow::getInstance()->setUnload(false);
+        qtCtx()->mainWindow()->setUnload(false);
 
-        //WBSET(WB_TRAY_ENABLED, true);
+        //qtCtx()->settings()->setBool(WB_TRAY_ENABLED, true);
     }
 }
 
@@ -173,27 +169,27 @@ void Notification::switchModule(int m){
 
 void Notification::showMessage(int t, const QString &title, const QString &msg){
     // On Mac OS X, the Growl notification system must be installed for this function to display messages.
-    if (WBGET(WB_NOTIFY_ENABLED) && !suppressTxt){
+    if (qtCtx()->settings()->getBool(WB_NOTIFY_ENABLED) && !suppressTxt){
         do {
             if (title.isEmpty() || msg.isEmpty())
                 break;
 
-            if ((MainWindow::getInstance()->isActiveWindow() && !WBGET(WB_NOTIFY_SHOW_ON_ACTIVE)) ||
-            (!MainWindow::getInstance()->isActiveWindow() && MainWindow::getInstance()->isVisible() && !WBGET(WB_NOTIFY_SHOW_ON_VISIBLE)))
+            if ((qtCtx()->mainWindow()->isActiveWindow() && !qtCtx()->settings()->getBool(WB_NOTIFY_SHOW_ON_ACTIVE)) ||
+            (!qtCtx()->mainWindow()->isActiveWindow() && qtCtx()->mainWindow()->isVisible() && !qtCtx()->settings()->getBool(WB_NOTIFY_SHOW_ON_VISIBLE)))
                 break;
 
-            if (!(static_cast<unsigned>(WIGET(WI_NOTIFY_EVENTMAP)) & static_cast<unsigned>(t)))
+            if (!(static_cast<unsigned>(qtCtx()->settings()->getInt(WI_NOTIFY_EVENTMAP)) & static_cast<unsigned>(t)))
                 break;
 
 #if defined(Q_OS_MAC)
-            qApp->setWindowIcon(WICON(WulforUtil::eiMESSAGE_TRAY_ICON));
-            qApp->alert(MainWindow::getInstance(), 0);
+            qApp->setWindowIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiMESSAGE_TRAY_ICON));
+            qApp->alert(qtCtx()->mainWindow(), 0);
 #else // defined(Q_OS_MAC)
-            if (tray && t == PM && (!MainWindow::getInstance()->isVisible() || WBGET(WB_NOTIFY_CH_ICON_ALWAYS))){
-                tray->setIcon(WICON(WulforUtil::eiMESSAGE_TRAY_ICON));
+            if (tray && t == PM && (!qtCtx()->mainWindow()->isVisible() || qtCtx()->settings()->getBool(WB_NOTIFY_CH_ICON_ALWAYS))){
+                tray->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiMESSAGE_TRAY_ICON));
 
-                if (MainWindow::getInstance()->isVisible())
-                    QApplication::alert(MainWindow::getInstance(), 0);
+                if (qtCtx()->mainWindow()->isVisible())
+                    QApplication::alert(qtCtx()->mainWindow(), 0);
             }
 #endif // defined(Q_OS_MAC)
 
@@ -202,9 +198,9 @@ void Notification::showMessage(int t, const QString &title, const QString &msg){
         } while (false);
     }
 
-    if (WBGET(WB_NOTIFY_SND_ENABLED) && !suppressSnd){
+    if (qtCtx()->settings()->getBool(WB_NOTIFY_SND_ENABLED) && !suppressSnd){
         do {
-            if (!(static_cast<unsigned>(WIGET(WI_NOTIFY_SNDMAP)) & static_cast<unsigned>(t)))
+            if (!(static_cast<unsigned>(qtCtx()->settings()->getInt(WI_NOTIFY_SNDMAP)) & static_cast<unsigned>(t)))
                 break;
 
             int sound_pos = getBitPos(static_cast<unsigned>(t));
@@ -215,7 +211,7 @@ void Notification::showMessage(int t, const QString &title, const QString &msg){
                 if (sound.isEmpty() || !QFile::exists(sound))
                     break;
 
-                if (!WBGET(WB_NOTIFY_SND_EXTERNAL)) {
+                if (!qtCtx()->settings()->getBool(WB_NOTIFY_SND_EXTERNAL)) {
 #ifndef NO_QT_MULTIMEDIA
                     auto *effect = new QSoundEffect(this);
                     effect->setSource(QUrl::fromLocalFile(sound));
@@ -225,7 +221,7 @@ void Notification::showMessage(int t, const QString &title, const QString &msg){
                     effect->play();
 #endif
                 } else {
-                    QString cmd = WSGET(WS_NOTIFY_SND_CMD);
+                    QString cmd = qtCtx()->settings()->getStr(WS_NOTIFY_SND_CMD);
 
                     if (cmd.isEmpty())
                         break;
@@ -241,7 +237,7 @@ void Notification::showMessage(int t, const QString &title, const QString &msg){
 }
 
 void Notification::setToolTip(const QString &DSPEED, const QString &USPEED, const QString &DOWN, const QString &UP){
-    if (!WBGET(WB_TRAY_ENABLED) || !tray)
+    if (!qtCtx()->settings()->getBool(WB_TRAY_ENABLED) || !tray)
         return;
 
     const QString &&out = tr("Speed\n"
@@ -256,22 +252,22 @@ void Notification::setToolTip(const QString &DSPEED, const QString &USPEED, cons
 }
 
 void Notification::reloadSounds(){
-    QString encoded = WSGET(WS_NOTIFY_SOUNDS);
+    QString encoded = qtCtx()->settings()->getStr(WS_NOTIFY_SOUNDS);
     QString decoded = QByteArray::fromBase64(encoded.toUtf8());
 
     sounds = decoded.split("\n");
 }
 
 void Notification::slotExit(){
-    if (WBGET(WB_EXIT_CONFIRM))
-        MainWindow::getInstance()->show();
+    if (qtCtx()->settings()->getBool(WB_EXIT_CONFIRM))
+        qtCtx()->mainWindow()->show();
 
-    MainWindow::getInstance()->setUnload(true);
-    MainWindow::getInstance()->close();
+    qtCtx()->mainWindow()->setUnload(true);
+    qtCtx()->mainWindow()->close();
 }
 
 void Notification::slotShowHide(){
-    MainWindow *MW = MainWindow::getInstance();
+    MainWindow *MW = qtCtx()->mainWindow();
 
     if (MW->isVisible()){
 #if defined(Q_OS_WIN)
@@ -316,8 +312,8 @@ void Notification::slotTrayMenuTriggered(QSystemTrayIcon::ActivationReason r){
 }
 
 void Notification::slotShowSpeedLimits(){
-    MainWindow::getInstance()->show();
-    MainWindow::getInstance()->raise();
+    qtCtx()->mainWindow()->show();
+    qtCtx()->mainWindow()->raise();
 
     Settings settings;
     settings.navigate(Settings::Page::Connection, 1);
@@ -362,7 +358,7 @@ void Notification::slotSuppressSnd(){
 
 void Notification::resetTrayIcon(){
     if (tray)
-        tray->setIcon(WICON(WulforUtil::eiICON_APPL)
+        tray->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiICON_APPL)
                     .scaled(22, 22, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
 }
 
@@ -380,7 +376,7 @@ void DBusNotifyModule::showMessage(const QString &title, const QString &msg, QOb
     QVariantList args;
     args << QString("EiskaltDC++");
     args << QVariant(QVariant::UInt);
-    args << QVariant(WulforUtil::getInstance()->getAppIconsPath() + "/" + "icon_appl_big.png");
+    args << QVariant(qtCtx()->wulforUtil()->getAppIconsPath() + "/" + "icon_appl_big.png");
     args << QString(title);
     args << QString(msg);
     args << QStringList();

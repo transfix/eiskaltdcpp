@@ -11,6 +11,8 @@
  */
 
 #include "LineEdit.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 
 #include <QMouseEvent>
@@ -25,7 +27,7 @@ LineEdit::LineEdit(QWidget *parent) :
 {
     parentHeight = QLineEdit::sizeHint().height();//save parent height before setting up new stylesheet
                                                   //because we losing top and bottom margins
-    pxm = WulforUtil::getInstance()->getPixmap(WulforUtil::eiEDITCLEAR).scaled(16, 16, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);;
+    pxm = qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITCLEAR).scaled(16, 16, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);;
 
     label = new QLabel(this);
     label->setPixmap(pxm);

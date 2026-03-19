@@ -15,11 +15,6 @@
 
 #include <QTimer>
 
-GlobalTimer* GlobalTimer::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->globalTimer() : nullptr;
-}
-
 GlobalTimer::GlobalTimer() : QObject(nullptr), timer(new QTimer()), tickCount(0) {
     timer->setInterval(1000);
     timer->setSingleShot(false);

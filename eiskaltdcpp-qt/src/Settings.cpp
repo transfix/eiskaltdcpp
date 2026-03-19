@@ -11,6 +11,8 @@
  */
 
 #include "Settings.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "dcpp/DCPlusPlus.h"
 #include "SettingsPersonal.h"
 #include "SettingsConnection.h"
@@ -42,13 +44,13 @@ Settings::Settings(): is_dirty(false)
 
 Settings::~Settings(){
     if (is_dirty){
-        WulforSettings::getInstance()->save();
+        qtCtx()->settings()->save();
         dcpp::getContext()->getSettingsManager()->save();
     }
 }
 
 void Settings::init(){
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     QListWidgetItem *item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiUSERS), tr("Personal"), listWidget);
     SettingsPersonal *personal = new SettingsPersonal(this);
@@ -121,8 +123,8 @@ void Settings::init(){
 
     stackedWidget->setCurrentIndex(0);
 
-    if (WVGET("settings/dialog-size").isValid())
-        resize(WVGET("settings/dialog-size").toSize());
+    if (qtCtx()->settings()->getVar("settings/dialog-size").isValid())
+        resize(qtCtx()->settings()->getVar("settings/dialog-size").toSize());
 
     // Convenient scrolling of widgets with the mouse, as well as from the touchpad and from the touchscreen:
     for (auto &asa : stackedWidget->findChildren<QAbstractScrollArea*>()) {
@@ -191,7 +193,7 @@ void Settings::slotItemActivated(QListWidgetItem *item){
 void Settings::dirty(){
     is_dirty = true;
 
-    WVSET("settings/dialog-size", size());
+    qtCtx()->settings()->setVar("settings/dialog-size", size());
 }
 
 void Settings::navigate(enum Settings::Page pg, int tab){

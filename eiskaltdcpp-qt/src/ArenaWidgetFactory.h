@@ -10,6 +10,8 @@
 #pragma once
 
 #include "ArenaWidgetManager.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 class ArenaWidgetFactory {
 public:
@@ -21,7 +23,7 @@ public:
     T *create(const Params& ... args) {
         T *t = new T(args ...);
 
-        ArenaWidgetManager::getInstance()->add(t);
+        qtCtx()->arenaWidgetManager()->add(t);
 
         return t;
     }

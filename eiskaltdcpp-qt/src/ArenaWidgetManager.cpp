@@ -18,11 +18,6 @@
 
 #include <QApplication>
 
-ArenaWidgetManager* ArenaWidgetManager::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->arenaWidgetManager() : nullptr;
-}
-
 ArenaWidgetManager::ArenaWidgetManager() : QObject(nullptr) {
     DEBUG_BLOCK
 }

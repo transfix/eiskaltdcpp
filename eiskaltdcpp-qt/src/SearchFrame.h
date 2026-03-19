@@ -60,9 +60,12 @@ class SearchFrame : public QWidget,
 
     class Menu {
     public:
-        static Menu* getInstance() { return instance_; }
-        static void newInstance() { if (!instance_) instance_ = new Menu(); }
-        static void deleteInstance() { delete instance_; instance_ = nullptr; }
+        Menu();
+        ~Menu();
+
+        Menu(const Menu&) = delete;
+        Menu& operator=(const Menu&) = delete;
+
         enum Action {
             Download=0,
             DownloadTo,
@@ -92,11 +95,6 @@ class SearchFrame : public QWidget,
         void addTempPath(const QString &path);
 
     private:
-        Menu();
-        ~Menu();
-
-        static Menu* instance_;
-
         QMap<QAction*, Action> actions;
         QList<QAction*> action_list;
 
@@ -198,6 +196,8 @@ private:
 
     Q_DECLARE_PRIVATE (SearchFrame)
     SearchFramePrivate* d_ptr;
+
+    std::unique_ptr<Menu> menu_;
 };
 
 Q_DECLARE_METATYPE(SearchFrame*)

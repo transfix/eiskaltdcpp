@@ -11,6 +11,8 @@
  */
 
 #include "ScriptConsole.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "ScriptEngine.h"
 
 // ============ ConsolePrinter implementation ============
@@ -35,7 +37,7 @@ ScriptConsole::ScriptConsole(QWidget *parent) :
 
     setWindowTitle(tr("Script Console"));
 
-    ScriptEngine::getInstance()->prepareThis(engine);
+    qtCtx()->scriptEngine()->prepareThis(engine);
 
     printer = new ConsolePrinter(textEdit_OUTPUT, this);
     QJSValue printerVal = engine.newQObject(printer);

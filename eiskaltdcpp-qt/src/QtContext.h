@@ -64,20 +64,21 @@ class LogManagerScript;
  * (or by unit tests), that owns the services as unique_ptr members.
  * Destruction order is the reverse of declaration order.
  *
+ * The constructor registers the context via QtContextAware::setCurrent()
+ * so that any code can reach it through the qtCtx() free function or
+ * through the QtContextAware mixin.
+ *
  * Usage (application):
- *   QtContext ctx;
+ *   QtContext ctx;           // auto-registers
  *   ctx.createSettings();
- *   setQtContext(&ctx);
- *   // ... run application ...
- *   setQtContext(nullptr);
- *   // ctx destructor cleans up
+ *   // ... run application — qtCtx()->settings() works everywhere ...
+ *   // ctx destructor auto-deregisters and cleans up
  *
  * Usage (tests):
- *   QtContext ctx;
+ *   QtContext ctx;           // auto-registers
  *   ctx.createSettings();
- *   setQtContext(&ctx);
- *   // ... test code calls WulforSettings::getInstance() normally ...
- *   setQtContext(nullptr);
+ *   // ... test code calls qtCtx()->settings() normally ...
+ *   // ctx destructor auto-deregisters
  */
 class QtContext {
 public:
@@ -211,7 +212,3 @@ private:
 #endif
 #endif // QT_CONTEXT_MINIMAL
 };
-
-// ── Global context accessor ────────────────────────────────────────────
-QtContext* qtContext() noexcept;
-void setQtContext(QtContext* ctx) noexcept;

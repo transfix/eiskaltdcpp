@@ -11,6 +11,8 @@
  */
 
 #include "SettingsPersonal.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 #include <QComboBox>
 
@@ -46,8 +48,8 @@ void SettingsPersonal::ok(){
 
     QString enc = comboBox_ENC->currentText();
 
-    WSSET(WS_DEFAULT_LOCALE, enc);
-    enc = WulforUtil::getInstance()->qtEnc2DcEnc(comboBox_ENC->currentText());
+    qtCtx()->settings()->setStr(WS_DEFAULT_LOCALE, enc);
+    enc = qtCtx()->wulforUtil()->qtEnc2DcEnc(comboBox_ENC->currentText());
 
     if (enc.indexOf(" ") > 0){
         enc = enc.left(enc.indexOf(" "));
@@ -56,12 +58,12 @@ void SettingsPersonal::ok(){
 
     Text::hubDefaultCharset = _tq(enc);
 
-    WBSET(WB_APP_AUTOAWAY_BY_TIMER, checkBox_AUTOAWAY->isChecked());
-    WISET(WI_APP_AUTOAWAY_INTERVAL, spinBox->value());
+    qtCtx()->settings()->setBool(WB_APP_AUTOAWAY_BY_TIMER, checkBox_AUTOAWAY->isChecked());
+    qtCtx()->settings()->setInt(WI_APP_AUTOAWAY_INTERVAL, spinBox->value());
 
     SM->save();
 
-    WulforSettings::getInstance()->save();
+    qtCtx()->settings()->save();
 }
 
 void SettingsPersonal::init(){
@@ -77,18 +79,18 @@ void SettingsPersonal::init(){
             comboBox_SPEED->setCurrentIndex(i - SettingsManager::connectionSpeeds.begin());
     }
 
-    QStringList encodings = WulforUtil::getInstance()->encodings();
+    QStringList encodings = qtCtx()->wulforUtil()->encodings();
 
     comboBox_ENC->addItem(tr("System default"));
     comboBox_ENC->addItems(encodings);
 
-    QString default_enc = WulforSettings::getInstance()->getStr(WS_DEFAULT_LOCALE);
+    QString default_enc = qtCtx()->settings()->getStr(WS_DEFAULT_LOCALE);
 
     if (encodings.contains(default_enc))
         comboBox_ENC->setCurrentIndex(encodings.indexOf(default_enc)+1);
     else
         comboBox_ENC->setCurrentIndex(0);
 
-    checkBox_AUTOAWAY->setChecked(WBGET(WB_APP_AUTOAWAY_BY_TIMER));
-    spinBox->setValue(WIGET(WI_APP_AUTOAWAY_INTERVAL));
+    checkBox_AUTOAWAY->setChecked(qtCtx()->settings()->getBool(WB_APP_AUTOAWAY_BY_TIMER));
+    spinBox->setValue(qtCtx()->settings()->getInt(WI_APP_AUTOAWAY_INTERVAL));
 }

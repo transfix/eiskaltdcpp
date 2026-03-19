@@ -32,12 +32,14 @@ public:
     QStringList origMessages;
 };
 
-class QtContext;
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 class Secretary :
         public  QWidget,
         private Ui::UISecretary,
-        public  ArenaWidget
+        public  ArenaWidget,
+        public QtContextAware
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
@@ -50,7 +52,7 @@ public:
     QString getArenaTitle();
     QString getArenaShortTitle();
     QMenu *getMenu();
-    const QPixmap &getPixmap(){ return WICON(WulforUtil::eiMAGNET); }
+    const QPixmap &getPixmap(){ return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiMAGNET); }
     void requestClear() { clearNotes(); }
     void requestFilter() { slotShowSearchBar(); }
     void requestFocus() { pushButton_ClearLog->setFocus(); }
@@ -84,7 +86,6 @@ public:
     explicit Secretary(QWidget *parent = nullptr);
     ~Secretary() override;
 
-    static Secretary* getInstance();
 
 private:
     Secretary(const Secretary&) = delete;

@@ -30,14 +30,15 @@
 
 class TransferViewModel;
 
-class QtContext;
+#include "QtContextAware.h"
 
 class TransferView : public QWidget,
                      private Ui::UITransferView,
                      public dcpp::ConnectionManagerListener,
                      public dcpp::DownloadManagerListener,
                      public dcpp::QueueManagerListener,
-                     public dcpp::UploadManagerListener
+                     public dcpp::UploadManagerListener,
+        public QtContextAware
 {
     Q_OBJECT
 
@@ -157,7 +158,6 @@ public:
     TransferView(QWidget* = nullptr);
     ~TransferView() override;
 
-    static TransferView* getInstance();
 
 private:
 

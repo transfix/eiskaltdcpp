@@ -16,11 +16,12 @@
 #include "dcpp/LogManager.h"
 #include "dcpp/LogManagerListener.h"
 
-class QtContext;
+#include "QtContextAware.h"
 
 class LogManagerScript :
         public QObject,
-        public dcpp::LogManagerListener
+        public dcpp::LogManagerListener,
+        public QtContextAware
 {
 Q_OBJECT
 friend class QtContext;
@@ -32,7 +33,6 @@ protected:
     virtual void on(Message, time_t, const dcpp::string&) throw();
 
 public:
-    static LogManagerScript* getInstance();
     LogManagerScript(QObject *parent = nullptr);
     ~LogManagerScript();
 

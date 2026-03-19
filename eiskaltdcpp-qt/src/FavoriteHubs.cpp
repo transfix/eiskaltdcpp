@@ -17,6 +17,7 @@
 #include "VersionGlobal.h"
 #include "MainWindow.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 
 #include "dcpp/version.h"
 #include "dcpp/stdinc.h"
@@ -32,11 +33,6 @@
 #include <QPushButton>
 
 using namespace dcpp;
-
-FavoriteHubs* FavoriteHubs::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->favoriteHubs() : nullptr;
-}
 
 FavoriteHubs::FavoriteHubs(QWidget *parent):
     QWidget(parent),
@@ -78,11 +74,11 @@ QMenu *FavoriteHubs::getMenu(){
 }
 
 void FavoriteHubs::load(){
-    treeView->header()->restoreState(WVGET(WS_FAV_HUBS_STATE, QByteArray()).toByteArray());
+    treeView->header()->restoreState(qtCtx()->settings()->getVar(WS_FAV_HUBS_STATE, QByteArray()).toByteArray());
 }
 
 void FavoriteHubs::save(){
-    WVSET(WS_FAV_HUBS_STATE, treeView->header()->saveState());
+    qtCtx()->settings()->setVar(WS_FAV_HUBS_STATE, treeView->header()->saveState());
 }
 
 void FavoriteHubs::init(){
@@ -143,7 +139,7 @@ void FavoriteHubs::init(){
              << _q(entry->getNick())
              << _q(entry->getPassword())
              << _q(entry->getUserDescription())
-             << WulforUtil::getInstance()->dcEnc2QtEnc(_q(entry->getEncoding()));
+             << qtCtx()->wulforUtil()->dcEnc2QtEnc(_q(entry->getEncoding()));
 
         model->addResult(data);
     }
@@ -155,7 +151,7 @@ void FavoriteHubs::init(){
     treeView->setDragEnabled(false); // temporary
     treeView->setAcceptDrops(false); // temporary
 
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     add_newButton->setIcon(WU->getPixmap(WulforUtil::eiBOOKMARK_ADD));
     changeButton->setIcon(WU->getPixmap(WulforUtil::eiEDIT));
@@ -181,14 +177,14 @@ void FavoriteHubs::init(){
     connect(removeButton,  &QPushButton::clicked, this, &FavoriteHubs::slotRemoveButtonClicked);
     connect(connectButton, &QPushButton::clicked, this, &FavoriteHubs::slotConnectButtonClicked);
 
-    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &FavoriteHubs::slotSettingsChanged);
+    connect(qtCtx()->settings(), &WulforSettings::strValueChanged, this, &FavoriteHubs::slotSettingsChanged);
 
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
 }
 
 void FavoriteHubs::initHubEditor(FavoriteHubEditor &editor){
     editor.comboBox_ENC->addItem(tr("System default"));
-    editor.comboBox_ENC->addItems(WulforUtil::getInstance()->encodings());
+    editor.comboBox_ENC->addItems(qtCtx()->wulforUtil()->encodings());
     editor.spinBox_MINSEARCH_INTERVAL->setValue(SETTING(MINIMUM_SEARCH_INTERVAL));
     connect(editor.checkBox_CID, &QCheckBox::clicked, this, &FavoriteHubs::slotUpdateComboBox_CID);
     connect(editor.lineEdit_ADDRESS, &QLineEdit::textChanged, this, &FavoriteHubs::slotUpdateComboBox_CID);
@@ -220,7 +216,7 @@ void FavoriteHubs::initHubEditor(FavoriteHubEditor &editor, StrMap &map){
     if (map["ENC"].toString() == tr("System default"))
         editor.comboBox_ENC->setCurrentIndex(0);
     else
-        editor.comboBox_ENC->setCurrentIndex(WulforUtil::getInstance()->encodings().indexOf(map["ENC"].toString())+1);
+        editor.comboBox_ENC->setCurrentIndex(qtCtx()->wulforUtil()->encodings().indexOf(map["ENC"].toString())+1);
 
     editor.lineEdit_ADDRESS->setText(map["ADDR"].toString());
     editor.lineEdit_DESC->setText(map["DESC"].toString());
@@ -292,7 +288,7 @@ void FavoriteHubs::getParams(const FavoriteHubEntry *entry, StrMap &map){
     map["AUTO"]     = entry->getConnect();
     map["NICK"]     = _q(entry->getNick());
     map["PASS"]     = _q(entry->getPassword());
-    map["ENC"]      = WulforUtil::getInstance()->dcEnc2QtEnc(_q(entry->getEncoding()));
+    map["ENC"]      = qtCtx()->wulforUtil()->dcEnc2QtEnc(_q(entry->getEncoding()));
     map["UDESC"]    = _q(entry->getUserDescription());
     map["TAG"]      = _q(entry->getClientId());
     map["OVERTAG"]  = entry->getOverrideId();
@@ -304,7 +300,7 @@ void FavoriteHubs::getParams(const FavoriteHubEntry *entry, StrMap &map){
 }
 
 void FavoriteHubs::getParams(const FavoriteHubEditor &editor, StrMap &map){
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     map["NAME"]     = editor.lineEdit_NAME->text();
     map["ADDR"]     = editor.lineEdit_ADDRESS->text();
@@ -336,7 +332,7 @@ void FavoriteHubs::getParams(const FavoriteHubEditor &editor, StrMap &map){
         map["ENC"] = enc;
     }
     else
-        map["ENC"] = WU->qtEnc2DcEnc(WSGET(WS_DEFAULT_LOCALE));
+        map["ENC"] = WU->qtEnc2DcEnc(qtCtx()->settings()->getStr(WS_DEFAULT_LOCALE));
 
     map["UDESC"]    = editor.lineEdit_USERDESC->text();
     map["MODE"]     = editor.comboBox_MODE->currentIndex();
@@ -365,7 +361,7 @@ void FavoriteHubs::updateItem(FavoriteHubItem *item, StrMap &map){
     if (!item)
         return;
 
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     item->updateColumn(COLUMN_HUB_ADDRESS, map["ADDR"]);
     item->updateColumn(COLUMN_HUB_AUTOCONNECT, map["AUTO"]);
@@ -374,7 +370,7 @@ void FavoriteHubs::updateItem(FavoriteHubItem *item, StrMap &map){
     if (WU->encodings().contains(map["ENC"].toString()))
         item->updateColumn(COLUMN_HUB_ENCODING, map["ENC"]);
     else
-        item->updateColumn(COLUMN_HUB_ENCODING, WulforUtil::getInstance()->dcEnc2QtEnc(map["ENC"].toString()));
+        item->updateColumn(COLUMN_HUB_ENCODING, qtCtx()->wulforUtil()->dcEnc2QtEnc(map["ENC"].toString()));
 
     item->updateColumn(COLUMN_HUB_NAME, map["NAME"]);
     item->updateColumn(COLUMN_HUB_NICK, map["NICK"]);
@@ -384,7 +380,7 @@ void FavoriteHubs::updateItem(FavoriteHubItem *item, StrMap &map){
 void FavoriteHubs::slotContexMenu(const QPoint &){
     QItemSelectionModel *s_model = treeView->selectionModel();
     QModelIndexList list = s_model->selectedRows(0);
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
     bool empty = list.empty();
     QMenu *menu = new QMenu(this);
 
@@ -458,9 +454,9 @@ void FavoriteHubs::slotDblClicked(){
 
     QString address = item->data(COLUMN_HUB_ADDRESS).toString();
     FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address.toStdString());
-    QString encoding = WulforUtil::getInstance()->dcEnc2QtEnc(_q(entry->getEncoding()));
+    QString encoding = qtCtx()->wulforUtil()->dcEnc2QtEnc(_q(entry->getEncoding()));
 
-    MainWindow::getInstance()->newHubFrame(address, encoding);
+    qtCtx()->mainWindow()->newHubFrame(address, encoding);
 }
 
 void FavoriteHubs::slotHeaderMenu(){
@@ -495,7 +491,7 @@ void FavoriteHubs::slotSettingsChanged(const QString &key, const QString &value)
 
 void FavoriteHubs::on(FavoriteAdded, const FavoriteHubEntryPtr entry) noexcept{
     QList<QVariant> data;
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     data << entry->getConnect()
          << _q(entry->getName())

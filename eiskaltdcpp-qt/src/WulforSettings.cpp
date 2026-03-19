@@ -13,6 +13,7 @@
 #include "WulforSettings.h"
 #include "WulforUtil.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 
 #ifdef USE_ASPELL
 #include "SpellCheck.h"
@@ -40,11 +41,6 @@
 #include <QtDebug>
 
 using namespace dcpp;
-
-WulforSettings* WulforSettings::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->settings() : nullptr;
-}
 
 WulforSettings::WulforSettings()
     : settings(_q(Util::getPath(Util::PATH_USER_CONFIG)) + "EiskaltDC++_Qt.conf", QSettings::IniFormat)
@@ -417,7 +413,7 @@ void WulforSettings::loadTranslation(){
     const QString appTranslationFile =
             QDir::fromNativeSeparators(getStr(WS_TRANSLATION_FILE));
     const QString translationsPath =
-            QDir::fromNativeSeparators(WulforUtil::getInstance()->getTranslationsPath());
+            QDir::fromNativeSeparators(qtCtx()->wulforUtil()->getTranslationsPath());
 
     if (appTranslationFile.isEmpty() || !QFile::exists(appTranslationFile)){
         const QString lcName = QLocale::system().name();
@@ -432,7 +428,7 @@ void WulforSettings::loadTranslation(){
 
         setStr(WS_APP_ASPELL_LANG, lcName);
 #ifdef USE_ASPELL
-        if (SpellCheck *SC = SpellCheck::getInstance()) {
+        if (SpellCheck *SC = qtCtx()->spellCheck()) {
             SC->setLanguage(lcName);
         }
 #endif
@@ -451,7 +447,7 @@ void WulforSettings::loadTranslation(){
 
         setStr(WS_APP_ASPELL_LANG, lcName);
 #ifdef USE_ASPELL
-        if (SpellCheck *SC = SpellCheck::getInstance()) {
+        if (SpellCheck *SC = qtCtx()->spellCheck()) {
             SC->setLanguage(lcName);
         }
 #endif
@@ -462,11 +458,11 @@ void WulforSettings::loadTranslation(){
 }
 
 void WulforSettings::loadQtTranslation(const QString &lcName){
-    if (!WulforUtil::getInstance())
+    if (!qtCtx()->wulforUtil())
         return;
 
 #if defined (Q_OS_WIN) || defined (Q_OS_MAC)
-    const QString translationsPath = WulforUtil::getInstance()->getTranslationsPath();
+    const QString translationsPath = qtCtx()->wulforUtil()->getTranslationsPath();
 #else // Other OS
     const QString translationsPath = QLibraryInfo::location(QLibraryInfo::TranslationsPath);
 #endif

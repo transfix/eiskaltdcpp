@@ -11,6 +11,8 @@
  */
 
 #include "SideBar.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 #include "WulforSettings.h"
 #include "MainWindow.h"
@@ -67,7 +69,7 @@ SideBarModel::SideBarModel(QObject *parent) :
 {
     rootItem = new SideBarItem(nullptr, nullptr);
 
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     CREATE_ROOT_EL(rootItem, eiSERVER,      tr("Hubs"),             roots,  Hub);
     CREATE_ROOT_EL(rootItem, eiUSERS,       tr("Private Messages"), roots,  PrivateMessage);
@@ -87,7 +89,7 @@ SideBarModel::SideBarModel(QObject *parent) :
     //CREATE_ROOT_EL(rootItem, eiSERVER,    tr("Hub Manager"),      roots,  HubManager);
     CREATE_ROOT_EL(rootItem, eiGUI,         tr("Other Widgets"),    roots,  CustomWidget);
 
-    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged,
+    connect(qtCtx()->settings(), &WulforSettings::strValueChanged,
             this, &SideBarModel::slotSettingsChanged);
 }
 
@@ -141,7 +143,7 @@ QVariant SideBarModel::data(const QModelIndex &index, int role) const
         if (!item->getWidget())
             return item->title;
         else
-            return WulforUtil::getInstance()->compactToolTipText(item->getWidget()->getArenaTitle(), 60, "\n");
+            return qtCtx()->wulforUtil()->compactToolTipText(item->getWidget()->getArenaTitle(), 60, "\n");
     }
     }
 
@@ -304,7 +306,7 @@ void SideBarModel::toggled ( ArenaWidget* awgt ) {
         awgt->toolButton()->setCheckable(false);
     }
     
-    ArenaWidgetManager::getInstance()->activate(awgt);
+    qtCtx()->arenaWidgetManager()->activate(awgt);
 }
 
 bool SideBarModel::hasWidget(ArenaWidget *awgt) const{
@@ -414,7 +416,7 @@ void SideBarModel::slotIndexClicked(const QModelIndex &i){
         emit mapWidget(awgt);
     else {
         ArenaWidget::Role role = roots.key(item);
-        ArenaWidget *awgt = MainWindow::getInstance()->widgetForRole(role);
+        ArenaWidget *awgt = qtCtx()->mainWindow()->widgetForRole(role);
 
         emit mapWidget(awgt);
     }
@@ -478,7 +480,7 @@ void SideBarDelegate::paint(QPainter *painter, const QStyleOptionViewItem &optio
     QStyledItemDelegate::paint(painter, option, index);
 
     if ((option.state & (QStyle::State_MouseOver | QStyle::State_Selected)) && showCloseBtn){
-        QPixmap px = WICON(WulforUtil::eiEDITDELETE).scaled(16, 16, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        QPixmap px = qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE).scaled(16, 16, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
         painter->drawPixmap(option.rect.x() + (option.rect.width() - 16)/2,
                             option.rect.y() + (option.rect.height() - 16)/2,
@@ -513,24 +515,24 @@ SideBarView::SideBarView ( QWidget* parent ) : QTreeView(parent), _model(nullptr
     setItemDelegate(new SideBarDelegate(this));
     expandAll();
 
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::activated, this,   &SideBarView::activated);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::added,     this,   &SideBarView::added);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::removed,   this,   &SideBarView::removed);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::activated, _model, &SideBarModel::mapped);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::toggled,   _model, &SideBarModel::toggled);
-    connect(ArenaWidgetManager::getInstance(), &ArenaWidgetManager::updated,   _model, &SideBarModel::updated);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::activated, this,   &SideBarView::activated);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::added,     this,   &SideBarView::added);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::removed,   this,   &SideBarView::removed);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::activated, _model, &SideBarModel::mapped);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::toggled,   _model, &SideBarModel::toggled);
+    connect(qtCtx()->arenaWidgetManager(), &ArenaWidgetManager::updated,   _model, &SideBarModel::updated);
     
     connect(this, &SideBarView::doubleClicked,           this,   &SideBarView::slotSideBarDblClicked);
     connect(this, &SideBarView::customContextMenuRequested,   this,   &SideBarView::slotSidebarContextMenu);
     connect(this, &SideBarView::clicked,                 this,   &SideBarView::slotSidebarHook);
     connect(this, &SideBarView::clicked,                 _model, &SideBarModel::slotIndexClicked);
 
-    connect(GlobalTimer::getInstance(), &GlobalTimer::second, _model, &SideBarModel::redraw);
+    connect(qtCtx()->globalTimer(), &GlobalTimer::second, _model, &SideBarModel::redraw);
 
     connect(horizontalScrollBar(), &QScrollBar::rangeChanged, this, &SideBarView::slotUpdateHeaderSize);
     connect(verticalScrollBar(), &QScrollBar::rangeChanged, this, &SideBarView::slotUpdateHeaderSize);
 
-    connect(_model,    &SideBarModel::mapWidget,     ArenaWidgetManager::getInstance(),  &ArenaWidgetManager::activate);
+    connect(_model,    &SideBarModel::mapWidget,     qtCtx()->arenaWidgetManager(),  &ArenaWidgetManager::activate);
     connect(_model,    &SideBarModel::selectIndex,    this,                               &SideBarView::slotWidgetActivated);
 }
 
@@ -571,14 +573,14 @@ void SideBarView::slotSidebarContextMenu(){
     
     if (item && item->childCount() > 0){
         menu = new QMenu(this);
-        menu->addAction(WICON(WulforUtil::eiEDITDELETE), tr("Close all"));
+        menu->addAction(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE), tr("Close all"));
 
         if (menu->exec(QCursor::pos())){
             QList<SideBarItem*> children = item->childItems;
 
             for (const auto &child : children){
                 if (child && child->getWidget())
-                    ArenaWidgetManager::getInstance()->rem(child->getWidget());
+                    qtCtx()->arenaWidgetManager()->rem(child->getWidget());
             }
         }
         
@@ -592,10 +594,10 @@ void SideBarView::slotSidebarContextMenu(){
 
         if(!menu){
             menu = new QMenu(this);
-            menu->addAction(WICON(WulforUtil::eiEDITDELETE), tr("Close"));
+            menu->addAction(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE), tr("Close"));
 
             if (menu->exec(QCursor::pos()))
-                ArenaWidgetManager::getInstance()->rem(item->getWidget());
+                qtCtx()->arenaWidgetManager()->rem(item->getWidget());
             
             menu->deleteLater();
         }
@@ -615,7 +617,7 @@ void SideBarView::slotSidebarHook(const QModelIndex &index){
             case ArenaWidget::Search:
             case ArenaWidget::ShareBrowser:
             case ArenaWidget::CustomWidget:
-                ArenaWidgetManager::getInstance()->rem(item->getWidget());
+                qtCtx()->arenaWidgetManager()->rem(item->getWidget());
                 break;
             default:
                 break;
@@ -699,7 +701,7 @@ void SideBarView::slotWidgetActivated ( QModelIndex i ) {
 
 void SideBarView::slotUpdateHeaderSize()
 {
-    if (WBGET(SIDEBAR_SHOW_CLOSEBUTTONS, true)){
+    if (qtCtx()->settings()->getBool(SIDEBAR_SHOW_CLOSEBUTTONS, true)){
         header()->showSection(1);
         header()->resizeSection(1, 30);
         header()->resizeSection(0, header()->width() - 32);

@@ -12,12 +12,8 @@
 
 #include "ScriptEngine.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 #include "dcpp/DCPlusPlus.h"
-
-ScriptEngine* ScriptEngine::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->scriptEngine() : nullptr;
-}
 
 #include "ArenaWidget.h"
 #include "ArenaWidgetFactory.h"
@@ -73,7 +69,7 @@ QJSValue ScriptBridge::getMagnets(const QStringList &files) {
             continue;
         const dcpp::TTHValue *tth = dcpp::getContext()->getHashManager()->getFileTTHif(_tq(f));
         if (tth)
-            magnets.push_back(WulforUtil::getInstance()->makeMagnet(
+            magnets.push_back(qtCtx()->wulforUtil()->makeMagnet(
                 f.split(QDir::separator(), Qt::SkipEmptyParts).last(),
                 file.size(), _q(tth->toBase32())));
     }
@@ -123,74 +119,74 @@ QString ScriptBridge::parseMagnetAlias(const QString &text) {
 QJSValue ScriptBridge::getStaticMember(const QString &className) {
     QObject *obj = nullptr;
     if (className == "AntiSpam") {
-        if (!AntiSpam::getInstance()) {
-            qtContext()->createAntiSpam();
-            AntiSpam::getInstance()->loadSettings();
-            AntiSpam::getInstance()->loadLists();
+        if (!qtCtx()->antiSpam()) {
+            qtCtx()->createAntiSpam();
+            qtCtx()->antiSpam()->loadSettings();
+            qtCtx()->antiSpam()->loadLists();
         }
-        obj = qobject_cast<QObject*>(AntiSpam::getInstance());
+        obj = qobject_cast<QObject*>(qtCtx()->antiSpam());
     }
     else if (className == "DownloadQueue") {
-        if (!DownloadQueue::getInstance()) {
-            qtContext()->createDownloadQueue();
-            ArenaWidgetManager::getInstance()->add(DownloadQueue::getInstance());
+        if (!qtCtx()->downloadQueue()) {
+            qtCtx()->createDownloadQueue();
+            qtCtx()->arenaWidgetManager()->add(qtCtx()->downloadQueue());
         }
-        obj = qobject_cast<QObject*>(DownloadQueue::getInstance());
+        obj = qobject_cast<QObject*>(qtCtx()->downloadQueue());
     }
     else if (className == "FavoriteHubs") {
-        if (!FavoriteHubs::getInstance()) {
-            qtContext()->createFavoriteHubs();
-            ArenaWidgetManager::getInstance()->add(FavoriteHubs::getInstance());
+        if (!qtCtx()->favoriteHubs()) {
+            qtCtx()->createFavoriteHubs();
+            qtCtx()->arenaWidgetManager()->add(qtCtx()->favoriteHubs());
         }
-        obj = qobject_cast<QObject*>(FavoriteHubs::getInstance());
+        obj = qobject_cast<QObject*>(qtCtx()->favoriteHubs());
     }
     else if (className == "FavoriteUsers") {
-        if (!FavoriteUsers::getInstance()) {
-            qtContext()->createFavoriteUsers();
-            ArenaWidgetManager::getInstance()->add(FavoriteUsers::getInstance());
+        if (!qtCtx()->favoriteUsers()) {
+            qtCtx()->createFavoriteUsers();
+            qtCtx()->arenaWidgetManager()->add(qtCtx()->favoriteUsers());
         }
-        obj = qobject_cast<QObject*>(FavoriteUsers::getInstance());
+        obj = qobject_cast<QObject*>(qtCtx()->favoriteUsers());
     }
     else if (className == "Notification") {
-        if (Notification::getInstance()) {
+        if (qtCtx()->notification()) {
             m_engine->globalObject().setProperty("NOTIFY_ANY", (int)Notification::ANY);
-            obj = qobject_cast<QObject*>(Notification::getInstance());
+            obj = qobject_cast<QObject*>(qtCtx()->notification());
         }
     }
     else if (className == "HubManager")
-        obj = qobject_cast<QObject*>(HubManager::getInstance());
+        obj = qobject_cast<QObject*>(qtCtx()->hubManager());
     else if (className == "ClientManagerScript") {
-        if (!ClientManagerScript::getInstance()) {
-            qtContext()->createClientManagerScript();
-            ClientManagerScript::getInstance()->moveToThread(MainWindow::getInstance()->thread());
+        if (!qtCtx()->clientManagerScript()) {
+            qtCtx()->createClientManagerScript();
+            qtCtx()->clientManagerScript()->moveToThread(qtCtx()->mainWindow()->thread());
         }
-        obj = qobject_cast<QObject*>(ClientManagerScript::getInstance());
+        obj = qobject_cast<QObject*>(qtCtx()->clientManagerScript());
     }
     else if (className == "HashManagerScript") {
-        if (!HashManagerScript::getInstance()) {
-            qtContext()->createHashManagerScript();
-            HashManagerScript::getInstance()->moveToThread(MainWindow::getInstance()->thread());
+        if (!qtCtx()->hashManagerScript()) {
+            qtCtx()->createHashManagerScript();
+            qtCtx()->hashManagerScript()->moveToThread(qtCtx()->mainWindow()->thread());
         }
-        obj = qobject_cast<QObject*>(HashManagerScript::getInstance());
+        obj = qobject_cast<QObject*>(qtCtx()->hashManagerScript());
     }
     else if (className == "LogManagerScript") {
-        if (!LogManagerScript::getInstance()) {
-            qtContext()->createLogManagerScript();
-            LogManagerScript::getInstance()->moveToThread(MainWindow::getInstance()->thread());
+        if (!qtCtx()->logManagerScript()) {
+            qtCtx()->createLogManagerScript();
+            qtCtx()->logManagerScript()->moveToThread(qtCtx()->mainWindow()->thread());
         }
-        obj = qobject_cast<QObject*>(LogManagerScript::getInstance());
+        obj = qobject_cast<QObject*>(qtCtx()->logManagerScript());
     }
     else if (className == "WulforUtil")
-        obj = qobject_cast<QObject*>(WulforUtil::getInstance());
+        obj = qobject_cast<QObject*>(qtCtx()->wulforUtil());
     else if (className == "WulforSettings")
-        obj = qobject_cast<QObject*>(WulforSettings::getInstance());
+        obj = qobject_cast<QObject*>(qtCtx()->settings());
 
     return m_engine->newQObject(obj);
 }
 
 QJSValue ScriptBridge::createHubFrame(const QString &url, const QString &enc) {
     HubFrame *fr = ArenaWidgetFactory().create<HubFrame, MainWindow*, QString, QString>(
-        MainWindow::getInstance(), url, enc);
+        qtCtx()->mainWindow(), url, enc);
     return m_engine->newQObject(qobject_cast<QObject*>(fr));
 }
 
@@ -200,14 +196,14 @@ QJSValue ScriptBridge::createSearchFrame() {
 }
 
 QJSValue ScriptBridge::createShellCommandRunner(const QString &cmd, const QStringList &args) {
-    ShellCommandRunner *runner = new ShellCommandRunner(cmd, args, MainWindow::getInstance());
+    ShellCommandRunner *runner = new ShellCommandRunner(cmd, args, qtCtx()->mainWindow());
     QObject::connect(runner, qOverload<bool, const QString &>(&ShellCommandRunner::finished), runner, &QObject::deleteLater);
     return m_engine->newQObject(qobject_cast<QObject*>(runner));
 }
 
 QJSValue ScriptBridge::createMainWindowScript() {
     return m_engine->newQObject(qobject_cast<QObject*>(
-        new MainWindowScript(m_engine, MainWindow::getInstance())));
+        new MainWindowScript(m_engine, qtCtx()->mainWindow())));
 }
 
 QJSValue ScriptBridge::createScriptWidget() {
@@ -229,9 +225,9 @@ ScriptEngine::ScriptEngine() :
     qRegisterMetaType<ArenaWidget::Flags>("Flags");
     qRegisterMetaType<ArenaWidget::Flags>("ArenaWidget::Flags");
 
-    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &ScriptEngine::slotWSKeyChanged);
+    connect(qtCtx()->settings(), &WulforSettings::strValueChanged, this, &ScriptEngine::slotWSKeyChanged);
     connect(&watcher, &QFileSystemWatcher::fileChanged, this, &ScriptEngine::slotScriptChanged);
-    connect(GlobalTimer::getInstance(), &GlobalTimer::second, this, &ScriptEngine::slotProcessChangedFiles);
+    connect(qtCtx()->globalTimer(), &GlobalTimer::second, this, &ScriptEngine::slotProcessChangedFiles);
 
     loadScripts();
 }
@@ -245,7 +241,7 @@ ScriptEngine::~ScriptEngine(){
 void ScriptEngine::loadScripts(){
     DEBUG_BLOCK
 
-    QStringList enabled = QString(QByteArray::fromBase64(WSGET(WS_APP_ENABLED_SCRIPTS).toLatin1())).split("\n");
+    QStringList enabled = QString(QByteArray::fromBase64(qtCtx()->settings()->getStr(WS_APP_ENABLED_SCRIPTS).toLatin1())).split("\n");
 
     for (const auto &s : enabled)
         loadScript(s);
@@ -374,13 +370,13 @@ void ScriptEngine::prepareThis(QJSEngine &engine){
 
     // Expose singleton QObjects directly
     engine.globalObject().setProperty("MainWindow",
-        engine.newQObject(MainWindow::getInstance()));
+        engine.newQObject(qtCtx()->mainWindow()));
     engine.globalObject().setProperty("WulforUtil",
-        engine.newQObject(WulforUtil::getInstance()));
+        engine.newQObject(qtCtx()->wulforUtil()));
     engine.globalObject().setProperty("WulforSettings",
-        engine.newQObject(WulforSettings::getInstance()));
+        engine.newQObject(qtCtx()->settings()));
     engine.globalObject().setProperty("WidgetManager",
-        engine.newQObject(ArenaWidgetManager::getInstance()));
+        engine.newQObject(qtCtx()->arenaWidgetManager()));
 
     // LinkParser namespace via evaluate
     engine.evaluate(QStringLiteral(

@@ -11,6 +11,8 @@
  */
 
 #include "SettingsConnection.h"
+#include "QtContextAware.h"
+#include "QtContext.h"
 #include "MainWindow.h"
 #include "WulforSettings.h"
 #include "WulforUtil.h"
@@ -170,7 +172,7 @@ void SettingsConnection::ok(){
             (SETTING(TCP_PORT) < 1024 || SETTING(UDP_PORT) < 1024 || SETTING(TLS_PORT) < 1024))
             showMsg(tr("Program need root privileges to open ports less than 1024"), nullptr);
 
-        MainWindow::getInstance()->startSocket(true);
+        qtCtx()->mainWindow()->startSocket(true);
     }
 }
 
@@ -214,7 +216,7 @@ void SettingsConnection::init(){
         comboBox_TLS->setCurrentIndex(2);
     }
 
-    QStringList ifaces = WulforUtil::getInstance()->getLocalIfaces();
+    QStringList ifaces = qtCtx()->wulforUtil()->getLocalIfaces();
 
     if (!ifaces.isEmpty())
         comboBox_IFACES->addItems(ifaces);

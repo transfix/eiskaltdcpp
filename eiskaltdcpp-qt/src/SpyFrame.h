@@ -21,13 +21,15 @@
 
 class SpyModel;
 
-class QtContext;
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 class SpyFrame :
         public QWidget,
         public ArenaWidget,
         private dcpp::ClientManagerListener,
-        private Ui::UISpy
+        private Ui::UISpy,
+        public QtContextAware
 {
 Q_OBJECT
 Q_INTERFACES(ArenaWidget)
@@ -39,7 +41,7 @@ public:
     QString getArenaTitle() {return getArenaShortTitle(); }
     QMenu *getMenu() {return nullptr; }
     QWidget *getWidget() { return this; }
-    const QPixmap &getPixmap(){ return WICON(WulforUtil::eiSPY); }
+    const QPixmap &getPixmap(){ return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiSPY); }
     ArenaWidget::Role role() const { return ArenaWidget::SearchSpy; }
     void requestClear() { slotClear(); }
 
@@ -59,7 +61,6 @@ public:
     explicit SpyFrame(QWidget *parent = nullptr);
     ~SpyFrame();
 
-    static SpyFrame* getInstance();
 
 private:
 

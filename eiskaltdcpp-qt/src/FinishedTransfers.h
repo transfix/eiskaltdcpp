@@ -69,14 +69,16 @@ public Q_SLOTS:
     virtual void slotSettingsChanged(const QString &key, const QString &) = 0;
 };
 
-class QtContext;
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 template <bool isUpload>
 class FinishedTransfers :
         public dcpp::FinishedManagerListener,
         private Ui::UIFinishedTransfers,
         public ArenaWidget,
-        public FinishedTransferProxy
+        public FinishedTransferProxy,
+        public QtContextAware
 {
 Q_INTERFACES(ArenaWidget)
 
@@ -92,9 +94,9 @@ public:
 
     const QPixmap &getPixmap(){
         if (isUpload)
-            return WICON(WulforUtil::eiUPLIST);
+            return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiUPLIST);
         else
-            return WICON(WulforUtil::eiDOWNLIST);
+            return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiDOWNLIST);
     }
 
 protected:
@@ -151,7 +153,7 @@ public:
         QObject::connect(this, &FinishedTransferProxy::coreRemovedFile, model, &FinishedTransfersModel::remFile, Qt::QueuedConnection);
         QObject::connect(this, &FinishedTransferProxy::coreRemovedUser, model, &FinishedTransfersModel::remUser, Qt::QueuedConnection);
 
-        QObject::connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &FinishedTransferProxy::slotSettingsChanged);
+        QObject::connect(qtCtx()->settings(), &WulforSettings::strValueChanged, this, &FinishedTransferProxy::slotSettingsChanged);
         QObject::connect(comboBox, qOverload<int>(&QComboBox::activated), this, &FinishedTransferProxy::slotTypeChanged);
         QObject::connect(pushButton, &QPushButton::clicked, this, &FinishedTransferProxy::slotClear);
         QObject::connect(treeView, &QTreeView::doubleClicked, this, &FinishedTransferProxy::slotItemDoubleClicked);
@@ -167,7 +169,7 @@ public:
 
     ~FinishedTransfers(){
         QString key = (comboBox->currentIndex() == 0)? WS_FTRANSFERS_FILES_STATE : WS_FTRANSFERS_USERS_STATE;
-        WVSET(key, treeView->header()->saveState());
+        qtCtx()->settings()->setVar(key, treeView->header()->saveState());
 
         dcpp::getContext()->getFinishedManager()->removeListener(this);
 
@@ -181,7 +183,6 @@ public:
         delete model;
     }
 
-    static FinishedTransfers<isUpload>* getInstance();
 
     void loadList(){
         VarMap params;
@@ -278,7 +279,7 @@ public:
         params["PATH"]  = _q(Util::getFilePath(file));
 
         for (const auto &user : item->getUsers()) {
-            nicks += WulforUtil::getInstance()->getNicks(user.user->getCID()) + " ";
+            nicks += qtCtx()->wulforUtil()->getNicks(user.user->getCID()) + " ";
         }
 
         params["USERS"] = nicks;
@@ -316,7 +317,7 @@ public:
         QString files = "";
 
         params["TIME"]  = _q(Util::formatTime("%Y-%m-%d %H:%M:%S", item->getTime()));
-        params["NICK"]  = WulforUtil::getInstance()->getNicks(user->getCID());
+        params["NICK"]  = qtCtx()->wulforUtil()->getNicks(user->getCID());
 
         for (const auto &file: item->getFiles()) {
                 files += _q(file) + " ";
@@ -357,9 +358,9 @@ public:
         QByteArray old_state = treeView->header()->saveState();
 
         if (sender() == comboBox)
-            WVSET(from_key, old_state);
+            qtCtx()->settings()->setVar(from_key, old_state);
 
-        treeView->header()->restoreState(WVGET(to_key, QByteArray()).toByteArray());
+        treeView->header()->restoreState(qtCtx()->settings()->getVar(to_key, QByteArray()).toByteArray());
         treeView->setSortingEnabled(true);
 
         model->switchViewType(static_cast<FinishedTransfersModel::ViewType>(index));
@@ -442,7 +443,7 @@ public:
     }
 
     void slotContextMenu(){
-        static WulforUtil *WU = WulforUtil::getInstance();
+        auto *WU = qtCtx()->wulforUtil();
 
         QItemSelectionModel *s_model = treeView->selectionModel();
         QModelIndexList p_indexes = s_model->selectedRows(0);
@@ -604,17 +605,4 @@ inline ArenaWidget::Role FinishedTransfers<true>::role() const { return ArenaWid
 typedef FinishedTransfers<true>  FinishedUploads;
 typedef FinishedTransfers<false> FinishedDownloads;
 
-// getInstance() specializations — delegate to QtContext
-#include "QtContext.h"
 
-template <>
-inline FinishedTransfers<true>* FinishedTransfers<true>::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->finishedUploads() : nullptr;
-}
-
-template <>
-inline FinishedTransfers<false>* FinishedTransfers<false>::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->finishedDownloads() : nullptr;
-}

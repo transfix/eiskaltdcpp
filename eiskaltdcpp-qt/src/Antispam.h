@@ -26,10 +26,11 @@ enum AntiSpamObjectState {
     eIN_WHITE
 };
 
-class QtContext;
+#include "QtContextAware.h"
 
 class AntiSpam :
-        public QObject
+        public QObject,
+        public QtContextAware
 {
     Q_OBJECT
 
@@ -38,7 +39,6 @@ public:
     AntiSpam();
     ~AntiSpam() override;
 
-    static AntiSpam* getInstance();
 
     void move(const QString &, AntiSpamObjectState);
 

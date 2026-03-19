@@ -42,13 +42,15 @@ class FavoriteHubEditor:
         }
 };
 
-class QtContext;
+#include "QtContextAware.h"
+#include "QtContext.h"
 
 class FavoriteHubs :
         public QWidget,
         private Ui::UIFavoriteHubs,
         public ArenaWidget,
-        private dcpp::FavoriteManagerListener
+        private dcpp::FavoriteManagerListener,
+        public QtContextAware
 {
     Q_OBJECT
     Q_INTERFACES(ArenaWidget)
@@ -61,7 +63,7 @@ public:
     QString getArenaTitle();
     QString getArenaShortTitle();
     QMenu *getMenu();
-    const QPixmap &getPixmap(){ return WICON(WulforUtil::eiFAVSERVER); }
+    const QPixmap &getPixmap(){ return qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFAVSERVER); }
     ArenaWidget::Role role() const { return ArenaWidget::FavoriteHubs; }
 
 protected:
@@ -85,7 +87,6 @@ public:
     FavoriteHubs(QWidget* = nullptr);
     ~FavoriteHubs() override;
 
-    static FavoriteHubs* getInstance();
 
 private:
 

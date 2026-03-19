@@ -18,11 +18,12 @@
 #include "dcpp/Client.h"
 #include "dcpp/ClientManagerListener.h"
 
-class QtContext;
+#include "QtContextAware.h"
 
 class ClientManagerScript :
         public QObject,
-        public dcpp::ClientManagerListener
+        public dcpp::ClientManagerListener,
+        public QtContextAware
 {
 Q_OBJECT
 friend class QtContext;
@@ -55,7 +56,6 @@ protected:
     virtual void on(ClientDisconnected, dcpp::Client*) throw();
 
 public:
-    static ClientManagerScript* getInstance();
     ClientManagerScript(QObject *parent = nullptr);
     ~ClientManagerScript();
 

@@ -16,6 +16,7 @@
 #include "WulforSettings.h"
 #include "AutoToolTip.h"
 #include "QtContext.h"
+#include "QtContextAware.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -24,11 +25,6 @@
 #include <QKeyEvent>
 
 using namespace dcpp;
-
-PublicHubs* PublicHubs::getInstance() {
-    auto* ctx = qtContext();
-    return ctx ? ctx->publicHubs() : nullptr;
-}
 
 PublicHubs::PublicHubs(QWidget *parent) :
     QWidget(parent), proxy(nullptr)
@@ -41,7 +37,7 @@ PublicHubs::PublicHubs(QWidget *parent) :
 
     treeView->setModel(model);
     treeView->setItemDelegate(new AutoToolTipDelegate(treeView));
-    treeView->header()->restoreState(WVGET(WS_PUBLICHUBS_STATE, QByteArray()).toByteArray());
+    treeView->header()->restoreState(qtCtx()->settings()->getVar(WS_PUBLICHUBS_STATE, QByteArray()).toByteArray());
 
     lineEdit_FILTER->installEventFilter(this);
 
@@ -72,7 +68,7 @@ PublicHubs::PublicHubs(QWidget *parent) :
     treeView->setContextMenuPolicy(Qt::CustomContextMenu);
     treeView->header()->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    toolButton_CLOSEFILTER->setIcon(WICON(WulforUtil::eiEDITDELETE));
+    toolButton_CLOSEFILTER->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiEDITDELETE));
 
     connect(this, &PublicHubs::coreDownloadStarted,  this, &PublicHubs::setStatus, Qt::QueuedConnection);
     connect(this, &PublicHubs::coreDownloadFailed,   this, &PublicHubs::setStatus, Qt::QueuedConnection);
@@ -84,7 +80,7 @@ PublicHubs::PublicHubs(QWidget *parent) :
     connect(treeView->header(), &QHeaderView::customContextMenuRequested, this, &PublicHubs::slotHeaderMenu);
     connect(toolButton_CLOSEFILTER, &QToolButton::clicked, this, &PublicHubs::slotFilter);
     connect(comboBox_HUBS, qOverload<int>(&QComboBox::activated), this, &PublicHubs::slotHubChanged);
-    connect(WulforSettings::getInstance(), &WulforSettings::strValueChanged, this, &PublicHubs::slotSettingsChanged);
+    connect(qtCtx()->settings(), &WulforSettings::strValueChanged, this, &PublicHubs::slotSettingsChanged);
     
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
     if (comboBox_HUBS->count())
@@ -92,7 +88,7 @@ PublicHubs::PublicHubs(QWidget *parent) :
 }
 
 PublicHubs::~PublicHubs(){
-    WVSET(WS_PUBLICHUBS_STATE, treeView->header()->saveState());
+    qtCtx()->settings()->setVar(WS_PUBLICHUBS_STATE, treeView->header()->saveState());
     
     delete model;
     delete proxy;
@@ -162,7 +158,7 @@ void PublicHubs::slotContextMenu(){
     if (proxy)
         std::transform(indexes.begin(), indexes.end(), indexes.begin(), [&](QModelIndex i) { return proxy->mapToSource(i); });
 
-    WulforUtil *WU = WulforUtil::getInstance();
+    WulforUtil *WU = qtCtx()->wulforUtil();
 
     QMenu *m = new QMenu();
     QAction *connect = new QAction(WU->getPixmap(WulforUtil::eiCONNECT), tr("Connect"), m);
@@ -177,7 +173,7 @@ void PublicHubs::slotContextMenu(){
 
     if (ret == connect){
         PublicHubItem * item = nullptr;
-        MainWindow *MW = MainWindow::getInstance();
+        MainWindow *MW = qtCtx()->mainWindow();
 
         for (const auto &i : indexes){
             item = reinterpret_cast<PublicHubItem*>(i.internalPointer());
@@ -233,7 +229,7 @@ void PublicHubs::slotDoubleClicked(const QModelIndex &index){
     QModelIndex i = proxy? proxy->mapToSource(index) : index;
 
     PublicHubItem * item = reinterpret_cast<PublicHubItem*>(i.internalPointer());
-    MainWindow *MW = MainWindow::getInstance();
+    MainWindow *MW = qtCtx()->mainWindow();
 
     if (item)
         MW->newHubFrame(item->data(COLUMN_PHUB_ADDRESS).toString(), "");
