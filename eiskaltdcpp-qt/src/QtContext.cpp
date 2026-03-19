@@ -68,6 +68,13 @@ QtContext::~QtContext() {
     hashManagerScript_.reset();
     logManagerScript_.reset();
 #endif
+#ifndef QT_CONTEXT_MINIMAL
+    // ArenaWidgetManager holds raw pointers to arena widgets (HubFrame,
+    // FavoriteHubs, etc.) that are owned either as unique_ptr members below
+    // or as MainWindow children.  Destroy it first so its destructor runs
+    // while the tracked widgets are still alive.
+    arenaWidgetManager_.reset();
+#endif
     // Remaining members destroyed in reverse declaration order by the
     // compiler-generated sequence.  Deregister after all services are gone.
     QtContextAware::setCurrent(nullptr);
