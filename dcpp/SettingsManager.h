@@ -133,7 +133,7 @@ public:
                         INT64_LAST };
 
     enum FloatSetting { FLOAT_FIRST = INT64_LAST +1,
-                        FLOAT_LAST, SETTINGS_LAST = FLOAT_LAST };
+                        FLOAT_LAST = FLOAT_FIRST, SETTINGS_LAST = FLOAT_LAST };
 
     enum {
         INCOMING_DIRECT,

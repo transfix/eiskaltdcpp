@@ -101,9 +101,8 @@ const string SettingsManager::settingTags[] =
     "SENTRY",
     // Int64
     "TotalUpload", "TotalDownload",
-    "SENTRY",
-    // Floats
     "SENTRY"
+    // Floats: none currently
 };
 
 SettingsManager::SettingsManager()
