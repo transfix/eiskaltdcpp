@@ -293,12 +293,12 @@ private:
     string strSettings[STR_LAST - STR_FIRST];
     int    intSettings[INT_LAST - INT_FIRST];
     int64_t int64Settings[INT64_LAST - INT64_FIRST];
-    float floatSettings[FLOAT_LAST - FLOAT_FIRST];
+    float floatSettings[FLOAT_LAST - FLOAT_FIRST > 0 ? FLOAT_LAST - FLOAT_FIRST : 1];
 
     string strDefaults[STR_LAST - STR_FIRST];
     int    intDefaults[INT_LAST - INT_FIRST];
     int64_t int64Defaults[INT64_LAST - INT64_FIRST];
-    float floatDefaults[FLOAT_LAST - FLOAT_FIRST];
+    float floatDefaults[FLOAT_LAST - FLOAT_FIRST > 0 ? FLOAT_LAST - FLOAT_FIRST : 1];
 
     bool isSet[SETTINGS_LAST];
 
