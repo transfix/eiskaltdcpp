@@ -7,7 +7,83 @@
     eiskaltdcpp-daemon (JSONRPC) and eiskaltdcpp-cli (JSONRPC).
 
     Installs or verifies all required dependencies before building.
-    Inspired by the CI workflows in .github/workflows/build.yml.
+    When run without -SkipDeps, the script will auto-install most tools
+    via winget/vcpkg/pacman. Qt6 is the one dependency that usually
+    requires manual installation beforehand.
+
+    PREREQUISITES
+    =============
+
+    The following must be installed or available BEFORE running this script.
+    Items marked [auto] are installed automatically when -SkipDeps is NOT used.
+
+    For ALL targets:
+      - Windows 10/11 64-bit
+      - PowerShell 5.1+ (built-in on Windows 10+)
+          Run:  Set-ExecutionPolicy Bypass -Scope Process -Force
+          before invoking this script if execution policy blocks it.
+      - CMake >= 3.10             [auto via winget: Kitware.CMake]
+      - Ninja build system        [auto via winget: Ninja-build.Ninja]
+      - Git                       [auto via winget: Git.Git]
+
+    For Qt6 / daemon / CLI targets (MSVC build):
+      - Visual Studio 2022 (Community or Build Tools) with "Desktop
+        development with C++" workload. The script auto-detects
+        vcvarsall.bat and imports the x64 MSVC environment, so you do
+        NOT need to run from a VS Developer prompt (though that works too).
+      - vcpkg  (https://github.com/microsoft/vcpkg)
+          [auto-cloned to C:\vcpkg if not found]
+          The following vcpkg packages are installed automatically:
+            openssl, bzip2, zlib, miniupnpc, pcre2, lua,
+            libiconv, libidn2, gettext[tools]
+      - Qt 6 (>= 6.2) for MSVC 2022 64-bit, with the Qt Multimedia module.
+          Install via one of:
+            1. Qt Online Installer  https://www.qt.io/download-qt-installer
+               Select: Qt 6.x > MSVC 2022 64-bit, plus "Qt Multimedia"
+            2. aqtinstall (pip):
+               pip install aqtinstall
+               aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 -m qtmultimedia
+          Then either:
+            - Set env var Qt6_DIR to <Qt root>/6.x.x/msvc2022_64/lib/cmake/Qt6
+            - Or install Qt to C:\Qt (auto-detected)
+          The script searches C:\Qt and ~/Qt for Qt6Config.cmake.
+
+    For GTK3 target (MSYS2/UCRT64 build):
+      - MSYS2  (https://www.msys2.org/)
+          [auto via winget: MSYS2.MSYS2, installs to C:\msys64]
+          The following UCRT64 packages are installed automatically:
+            gcc, cmake, ninja, pkgconf, gtk3, openssl, bzip2, zlib,
+            miniupnpc, pcre2, lua, libidn2, gettext-tools,
+            gettext-runtime, libiconv, libnotify
+
+    For NSIS installer packaging (optional):
+      - NSIS (Nullsoft Scriptable Install System)
+          [NOT auto-installed; install manually if you want an installer]
+          Install via:  winget install NSIS.NSIS
+          If not found, the build still succeeds — files are staged in
+          windows\installer\ and you can run makensis manually later.
+
+    WHAT THE SCRIPT DOES
+    ====================
+
+    1. Checks/installs dependencies (skipped with -SkipDeps)
+    2. Sets up MSVC environment and PATH for vcpkg/Qt tools
+    3. Builds Qt6 GUI + daemon + CLI via CMake/Ninja/MSVC
+       - Deploys Qt6 + vcpkg DLLs to build and install directories
+    4. Builds GTK3 GUI via MSYS2 UCRT64 (cmake/ninja/gcc)
+       - Bundles UCRT64 DLLs, GTK runtime data, pixbuf loaders
+    5. Stages Qt build output and creates NSIS installer (if makensis found)
+    6. Prints summary with paths to all built executables
+
+    OUTPUT DIRECTORIES
+    ==================
+
+      dist-qt\            Qt6 + daemon + CLI install (with all DLLs)
+      dist-gtk\           GTK3 install (with all DLLs)
+      build-qt\           CMake/Ninja build tree (MSVC)
+      build-gtk\          CMake/Ninja build tree (MSYS2)
+      windows\installer\  NSIS staging directory (auto-created, gitignored)
+      windows\EiskaltDC++-<ver>-x86_64-installer.exe  (if NSIS available)
 
 .PARAMETER Targets
     Comma-separated list of targets to build: qt, gtk, daemon, cli, all.
@@ -19,10 +95,11 @@
 
 .PARAMETER InstallPrefix
     Installation prefix (absolute or relative to repo root).
-    Default: .\dist
+    Default: .\dist-qt for MSVC targets, .\dist-gtk for GTK target.
 
 .PARAMETER SkipDeps
     Skip dependency installation (assume everything is already present).
+    The script still sets up MSVC environment and PATH even with -SkipDeps.
 
 .PARAMETER Clean
     Remove build directories before configuring.
@@ -32,9 +109,19 @@
 
 .EXAMPLE
     .\build-local.ps1
+    # Full build of all targets with dependency installation.
+
+.EXAMPLE
     .\build-local.ps1 -Targets qt,daemon -BuildType Debug
+    # Debug build of Qt GUI and daemon only.
+
+.EXAMPLE
     .\build-local.ps1 -Targets gtk -Clean
+    # Clean GTK3 build.
+
+.EXAMPLE
     .\build-local.ps1 -Targets all -SkipDeps
+    # Build everything, skip dependency checks (faster for repeat builds).
 #>
 
 [CmdletBinding()]
