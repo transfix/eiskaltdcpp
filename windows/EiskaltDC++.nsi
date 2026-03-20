@@ -161,10 +161,8 @@ Section "EiskaltDC++" SEC_MAIN
     WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} ${PRODUCT_UNINST_KEY} "NoRepair"        1
 
     ; Estimated size (in KB) — NSIS sets this automatically from installed files
-SectionEnd
 
-; ===== Shortcuts section ===================================================
-Section "Start Menu Shortcuts" SEC_STARTMENU
+    ; --- Start Menu shortcuts -----------------------------------------------
     SetShellVarContext all
     !ifdef arch_x86
         CreateDirectory "$SMPROGRAMS\EiskaltDC++"
@@ -175,10 +173,8 @@ Section "Start Menu Shortcuts" SEC_STARTMENU
         CreateShortCut  "$SMPROGRAMS\EiskaltDC++ (x64)\EiskaltDC++.lnk" "$INSTDIR\EiskaltDC++.exe"
         CreateShortCut  "$SMPROGRAMS\EiskaltDC++ (x64)\Uninstall.lnk"   "$INSTDIR\uninstall.exe"
     !endif
-SectionEnd
 
-Section "Desktop Shortcut" SEC_DESKTOP
-    SetShellVarContext all
+    ; --- Desktop shortcut ---------------------------------------------------
     CreateShortCut "$DESKTOP\EiskaltDC++.lnk" "$INSTDIR\EiskaltDC++.exe"
 SectionEnd
 
