@@ -114,6 +114,15 @@ RequestExecutionLevel admin
 ; ===== Main install section ================================================
 Section "EiskaltDC++" SEC_MAIN
     SectionIn RO ; required — user cannot deselect
+
+    ; NSIS is a 32-bit application. On 64-bit Windows, registry writes from a
+    ; 32-bit process are redirected to WOW6432Node by default. SetRegView 64
+    ; forces writes to the native 64-bit registry hive so that Add/Remove
+    ; Programs (a 64-bit app) can see our uninstall entry.
+!ifndef arch_x86
+    SetRegView 64
+!endif
+
     SetOutPath $INSTDIR
 
     ; --- Core executables & config -----------------------------------------
@@ -180,6 +189,9 @@ SectionEnd
 
 ; ===== Uninstall section ===================================================
 Section "Uninstall"
+!ifndef arch_x86
+    SetRegView 64
+!endif
     SetShellVarContext all
 
     ; Remove desktop shortcut
