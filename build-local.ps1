@@ -802,7 +802,133 @@ if ($NeedMSYS2) {
 }
 
 # =====================================================================
-# 4. SUMMARY
+# 4. NSIS INSTALLER PACKAGING (Qt build only)
+# =====================================================================
+
+if ($NeedMSVC) {
+    $nsisScript = Join-Path $RepoRoot 'windows\EiskaltDC++.nsi'
+    $stagingDir = Join-Path $RepoRoot 'windows\installer'
+
+    # Check that the Qt install directory has the expected exe
+    $mainExe = Join-Path $QtInstallPrefix 'EiskaltDC++.exe'
+    if (-not (Test-Path $mainExe)) {
+        Write-Warn "Skipping NSIS installer: EiskaltDC++.exe not found in $QtInstallPrefix"
+    } else {
+        Write-Step "Staging files for NSIS installer..."
+
+        # Clean and create staging directory
+        if (Test-Path $stagingDir) { Remove-Item $stagingDir -Recurse -Force }
+        New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
+
+        # Copy executables
+        Copy-Item (Join-Path $QtInstallPrefix 'EiskaltDC++.exe') $stagingDir
+        $daemonSrc = Join-Path $QtInstallPrefix 'eiskaltdcpp-daemon.exe'
+        if (Test-Path $daemonSrc) { Copy-Item $daemonSrc $stagingDir }
+
+        # Copy dcppboot.xml from windows directory
+        $bootXml = Join-Path $RepoRoot 'windows\dcppboot.xml'
+        if (Test-Path $bootXml) { Copy-Item $bootXml $stagingDir }
+
+        # Copy qt.conf
+        $qtConf = Join-Path $QtInstallPrefix 'qt.conf'
+        if (Test-Path $qtConf) { Copy-Item $qtConf $stagingDir }
+
+        # Copy all DLLs
+        Get-ChildItem (Join-Path $QtInstallPrefix '*.dll') | ForEach-Object {
+            Copy-Item $_.FullName $stagingDir
+        }
+
+        # Copy docs directory
+        $docsDir = Join-Path $QtInstallPrefix 'docs'
+        if (Test-Path $docsDir) {
+            Copy-Item $docsDir (Join-Path $stagingDir 'docs') -Recurse
+        }
+
+        # Copy resources directory
+        $resDir = Join-Path $QtInstallPrefix 'resources'
+        if (Test-Path $resDir) {
+            Copy-Item $resDir (Join-Path $stagingDir 'resources') -Recurse
+        }
+
+        # Copy Qt6 plugin directories
+        $qtPluginDirs = @('generic','iconengines','imageformats','multimedia',
+                          'networkinformation','platforms','qml','qmltooling',
+                          'sqldrivers','styles','tls')
+        foreach ($dir in $qtPluginDirs) {
+            $src = Join-Path $QtInstallPrefix $dir
+            if (Test-Path $src) {
+                Copy-Item $src (Join-Path $stagingDir $dir) -Recurse
+            }
+        }
+
+        # Copy installer graphics from data/icons
+        $iconsDir = Join-Path $RepoRoot 'data\icons'
+        $icoFile  = Join-Path $iconsDir 'eiskaltdcpp.ico'
+        $bmpFile  = Join-Path $iconsDir 'icon_164x314.bmp'
+        if (Test-Path $icoFile) { Copy-Item $icoFile $stagingDir }
+        if (Test-Path $bmpFile) { Copy-Item $bmpFile $stagingDir }
+
+        # Copy LICENSE file
+        $licFile = Join-Path $RepoRoot 'LICENSE'
+        if (Test-Path $licFile) { Copy-Item $licFile $stagingDir }
+
+        # Count staged files
+        $stagedCount = (Get-ChildItem $stagingDir -Recurse -File).Count
+        Write-Ok "Staged $stagedCount files into $stagingDir"
+
+        # ── Locate makensis ─────────────────────────────────────────
+        $makensis = $null
+        $nsisSearchPaths = @(
+            'C:\Program Files (x86)\NSIS\makensis.exe',
+            'C:\Program Files\NSIS\makensis.exe',
+            'C:\NSIS\makensis.exe'
+        )
+        foreach ($p in $nsisSearchPaths) {
+            if (Test-Path $p) { $makensis = $p; break }
+        }
+        if (-not $makensis) {
+            # Try PATH
+            $found = Get-Command makensis -ErrorAction SilentlyContinue
+            if ($found) { $makensis = $found.Source }
+        }
+
+        if (-not $makensis) {
+            Write-Warn "makensis.exe not found. Install NSIS to build the installer."
+            Write-Warn "  winget install NSIS.NSIS"
+            Write-Warn "Files are staged in $stagingDir — you can run makensis manually:"
+            Write-Warn '  makensis /Dshared=64 /Dversion=2.5.0 windows\EiskaltDC++.nsi'
+        } else {
+            Write-Step "Building NSIS installer with $makensis ..."
+
+            # Extract version from CMakeLists.txt
+            $versionLine = Select-String -Path (Join-Path $RepoRoot 'CMakeLists.txt') `
+                -Pattern 'set\s*\(APP_VERSION\s+"([^"]+)"\)' | Select-Object -First 1
+            $appVersion = '2.5.0'
+            if ($versionLine) {
+                $appVersion = $versionLine.Matches[0].Groups[1].Value
+            }
+
+            Push-Location (Join-Path $RepoRoot 'windows')
+            & $makensis /V3 /Dshared=64 /Dversion=$appVersion 'EiskaltDC++.nsi'
+            $nsisExitCode = $LASTEXITCODE
+            Pop-Location
+
+            if ($nsisExitCode -ne 0) {
+                Write-Warn "NSIS installer build failed (exit code $nsisExitCode)"
+            } else {
+                $installerExe = Get-ChildItem (Join-Path $RepoRoot 'windows\EiskaltDC++*installer.exe') -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($installerExe) {
+                    Write-Ok "Installer created: $($installerExe.FullName)"
+                } else {
+                    Write-Ok "NSIS installer build completed."
+                }
+            }
+        }
+    }
+}
+
+# =====================================================================
+# 5. SUMMARY
 # =====================================================================
 
 Write-Host ""
@@ -815,7 +941,7 @@ if ($NeedMSVC) {
     Write-Host "  MSVC build output:" -ForegroundColor White
     Write-Host "    Build dir  : $BuildDirQt"
     Write-Host "    Install dir: $QtInstallPrefix"
-    $qtExe = Get-ChildItem "$QtInstallPrefix\eiskaltdcpp-qt.exe" -ErrorAction SilentlyContinue
+    $qtExe = Get-ChildItem "$QtInstallPrefix\EiskaltDC++.exe" -ErrorAction SilentlyContinue
     $daemonExe = Get-ChildItem "$QtInstallPrefix\eiskaltdcpp-daemon.exe" -ErrorAction SilentlyContinue
     if ($qtExe)     { Write-Host "    Qt GUI     : $($qtExe.FullName)" -ForegroundColor Green }
     if ($daemonExe) { Write-Host "    Daemon     : $($daemonExe.FullName)" -ForegroundColor Green }
@@ -824,6 +950,11 @@ if ($NeedMSVC) {
         $cliDir = Join-Path (Join-Path $QtInstallPrefix 'resources') 'cli'
         if ($cliScript) { Write-Host "    CLI        : $($cliScript.FullName)" -ForegroundColor Green }
         else { Write-Host "    CLI        : Perl scripts installed in $cliDir" -ForegroundColor Green }
+    }
+    # Show installer if it exists
+    $installerExe = Get-ChildItem (Join-Path $RepoRoot 'windows\EiskaltDC++*installer.exe') -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($installerExe) {
+        Write-Host "    Installer  : $($installerExe.FullName)" -ForegroundColor Green
     }
     Write-Host ""
 }
@@ -838,7 +969,7 @@ if ($NeedMSYS2) {
 }
 
 Write-Host "  To run the Qt interface:"
-Write-Host "    $QtInstallPrefix\eiskaltdcpp-qt.exe"
+Write-Host "    $QtInstallPrefix\EiskaltDC++.exe"
 Write-Host ""
 if ($NeedMSYS2) {
     Write-Host "  To run the GTK interface:"

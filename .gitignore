@@ -4,6 +4,8 @@ CMakeLists.txt.user*
 .DS_Store
 build*/
 dist-*/
+windows/installer/
+windows/EiskaltDC++*installer.exe
 CMakeFiles/
 boost*
 tags
