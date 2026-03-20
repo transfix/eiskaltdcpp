@@ -3,6 +3,8 @@ CMakeLists.txt.user*
 .gitignore
 .DS_Store
 build*/
+dist-*/
+CMakeFiles/
 boost*
 tags
 EISKALTDCPP_PLAN.md
