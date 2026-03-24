@@ -526,6 +526,8 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
+          - runner: macos-13
+            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -591,6 +593,8 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
+          - runner: macos-13
+            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -889,6 +893,8 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
+          - runner: macos-13
+            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -910,7 +916,7 @@ jobs:
         export HOMEBREW="$(brew --prefix)"
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+          -DCMAKE_INSTALL_PREFIX="$PWD/dist" \
           -DCMAKE_PREFIX_PATH="$HOMEBREW/opt/qt@6;$HOMEBREW/opt/openssl@3;$HOMEBREW/opt/gettext;$HOMEBREW" \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
           -DUSE_QT6=ON \
@@ -934,7 +940,7 @@ jobs:
         cmake --install build
         # macdeployqt is run automatically via CMake install() on APPLE
         # Verify the app bundle exists
-        ls -la install/EiskaltDC++.app/Contents/MacOS/ || true
+        ls -la dist/EiskaltDC++.app/Contents/MacOS/ || true
 
     - name: Build DMG
       run: |
@@ -957,6 +963,8 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
+          - runner: macos-13
+            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -980,7 +988,7 @@ jobs:
         export PKG_CONFIG_PATH="$HOMEBREW/lib/pkgconfig:$HOMEBREW/share/pkgconfig:${PKG_CONFIG_PATH:-}"
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+          -DCMAKE_INSTALL_PREFIX="$PWD/dist" \
           -DCMAKE_PREFIX_PATH="$HOMEBREW/opt/openssl@3;$HOMEBREW/opt/gettext;$HOMEBREW" \
           -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
           -DUSE_QT6=OFF \
@@ -1003,20 +1011,20 @@ jobs:
     - name: Create app bundle and bundle libraries
       run: |
         HOMEBREW="$(brew --prefix)"
-        APP_DIR="install/EiskaltDC++.app"
+        APP_DIR="dist/EiskaltDC++.app"
         # If the GTK build didn't produce an .app bundle, create one
         if [ ! -d "$APP_DIR" ]; then
-          APP_DIR="install/eiskaltdcpp-gtk.app"
+          APP_DIR="dist/eiskaltdcpp-gtk.app"
         fi
         if [ ! -d "$APP_DIR" ]; then
           # Create a minimal .app bundle from the installed binary
-          APP_DIR="install/EiskaltDC++-GTK.app"
+          APP_DIR="dist/EiskaltDC++-GTK.app"
           mkdir -p "$APP_DIR/Contents/MacOS"
           mkdir -p "$APP_DIR/Contents/Resources"
-          cp install/bin/eiskaltdcpp-gtk "$APP_DIR/Contents/MacOS/eiskaltdcpp-gtk"
+          cp dist/bin/eiskaltdcpp-gtk "$APP_DIR/Contents/MacOS/eiskaltdcpp-gtk"
           # Copy data files into the bundle
-          if [ -d install/share ]; then
-            cp -R install/share "$APP_DIR/Contents/Resources/share"
+          if [ -d dist/share ]; then
+            cp -R dist/share "$APP_DIR/Contents/Resources/share"
           fi
           # Create Info.plist
           VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
@@ -1110,8 +1118,8 @@ jobs:
         find release-assets/eiskaltdcpp-gtk3-linux-deb -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
         # Copy NSIS installer if present
         find release-assets/eiskaltdcpp-qt6-windows-x64-installer -name '*.exe' -exec cp {} release/ \; 2>/dev/null || true
-        # Copy macOS DMG files (arm64 only — no x86_64 runners available)
-        for arch in arm64; do
+        # Copy macOS DMG files (arm64 + x86_64)
+        for arch in arm64 x86_64; do
           find release-assets/eiskaltdcpp-qt6-macos-${arch}-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
           find release-assets/eiskaltdcpp-gtk3-macos-${arch}-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
         done
