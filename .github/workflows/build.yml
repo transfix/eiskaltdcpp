@@ -595,6 +595,7 @@ jobs:
     - name: Configure
       run: |
         export HOMEBREW="$(brew --prefix)"
+        export PKG_CONFIG_PATH="$HOMEBREW/lib/pkgconfig:$HOMEBREW/share/pkgconfig:${PKG_CONFIG_PATH:-}"
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX="$PWD/dist" \
@@ -956,6 +957,7 @@ jobs:
     - name: Re-run CMake configure (restore install metadata)
       run: |
         export HOMEBREW="$(brew --prefix)"
+        export PKG_CONFIG_PATH="$HOMEBREW/lib/pkgconfig:$HOMEBREW/share/pkgconfig:${PKG_CONFIG_PATH:-}"
         cmake -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX="$PWD/install" \
