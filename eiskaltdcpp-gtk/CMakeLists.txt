@@ -53,6 +53,9 @@ if (USE_GTK3)
     add_definitions(-DGSEAL_ENABLE)
     set (GTK_INCLUDE_DIRS ${GTK3_INCLUDE_DIRS})
     set (GTK_LIBRARIES ${GTK3_LIBRARIES})
+    if (GTK3_LIBRARY_DIRS)
+        link_directories (${GTK3_LIBRARY_DIRS})
+    endif ()
 endif (USE_GTK3)
 
 include_directories (${GTK_INCLUDE_DIRS}
