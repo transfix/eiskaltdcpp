@@ -58,6 +58,7 @@ endif (USE_GTK3)
 include_directories (${GTK_INCLUDE_DIRS}
                      ${LIBGNOME2_INCLUDE_DIRS}
                      ${CANBERRA_INCLUDE_DIR}
+                     ${OPENSSL_INCLUDE_DIR}
                      ${PROJECT_SOURCE_DIR})
 list (APPEND LIBS
       ${X11_LIBRARIES}
