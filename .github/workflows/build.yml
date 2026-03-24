@@ -198,7 +198,14 @@ jobs:
       run: |
         vcpkg install --triplet x64-windows `
           openssl bzip2 zlib miniupnpc pcre2 lua `
-          libiconv libidn2 "gettext[tools]"
+          libiconv libidn2 gettext
+
+    - name: Install gettext tools (MSYS2)
+      shell: pwsh
+      run: |
+        # vcpkg provides libintl for linking; MSYS2 provides the CLI tools
+        # (xgettext, msgfmt, msgmerge, etc.) needed for i18n processing
+        C:\msys64\usr\bin\pacman.exe -S --noconfirm --needed gettext
 
     - name: Add vcpkg tools to PATH
       shell: pwsh

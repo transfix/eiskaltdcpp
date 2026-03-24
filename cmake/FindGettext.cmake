@@ -54,13 +54,22 @@ macro(GETTEXT_FIND_POTENTIAL_DIRS)
   foreach(prefix ${CMAKE_PREFIX_PATH})
     set(potential_bin_dirs ${potential_bin_dirs}
       "${prefix}/bin"
-      "${prefix}/tools/gettext/bin")
+      "${prefix}/tools/gettext/bin"
+      "${prefix}/tools/gettext")
     set(potential_lib_dirs ${potential_lib_dirs} "${prefix}/lib")
     set(potential_include_dirs ${potential_include_dirs} "${prefix}/include")
   endforeach()
   if(GETTEXT_SEARCH_PATH)
     set(potential_bin_dirs ${potential_bin_dirs}
-      "${GETTEXT_SEARCH_PATH}/tools/gettext/bin")
+      "${GETTEXT_SEARCH_PATH}/tools/gettext/bin"
+      "${GETTEXT_SEARCH_PATH}/tools/gettext")
+  endif()
+
+  # On Windows, also search MSYS2 and Git-for-Windows which bundle gettext tools
+  if(WIN32)
+    set(potential_bin_dirs ${potential_bin_dirs}
+      "C:/msys64/usr/bin"
+      "$ENV{ProgramFiles}/Git/usr/bin")
   endif()
 
 endmacro(GETTEXT_FIND_POTENTIAL_DIRS)
