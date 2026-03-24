@@ -21,6 +21,15 @@
 #include <chrono>
 #include <cstdint>
 #include <thread>
+#include <version>
+
+// Apple's libc++ (Xcode ≤ 15) does not ship std::jthread.
+// Fall back to std::thread on toolchains that lack it.
+#if defined(__cpp_lib_jthread) && __cpp_lib_jthread >= 201911L
+#  define DCPP_HAS_JTHREAD 1
+#else
+#  define DCPP_HAS_JTHREAD 0
+#endif
 
 #include "Exception.h"
 
@@ -31,16 +40,24 @@ STANDARD_EXCEPTION(ThreadException);
 /**
  * Base class for objects that run work on a background thread.
  *
- * Subclasses override `run()` and call `start()` to launch. The thread
- * is stored as a std::jthread which auto-joins on destruction — no more
- * accidental detach of a running thread.
+ * Subclasses override `run()` and call `start()` to launch. Where
+ * available the thread is stored as a std::jthread which auto-joins on
+ * destruction; otherwise a plain std::thread is used with an explicit
+ * join in the destructor.
  */
 class Thread {
 public:
     enum Priority { IDLE = 1, LOW = 1, NORMAL = 0, HIGH = -1 };
 
     Thread() = default;
+
+#if DCPP_HAS_JTHREAD
     virtual ~Thread() = default;   // jthread auto-joins
+#else
+    virtual ~Thread() {
+        join();
+    }
+#endif
 
     // Non-copyable
     Thread(const Thread&) = delete;
@@ -56,7 +73,9 @@ public:
 
     void detach() {
         if (thread_.joinable()) {
+#if DCPP_HAS_JTHREAD
             thread_.get_stop_source().request_stop();
+#endif
             thread_.detach();
         }
     }
@@ -77,7 +96,11 @@ public:
 protected:
     virtual int run() = 0;
 
+#if DCPP_HAS_JTHREAD
     std::jthread thread_;
+#else
+    std::thread thread_;
+#endif
 };
 
 } // namespace dcpp

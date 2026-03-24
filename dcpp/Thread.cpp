@@ -25,7 +25,11 @@ namespace dcpp {
 
 void Thread::start() {
     join();  // join any previous thread first
+#if DCPP_HAS_JTHREAD
     thread_ = std::jthread([this] { run(); });
+#else
+    thread_ = std::thread([this] { run(); });
+#endif
 }
 
 } // namespace dcpp
