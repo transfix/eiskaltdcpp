@@ -758,7 +758,7 @@ void ShareBrowser::slotButtonUp(){
 }
 
 void ShareBrowser::slotButtonBack(){
-    if (pathHistory_iter && !pathHistory.isEmpty()){
+    if (!pathHistory.isEmpty()){
 
         disconnect(treeView_LPANE->selectionModel(), &QItemSelectionModel::selectionChanged,
                 this, &ShareBrowser::slotLeftPaneSelChanged);
@@ -778,14 +778,14 @@ void ShareBrowser::slotButtonBack(){
 }
 
 void ShareBrowser::slotButtonForward(){
-    if (pathHistory_iter && !pathHistory.isEmpty()){
+    if (!pathHistory.isEmpty()){
 
         disconnect(treeView_LPANE->selectionModel(), &QItemSelectionModel::selectionChanged,
                 this, &ShareBrowser::slotLeftPaneSelChanged);
 
         if (pathHistory.end() == pathHistory_iter)
             --pathHistory_iter;
-        else if (pathHistory_iter != &pathHistory.last())
+        else if (pathHistory_iter != pathHistory.end() - 1)
             ++pathHistory_iter;
 
         SelPair sp= *pathHistory_iter;
