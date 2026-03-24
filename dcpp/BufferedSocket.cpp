@@ -86,7 +86,7 @@ void BufferedSocket::setSocket(std::unique_ptr<Socket> s) {
 
     inbuf.resize(s->getSocketOptInt(SO_RCVBUF));
 
-    sock = move(s);
+    sock = std::move(s);
 }
 
 void BufferedSocket::accept(const Socket& srv, bool secure, bool allowUntrusted) {
@@ -96,7 +96,7 @@ void BufferedSocket::accept(const Socket& srv, bool secure, bool allowUntrusted)
 
     s->accept(srv);
 
-    setSocket(move(s));
+    setSocket(std::move(s));
 
     Lock l(cs);
     addTask(ACCEPTED, 0);
@@ -112,7 +112,7 @@ void BufferedSocket::connect(const string& aAddress, const string& aPort, const 
     std::unique_ptr<Socket> s(secure ? (natRole == NAT_SERVER ? dcpp::getContext()->getCryptoManager()->getServerSocket(allowUntrusted) : dcpp::getContext()->getCryptoManager()->getClientSocket(allowUntrusted, proto)) : new Socket);
 
     s->create();
-    setSocket(move(s));
+    setSocket(std::move(s));
     sock->bind(localPort, SETTING(BIND_IFACE)? sock->getIfaceI4(SETTING(BIND_IFACE_NAME)).c_str() : SETTING(BIND_ADDRESS));
 
     Lock l(cs);
@@ -440,7 +440,7 @@ bool BufferedSocket::checkEvents() {
         {
             Lock l(cs);
             dcassert(!tasks.empty());
-            p = move(tasks.front());
+            p = std::move(tasks.front());
             tasks.erase(tasks.begin());
         }
 
