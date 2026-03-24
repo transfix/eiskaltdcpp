@@ -3191,8 +3191,6 @@ void MainWindow::slotSuppressSnd(){
 }
 
 #if defined(Q_OS_MAC)
-extern void qt_mac_set_dock_menu(QMenu *menu); // Qt internal function
-
 void MainWindow::initDockMenuBar(){
     QMenu *menu = new QMenu(this);
     QAction *setup_speed_lim = new QAction(tr("Setup speed limits"), menu);
@@ -3217,7 +3215,7 @@ void MainWindow::initDockMenuBar(){
     menu->addAction(setup_speed_lim);
     menu->addMenu(menuAdditional);
 
-    qt_mac_set_dock_menu(menu);
+    menu->setAsDockMenu();
 }
 #endif // defined(Q_OS_MAC)
 
