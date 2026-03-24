@@ -518,6 +518,125 @@ jobs:
         name: eiskaltdcpp-gtk3-windows-x64-${{ matrix.build_type }}
         path: dist/
 
+  build-macos-qt6:
+    name: macOS / Qt6
+    runs-on: macos-14
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install cmake ninja gettext openssl@3 bzip2 zlib \
+          miniupnpc libidn2 pcre2 lua aspell qt@6
+
+    - name: Configure
+      run: |
+        export HOMEBREW="$(brew --prefix)"
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$PWD/dist" \
+          -DCMAKE_PREFIX_PATH="$HOMEBREW/opt/qt@6;$HOMEBREW/opt/openssl@3;$HOMEBREW/opt/gettext;$HOMEBREW" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DUSE_QT6=ON \
+          -DUSE_GTK3=OFF \
+          -DUSE_JS=ON \
+          -DUSE_QT_QML=OFF \
+          -DUSE_QT_SQLITE=ON \
+          -DUSE_MINIUPNP=ON \
+          -DWITH_DHT=ON \
+          -DUSE_IDN2=ON \
+          -DLUA_SCRIPT=ON \
+          -DPERL_REGEX=ON \
+          -DUSE_ASPELL=ON \
+          -DDBUS_NOTIFY=OFF \
+          -DWITH_EMOTICONS=ON \
+          -DWITH_SOUNDS=ON \
+          -DBUILD_TESTS=ON
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Test
+      run: ctest --test-dir build --output-on-failure
+
+    - name: Install
+      run: cmake --install build
+
+    - name: Upload build tree
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-qt6-build
+        path: build/
+        retention-days: 1
+
+    - name: Upload distribution
+      uses: actions/upload-artifact@v4
+      with:
+        name: eiskaltdcpp-qt6-macos-arm64
+        path: dist/
+        retention-days: 3
+
+  build-macos-gtk3:
+    name: macOS / GTK3
+    runs-on: macos-14
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install cmake ninja gettext openssl@3 bzip2 zlib \
+          miniupnpc libidn2 pcre2 lua aspell \
+          gtk+3 adwaita-icon-theme librsvg
+
+    - name: Configure
+      run: |
+        export HOMEBREW="$(brew --prefix)"
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$PWD/dist" \
+          -DCMAKE_PREFIX_PATH="$HOMEBREW/opt/openssl@3;$HOMEBREW/opt/gettext;$HOMEBREW" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DUSE_QT6=OFF \
+          -DUSE_GTK3=ON \
+          -DUSE_MINIUPNP=ON \
+          -DWITH_DHT=ON \
+          -DUSE_IDN2=ON \
+          -DLUA_SCRIPT=ON \
+          -DPERL_REGEX=ON \
+          -DUSE_ASPELL=ON \
+          -DUSE_LIBNOTIFY=OFF \
+          -DUSE_LIBCANBERRA=OFF \
+          -DWITH_EMOTICONS=ON \
+          -DWITH_SOUNDS=ON \
+          -DBUILD_TESTS=ON
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Test
+      run: ctest --test-dir build --output-on-failure
+
+    - name: Install
+      run: cmake --install build
+
+    - name: Upload build tree
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-gtk3-build
+        path: build/
+        retention-days: 1
+
+    - name: Upload distribution
+      uses: actions/upload-artifact@v4
+      with:
+        name: eiskaltdcpp-gtk3-macos-arm64
+        path: dist/
+        retention-days: 3
+
   test-coverage:
     name: Test Coverage
     runs-on: ubuntu-24.04
@@ -748,6 +867,182 @@ jobs:
         name: eiskaltdcpp-gtk3-linux-deb
         path: "*.deb"
 
+  # ─── macOS Packaging (depends on successful builds) ───────────────
+
+  package-macos-qt6:
+    name: Package macOS Qt6 DMG
+    runs-on: macos-14
+    needs: build-macos-qt6
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install cmake ninja gettext openssl@3 bzip2 zlib \
+          miniupnpc libidn2 pcre2 lua aspell qt@6
+
+    - name: Download build tree
+      uses: actions/download-artifact@v4
+      with:
+        name: macos-qt6-build
+        path: build/
+
+    - name: Re-run CMake configure (restore install metadata)
+      run: |
+        export HOMEBREW="$(brew --prefix)"
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+          -DCMAKE_PREFIX_PATH="$HOMEBREW/opt/qt@6;$HOMEBREW/opt/openssl@3;$HOMEBREW/opt/gettext;$HOMEBREW" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DUSE_QT6=ON \
+          -DUSE_GTK3=OFF \
+          -DUSE_JS=ON \
+          -DUSE_QT_QML=OFF \
+          -DUSE_QT_SQLITE=ON \
+          -DUSE_MINIUPNP=ON \
+          -DWITH_DHT=ON \
+          -DUSE_IDN2=ON \
+          -DLUA_SCRIPT=ON \
+          -DPERL_REGEX=ON \
+          -DUSE_ASPELL=ON \
+          -DDBUS_NOTIFY=OFF \
+          -DWITH_EMOTICONS=ON \
+          -DWITH_SOUNDS=ON \
+          -DBUILD_TESTS=OFF
+
+    - name: Install and deploy Qt
+      run: |
+        cmake --install build
+        # macdeployqt is run automatically via CMake install() on APPLE
+        # Verify the app bundle exists
+        ls -la install/EiskaltDC++.app/Contents/MacOS/ || true
+
+    - name: Build DMG
+      run: |
+        cd build
+        cpack -G DragNDrop --verbose
+        ls -la *.dmg
+
+    - name: Upload DMG
+      uses: actions/upload-artifact@v4
+      with:
+        name: eiskaltdcpp-qt6-macos-dmg
+        path: build/*.dmg
+
+  package-macos-gtk3:
+    name: Package macOS GTK3 DMG
+    runs-on: macos-14
+    needs: build-macos-gtk3
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install cmake ninja gettext openssl@3 bzip2 zlib \
+          miniupnpc libidn2 pcre2 lua aspell \
+          gtk+3 adwaita-icon-theme librsvg
+
+    - name: Download build tree
+      uses: actions/download-artifact@v4
+      with:
+        name: macos-gtk3-build
+        path: build/
+
+    - name: Re-run CMake configure (restore install metadata)
+      run: |
+        export HOMEBREW="$(brew --prefix)"
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+          -DCMAKE_PREFIX_PATH="$HOMEBREW/opt/openssl@3;$HOMEBREW/opt/gettext;$HOMEBREW" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+          -DUSE_QT6=OFF \
+          -DUSE_GTK3=ON \
+          -DUSE_MINIUPNP=ON \
+          -DWITH_DHT=ON \
+          -DUSE_IDN2=ON \
+          -DLUA_SCRIPT=ON \
+          -DPERL_REGEX=ON \
+          -DUSE_ASPELL=ON \
+          -DUSE_LIBNOTIFY=OFF \
+          -DUSE_LIBCANBERRA=OFF \
+          -DWITH_EMOTICONS=ON \
+          -DWITH_SOUNDS=ON \
+          -DBUILD_TESTS=OFF
+
+    - name: Install
+      run: cmake --install build
+
+    - name: Create app bundle and bundle libraries
+      run: |
+        HOMEBREW="$(brew --prefix)"
+        APP_DIR="install/EiskaltDC++.app"
+        # If the GTK build didn't produce an .app bundle, create one
+        if [ ! -d "$APP_DIR" ]; then
+          APP_DIR="install/eiskaltdcpp-gtk.app"
+        fi
+        if [ ! -d "$APP_DIR" ]; then
+          # Create a minimal .app bundle from the installed binary
+          APP_DIR="install/EiskaltDC++-GTK.app"
+          mkdir -p "$APP_DIR/Contents/MacOS"
+          mkdir -p "$APP_DIR/Contents/Resources"
+          cp install/bin/eiskaltdcpp-gtk "$APP_DIR/Contents/MacOS/eiskaltdcpp-gtk"
+          # Copy data files into the bundle
+          if [ -d install/share ]; then
+            cp -R install/share "$APP_DIR/Contents/Resources/share"
+          fi
+          # Create Info.plist
+          VERSION=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          /usr/bin/python3 -c "
+        import sys
+        v = sys.argv[1]
+        print('''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+        <!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"https://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+        <plist version=\"1.0\">
+        <dict>
+          <key>CFBundleDevelopmentRegion</key><string>English</string>
+          <key>CFBundleExecutable</key><string>eiskaltdcpp-gtk</string>
+          <key>CFBundleIdentifier</key><string>com.github.eiskaltdcpp-gtk</string>
+          <key>CFBundleName</key><string>EiskaltDC++ GTK</string>
+          <key>CFBundleShortVersionString</key><string>%s</string>
+          <key>CFBundleVersion</key><string>%s</string>
+          <key>CFBundlePackageType</key><string>APPL</string>
+          <key>NSHighResolutionCapable</key><true/>
+        </dict>
+        </plist>''' % (v, v))
+        " "$VERSION" > "$APP_DIR/Contents/Info.plist"
+        fi
+
+        # Bundle shared library dependencies using dylibbundler
+        brew install dylibbundler
+        EXEC_PATH=$(find "$APP_DIR/Contents/MacOS" -type f -perm +111 | head -1)
+        dylibbundler -od -b \
+          -x "$EXEC_PATH" \
+          -d "$APP_DIR/Contents/libs" \
+          -p @executable_path/../libs/ \
+          -s "$HOMEBREW/lib" \
+          2>&1 || echo "dylibbundler warnings (non-fatal)"
+
+        echo "=== App bundle contents ==="
+        find "$APP_DIR" -type f | head -50
+
+    - name: Build DMG
+      run: |
+        cd build
+        cpack -G DragNDrop --verbose
+        ls -la *.dmg
+
+    - name: Upload DMG
+      uses: actions/upload-artifact@v4
+      with:
+        name: eiskaltdcpp-gtk3-macos-dmg
+        path: build/*.dmg
+
   # ─── Release ───────────────────────────────────────────────────────
 
   release:
@@ -759,6 +1054,8 @@ jobs:
       - build-windows-gtk3
       - package-linux-qt6
       - package-linux-gtk3
+      - package-macos-qt6
+      - package-macos-gtk3
 
     steps:
     - uses: actions/checkout@v4
@@ -791,6 +1088,9 @@ jobs:
         find release-assets/eiskaltdcpp-gtk3-linux-deb -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
         # Copy NSIS installer if present
         find release-assets/eiskaltdcpp-qt6-windows-x64-installer -name '*.exe' -exec cp {} release/ \; 2>/dev/null || true
+        # Copy macOS DMG files
+        find release-assets/eiskaltdcpp-qt6-macos-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
+        find release-assets/eiskaltdcpp-gtk3-macos-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
         ls -la release/
 
     - name: Create GitHub Release
