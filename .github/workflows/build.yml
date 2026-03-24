@@ -519,8 +519,15 @@ jobs:
         path: dist/
 
   build-macos-qt6:
-    name: macOS / Qt6
-    runs-on: macos-14
+    name: macOS / Qt6 (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-13
+            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -567,20 +574,27 @@ jobs:
     - name: Upload build tree
       uses: actions/upload-artifact@v4
       with:
-        name: macos-qt6-build
+        name: macos-qt6-${{ matrix.arch }}-build
         path: build/
         retention-days: 1
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-qt6-macos-arm64
+        name: eiskaltdcpp-qt6-macos-${{ matrix.arch }}
         path: dist/
         retention-days: 3
 
   build-macos-gtk3:
-    name: macOS / GTK3
-    runs-on: macos-14
+    name: macOS / GTK3 (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-13
+            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -627,14 +641,14 @@ jobs:
     - name: Upload build tree
       uses: actions/upload-artifact@v4
       with:
-        name: macos-gtk3-build
+        name: macos-gtk3-${{ matrix.arch }}-build
         path: build/
         retention-days: 1
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-gtk3-macos-arm64
+        name: eiskaltdcpp-gtk3-macos-${{ matrix.arch }}
         path: dist/
         retention-days: 3
 
@@ -871,9 +885,16 @@ jobs:
   # ─── macOS Packaging (depends on successful builds) ───────────────
 
   package-macos-qt6:
-    name: Package macOS Qt6 DMG
-    runs-on: macos-14
+    name: Package macOS Qt6 DMG (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
     needs: build-macos-qt6
+    strategy:
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-13
+            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -887,7 +908,7 @@ jobs:
     - name: Download build tree
       uses: actions/download-artifact@v4
       with:
-        name: macos-qt6-build
+        name: macos-qt6-${{ matrix.arch }}-build
         path: build/
 
     - name: Re-run CMake configure (restore install metadata)
@@ -930,13 +951,20 @@ jobs:
     - name: Upload DMG
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-qt6-macos-dmg
+        name: eiskaltdcpp-qt6-macos-${{ matrix.arch }}-dmg
         path: build/*.dmg
 
   package-macos-gtk3:
-    name: Package macOS GTK3 DMG
-    runs-on: macos-14
+    name: Package macOS GTK3 DMG (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
     needs: build-macos-gtk3
+    strategy:
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-13
+            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -951,7 +979,7 @@ jobs:
     - name: Download build tree
       uses: actions/download-artifact@v4
       with:
-        name: macos-gtk3-build
+        name: macos-gtk3-${{ matrix.arch }}-build
         path: build/
 
     - name: Re-run CMake configure (restore install metadata)
@@ -1042,7 +1070,7 @@ jobs:
     - name: Upload DMG
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-gtk3-macos-dmg
+        name: eiskaltdcpp-gtk3-macos-${{ matrix.arch }}-dmg
         path: build/*.dmg
 
   # ─── Release ───────────────────────────────────────────────────────
@@ -1090,9 +1118,11 @@ jobs:
         find release-assets/eiskaltdcpp-gtk3-linux-deb -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
         # Copy NSIS installer if present
         find release-assets/eiskaltdcpp-qt6-windows-x64-installer -name '*.exe' -exec cp {} release/ \; 2>/dev/null || true
-        # Copy macOS DMG files
-        find release-assets/eiskaltdcpp-qt6-macos-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
-        find release-assets/eiskaltdcpp-gtk3-macos-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
+        # Copy macOS DMG files (arm64 + x86_64)
+        for arch in arm64 x86_64; do
+          find release-assets/eiskaltdcpp-qt6-macos-${arch}-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
+          find release-assets/eiskaltdcpp-gtk3-macos-${arch}-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
+        done
         ls -la release/
 
     - name: Create GitHub Release
