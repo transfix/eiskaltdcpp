@@ -526,8 +526,6 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
-          - runner: macos-13
-            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -593,8 +591,6 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
-          - runner: macos-13
-            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -893,8 +889,6 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
-          - runner: macos-13
-            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -963,8 +957,6 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
-          - runner: macos-13
-            arch: x86_64
 
     steps:
     - uses: actions/checkout@v4
@@ -1118,8 +1110,8 @@ jobs:
         find release-assets/eiskaltdcpp-gtk3-linux-deb -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
         # Copy NSIS installer if present
         find release-assets/eiskaltdcpp-qt6-windows-x64-installer -name '*.exe' -exec cp {} release/ \; 2>/dev/null || true
-        # Copy macOS DMG files (arm64 + x86_64)
-        for arch in arm64 x86_64; do
+        # Copy macOS DMG files (arm64)
+        for arch in arm64; do
           find release-assets/eiskaltdcpp-qt6-macos-${arch}-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
           find release-assets/eiskaltdcpp-gtk3-macos-${arch}-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
         done
