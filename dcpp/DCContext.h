@@ -24,6 +24,8 @@
 
 class IPFilter;  // defined in extra/ipfilter.h (global scope)
 
+namespace dht { class DHT; }  // DHT lives outside dcpp::
+
 namespace dcpp {
 
 // Forward declarations — avoids pulling every manager header into every TU.
@@ -142,6 +144,9 @@ public:
     [[nodiscard]] DebugManager*        getDebugManager()        const noexcept { return debugManager_.get(); }
     [[nodiscard]] DynDNS*               getDynDNS()              const noexcept { return dynDNS_.get(); }
     [[nodiscard]] ::IPFilter*            getIPFilter()            const noexcept { return ipFilter_.get(); }
+#ifdef WITH_DHT
+    [[nodiscard]] ::dht::DHT*             getDHT()                 const noexcept { return dht_.get(); }
+#endif
 #ifdef LUA_SCRIPT
     [[nodiscard]] ScriptManager*        getScriptManager()       const noexcept { return scriptManager_.get(); }
 #endif
@@ -174,6 +179,9 @@ private:
     std::unique_ptr<DebugManager>        debugManager_;
     std::unique_ptr<DynDNS>              dynDNS_;
     std::unique_ptr<::IPFilter>          ipFilter_;
+#ifdef WITH_DHT
+    std::unique_ptr<::dht::DHT>           dht_;
+#endif
 #ifdef LUA_SCRIPT
     std::unique_ptr<ScriptManager>       scriptManager_;
 #endif

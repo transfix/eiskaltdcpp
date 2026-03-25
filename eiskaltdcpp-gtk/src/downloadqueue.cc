@@ -497,7 +497,7 @@ void DownloadQueue::updateFileView_gui()
 
             typedef Func1<DownloadQueue, string> F1;
             F1 *func = new F1(this, &DownloadQueue::updateFileView_client, currentDir);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
     }
 }
@@ -505,7 +505,7 @@ void DownloadQueue::updateFileView_gui()
 void DownloadQueue::sendMessage_gui(string cid)
 {
     if (!cid.empty())
-        WulforManager::get()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN, cid);
+        wulforManagerInstance()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN, cid);
 }
 
 gboolean DownloadQueue::onDirButtonPressed_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -677,7 +677,7 @@ void DownloadQueue::onDirPriorityClicked_gui(GtkMenuItem *item, gpointer data)
 
         typedef Func2<DownloadQueue, string, QueueItem::Priority> F2;
         F2 *func = new F2(dq, &DownloadQueue::setPriorityDir_client, path, priority);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -714,7 +714,7 @@ void DownloadQueue::onDirMoveClicked_gui(GtkMenuItem *menuItem, gpointer data)
 
                 typedef Func2<DownloadQueue, string, string> F2;
                 F2 *func = new F2(dq, &DownloadQueue::moveDir_client, path, target);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
         }
     }
@@ -732,7 +732,7 @@ void DownloadQueue::onDirRemoveClicked_gui(GtkMenuItem*, gpointer data)
 
         typedef Func1<DownloadQueue, string> F1;
         F1 *func = new F1(dq, &DownloadQueue::removeDir_client, path);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -753,7 +753,7 @@ void DownloadQueue::onFileSearchAlternatesClicked_gui(GtkMenuItem*, gpointer dat
             tth = dq->fileView.getString(&iter, _("TTH"));
             if (!tth.empty())
             {
-                s = WulforManager::get()->getMainWindow()->addSearch_gui();
+                s = wulforManagerInstance()->getMainWindow()->addSearch_gui();
                 s->putValue_gui(tth, 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
             }
         }
@@ -837,7 +837,7 @@ void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem*, gpointer data)
                     g_free(tmp);
                     source = dq->fileView.getString(&iter, "Target");
                     func = new F2(dq, &DownloadQueue::move_client, source, target);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
             }
         }
@@ -872,7 +872,7 @@ void DownloadQueue::onFileMoveClicked_gui(GtkMenuItem*, gpointer data)
                         source = dq->fileView.getString(&iter, "Target");
                         filename = dq->fileView.getString(&iter, _("Filename"));
                         func = new F2(dq, &DownloadQueue::move_client, source, target + filename);
-                        WulforManager::get()->dispatchClientFunc(func);
+                        wulforManagerInstance()->dispatchClientFunc(func);
                     }
                     gtk_tree_path_free(path);
                 }
@@ -914,7 +914,7 @@ void DownloadQueue::onFilePriorityClicked_gui(GtkMenuItem *item, gpointer data)
                 priority = QueueItem::NORMAL;
 
             func = new F2(dq, &DownloadQueue::setPriority_client, target, priority);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         gtk_tree_path_free(path);
     }
@@ -940,7 +940,7 @@ void DownloadQueue::onFileGetListClicked_gui(GtkMenuItem *item, gpointer data)
             nick = WulforUtil::getTextFromMenu(item);
 
             func = new F2(dq, &DownloadQueue::addList_client, target, nick);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         gtk_tree_path_free(path);
     }
@@ -966,7 +966,7 @@ void DownloadQueue::onFileSendPMClicked_gui(GtkMenuItem *item, gpointer data)
             nick = WulforUtil::getTextFromMenu(item);
 
             func = new F2(dq, &DownloadQueue::sendMessage_client, target, nick);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         gtk_tree_path_free(path);
     }
@@ -992,7 +992,7 @@ void DownloadQueue::onFileReAddSourceClicked_gui(GtkMenuItem *item, gpointer dat
             nick = WulforUtil::getTextFromMenu(item);
 
             func = new F2(dq, &DownloadQueue::reAddSource_client, target, nick);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         gtk_tree_path_free(path);
     }
@@ -1018,7 +1018,7 @@ void DownloadQueue::onFileRemoveSourceClicked_gui(GtkMenuItem *item, gpointer da
             nick = WulforUtil::getTextFromMenu(item);
 
             func = new F2(dq, &DownloadQueue::removeSource_client, target, nick);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         gtk_tree_path_free(path);
     }
@@ -1044,7 +1044,7 @@ void DownloadQueue::onFileRemoveUserFromQueueClicked_gui(GtkMenuItem *item, gpoi
             nick = WulforUtil::getTextFromMenu(item);
 
             func = new F2(dq, &DownloadQueue::removeSources_client, target, nick);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         gtk_tree_path_free(path);
     }
@@ -1068,7 +1068,7 @@ void DownloadQueue::onFileRemoveClicked_gui(GtkMenuItem*, gpointer data)
         {
             target = dq->fileView.getString(&iter, "Target");
             func = new F1(dq, &DownloadQueue::remove_client, target);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         gtk_tree_path_free(path);
     }
@@ -1161,7 +1161,7 @@ void DownloadQueue::addList_client(string target, string nick)
     {
         typedef Func2<DownloadQueue, string, string> F2;
         F2 *func = new F2(this, &DownloadQueue::setStatus_gui, e.getError(), "statusMain");
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1174,7 +1174,7 @@ void DownloadQueue::sendMessage_client(string target, string nick)
         {
             typedef Func1<DownloadQueue, string> F1;
             F1 *func = new F1(this, &DownloadQueue::sendMessage_gui, it->second);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
     }
 }
@@ -1198,7 +1198,7 @@ void DownloadQueue::reAddSource_client(string target, string nick)
     {
         typedef Func2<DownloadQueue, string, string> F2;
         F2 *func = new F2(this, &DownloadQueue::setStatus_gui, e.getError(), "statusMain");
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1278,7 +1278,7 @@ void DownloadQueue::updateFileView_client(string path)
         // Updating gui is smoother if we do it in large chunks.
         typedef Func2<DownloadQueue, vector<StringMap>, bool> F2;
         F2 *func = new F2(this, &DownloadQueue::addFiles_gui, files, true);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1410,7 +1410,7 @@ void DownloadQueue::on(QueueManagerListener::Added, QueueItem *item) noexcept
 
     typedef Func2<DownloadQueue, StringMap, bool> F2;
     F2 *func = new F2(this, &DownloadQueue::addFile_gui, params, true);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void DownloadQueue::on(QueueManagerListener::Moved, QueueItem *item, const string &oldTarget) noexcept
@@ -1418,7 +1418,7 @@ void DownloadQueue::on(QueueManagerListener::Moved, QueueItem *item, const strin
     // Remove the old file
     typedef Func2<DownloadQueue, string, int64_t> F2a;
     F2a *func1 = new F2a(this, &DownloadQueue::removeFile_gui, oldTarget, item->getSize());
-    WulforManager::get()->dispatchGuiFunc(func1);
+    wulforManagerInstance()->dispatchGuiFunc(func1);
 
     // Add the new file
     StringMap params;
@@ -1426,14 +1426,14 @@ void DownloadQueue::on(QueueManagerListener::Moved, QueueItem *item, const strin
 
     typedef Func2<DownloadQueue, StringMap, bool> F2b;
     F2b *func2 = new F2b(this, &DownloadQueue::addFile_gui, params, true);
-    WulforManager::get()->dispatchGuiFunc(func2);
+    wulforManagerInstance()->dispatchGuiFunc(func2);
 }
 
 void DownloadQueue::on(QueueManagerListener::Removed, QueueItem *item) noexcept
 {
     typedef Func2<DownloadQueue, string, int64_t> F2;
     F2 *func = new F2(this, &DownloadQueue::removeFile_gui, item->getTarget(), item->getSize());
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void DownloadQueue::on(QueueManagerListener::SourcesUpdated, QueueItem *item) noexcept
@@ -1443,7 +1443,7 @@ void DownloadQueue::on(QueueManagerListener::SourcesUpdated, QueueItem *item) no
 
     typedef Func1<DownloadQueue, StringMap> F1;
     F1 *func = new F1(this, &DownloadQueue::updateFile_gui, params);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void DownloadQueue::on(QueueManagerListener::StatusUpdated, QueueItem *item) noexcept
@@ -1453,5 +1453,5 @@ void DownloadQueue::on(QueueManagerListener::StatusUpdated, QueueItem *item) noe
 
     typedef Func1<DownloadQueue, StringMap> F1;
     F1 *func = new F1(this, &DownloadQueue::updateFile_gui, params);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }

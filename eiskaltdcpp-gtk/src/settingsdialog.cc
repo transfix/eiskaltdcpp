@@ -172,7 +172,7 @@ void Settings::response_gui()
 void Settings::saveSettings_client()
 {
     SettingsManager *sm = dcpp::getContext()->getSettingsManager();
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
     string path;
 
     { // Personal
@@ -940,7 +940,7 @@ void Settings::initDownloads_gui()
         gtk_widget_set_sensitive(getWidget("previewRemoveButton"), true);
         gtk_widget_set_sensitive(getWidget("previewApplyButton"), true);
 
-        WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+        WulforSettingsManager *wsm = wulforSettingsInstance();
         const PreviewApp::List &Apps = wsm->getPreviewApps();
 
         // add default applications players
@@ -1050,7 +1050,7 @@ void Settings::initSharing_gui()
 
 void Settings::initAppearance_gui()
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
 
     { // Appearance
         vectorLangFullNames.push_back(_("System default"));
@@ -2425,7 +2425,7 @@ void Settings::onNotifyDefaultButton_gui(GtkWidget *widget, gpointer data)
     if (gtk_tree_selection_get_selected(selection, NULL, &iter))
     {
         GdkPixbuf *icon = NULL;
-        WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+        WulforSettingsManager *wsm = wulforSettingsInstance();
         string title = wsm->getString(s->notifyView.getString(&iter, "keyTitle"), true);
         string path = wsm->getString(s->notifyView.getString(&iter, "keyIcon"), true);
 
@@ -2578,7 +2578,7 @@ void Settings::onDefaultColorsSPButton_gui(GtkWidget *widget, gpointer data)
 #define g_c_p(a,b) gdk_color_parse(a,b)
 #endif
 
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
 
     if (g_c_p(wsm->getString("search-spy-a-color", true).c_str(), &color))
         g_c_b_s(G_C_B(s->getWidget("aSPColorButton")), &color);
@@ -2606,7 +2606,7 @@ void Settings::onDefaultFrameSPButton_gui(GtkWidget *widget, gpointer data)
     (void)widget;
     Settings *s = (Settings *)data;
 
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(s->getWidget("frameSPSpinButton")), double(wsm->getInt("search-spy-frame", true)));
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(s->getWidget("waitingSPSpinButton")), double(wsm->getInt("search-spy-waiting", true)));
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(s->getWidget("topSPSpinButton")), double(wsm->getInt("search-spy-top", true)));
@@ -2936,7 +2936,7 @@ void Settings::onSoundPlayButton_gui(GtkWidget*, gpointer data)
     GtkTreeIter iter;
     GtkTreeSelection *selection = gtk_tree_view_get_selection(s->soundView.get());
 
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
     wsm->set("sound-command", string(gtk_entry_get_text(GTK_ENTRY(s->getWidget("soundCommandEntry")))));
 
     if (gtk_tree_selection_get_selected(selection, NULL, &iter))
@@ -2990,7 +2990,7 @@ void Settings::onPreviewAdd_gui(GtkWidget*, gpointer data)
         return;
     }
 
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
 
     if (wsm->getPreviewApp(name))
     {
@@ -3021,7 +3021,7 @@ void Settings::onPreviewRemove_gui(GtkWidget*, gpointer data)
     {
         string name = s->previewAppView.getString(&iter, _("Name"));
 
-        if (WulforSettingsManager::getInstance()->removePreviewApp(name))
+        if (wulforSettingsInstance()->removePreviewApp(name))
             gtk_list_store_remove(s->previewAppToStore, &iter);
     }
 }
@@ -3083,7 +3083,7 @@ void Settings::onPreviewApply_gui(GtkWidget*, gpointer data)
     {
         string oldName = s->previewAppView.getString(&iter, _("Name"));
 
-        if (WulforSettingsManager::getInstance()->applyPreviewApp(oldName, name, app, ext))
+        if (wulforSettingsInstance()->applyPreviewApp(oldName, name, app, ext))
         {
             gtk_list_store_set(s->previewAppToStore, &iter,
                                s->previewAppView.col(_("Name")), name.c_str(),
@@ -3126,7 +3126,7 @@ void Settings::onAddShare_gui(GtkWidget*, gpointer data)
                 string name = gtk_entry_get_text(GTK_ENTRY(s->getWidget("nameDialogEntry")));
                 typedef Func2<Settings, string, string> F2;
                 F2 *func = new F2(s, &Settings::addShare_client, path, name);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
         }
     }
@@ -3140,7 +3140,7 @@ void Settings::onPictureShare_gui(GtkWidget*, gpointer data)
     string path = Util::getPath(Util::PATH_USER_LOCAL) + "Images/";
     typedef Func2<Settings, string, string> F2;
     F2 *func = new F2(s, &Settings::addShare_client, path, name);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 }
 
 void Settings::selectTextColor_gui(const int select)
@@ -3255,7 +3255,7 @@ void Settings::selectTextStyle_gui(const int select)
     GtkTextTag *tag = NULL;
     string style = "";
 
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
 
     if (select == 1)
     {
@@ -3860,7 +3860,7 @@ gboolean Settings::onShareHiddenPressed_gui(GtkToggleButton*, gpointer data)
     bool show = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(s->getWidget("shareHiddenCheckButton")));
 
     Func1<Settings, bool> *func = new Func1<Settings, bool>(s, &Settings::shareHidden_client, show);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 
     return false;
 }
@@ -4104,7 +4104,7 @@ void Settings::onUserCommandMoveUp_gui(GtkWidget*, gpointer data)
 
             typedef Func3<Settings, string, string, int> F3;
             F3 *func = new F3(s, &Settings::moveUserCommand_client, name, hub, -1);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         gtk_tree_path_free(path);
     }
@@ -4127,7 +4127,7 @@ void Settings::onUserCommandMoveDown_gui(GtkWidget*, gpointer data)
 
             typedef Func3<Settings, string, string, int> F3;
             F3 *func = new F3(s, &Settings::moveUserCommand_client, name, hub, 1);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
     }
 }
@@ -4146,7 +4146,7 @@ void Settings::onUserCommandRemove_gui(GtkWidget*, gpointer data)
 
         typedef Func2<Settings, string, string> F2;
         F2 *func = new F2(s, &Settings::removeUserCommand_client, name, hub);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -4284,7 +4284,7 @@ void Settings::onGenerateCertificatesClicked_gui(GtkWidget*, gpointer data)
 {
     Settings *s = (Settings *)data;
     Func0<Settings> *func = new Func0<Settings>(s, &Settings::generateCertificates_client);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 }
 
 void Settings::shareHidden_client(bool show)
@@ -4294,7 +4294,7 @@ void Settings::shareHidden_client(bool show)
     dcpp::getContext()->getShareManager()->refresh(true, false, true);
 
     Func0<Settings> *func = new Func0<Settings>(this, &Settings::updateShares_gui);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void Settings::addShare_client(string path, string name)
@@ -4310,12 +4310,12 @@ void Settings::addShare_client(string path, string name)
     {
         typedef Func1<Settings, const string> F1;
         F1 *func = new F1(this, &Settings::showErrorDialog, e.getError());
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 
     typedef Func3<Settings, string, string, int64_t> F3;
     F3 *func = new F3(this, &Settings::addShare_gui, path, name, size);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void Settings::removeUserCommand_client(string name, string hub)

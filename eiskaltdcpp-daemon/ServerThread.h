@@ -24,7 +24,6 @@
 #include "dcpp/SearchManager.h"
 #include "dcpp/SearchManagerListener.h"
 #include "dcpp/SearchResult.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/ShareManager.h"
 #include "dcpp/Socket.h"
 #include "dcpp/TimerManager.h"
@@ -37,11 +36,16 @@ class ServerThread :
         private LogManagerListener,
         private ClientListener,
         public SearchManagerListener,
-        public Thread,
-        public Singleton<ServerThread>
+        public Thread
 {
 
 public:
+    ServerThread();
+    ~ServerThread();
+
+    ServerThread(const ServerThread&) = delete;
+    ServerThread& operator=(const ServerThread&) = delete;
+
     void Resume();
     void Close();
     void WaitFor();
@@ -95,10 +99,6 @@ public:
     bool configReload();
 
 private:
-    friend class Singleton<ServerThread>;
-
-    ServerThread();
-    virtual ~ServerThread();
 
     virtual int run();
     void startSocket(bool changed);

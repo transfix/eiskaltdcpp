@@ -65,6 +65,7 @@ add_executable(eiskaltdcpp-tests
     test_flags.cpp
     test_format.cpp
     test_filteredfile.cpp
+    test_dht_context.cpp
 )
 
 target_include_directories(eiskaltdcpp-tests PRIVATE

@@ -102,38 +102,38 @@ int ServerThread::run() {
     }
 #endif
 #ifdef XMLRPC_DAEMON
-    xmlrpc_c::methodPtr const magnetAddMethodP(new magnetAddMethod);
+    xmlrpc_c::methodPtr const magnetAddMethodP(new magnetAddMethod(*this));
     xmlrpc_c::methodPtr const stopDaemonMethodP(new stopDaemonMethod);
-    xmlrpc_c::methodPtr const hubAddMethodP(new hubAddMethod);
-    xmlrpc_c::methodPtr const hubDelMethodP(new hubDelMethod);
-    xmlrpc_c::methodPtr const hubSayMethodP(new hubSayMethod);
-    xmlrpc_c::methodPtr const hubSayPrivateMethodP(new hubSayPrivateMethod);
-    xmlrpc_c::methodPtr const listHubsMethodP(new listHubsMethod);
-    xmlrpc_c::methodPtr const addDirInShareMethodP(new addDirInShareMethod);
-    xmlrpc_c::methodPtr const renameDirInShareMethodP(new renameDirInShareMethod);
-    xmlrpc_c::methodPtr const delDirFromShareMethodP(new delDirFromShareMethod);
-    xmlrpc_c::methodPtr const listShareMethodP(new listShareMethod);
+    xmlrpc_c::methodPtr const hubAddMethodP(new hubAddMethod(*this));
+    xmlrpc_c::methodPtr const hubDelMethodP(new hubDelMethod(*this));
+    xmlrpc_c::methodPtr const hubSayMethodP(new hubSayMethod(*this));
+    xmlrpc_c::methodPtr const hubSayPrivateMethodP(new hubSayPrivateMethod(*this));
+    xmlrpc_c::methodPtr const listHubsMethodP(new listHubsMethod(*this));
+    xmlrpc_c::methodPtr const addDirInShareMethodP(new addDirInShareMethod(*this));
+    xmlrpc_c::methodPtr const renameDirInShareMethodP(new renameDirInShareMethod(*this));
+    xmlrpc_c::methodPtr const delDirFromShareMethodP(new delDirFromShareMethod(*this));
+    xmlrpc_c::methodPtr const listShareMethodP(new listShareMethod(*this));
     xmlrpc_c::methodPtr const refreshShareMethodP(new refreshShareMethod);
-    xmlrpc_c::methodPtr const getChatPubMethodP(new getChatPubMethod);
-    xmlrpc_c::methodPtr const getFileListMethodP(new getFileListMethod);
-    xmlrpc_c::methodPtr const sendSearchMethodP(new sendSearchMethod);
-    xmlrpc_c::methodPtr const returnSearchResultsMethodP(new returnSearchResultsMethod);
-    xmlrpc_c::methodPtr const clearSearchResultsMethodP(new clearSearchResultsMethod);
+    xmlrpc_c::methodPtr const getChatPubMethodP(new getChatPubMethod(*this));
+    xmlrpc_c::methodPtr const getFileListMethodP(new getFileListMethod(*this));
+    xmlrpc_c::methodPtr const sendSearchMethodP(new sendSearchMethod(*this));
+    xmlrpc_c::methodPtr const returnSearchResultsMethodP(new returnSearchResultsMethod(*this));
+    xmlrpc_c::methodPtr const clearSearchResultsMethodP(new clearSearchResultsMethod(*this));
     xmlrpc_c::methodPtr const showVersionMethodP(new showVersionMethod);
     xmlrpc_c::methodPtr const showRatioMethodP(new showRatioMethod);
-    xmlrpc_c::methodPtr const setPriorityQueueItemMethodP(new setPriorityQueueItemMethod);
-    xmlrpc_c::methodPtr const moveQueueItemMethodP(new moveQueueItemMethod);
-    xmlrpc_c::methodPtr const removeQueueItemMethodP(new removeQueueItemMethod);
-    xmlrpc_c::methodPtr const listQueueTargetsMethodP(new listQueueTargetsMethod);
-    xmlrpc_c::methodPtr const listQueueMethodP(new listQueueMethod);
-    xmlrpc_c::methodPtr const getSourcesItemMethodP(new getSourcesItemMethod);
-    xmlrpc_c::methodPtr const getHashStatusMethodP(new getHashStatusMethod);
-    xmlrpc_c::methodPtr const pauseHashMethodP(new pauseHashMethod);
-    xmlrpc_c::methodPtr const getMethodListMethodP(new getMethodListMethod);
-    xmlrpc_c::methodPtr const listHubsFullDescMethodP(new listHubsFullDescMethod);
-    xmlrpc_c::methodPtr const getHubUserListMethodP(new getHubUserListMethod);
-    xmlrpc_c::methodPtr const getUserInfoMethodP(new getUserInfoMethod);
-    xmlrpc_c::methodPtr const matchAllListMethodP(new matchAllListMethod);
+    xmlrpc_c::methodPtr const setPriorityQueueItemMethodP(new setPriorityQueueItemMethod(*this));
+    xmlrpc_c::methodPtr const moveQueueItemMethodP(new moveQueueItemMethod(*this));
+    xmlrpc_c::methodPtr const removeQueueItemMethodP(new removeQueueItemMethod(*this));
+    xmlrpc_c::methodPtr const listQueueTargetsMethodP(new listQueueTargetsMethod(*this));
+    xmlrpc_c::methodPtr const listQueueMethodP(new listQueueMethod(*this));
+    xmlrpc_c::methodPtr const getSourcesItemMethodP(new getSourcesItemMethod(*this));
+    xmlrpc_c::methodPtr const getHashStatusMethodP(new getHashStatusMethod(*this));
+    xmlrpc_c::methodPtr const pauseHashMethodP(new pauseHashMethod(*this));
+    xmlrpc_c::methodPtr const getMethodListMethodP(new getMethodListMethod(*this));
+    xmlrpc_c::methodPtr const listHubsFullDescMethodP(new listHubsFullDescMethod(*this));
+    xmlrpc_c::methodPtr const getHubUserListMethodP(new getHubUserListMethod(*this));
+    xmlrpc_c::methodPtr const getUserInfoMethodP(new getUserInfoMethod(*this));
+    xmlrpc_c::methodPtr const matchAllListMethodP(new matchAllListMethod(*this));
     xmlrpcRegistry.addMethod("magnet.add", magnetAddMethodP);
     xmlrpcRegistry.addMethod("daemon.stop", stopDaemonMethodP);
     xmlrpcRegistry.addMethod("hub.add", hubAddMethodP);
@@ -182,7 +182,7 @@ int ServerThread::run() {
 
 #ifdef JSONRPC_DAEMON
     jsonserver = new Json::Rpc::HTTPServer(lip, lport);
-    JsonRpcMethods a;
+    JsonRpcMethods a(*this);
     jsonserver->AddMethod(new Json::Rpc::RpcMethod<JsonRpcMethods>(a, &JsonRpcMethods::MagnetAdd, std::string("magnet.add")));
     jsonserver->AddMethod(new Json::Rpc::RpcMethod<JsonRpcMethods>(a, &JsonRpcMethods::StopDaemon, std::string("daemon.stop")));
     jsonserver->AddMethod(new Json::Rpc::RpcMethod<JsonRpcMethods>(a, &JsonRpcMethods::HubAdd, std::string("hub.add")));

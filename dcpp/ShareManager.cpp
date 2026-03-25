@@ -40,6 +40,7 @@
 #include "UserConnection.h"
 #include "version.h"
 #ifdef WITH_DHT
+#include "dht/DHT.h"
 #include "dht/IndexManager.h"
 #endif
 #ifndef _WIN32
@@ -794,9 +795,9 @@ void ShareManager::updateIndices(Directory& dir, const decltype(std::declval<Dir
     tthIndex.emplace(f.getTTH(), i);
     bloom.add(Text::toLower(f.getName()));
 #ifdef WITH_DHT
-    dht::IndexManager* im = dht::IndexManager::getInstance();
-    if(im && im->isTimeForPublishing())
-        im->publishFile(f.getTTH(), f.getSize());
+    dht::DHT* dhtInst = ctx()->getDHT();
+    if(dhtInst && dhtInst->getIndexManager().isTimeForPublishing())
+        dhtInst->getIndexManager().publishFile(f.getTTH(), f.getSize());
 #endif
 }
 
@@ -877,9 +878,9 @@ int ShareManager::run() {
     }
     refreshing = false;
 #ifdef WITH_DHT
-    dht::IndexManager* im = dht::IndexManager::getInstance();
-    if(im && im->isTimeForPublishing())
-        im->setNextPublishing();
+    dht::DHT* dhtInst = ctx()->getDHT();
+    if(dhtInst && dhtInst->getIndexManager().isTimeForPublishing())
+        dhtInst->getIndexManager().setNextPublishing();
 #endif
     return 0;
 }

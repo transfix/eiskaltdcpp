@@ -114,7 +114,7 @@ void PublicHubs::show()
 
     dcpp::getContext()->getFavoriteManager()->addListener(this);
     Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::downloadList_client);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 }
 
 // Populate the public hubs list
@@ -280,7 +280,7 @@ void PublicHubs::onConnect_gui(GtkWidget*, gpointer data)
     if (gtk_tree_selection_get_selected(ph->hubSelection, NULL, &iter))
     {
         string address = ph->hubView.getString(&iter, _("Address"));
-        WulforManager::get()->getMainWindow()->showHub_gui(address);
+        wulforManagerInstance()->getMainWindow()->showHub_gui(address);
     }
 }
 
@@ -291,7 +291,7 @@ void PublicHubs::onRefresh_gui(GtkWidget*, gpointer data)
 
     typedef Func1<PublicHubs, int> F1;
     F1 *func = new F1(ph, &PublicHubs::refresh_client, pos);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 }
 
 void PublicHubs::onAddFav_gui(GtkMenuItem*, gpointer data)
@@ -315,7 +315,7 @@ void PublicHubs::onAddFav_gui(GtkMenuItem*, gpointer data)
 
         typedef Func1<PublicHubs, FavoriteHubEntry> F1;
         F1 *func = new F1(ph, &PublicHubs::addFav_client, entry);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -434,7 +434,7 @@ void PublicHubs::downloadList_client()
     dcpp::getContext()->getFavoriteManager()->save();
 
     Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void PublicHubs::refresh_client(int pos)
@@ -453,7 +453,7 @@ void PublicHubs::on(FavoriteManagerListener::DownloadStarting, const string &fil
     string msg = _("Download starting: ") + file;
     typedef Func2<PublicHubs, string, string> Func;
     Func *func = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void PublicHubs::on(FavoriteManagerListener::DownloadFailed, const string &file) noexcept
@@ -461,7 +461,7 @@ void PublicHubs::on(FavoriteManagerListener::DownloadFailed, const string &file)
     string msg = _("Download failed: ") + file;
     typedef Func2<PublicHubs, string, string> Func;
     Func *func = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void PublicHubs::on(FavoriteManagerListener::DownloadFinished, const string &file) noexcept
@@ -469,12 +469,12 @@ void PublicHubs::on(FavoriteManagerListener::DownloadFinished, const string &fil
     string msg = _("Download finished: ") + file;
     typedef Func2<PublicHubs, string, string> Func;
     Func *f2 = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
-    WulforManager::get()->dispatchGuiFunc(f2);
+    wulforManagerInstance()->dispatchGuiFunc(f2);
 
     hubs = dcpp::getContext()->getFavoriteManager()->getPublicHubs();
 
     Func0<PublicHubs> *f0 = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
-    WulforManager::get()->dispatchGuiFunc(f0);
+    wulforManagerInstance()->dispatchGuiFunc(f0);
 }
 
 void PublicHubs::on(FavoriteManagerListener::LoadedFromCache, const string &file, const std::string& d) noexcept
@@ -482,12 +482,12 @@ void PublicHubs::on(FavoriteManagerListener::LoadedFromCache, const string &file
     string msg = _("Loaded from cache: ") + file + "(" + d +")";
     typedef Func2<PublicHubs, string, string> Func;
     Func *func = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 
     hubs = dcpp::getContext()->getFavoriteManager()->getPublicHubs();
 
     Func0<PublicHubs> *f0 = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
-    WulforManager::get()->dispatchGuiFunc(f0);
+    wulforManagerInstance()->dispatchGuiFunc(f0);
 }
 
 void PublicHubs::on(FavoriteManagerListener::Corrupted, const string &file) noexcept
@@ -495,5 +495,5 @@ void PublicHubs::on(FavoriteManagerListener::Corrupted, const string &file) noex
     string msg = _("Downloaded hub list is corrupted or unsupported ") + file;
     typedef Func2<PublicHubs, string, string> Func;
     Func *func = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }

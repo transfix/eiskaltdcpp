@@ -30,13 +30,14 @@
 #include "GtkSettingsModel.h"
 
 // ── Forward-compatible macros ──
-// Phase 5: these continue to work via WulforSettingsManager::getInstance()
-// which now delegates to the underlying GtkSettingsModel.
-#define WSET(key, value) WulforSettingsManager::getInstance()->set(key, value)
-#define WGETI(key) WulforSettingsManager::getInstance()->getInt(key)
-#define WGETS(key) WulforSettingsManager::getInstance()->getString(key)
-#define WGETB(key) WulforSettingsManager::getInstance()->getBool(key)
-#define WSCMD(cmd) WulforSettingsManager::getInstance()->parseCmd(cmd);
+// These access the current WulforSettingsManager via a free function
+// that returns a reference to the active instance.  The active instance
+// is set/cleared by the RAII scope in wulfor.cc main().
+#define WSET(key, value) wulforSettingsInstance()->set(key, value)
+#define WGETI(key) wulforSettingsInstance()->getInt(key)
+#define WGETS(key) wulforSettingsInstance()->getString(key)
+#define WGETB(key) wulforSettingsInstance()->getBool(key)
+#define WSCMD(cmd) wulforSettingsInstance()->parseCmd(cmd);
 
 /* default font theme — now use widget-independent constants */
 #define TEXT_WEIGHT_NORMAL gtk_settings::TEXT_WEIGHT_NORMAL
@@ -68,13 +69,9 @@ public:
 /**
  * WulforSettingsManager — thin wrapper that delegates to GtkSettingsModel.
  *
- * Phase 5 migration: the Singleton<> inheritance is removed.  A global
- * instance pointer is maintained for backward compatibility with the
- * WGETI/WGETS/WSET/WGETB/WSCMD macros.  The instance is created in
- * wulfor.cc and the pointer set via setInstance().
- *
- * Eventually (Phase 6+), the macros and this wrapper can be removed
- * entirely, with consumers using GtkSettingsModel directly.
+ * The instance is stack-allocated in wulfor.cc main() with RAII lifetime.
+ * A module-level extern pointer (wulforSettingsInstance()) provides access
+ * for macros and legacy code; the pointer is set/cleared in wulfor.cc.
  */
 class WulforSettingsManager
 {
@@ -84,11 +81,6 @@ public:
 
     WulforSettingsManager(const WulforSettingsManager&) = delete;
     WulforSettingsManager& operator=(const WulforSettingsManager&) = delete;
-
-    // ── Global instance management (replaces Singleton<>) ──
-    static WulforSettingsManager *getInstance() { return instance_; }
-    static void newInstance();
-    static void deleteInstance();
 
     // ── Delegated API (same signatures as before) ──
     int getInt(const std::string &key, bool useDefault = false);
@@ -114,7 +106,6 @@ public:
     const gtk_settings::GtkSettingsModel &model() const { return model_; }
 
 private:
-    static WulforSettingsManager *instance_;
 
     gtk_settings::GtkSettingsModel model_;
     std::string configFile;
@@ -128,3 +119,10 @@ private:
     /// Free all legacy PreviewApp pointers.
     void freePreviewApps();
 };
+
+/// Access the active WulforSettingsManager instance.
+/// The pointer is set in wulfor.cc during the RAII scope block.
+WulforSettingsManager *wulforSettingsInstance();
+
+/// Set/clear the active WulforSettingsManager instance.
+void setWulforSettingsInstance(WulforSettingsManager *instance);

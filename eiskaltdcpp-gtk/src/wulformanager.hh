@@ -30,11 +30,7 @@
 class WulforManager
 {
 public:
-    static void start(int argc, char **argv);
-    static void stop();
-    static WulforManager *get();
-
-    WulforManager();
+    WulforManager(int argc, char **argv);
     ~WulforManager();
 
     WulforManager(const WulforManager&) = delete;
@@ -74,7 +70,6 @@ private:
     static gpointer threadFunc_client(gpointer data);
     void processClientQueue();
 
-    static WulforManager *manager;
     MainWindow *mainWin;
     std::string path;
     std::deque<FuncBase *> clientFuncs;
@@ -92,3 +87,10 @@ private:
     GThread *clientThread;
     bool abort;
 };
+
+/// Access the active WulforManager instance.
+/// The pointer is set in wulfor.cc during the RAII scope block.
+WulforManager *wulforManagerInstance();
+
+/// Set/clear the active WulforManager instance.
+void setWulforManagerInstance(WulforManager *instance);

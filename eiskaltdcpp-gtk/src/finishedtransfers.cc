@@ -135,7 +135,7 @@ void FinishedTransfers::show()
 {
     initializeList_client();
     //Func0<FinishedTransfers> *func = new Func0<FinishedTransfers>(this, &FinishedTransfers::initializeList_client);
-    //WulforManager::get()->dispatchClientFunc(func);
+    //wulforManagerInstance()->dispatchClientFunc(func);
     dcpp::getContext()->getFinishedManager()->addListener(this);
 }
 
@@ -575,7 +575,7 @@ void FinishedTransfers::onRemoveItems_gui(GtkMenuItem *item, gpointer data)
             }
 
 
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         gtk_tree_path_free(path);
     }
@@ -639,7 +639,7 @@ void FinishedTransfers::onRemoveAll_gui(GtkMenuItem *item, gpointer data)
 
     typedef Func0<FinishedTransfers> F0;
     F0 *func = new F0(ft, &FinishedTransfers::removeAll_client);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 }
 
 void FinishedTransfers::initializeList_client()
@@ -741,7 +741,7 @@ void FinishedTransfers::on(FinishedManagerListener::AddedFile, bool upload, cons
 
         typedef Func2<FinishedTransfers, StringMap, bool> F2;
         F2* func = new F2(this, &FinishedTransfers::addFile_gui, params, true);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -755,7 +755,7 @@ void FinishedTransfers::on(FinishedManagerListener::AddedUser, bool upload, cons
 
         typedef Func2<FinishedTransfers, StringMap, bool> F2;
         F2 *func = new F2(this, &FinishedTransfers::addUser_gui, params, true);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -768,7 +768,7 @@ void FinishedTransfers::on(FinishedManagerListener::UpdatedFile, bool upload, co
 
         typedef Func2<FinishedTransfers, StringMap, bool> F2;
         F2 *func = new F2(this, &FinishedTransfers::addFile_gui, params, true);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -788,7 +788,7 @@ void FinishedTransfers::on(FinishedManagerListener::UpdatedUser, bool upload, co
 
         typedef Func2<FinishedTransfers, StringMap, bool> F2;
         F2 *func = new F2(this, &FinishedTransfers::addUser_gui, params, true);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -798,7 +798,7 @@ void FinishedTransfers::on(FinishedManagerListener::RemovedFile, bool upload, co
     {
         typedef Func1<FinishedTransfers, string> F1;
         F1 *func = new F1(this, &FinishedTransfers::removeFile_gui, item);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -808,6 +808,6 @@ void FinishedTransfers::on(FinishedManagerListener::RemovedUser, bool upload, co
     {
         typedef Func1<FinishedTransfers, string> F1;
         F1 *func = new F1(this, &FinishedTransfers::removeUser_gui, user.user->getCID().toBase32());
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }

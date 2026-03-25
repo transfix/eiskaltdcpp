@@ -29,45 +29,29 @@
 using namespace std;
 using namespace dcpp;
 
-WulforManager *WulforManager::manager = NULL;
+// ── Module-level active instance pointer (set/cleared in wulfor.cc) ──
+static WulforManager *s_managerInstance = nullptr;
 string WulforManager::argv1;
 
-void WulforManager::start(int argc, char **argv)
+WulforManager *wulforManagerInstance()
+{
+    dcassert(s_managerInstance);
+    return s_managerInstance;
+}
+
+void setWulforManagerInstance(WulforManager *instance)
+{
+    s_managerInstance = instance;
+}
+
+WulforManager::WulforManager(int argc, char **argv)
+    : clientCondValue(0)
+    , abort(false)
 {
     if (argc > 1)
     {
         argv1 = argv[1];
     }
-
-    // Create WulforManager
-    dcassert(!manager);
-    manager = new WulforManager();
-
-    std::string lang = WGETS("translation-lang");
-    if (!lang.empty())
-        dcpp::Util::setLang(lang);
-
-    manager->createMainWindow();
-    dcpp::Text::hubDefaultCharset = WGETS("default-charset");
-}
-
-void WulforManager::stop()
-{
-    dcassert(manager);
-    delete manager;
-    manager = NULL;
-}
-
-WulforManager *WulforManager::get()
-{
-    dcassert(manager);
-    return manager;
-}
-
-WulforManager::WulforManager()
-    : clientCondValue(0)
-    , abort(false)
-{
 #if !GLIB_CHECK_VERSION(2,32,0)
     clientCond = g_cond_new();
     clientCondMutex = g_mutex_new();
@@ -121,6 +105,14 @@ WulforManager::WulforManager()
     GtkIconTheme *iconTheme = gtk_icon_theme_get_default();
     gtk_icon_theme_append_search_path(iconTheme, iconPath.c_str());
     gtk_icon_theme_append_search_path(iconTheme, themes.c_str());
+
+    // Post-init: apply settings and create main window
+    std::string lang = WGETS("translation-lang");
+    if (!lang.empty())
+        dcpp::Util::setLang(lang);
+
+    createMainWindow();
+    dcpp::Text::hubDefaultCharset = WGETS("default-charset");
 }
 
 WulforManager::~WulforManager()
@@ -154,7 +146,6 @@ WulforManager::~WulforManager()
 
     g_rw_lock_clear(&entryMutex);
 #endif
-
 }
 
 void WulforManager::createMainWindow()
@@ -190,7 +181,7 @@ gboolean WulforManager::idleCallback_gui(gpointer data)
 
     // Re-check the entry still exists (it may have been deleted between
     // dispatch and this callback firing on the main thread).
-    WulforManager *man = WulforManager::get();
+    WulforManager *man = wulforManagerInstance();
     if (man && !man->abort)
     {
 #if !GLIB_CHECK_VERSION(2,32,0)

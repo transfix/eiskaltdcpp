@@ -44,7 +44,7 @@ SearchSpy::SearchSpy()
 
     // Configure the dialog
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("ignoreTTHSearchCheckButton")), WGETB("spyframe-ignore-tth-searches"));
-    gtk_window_set_transient_for(GTK_WINDOW(getWidget("TopSearchDialog")), GTK_WINDOW(WulforManager::get()->getMainWindow()->getContainer()));
+    gtk_window_set_transient_for(GTK_WINDOW(getWidget("TopSearchDialog")), GTK_WINDOW(wulforManagerInstance()->getMainWindow()->getContainer()));
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("frameSpinButton")), (double)FrameSize);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("waitingSpinButton")), (double)Waiting);
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(getWidget("topSpinButton")), (double)Top);
@@ -468,7 +468,7 @@ void SearchSpy::onSearchTopClicked_gui(GtkWidget*, gpointer data)
     {
         string type = s->topView.getString(&iter, "type");
         string search = s->topView.getString(&iter, _("Search String"));
-        Search *ss = WulforManager::get()->getMainWindow()->addSearch_gui();
+        Search *ss = wulforManagerInstance()->getMainWindow()->addSearch_gui();
 
         if (type[0] == 't')
         {
@@ -566,7 +566,7 @@ void SearchSpy::onSearchItemClicked_gui(GtkMenuItem*, gpointer data)
             {
                 string type = s->searchView.getString(&iter, "type");
                 string search = s->searchView.getString(&iter, _("Search String"));
-                Search *ss = WulforManager::get()->getMainWindow()->addSearch_gui();
+                Search *ss = wulforManagerInstance()->getMainWindow()->addSearch_gui();
 
                 if (type[0] == 't')
                 {
@@ -673,12 +673,12 @@ void SearchSpy::on(ClientManagerListener::IncomingSearch, const string& s) noexc
     }
     typedef Func2<SearchSpy, string, string> F2;
     F2 *func = new F2(this, &SearchSpy::updateFrameSearch_gui, search, type);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void SearchSpy::on(TimerManagerListener::Minute, uint64_t) noexcept
 {
     typedef Func0<SearchSpy> F0;
     F0 *func = new F0(this, &SearchSpy::updateFrameStatus_gui);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }

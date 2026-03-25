@@ -226,12 +226,12 @@ void PrivateMessage::addMessage_gui(string message, Msg::TypeMsg typemsg)
         sentAwayMessage = true;
         typedef Func1<PrivateMessage, string> F1;
         F1 *func = new F1(this, &PrivateMessage::sendMessage_client, Util::getAwayMessage());
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 
     if (WGETB("sound-pm"))
     {
-        MainWindow *mw = WulforManager::get()->getMainWindow();
+        MainWindow *mw = wulforManagerInstance()->getMainWindow();
 #if GTK_CHECK_VERSION(3, 0, 0)
         GdkWindowState state = gdk_window_get_state(gtk_widget_get_window(mw->getContainer())  );
 #else
@@ -251,7 +251,7 @@ void PrivateMessage::addStatusMessage_gui(string message, Msg::TypeMsg typemsg)
 
 void PrivateMessage::preferences_gui()
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
     string fore, back;
     bool bold = false, italic = false;
 
@@ -764,7 +764,7 @@ void PrivateMessage::getSettingTag_gui(WulforSettingsManager *wsm, const Tag::Ty
 
 GtkTextTag* PrivateMessage::createTag_gui(const string &tagname, Tag::TypeTag type)
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
     GtkTextTag *tag = gtk_text_tag_table_lookup(gtk_text_buffer_get_tag_table(messageBuffer), tagname.c_str());
 
     if (!tag)
@@ -941,31 +941,31 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
         else if (command == "close")
         {
-            WulforManager::get()->getMainWindow()->removeBookEntry_gui(pm);
+            wulforManagerInstance()->getMainWindow()->removeBookEntry_gui(pm);
         }
         else if (command == "fuser" || command == "fu")
         {
             typedef Func0<PrivateMessage> F0;
             F0 *func = new F0(pm, &PrivateMessage::addFavoriteUser_client);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         else if (command == "removefu" || command == "rmfu")
         {
             typedef Func0<PrivateMessage> F0;
             F0 *func = new F0(pm, &PrivateMessage::removeFavoriteUser_client);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         else if (command == "getlist")
         {
             typedef Func0<PrivateMessage> F0;
             F0 *func = new F0(pm, &PrivateMessage::getFileList_client);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         else if (command == "grant")
         {
             typedef Func0<PrivateMessage> F0;
             F0 *func = new F0(pm, &PrivateMessage::grantSlot_client);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         else if (command == "emoticons" || command == "emot")
         {
@@ -1014,7 +1014,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
             {
                 typedef Func1<PrivateMessage, string> F1;
                 F1 *func = new F1(pm, &PrivateMessage::sendMessage_client, line);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             else
             {
@@ -1056,7 +1056,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
     {
         typedef Func1<PrivateMessage, string> F1;
         F1 *func = new F1(pm, &PrivateMessage::sendMessage_client, text);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -1179,7 +1179,7 @@ gboolean PrivateMessage::onMagnetTagEvent_gui(GtkTextTag *tag, GObject*, GdkEven
         {
         case 1:
             // Search for magnet
-            WulforManager::get()->getMainWindow()->actionMagnet_gui(pm->selectedTagStr);
+            wulforManagerInstance()->getMainWindow()->actionMagnet_gui(pm->selectedTagStr);
             break;
         case 3:
             // Popup magnet context menu
@@ -1306,27 +1306,27 @@ void PrivateMessage::onOpenHubClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
 
-    WulforManager::get()->getMainWindow()->showHub_gui(pm->selectedTagStr);
+    wulforManagerInstance()->getMainWindow()->showHub_gui(pm->selectedTagStr);
 }
 
 void PrivateMessage::onSearchMagnetClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
 
-    WulforManager::get()->getMainWindow()->addSearch_gui(pm->selectedTagStr);
+    wulforManagerInstance()->getMainWindow()->addSearch_gui(pm->selectedTagStr);
 }
 
 void PrivateMessage::onDownloadClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
-    WulforManager::get()->getMainWindow()->fileToDownload_gui(pm->selectedTagStr, SETTING(DOWNLOAD_DIRECTORY));
+    wulforManagerInstance()->getMainWindow()->fileToDownload_gui(pm->selectedTagStr, SETTING(DOWNLOAD_DIRECTORY));
 }
 
 void PrivateMessage::onDownloadToClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
 
-    GtkWidget *dialog = WulforManager::get()->getMainWindow()->getChooserDialog_gui();
+    GtkWidget *dialog = wulforManagerInstance()->getMainWindow()->getChooserDialog_gui();
     gtk_window_set_title(GTK_WINDOW(dialog), _("Choose a directory"));
     gtk_file_chooser_set_action(GTK_FILE_CHOOSER(dialog), GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
     gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), Text::fromUtf8(WGETS("magnet-choose-dir")).c_str());
@@ -1345,7 +1345,7 @@ void PrivateMessage::onDownloadToClicked_gui(GtkMenuItem*, gpointer data)
             string path = Text::toUtf8(temp) + G_DIR_SEPARATOR_S;
             g_free(temp);
 
-            WulforManager::get()->getMainWindow()->fileToDownload_gui(pm->selectedTagStr, path);
+            wulforManagerInstance()->getMainWindow()->fileToDownload_gui(pm->selectedTagStr, path);
         }
     }
     gtk_widget_hide(dialog);
@@ -1355,7 +1355,7 @@ void PrivateMessage::onMagnetPropertiesClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
 
-    WulforManager::get()->getMainWindow()->propertiesMagnetDialog_gui(pm->selectedTagStr);
+    wulforManagerInstance()->getMainWindow()->propertiesMagnetDialog_gui(pm->selectedTagStr);
 }
 
 void PrivateMessage::onCommandClicked_gui(GtkWidget *widget, gpointer data)
@@ -1413,7 +1413,7 @@ void PrivateMessage::sendMessage_client(string message)
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
         F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, _("User went offline"), Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1426,7 +1426,7 @@ void PrivateMessage::addFavoriteUser_client()
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
         F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(user, hubUrl) + _(" is favorite user"),
                           Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
     else
     {
@@ -1447,7 +1447,7 @@ void PrivateMessage::removeFavoriteUser_client()
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
         F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(user, hubUrl) + _(" is not favorite user"),
                           Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1463,7 +1463,7 @@ void PrivateMessage::getFileList_client()
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
         F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, e.getError(), Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1478,7 +1478,7 @@ void PrivateMessage::grantSlot_client()
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
         F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, _("Slot granted"), Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1488,7 +1488,7 @@ void PrivateMessage::on(ClientManagerListener::UserConnected, const UserPtr& aUs
     {
         typedef Func1<PrivateMessage, bool> F1;
         F1 *func = new F1(this, &PrivateMessage::updateOnlineStatus_gui, aUser->isOnline());
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
         offline = false;
     }
 }
@@ -1499,7 +1499,7 @@ void PrivateMessage::on(ClientManagerListener::UserDisconnected, const UserPtr& 
     {
         typedef Func1<PrivateMessage, bool> F1;
         F1 *func = new F1(this, &PrivateMessage::updateOnlineStatus_gui, aUser->isOnline());
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
         offline = true;
     }
 }

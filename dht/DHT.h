@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include "BootstrapManager.h"
 #include "Constants.h"
 #include "KBucket.h"
 #include "UDPSocket.h"
@@ -26,14 +25,19 @@
 #include "dcpp/AdcCommand.h"
 #include "dcpp/CID.h"
 #include "dcpp/MerkleTree.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/TimerManager.h"
+#include <memory>
 
 namespace dht
 {
+    class BootstrapManager;
+    class SearchManager;
+    class IndexManager;
+    class TaskManager;
+    class ConnectionManager;
 
     class DHT :
-        public Singleton<DHT>, public Speaker<ClientListener>, public ClientBase
+        public Speaker<ClientListener>, public ClientBase
     {
     public:
         explicit DHT(void);
@@ -99,9 +103,15 @@ namespace dht
 
         void setRequestFWCheck() { Lock l(cs); requestFWCheck = true; firewalledWanted.clear(); firewalledChecks.clear(); }
 
+        /** Sub-manager accessors */
+        BootstrapManager& getBootstrapManager() { return *bootstrapMgr_; }
+        SearchManager& getSearchManager() { return *searchMgr_; }
+        IndexManager& getIndexManager() { return *indexMgr_; }
+        TaskManager& getTaskManager() { return *taskMgr_; }
+        ConnectionManager& getConnectionManager() { return *connectionMgr_; }
+
     private:
         /** Classes that can access to my private members */
-        friend class Singleton<DHT>;
         friend class SearchManager;
 
         void handle(AdcCommand::INF, const Node::Ptr& node, AdcCommand& c) throw(); // user's info
@@ -149,6 +159,13 @@ namespace dht
 
         /** Loads network information from XML file */
         void loadData();
+
+        /** Owned sub-managers */
+        std::unique_ptr<BootstrapManager> bootstrapMgr_;
+        std::unique_ptr<SearchManager> searchMgr_;
+        std::unique_ptr<IndexManager> indexMgr_;
+        std::unique_ptr<TaskManager> taskMgr_;
+        std::unique_ptr<ConnectionManager> connectionMgr_;
     };
 
 }

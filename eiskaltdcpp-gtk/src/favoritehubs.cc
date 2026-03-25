@@ -40,7 +40,7 @@ FavoriteHubs::FavoriteHubs():
     // menu
     g_object_ref_sink(getWidget("menu"));
 
-    gtk_window_set_transient_for(GTK_WINDOW(getWidget("favoriteHubsDialog")), GTK_WINDOW(WulforManager::get()->getMainWindow()->getContainer()));
+    gtk_window_set_transient_for(GTK_WINDOW(getWidget("favoriteHubsDialog")), GTK_WINDOW(wulforManagerInstance()->getMainWindow()->getContainer()));
     gtk_window_set_destroy_with_parent(GTK_WINDOW(getWidget("favoriteHubsDialog")), true);
 
     // Fill the charset drop-down list in edit fav hub dialog.
@@ -112,7 +112,7 @@ FavoriteHubs::~FavoriteHubs()
 void FavoriteHubs::show()
 {
     initializeList_client();
-    //WulforManager::get()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
+    //wulforManagerInstance()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
     dcpp::getContext()->getFavoriteManager()->addListener(this);
 }
 
@@ -231,7 +231,7 @@ gboolean FavoriteHubs::onButtonReleased_gui(GtkWidget *widget, GdkEventButton *e
         }
         else if (fh->previous == GDK_2BUTTON_PRESS && event->button == 1)
         {
-            WulforManager::get()->getMainWindow()->showHub_gui(
+            wulforManagerInstance()->getMainWindow()->showHub_gui(
                         fh->favoriteView.getString(&iter, _("Address")),
                         fh->favoriteView.getString(&iter, _("Encoding")));
         }
@@ -253,7 +253,7 @@ gboolean FavoriteHubs::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, 
 
         if (event->keyval == GDK_KEY_Return || event->keyval == GDK_KEY_KP_Enter)
         {
-            WulforManager::get()->getMainWindow()->showHub_gui(
+            wulforManagerInstance()->getMainWindow()->showHub_gui(
                         fh->favoriteView.getString(&iter, _("Address")),
                         fh->favoriteView.getString(&iter, _("Encoding")));
         }
@@ -297,7 +297,7 @@ void FavoriteHubs::onAddEntry_gui(GtkWidget *widget, gpointer data)
     {
         typedef Func1<FavoriteHubs, StringMap> F1;
         F1 *func = new F1(fh, &FavoriteHubs::addEntry_client, params);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -334,7 +334,7 @@ void FavoriteHubs::onEditEntry_gui(GtkWidget *widget, gpointer data)
 
         typedef Func2<FavoriteHubs, string, StringMap> F2;
         F2 *func = new F2(fh, &FavoriteHubs::editEntry_client, address, params);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -457,7 +457,7 @@ void FavoriteHubs::onRemoveEntry_gui(GtkWidget *widget, gpointer data)
         if (WGETB("confirm-hub-removal"))
         {
             string name = fh->favoriteView.getString(&iter, _("Name")).c_str();
-            GtkWindow* parent = GTK_WINDOW(WulforManager::get()->getMainWindow()->getContainer());
+            GtkWindow* parent = GTK_WINDOW(wulforManagerInstance()->getMainWindow()->getContainer());
             GtkWidget* dialog = gtk_message_dialog_new(parent,
                                                        GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_QUESTION, GTK_BUTTONS_NONE,
                                                        _("Are you sure you want to delete favorite hub \"%s\"?"), name.c_str());
@@ -478,7 +478,7 @@ void FavoriteHubs::onRemoveEntry_gui(GtkWidget *widget, gpointer data)
 
         typedef Func1<FavoriteHubs, string> F1;
         F1 *func = new F1(fh, &FavoriteHubs::removeEntry_client, address);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -489,7 +489,7 @@ void FavoriteHubs::onConnect_gui(GtkButton *widget, gpointer data)
     GtkTreeIter iter;
 
     if (gtk_tree_selection_get_selected(fh->favoriteSelection, NULL, &iter))
-        WulforManager::get()->getMainWindow()->showHub_gui(
+        wulforManagerInstance()->getMainWindow()->showHub_gui(
                     fh->favoriteView.getString(&iter, _("Address")),
                     fh->favoriteView.getString(&iter, _("Encoding")));
 }
@@ -509,7 +509,7 @@ void FavoriteHubs::onToggledClicked_gui(GtkCellRendererToggle *cell, gchar *path
 
         typedef Func2<FavoriteHubs, string, bool> F2;
         F2 *func = new F2(fh, &FavoriteHubs::setConnect_client, address, fixed);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -536,7 +536,7 @@ void FavoriteHubs::initializeList_client()
         getFavHubParams_client(*it, params);
         addEntry_gui(params);
         //func = new F1(this, &FavoriteHubs::addEntry_gui, params);
-        //WulforManager::get()->dispatchGuiFunc(func);
+        //wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -576,7 +576,7 @@ void FavoriteHubs::addEntry_client(StringMap params)
     dcpp::getContext()->getFavoriteManager()->addFavorite(entry);
 
     const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
-    WulforManager::get()->getMainWindow()->updateFavoriteHubMenu_client(fh);
+    wulforManagerInstance()->getMainWindow()->updateFavoriteHubMenu_client(fh);
 }
 
 void FavoriteHubs::editEntry_client(string address, StringMap params)
@@ -601,7 +601,7 @@ void FavoriteHubs::editEntry_client(string address, StringMap params)
         dcpp::getContext()->getFavoriteManager()->save();
 
         const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
-        WulforManager::get()->getMainWindow()->updateFavoriteHubMenu_client(fh);
+        wulforManagerInstance()->getMainWindow()->updateFavoriteHubMenu_client(fh);
     }
 }
 
@@ -614,7 +614,7 @@ void FavoriteHubs::removeEntry_client(string address)
         dcpp::getContext()->getFavoriteManager()->removeFavorite(entry);
 
         const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
-        WulforManager::get()->getMainWindow()->updateFavoriteHubMenu_client(fh);
+        wulforManagerInstance()->getMainWindow()->updateFavoriteHubMenu_client(fh);
     }
 }
 
@@ -636,12 +636,12 @@ void FavoriteHubs::on(FavoriteManagerListener::FavoriteAdded, const FavoriteHubE
 
     typedef Func1<FavoriteHubs, StringMap> F1;
     F1 *func = new F1(this, &FavoriteHubs::addEntry_gui, params);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void FavoriteHubs::on(FavoriteManagerListener::FavoriteRemoved, const FavoriteHubEntryPtr entry) noexcept
 {
     typedef Func1<FavoriteHubs, string> F1;
     F1 *func = new F1(this, &FavoriteHubs::removeEntry_gui, entry->getServer());
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }

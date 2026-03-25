@@ -145,5 +145,5 @@ void Hash::on(TimerManagerListener::Second, uint64_t tics) noexcept
 
     typedef Func4<Hash, string, uint64_t, size_t, uint64_t> F4;
     F4 *func = new F4(this, &Hash::updateStats_gui, file, bytes, files, GET_TICK());
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }

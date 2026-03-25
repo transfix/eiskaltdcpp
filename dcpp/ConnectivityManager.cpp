@@ -153,7 +153,7 @@ void ConnectivityManager::listen() {
     }
 #ifdef WITH_DHT
     try {
-        dht::DHT::getInstance()->start();
+        ctx()->getDHT()->start();
     } catch (const Exception&) {
         throw Exception(_("DHT (UDP)"));
     }
@@ -164,7 +164,7 @@ void ConnectivityManager::disconnect() {
     ctx()->getSearchManager()->disconnect();
     ctx()->getConnectionManager()->disconnect();
 #ifdef WITH_DHT
-    dht::DHT::getInstance()->stop();
+    ctx()->getDHT()->stop();
 #endif
 }
 

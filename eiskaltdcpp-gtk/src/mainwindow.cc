@@ -508,10 +508,10 @@ void MainWindow::show()
     typedef Func1<MainWindow, bool> F1;
     typedef Func0<MainWindow> F0;
     F1 *f1 = new F1(this, &MainWindow::startSocket_client, false);
-    WulforManager::get()->dispatchClientFunc(f1);
+    wulforManagerInstance()->dispatchClientFunc(f1);
 
     F0 *f0 = new F0(this, &MainWindow::autoConnect_client);
-    WulforManager::get()->dispatchClientFunc(f0);
+    wulforManagerInstance()->dispatchClientFunc(f0);
 
     autoOpen_gui();
 
@@ -1074,7 +1074,7 @@ void MainWindow::fileToDownload_gui(string magnet, string path)
 
     typedef Func3<MainWindow, string, int64_t, string> F3;
     F3 *func = new F3(this, &MainWindow::addFileDownloadQueue_client, name, size, tth);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 }
 
 GtkWidget* MainWindow::getChooserDialog_gui()
@@ -1109,7 +1109,7 @@ void MainWindow::actionMagnet_gui(string magnet)
 
         typedef Func3<MainWindow, string, int64_t, string> F3;
         F3 *func = new F3(this, &MainWindow::addFileDownloadQueue_client, name, size, tth);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
     else if (split)
     {
@@ -1130,7 +1130,7 @@ void MainWindow::updateFavoriteHubMenu_client(const FavoriteHubEntryList &fh)
     }
 
     Func1<MainWindow, ListParamPair> *func = new Func1<MainWindow, ListParamPair>(this, &MainWindow::updateFavoriteHubMenu_gui, list);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void MainWindow::updateFavoriteHubMenu_gui(ListParamPair list)
@@ -1270,7 +1270,7 @@ bool MainWindow::getUserCommandLines_gui(const string &command, StringMap &ucPar
     string::size_type i = 0;
     string::size_type j = 0;
     string text = string("<b>") + _("Enter value for ") + "\'";
-    MainWindow *mw = WulforManager::get()->getMainWindow();
+    MainWindow *mw = wulforManagerInstance()->getMainWindow();
 
     while ((i = command.find("%[line:", i)) != string::npos)
     {
@@ -1480,7 +1480,7 @@ void MainWindow::onResponseMagnetDialog_gui(GtkWidget *dialog, gint response, gp
             // add this file to your download queue
             typedef Func3<MainWindow, string, int64_t, string> F3;
             F3 *func = new F3(mw, &MainWindow::addFileDownloadQueue_client, path + name, size, tth);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(mw->getWidget("searchRadioButton"))))
         {
@@ -1520,7 +1520,7 @@ void MainWindow::addFileDownloadQueue_client(string name, int64_t size, string t
         // add error to main status
         typedef Func2<MainWindow, string, time_t> F2;
         F2 *func = new F2(this, &MainWindow::setMainStatus_gui, e.getError(), time(NULL));
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1611,7 +1611,7 @@ gboolean MainWindow::onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpoin
 
     if (!WGETB("confirm-exit"))
     {
-        WulforManager::get()->deleteMainWindow();
+        wulforManagerInstance()->deleteMainWindow();
         return false;
     }
 
@@ -1620,7 +1620,7 @@ gboolean MainWindow::onCloseWindow_gui(GtkWidget *widget, GdkEvent *event, gpoin
 
     if (response == GTK_RESPONSE_OK)
     {
-        WulforManager::get()->deleteMainWindow();
+        wulforManagerInstance()->deleteMainWindow();
         return false;
     }
 
@@ -1821,7 +1821,7 @@ gboolean MainWindow::onButtonReleasePage_gui(GtkWidget *widget, GdkEventButton *
             && event->x < width && event->y < height)
     {
         BookEntry *entry = (BookEntry *)data;
-        WulforManager::get()->getMainWindow()->removeBookEntry_gui(entry);
+        wulforManagerInstance()->getMainWindow()->removeBookEntry_gui(entry);
         return true;
     }
 
@@ -1848,7 +1848,7 @@ gboolean MainWindow::animationStatusIcon_gui(gpointer data)
 void MainWindow::onRaisePage_gui(GtkMenuItem *item, gpointer data)
 {
     (void)item;
-    WulforManager::get()->getMainWindow()->raisePage_gui((GtkWidget *)data);
+    wulforManagerInstance()->getMainWindow()->raisePage_gui((GtkWidget *)data);
 }
 
 void MainWindow::onPageSwitched_gui(GtkNotebook *notebook, GtkWidget*, guint num, gpointer data)
@@ -1947,12 +1947,12 @@ void MainWindow::onPreferencesClicked_gui(GtkWidget *widget, gpointer data)
         WSET("status-icon-blink-use", mw->bUseStatusIconBlink);
     bool emoticons = WGETB("emoticons-use");
 
-    gint response = WulforManager::get()->openSettingsDialog_gui();
+    gint response = wulforManagerInstance()->openSettingsDialog_gui();
 
     if (response == GTK_RESPONSE_OK)
     {
         F1 *func = new F1(mw, &MainWindow::startSocket_client, true);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
 
         if (WGETB("always-tray"))
             gtk_status_icon_set_visible(mw->statusIcon, true);
@@ -2019,7 +2019,7 @@ void MainWindow::onHashClicked_gui(GtkWidget *widget, gpointer data)
 {
     (void)widget;
     (void)data;
-    WulforManager::get()->openHashDialog_gui();
+    wulforManagerInstance()->openHashDialog_gui();
 }
 
 void MainWindow::onSearchClicked_gui(GtkWidget *widget, gpointer data)
@@ -2119,7 +2119,7 @@ void MainWindow::onOpenOwnListClicked_gui(GtkWidget *widget, gpointer data)
     MainWindow *mw = (MainWindow *)data;
     typedef Func1<MainWindow, bool> F1;
     F1 *func = new F1(mw, &MainWindow::openOwnList_client, false);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 
     mw->setMainStatus_gui(_("Loading file list"));
 }
@@ -2129,7 +2129,7 @@ void MainWindow::onMatchAllList_gui(GtkWidget *widget, gpointer data)
     (void)widget;
     typedef Func0<MainWindow> F0;
     F0 *func = new F0((MainWindow *)data, &MainWindow::matchAllList_client);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 }
 
 void MainWindow::onRefreshFileListClicked_gui(GtkWidget *widget, gpointer data)
@@ -2137,7 +2137,7 @@ void MainWindow::onRefreshFileListClicked_gui(GtkWidget *widget, gpointer data)
     (void)widget;
     typedef Func0<MainWindow> F0;
     F0 *func = new F0((MainWindow *)data, &MainWindow::refreshFileList_client);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 }
 
 void MainWindow::onReconnectClicked_gui(GtkWidget *widget, gpointer data)
@@ -2153,7 +2153,7 @@ void MainWindow::onReconnectClicked_gui(GtkWidget *widget, gpointer data)
         if (entry && entry->getType() == Entry::HUB)
         {
             Func0<Hub> *func = new Func0<Hub>(dynamic_cast<Hub *>(entry), &Hub::reconnect_client);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
     }
 }
@@ -2227,7 +2227,7 @@ void MainWindow::onCloseBookEntry_gui(GtkWidget *widget, gpointer data)
 {
     (void)widget;
     BookEntry *entry = (BookEntry *)data;
-    WulforManager::get()->getMainWindow()->removeBookEntry_gui(entry);
+    wulforManagerInstance()->getMainWindow()->removeBookEntry_gui(entry);
 }
 
 void MainWindow::onStatusIconActivated_gui(GtkStatusIcon *statusIcon, gpointer data)
@@ -2329,11 +2329,11 @@ void MainWindow::autoConnect_client()
         if (hub->getConnect())
         {
             func = new F2(this, &MainWindow::showHub_gui, hub->getServer(), hub->getEncoding());
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
     }
 
-    string slink = WulforManager::get()->getURL();
+    string slink = wulforManagerInstance()->getURL();
 
     if (slink.empty()) return;
 
@@ -2343,12 +2343,12 @@ void MainWindow::autoConnect_client()
     if (WulforUtil::isHubURL(slink) && WGETB("urlhandler"))
     {
         func = new F2(this, &MainWindow::showHub_gui, slink, "");
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
     else if (WulforUtil::isMagnet(slink) && WGETB("magnet-register"))
     {
         func1 = new F1(this, &MainWindow::actionMagnet_gui, slink);
-        WulforManager::get()->dispatchGuiFunc(func1);
+        wulforManagerInstance()->dispatchGuiFunc(func1);
     }
 }
 
@@ -2366,7 +2366,7 @@ void MainWindow::showPortsError(const string& port) {
     string msg = str(dcpp_fmt(dgettext("eiskaltdcpp-gtk", "Unable to open %1% port. Searching or file transfers will not work correctly until you change settings or turn off any application that might be using that port.")) % port);
     typedef Func2<MainWindow, string, string> F2;
     F2* func = new F2(this, &MainWindow::showMessageDialog_gui, _("Connectivity Manager: Warning"), msg);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 void MainWindow::refreshFileList_client()
 {
@@ -2387,7 +2387,7 @@ void MainWindow::openOwnList_client(bool useSetting)
 
     typedef Func4<MainWindow, UserPtr, string, string, bool> F4;
     F4 *func = new F4(this, &MainWindow::showShareBrowser_gui, user, path, "", useSetting);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void MainWindow::matchAllList_client()
@@ -2399,7 +2399,7 @@ void MainWindow::on(LogManagerListener::Message, time_t t, const string &message
 {
     typedef Func2<MainWindow, string, time_t> F2;
     F2 *func = new F2(this, &MainWindow::setMainStatus_gui, message, t);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, const string& dir, int64_t avSpeed) noexcept
@@ -2414,16 +2414,16 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, const strin
 
         F3 *f3 = new F3(this, &MainWindow::showNotification_gui, _("file list from "), WulforUtil::getNicks(user),
                         Notify::DOWNLOAD_FINISHED_USER_LIST);
-        WulforManager::get()->dispatchGuiFunc(f3);
+        wulforManagerInstance()->dispatchGuiFunc(f3);
 
         typedef Func4<MainWindow, UserPtr, string, string, bool> F4;
         F4 *func = new F4(this, &MainWindow::showShareBrowser_gui, user.user, listName, dir, true);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
     else if (!item->isSet(QueueItem::FLAG_XML_BZLIST))
     {
         F3 *f3 = new F3(this, &MainWindow::showNotification_gui, _("<b>file:</b> "), item->getTarget(), Notify::DOWNLOAD_FINISHED);
-        WulforManager::get()->dispatchGuiFunc(f3);
+        wulforManagerInstance()->dispatchGuiFunc(f3);
     }
 }
 
@@ -2461,13 +2461,13 @@ void MainWindow::on(TimerManagerListener::Second, uint64_t ticks) noexcept
 
     typedef Func5<MainWindow, string, string, string, string, string> F5;
     F5 *func = new F5(this, &MainWindow::setStats_gui, hubs, downloadSpeed, downloaded, uploadSpeed, uploaded);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 
     if (WGETB("always-tray") && !downloadSpeed.empty() && !uploadSpeed.empty())
     {
         typedef Func2<MainWindow, string, string> F2;
         F2 *f2 = new F2(this, &MainWindow::updateStatusIconTooltip_gui, downloadSpeed, uploadSpeed);
-        WulforManager::get()->dispatchGuiFunc(f2);
+        wulforManagerInstance()->dispatchGuiFunc(f2);
     }
     if (WGETB("show-free-space-bar")) {
 #ifdef FREE_SPACE_BAR_C
@@ -2486,7 +2486,7 @@ void MainWindow::on(TimerManagerListener::Second, uint64_t ticks) noexcept
         if (freepercent > 0 && freepercent <= 1.0) {
             typedef Func2<MainWindow, string, float> F2;
             F2 *f2 = new F2(this, &MainWindow::updateFreespaceBar_gui, freespace, freepercent);
-            WulforManager::get()->dispatchGuiFunc(f2);
+            wulforManagerInstance()->dispatchGuiFunc(f2);
         }
 #endif //FREE_SPACE_BAR_C
     }
@@ -2572,7 +2572,7 @@ void MainWindow::onCloseAllHub_gui(GtkWidget*, gpointer data)
         BookEntry *entry = mw->findBookEntry(Entry::HUB, it);
         if (entry) {
             F1 *func = new F1(mw,&MainWindow::removeBookEntry_gui,entry);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
     }
 }
@@ -2586,7 +2586,7 @@ void MainWindow::onCloseAllPM_gui(GtkWidget*, gpointer data)
         BookEntry *entry = mw->findBookEntry(Entry::PRIVATE_MESSAGE, it);
         if (entry) {
             F1 *func = new F1(mw,&MainWindow::removeBookEntry_gui,entry);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
     }
 }
@@ -2600,7 +2600,7 @@ void MainWindow::onCloseAllSearch_gui(GtkWidget*, gpointer data)
         BookEntry *entry = mw->findBookEntry(Entry::SEARCH, it);
         if (entry) {
             F1 *func = new F1(mw,&MainWindow::removeBookEntry_gui,entry);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
     }
 }
@@ -2626,7 +2626,7 @@ void MainWindow::onCloseAlloffPM_gui(GtkWidget*, gpointer data)
         BookEntry *entry = mw->findBookEntry(Entry::PRIVATE_MESSAGE, it);
         if (entry && dynamic_cast<PrivateMessage*>(entry)->getIsOffline()) {
             F1 *func = new F1(mw,&MainWindow::removeBookEntry_gui,entry);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
     }
 }
@@ -2686,5 +2686,5 @@ void MainWindow::parsePartial_gui(HintedUser user, string txt)
 void MainWindow::on(QueueManagerListener::PartialList, const HintedUser& aUser, const string& text) noexcept {
     typedef Func2<MainWindow, HintedUser, string> F2;
     F2 *func = new F2(this,&MainWindow::parsePartial_gui,aUser,text);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }

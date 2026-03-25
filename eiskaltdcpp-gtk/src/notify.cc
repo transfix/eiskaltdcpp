@@ -139,7 +139,7 @@ void Notify::setCurrIconSize(const int size)
 
 void Notify::showNotify(const string &head, const string &body, TypeNotify notify)
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
 
     switch (notify)
     {

@@ -76,7 +76,7 @@ void receiver(const char *link, gpointer data)
 {
     (void)data;
     g_return_if_fail(link != NULL);
-    WulforManager::get()->onReceived_gui(link);
+    wulforManagerInstance()->onReceived_gui(link);
 }
 
 void callBack(void *, const std::string &a)
@@ -395,12 +395,17 @@ int main(int argc, char *argv[])
     installHandlers();
 #endif
 
-    WulforSettingsManager::newInstance();
-    WulforManager::start(argc, argv);
-    gtk_main();
-    bacon_message_connection_free(connection);
-    WulforManager::stop();
-    WulforSettingsManager::deleteInstance();
+    {
+        WulforSettingsManager settingsMgr;
+        setWulforSettingsInstance(&settingsMgr);
+        WulforManager wulforMgr(argc, argv);
+        setWulforManagerInstance(&wulforMgr);
+        gtk_main();
+        bacon_message_connection_free(connection);
+        setWulforManagerInstance(nullptr);
+        setWulforSettingsInstance(nullptr);
+        // ~WulforManager then ~WulforSettingsManager run here (RAII)
+    }
 
     std::cout << _("Shutting down libeiskaltdcpp...") << std::endl;
     dcpp::shutdown();

@@ -62,7 +62,7 @@ private:
             }
             typedef Func1<cmddebug,std::string> F1;
             F1 *func = new F1(this, &cmddebug::add_gui, x);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
 
         return 0;

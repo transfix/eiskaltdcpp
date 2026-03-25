@@ -71,7 +71,7 @@ int MappingManager::run() {
             secure_port = ctx()->getConnectionManager()->getSecurePort(),
             search_port = ctx()->getSearchManager()->getPort();
 #ifdef WITH_DHT
-    const string dht_port = dht::DHT::getInstance()->getPort();
+    const string dht_port = ctx()->getDHT()->getPort();
 #endif
 
     for(auto &i : impls) {

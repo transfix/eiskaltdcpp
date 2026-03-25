@@ -183,7 +183,7 @@ void UserCommandMenu::onUserCommandClick_gui(GtkMenuItem *item, gpointer data)
             }
             F4 *func = new F4(ucm, &UserCommandMenu::sendUserCommand_client,
                               i->cid, commandName, hub, params);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
     }
 }

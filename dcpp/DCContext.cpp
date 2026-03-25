@@ -159,7 +159,7 @@ void DCContext::startup(ProgressFn progress) {
     cryptoManager_->loadCertificates();
 
 #ifdef WITH_DHT
-    dht::DHT::newInstance();
+    dht_ = std::make_unique<dht::DHT>();
 #endif
 
     report(_("Hash database"));
@@ -194,7 +194,7 @@ void DCContext::shutdown() {
     debugManager_.reset();
 
 #ifdef WITH_DHT
-    dht::DHT::deleteInstance();
+    dht_.reset();
 #endif
 
     // ── Phase 2: stop threads and active subsystems ─────────────────────

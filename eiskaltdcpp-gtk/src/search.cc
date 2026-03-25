@@ -943,7 +943,7 @@ void Search::download_gui(const string &target)
                     string tth = resultView.getString(&iter, _("TTH"));
                     string hubUrl = resultView.getString(&iter, "Hub URL");
                     F6 *func = new F6(this, &Search::download_client, target, cid, filename, size, tth, hubUrl);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
             }
             while (parent && WulforUtil::getNextIter_gui(sortedFilterModel, &iter, true, false));
@@ -1231,7 +1231,7 @@ void Search::onDownloadToMatchClicked_gui(GtkMenuItem *item, gpointer data)
                         string tth = s->resultView.getString(&iter, _("TTH"));
                         string hubUrl = s->resultView.getString(&iter, "Hub URL");
                         F5 *func = new F5(s, &Search::addSource_client, fileName, cid, size, tth, hubUrl);
-                        WulforManager::get()->dispatchClientFunc(func);
+                        wulforManagerInstance()->dispatchClientFunc(func);
                     }
                 }
                 while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
@@ -1271,7 +1271,7 @@ void Search::onDownloadDirClicked_gui(GtkMenuItem*, gpointer data)
                         filename += s->resultView.getString(&iter, _("Filename"));
                         string hubUrl = s->resultView.getString(&iter, "Hub URL");
                         F4 *func = new F4(s, &Search::downloadDir_client, target, cid, filename, hubUrl);
-                        WulforManager::get()->dispatchClientFunc(func);
+                        wulforManagerInstance()->dispatchClientFunc(func);
                     }
                 }
                 while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
@@ -1311,7 +1311,7 @@ void Search::onDownloadFavoriteDirClicked_gui(GtkMenuItem *item, gpointer data)
                         filename += s->resultView.getString(&iter, _("Filename"));
                         string hubUrl = s->resultView.getString(&iter, "Hub URL");
                         F4 *func = new F4(s, &Search::downloadDir_client, fav, cid, filename, hubUrl);
-                        WulforManager::get()->dispatchClientFunc(func);
+                        wulforManagerInstance()->dispatchClientFunc(func);
                     }
                 }
                 while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
@@ -1369,7 +1369,7 @@ void Search::onDownloadDirToClicked_gui(GtkMenuItem*, gpointer data)
                             filename += s->resultView.getString(&iter, _("Filename"));
                             string hubUrl = s->resultView.getString(&iter, "Hub URL");
                             F4 *func = new F4(s, &Search::downloadDir_client, target, cid, filename, hubUrl);
-                            WulforManager::get()->dispatchClientFunc(func);
+                            wulforManagerInstance()->dispatchClientFunc(func);
                         }
                     }
                     while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
@@ -1400,7 +1400,7 @@ void Search::onSearchByTTHClicked_gui(GtkMenuItem*, gpointer data)
                 string tth = s->resultView.getString(&iter, _("TTH"));
                 if (!tth.empty())
                 {
-                    s = WulforManager::get()->getMainWindow()->addSearch_gui();
+                    s = wulforManagerInstance()->getMainWindow()->addSearch_gui();
                     s->putValue_gui(tth, 0, SearchManager::SIZE_DONTCARE, SearchManager::TYPE_TTH);
                 }
             }
@@ -1435,7 +1435,7 @@ void Search::onGetFileListClicked_gui(GtkMenuItem*, gpointer data)
                     string dir = s->resultView.getString(&iter, _("Path"));
                     string hubUrl = s->resultView.getString(&iter, "Hub URL");
                     F5 *func = new F5(s, &Search::getFileList_client, cid, dir, false, hubUrl, true);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
                 while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
             }
@@ -1470,7 +1470,7 @@ void Search::onPartialFileListOpen_gui(GtkMenuItem*, gpointer data)
                     string dir = s->resultView.getString(&iter, _("Path"));
                     string hubUrl = s->resultView.getString(&iter, "Hub URL");
                     F5 *func = new F5(s, &Search::getFileList_client, cid, dir, false, hubUrl, false);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
                 while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
             }
@@ -1504,7 +1504,7 @@ void Search::onMatchQueueClicked_gui(GtkMenuItem*, gpointer data)
                     string cid = s->resultView.getString(&iter, "CID");
                     string hubUrl = s->resultView.getString(&iter, "Hub URL");
                     F5 *func = new F5(s, &Search::getFileList_client, cid, "", true, hubUrl, true);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
                 while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
             }
@@ -1537,7 +1537,7 @@ void Search::onPrivateMessageClicked_gui(GtkMenuItem*, gpointer data)
                     string cid = s->resultView.getString(&iter, "CID");
                     string hubUrl = s->resultView.getString(&iter, "Hub URL");
                     if (!cid.empty())
-                        WulforManager::get()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN, cid, hubUrl);
+                        wulforManagerInstance()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN, cid, hubUrl);
                 }
                 while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
             }
@@ -1572,7 +1572,7 @@ void Search::onAddFavoriteUserClicked_gui(GtkMenuItem*, gpointer data)
                 {
                     cid = s->resultView.getString(&iter, "CID");
                     func = new F1(s, &Search::addFavUser_client, cid);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
                 while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
             }
@@ -1606,7 +1606,7 @@ void Search::onGrantExtraSlotClicked_gui(GtkMenuItem*, gpointer data)
                     string cid = s->resultView.getString(&iter, "CID");
                     string hubUrl = s->resultView.getString(&iter, "Hub URL");
                     F2 *func = new F2(s, &Search::grantSlot_client, cid, hubUrl);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
                 while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
             }
@@ -1641,7 +1641,7 @@ void Search::onRemoveUserFromQueueClicked_gui(GtkMenuItem*, gpointer data)
                 {
                     cid = s->resultView.getString(&iter, "CID");
                     func = new F1(s, &Search::removeSource_client, cid);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
                 while (parent && WulforUtil::getNextIter_gui(s->sortedFilterModel, &iter, true, false));
             }
@@ -1931,7 +1931,7 @@ void Search::on(ClientManagerListener::ClientConnected, Client *client) noexcept
     {
         typedef Func2<Search, string, string> F2;
         F2 *func = new F2(this, &Search::addHub_gui, client->getHubName(), client->getHubUrl());
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1941,7 +1941,7 @@ void Search::on(ClientManagerListener::ClientUpdated, Client *client) noexcept
     {
         typedef Func2<Search, string, string> F2;
         F2 *func = new F2(this, &Search::modifyHub_gui, client->getHubName(), client->getHubUrl());
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1951,7 +1951,7 @@ void Search::on(ClientManagerListener::ClientDisconnected, Client *client) noexc
     {
         typedef Func1<Search, string> F1;
         F1 *func = new F1(this, &Search::removeHub_gui, client->getHubUrl());
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -2001,7 +2001,7 @@ void Search::on(SearchManagerListener::SR, const SearchResultPtr& result) noexce
         {
             ++droppedResult;
             F2 *func = new F2(this, &Search::setStatus_gui, "statusbar3", _("Filtered: ") + Util::toString(droppedResult));
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
             return;
         }
     }
@@ -2014,7 +2014,7 @@ void Search::on(SearchManagerListener::SR, const SearchResultPtr& result) noexce
             {
                 ++droppedResult;
                 F2 *func = new F2(this, &Search::setStatus_gui, "statusbar3", _("Dropped: ") + Util::toString(droppedResult));
-                WulforManager::get()->dispatchGuiFunc(func);
+                wulforManagerInstance()->dispatchGuiFunc(func);
                 return;
             }
         }
@@ -2022,7 +2022,7 @@ void Search::on(SearchManagerListener::SR, const SearchResultPtr& result) noexce
 
     typedef Func1<Search, SearchResultPtr> F1;
     F1 *func = new F1(this, &Search::addResult_gui, result);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 // Filtering causes Gtk-CRITICAL assertion failure, when last item is removed

@@ -73,7 +73,7 @@ void Sound::sound_init() const
 
 void Sound::playSound(TypeSound sound)
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
 
     switch (sound)
     {
@@ -143,7 +143,7 @@ void Sound::playSound(const string &target)
 #elif USE_LIBCANBERRA
     ca_context_play(context, 1,CA_PROP_MEDIA_FILENAME, target.c_str(), NULL);
 #else
-    WulforUtil::openURItoApp(WulforSettingsManager::getInstance()->getString("sound-command") + " \"" +target+"\"");
+    WulforUtil::openURItoApp(wulforSettingsInstance()->getString("sound-command") + " \"" +target+"\"");
 #endif
 }
 

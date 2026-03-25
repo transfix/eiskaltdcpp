@@ -43,6 +43,7 @@
 #include "ZUtils.h"
 
 #ifdef WITH_DHT
+#include "dht/DHT.h"
 #include "dht/IndexManager.h"
 #endif
 #include <climits>
@@ -641,7 +642,7 @@ void QueueManager::on(TimerManagerListener::Minute, uint64_t aTick) noexcept {
     if(tthPub)
     {
 #ifdef WITH_DHT
-        dht::IndexManager::getInstance()->publishPartialFile(*tthPub);
+        ctx()->getDHT()->getIndexManager().publishPartialFile(*tthPub);
 #endif
         delete tthPub;
     }

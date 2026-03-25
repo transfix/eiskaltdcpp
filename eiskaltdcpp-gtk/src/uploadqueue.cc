@@ -165,7 +165,7 @@ void UploadQueue::onGrantSlotItemClicked_gui(GtkMenuItem *item, gpointer data)
             {
                 F2 *func = new F2(qp, &UploadQueue::grantSlot_client,
                                   qp->users.getString(&iter, "CID"));
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             gtk_tree_path_free(path);
         }
@@ -193,7 +193,7 @@ void UploadQueue::onRemoveItem_gui(GtkMenuItem *item, gpointer data)
             {
                 F2 *func = new F2(qp, &UploadQueue::removeUploadFromQueue,
                                   qp->users.getString(&iter, "CID"));
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             gtk_tree_path_free(path);
         }
@@ -218,7 +218,7 @@ void UploadQueue::onSendPMItemClicked_gui(GtkMenuItem *item, gpointer data)
 
             if (gtk_tree_model_get_iter(GTK_TREE_MODEL(qp->store), &iter, path))
             {
-                WulforManager::get()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN,
+                wulforManagerInstance()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN,
                                                                              qp->users.getString(&iter, "CID"));
             }
             gtk_tree_path_free(path);
@@ -247,7 +247,7 @@ void UploadQueue::onBrowseItemClicked_gui(GtkMenuItem *item, gpointer data)
             {
                 F1 *func = new F1(qp, &UploadQueue::getFileList_client,
                                   qp->users.getString(&iter, "CID"));
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             gtk_tree_path_free(path);
         }
@@ -275,7 +275,7 @@ void UploadQueue::onFavoriteUserAddItemClicked_gui(GtkMenuItem *item, gpointer d
             {
                 F2 *func = new F2(qp, &UploadQueue::addFavoriteUser_client,
                                   qp->users.getString(&iter, "CID"));
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             gtk_tree_path_free(path);
         }
@@ -395,13 +395,13 @@ void UploadQueue::on(dcpp::UploadManagerListener::WaitingAddFile, const HintedUs
     getParams(file,hUser.user,params);
     typedef Func1<UploadQueue, StringMap> F1;
     F1 *func = new F1(this,&UploadQueue::AddFile_gui,params);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void UploadQueue::on(dcpp::UploadManagerListener::WaitingRemoveUser, const HintedUser& user) noexcept
 {
     typedef Func1<UploadQueue, const string&> F1;
     F1 *func = new F1(this, &UploadQueue::removeUser,user.user->getCID().toBase32());
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 
 }

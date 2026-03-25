@@ -192,7 +192,7 @@ void Transfers::onGetFileListClicked_gui(GtkMenuItem*, gpointer data)
                 if (!cid.empty())
                 {
                     F2 *func = new F2(tr, &Transfers::getFileList_client, cid, hubUrl);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
             }
             while (parent && WulforUtil::getNextIter_gui(GTK_TREE_MODEL(tr->transferStore), &iter, true, false));
@@ -224,7 +224,7 @@ void Transfers::onMatchQueueClicked_gui(GtkMenuItem*, gpointer data)
                 if (!cid.empty())
                 {
                     F2 *func = new F2(tr, &Transfers::matchQueue_client, cid, hubUrl);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
             }
             while (parent && WulforUtil::getNextIter_gui(GTK_TREE_MODEL(tr->transferStore), &iter, true, false));
@@ -253,7 +253,7 @@ void Transfers::onPrivateMessageClicked_gui(GtkMenuItem*, gpointer data)
             {
                 cid = tr->transferView.getString(&iter, "CID");
                 if (!cid.empty())
-                    WulforManager::get()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN, cid);
+                    wulforManagerInstance()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN, cid);
             }
             while (parent && WulforUtil::getNextIter_gui(GTK_TREE_MODEL(tr->transferStore), &iter, true, false));
         }
@@ -285,7 +285,7 @@ void Transfers::onAddFavoriteUserClicked_gui(GtkMenuItem*, gpointer data)
                 if (!cid.empty())
                 {
                     func = new F1(tr, &Transfers::addFavoriteUser_client, cid);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
             }
             while (parent && WulforUtil::getNextIter_gui(GTK_TREE_MODEL(tr->transferStore), &iter, true, false));
@@ -317,7 +317,7 @@ void Transfers::onGrantExtraSlotClicked_gui(GtkMenuItem*, gpointer data)
                 if (!cid.empty())
                 {
                     F2 *func = new F2(tr, &Transfers::grantExtraSlot_client, cid, hubUrl);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
             }
             while (parent && WulforUtil::getNextIter_gui(GTK_TREE_MODEL(tr->transferStore), &iter, true, false));
@@ -350,7 +350,7 @@ void Transfers::onRemoveUserFromQueueClicked_gui(GtkMenuItem*, gpointer data)
                 if (!cid.empty())
                 {
                     func = new F1(tr, &Transfers::removeUserFromQueue_client, cid);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
             }
             while (parent && WulforUtil::getNextIter_gui(GTK_TREE_MODEL(tr->transferStore), &iter, true, false));
@@ -379,7 +379,7 @@ void Transfers::onForceAttemptClicked_gui(GtkMenuItem*, gpointer data)
             gtk_tree_store_set(tr->transferStore, &iter, tr->transferView.col(_("Status")), _("Connecting (forced)..."), -1);
 
             func = new F1(tr, &Transfers::forceAttempt_client, cid);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         gtk_tree_path_free(path);
     }
@@ -413,7 +413,7 @@ void Transfers::onCloseConnectionClicked_gui(GtkMenuItem*, gpointer data)
                     download = tr->transferView.getValue<gboolean>(&iter, "Download");
 
                     func = new F2(tr, &Transfers::closeConnection_client, cid, download);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
             }
             while (parent && WulforUtil::getNextIter_gui(GTK_TREE_MODEL(tr->transferStore), &iter, true, false));
@@ -912,7 +912,7 @@ void Transfers::on(DownloadManagerListener::Requesting, Download* dl) noexcept
 
     typedef Func1<Transfers, StringMap> F1;
     F1* f1 = new F1(this, &Transfers::initTransfer_gui, params);
-    WulforManager::get()->dispatchGuiFunc(f1);
+    wulforManagerInstance()->dispatchGuiFunc(f1);
 }
 
 void Transfers::on(DownloadManagerListener::Starting, Download* dl) noexcept
@@ -927,7 +927,7 @@ void Transfers::on(DownloadManagerListener::Starting, Download* dl) noexcept
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, true, Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 }
 
 void Transfers::on(DownloadManagerListener::Tick, const DownloadList& dls) noexcept
@@ -960,7 +960,7 @@ void Transfers::on(DownloadManagerListener::Tick, const DownloadList& dls) noexc
 
         typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
         F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, true, Sound::NONE);
-        WulforManager::get()->dispatchGuiFunc(f3);
+        wulforManagerInstance()->dispatchGuiFunc(f3);
     }
 }
 
@@ -979,11 +979,11 @@ void Transfers::on(DownloadManagerListener::Complete, Download* dl) noexcept
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, true, Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 
     typedef Func2<Transfers, const string, int64_t> F2b;
     F2b* f2b = new F2b(this, &Transfers::updateFilePosition_gui, params["CID"], pos);
-    WulforManager::get()->dispatchGuiFunc(f2b);
+    wulforManagerInstance()->dispatchGuiFunc(f2b);
 }
 
 void Transfers::on(DownloadManagerListener::Failed, Download* dl, const string& reason) noexcept
@@ -1009,11 +1009,11 @@ void Transfers::onFailed(Download* dl, const string& reason) {
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, true, Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 
     typedef Func2<Transfers, const string, int64_t> F2b;
     F2b* f2b = new F2b(this, &Transfers::updateFilePosition_gui, params["CID"], pos);
-    WulforManager::get()->dispatchGuiFunc(f2b);
+    wulforManagerInstance()->dispatchGuiFunc(f2b);
 }
 
 void Transfers::on(ConnectionManagerListener::Added, ConnectionQueueItem* cqi) noexcept
@@ -1024,7 +1024,7 @@ void Transfers::on(ConnectionManagerListener::Added, ConnectionQueueItem* cqi) n
 
     typedef Func2<Transfers, StringMap, bool> F2;
     F2* f2 = new F2(this, &Transfers::addConnection_gui, params, cqi->getDownload());
-    WulforManager::get()->dispatchGuiFunc(f2);
+    wulforManagerInstance()->dispatchGuiFunc(f2);
 }
 
 void Transfers::on(ConnectionManagerListener::Connected, ConnectionQueueItem* cqi) noexcept
@@ -1035,7 +1035,7 @@ void Transfers::on(ConnectionManagerListener::Connected, ConnectionQueueItem* cq
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, cqi->getDownload(), Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 }
 
 void Transfers::on(ConnectionManagerListener::Removed, ConnectionQueueItem* cqi) noexcept
@@ -1043,7 +1043,7 @@ void Transfers::on(ConnectionManagerListener::Removed, ConnectionQueueItem* cqi)
     string cid = cqi->getUser().user->getCID().toBase32();
     typedef Func2<Transfers, const string, bool> F2;
     F2* f2 = new F2(this, &Transfers::removeConnection_gui, cid, cqi->getDownload());
-    WulforManager::get()->dispatchGuiFunc(f2);
+    wulforManagerInstance()->dispatchGuiFunc(f2);
 }
 
 void Transfers::on(ConnectionManagerListener::Failed, ConnectionQueueItem* cqi, const string& reason) noexcept
@@ -1058,7 +1058,7 @@ void Transfers::on(ConnectionManagerListener::Failed, ConnectionQueueItem* cqi, 
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, cqi->getDownload(), Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 }
 
 void Transfers::on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem* cqi) noexcept
@@ -1074,7 +1074,7 @@ void Transfers::on(ConnectionManagerListener::StatusChanged, ConnectionQueueItem
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, cqi->getDownload(), Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 }
 
 void Transfers::on(QueueManagerListener::Finished, QueueItem *qi, const string &dir, int64_t size) noexcept
@@ -1096,7 +1096,7 @@ void Transfers::on(QueueManagerListener::Finished, QueueItem *qi, const string &
 
     typedef Func3<Transfers, const string, const string, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::finishParent_gui, target, _("Download finished"), sound);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 }
 
 void Transfers::on(QueueManagerListener::Removed, QueueItem* qi) noexcept
@@ -1105,7 +1105,7 @@ void Transfers::on(QueueManagerListener::Removed, QueueItem* qi) noexcept
 
     typedef Func3<Transfers, const string, const string, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::finishParent_gui, target, _("Download removed"), Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 }
 
 void Transfers::on(UploadManagerListener::Starting, Upload* ul) noexcept
@@ -1120,7 +1120,7 @@ void Transfers::on(UploadManagerListener::Starting, Upload* ul) noexcept
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, false, Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 }
 
 void Transfers::on(UploadManagerListener::Tick, const UploadList& uls) noexcept
@@ -1151,7 +1151,7 @@ void Transfers::on(UploadManagerListener::Tick, const UploadList& uls) noexcept
 
         typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
         F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, false, Sound::NONE);
-        WulforManager::get()->dispatchGuiFunc(f3);
+        wulforManagerInstance()->dispatchGuiFunc(f3);
     }
 }
 
@@ -1168,7 +1168,7 @@ void Transfers::on(UploadManagerListener::Complete, Upload* ul) noexcept
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, false, Sound::UPLOAD_FINISHED);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 }
 
 void Transfers::on(UploadManagerListener::Failed, Upload* ul, const string& reason) noexcept
@@ -1183,5 +1183,5 @@ void Transfers::on(UploadManagerListener::Failed, Upload* ul, const string& reas
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, false, Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 }

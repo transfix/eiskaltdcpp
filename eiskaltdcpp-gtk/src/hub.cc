@@ -269,7 +269,7 @@ Hub::Hub(const string &address, const string &encoding):
     if (panePosition > 10)
     {
         gint width;
-        GtkWindow *window = GTK_WINDOW(WulforManager::get()->getMainWindow()->getContainer());
+        GtkWindow *window = GTK_WINDOW(wulforManagerInstance()->getMainWindow()->getContainer());
         gtk_window_get_size(window, &width, NULL);
         gtk_paned_set_position(GTK_PANED(getWidget("pane")), width - panePosition);
     }
@@ -314,7 +314,7 @@ Hub::~Hub()
 
     // Save the pane position
     gint width;
-    GtkWindow *window = GTK_WINDOW(WulforManager::get()->getMainWindow()->getContainer());
+    GtkWindow *window = GTK_WINDOW(wulforManagerInstance()->getMainWindow()->getContainer());
     gtk_window_get_size(window, &width, NULL);
     gint panePosition = width - gtk_paned_get_position(GTK_PANED(getWidget("pane")));
     if (panePosition > 10)
@@ -345,7 +345,7 @@ void Hub::show()
     // Connect to the hub
     typedef Func2<Hub, string, string> F2;
     F2 *func = new F2(this, &Hub::connectClient_client, address, encoding);
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 }
 
 void Hub::setStatus_gui(string statusBar, string text)
@@ -455,7 +455,7 @@ void Hub::updateUser_gui(ParamMap params)
             // Show joins in chat by default
             addStatusMessage_gui(Nick + _(" has joined"), Msg::STATUS, favorite? Sound::FAVORITE_USER_JOIN : Sound::NONE);
             string message = Nick + _(" has joined hub ") + client->getHubName();
-            WulforManager::get()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
+            wulforManagerInstance()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
 
             if (favorite)
                 Notify::get()->showNotify("", message, Notify::FAVORITE_USER_JOIN);
@@ -465,7 +465,7 @@ void Hub::updateUser_gui(ParamMap params)
             // Only show joins for favorite users
             string message = Nick + _(" has joined hub ") + client->getHubName();
             addStatusMessage_gui(Nick + _(" has joined"), Msg::STATUS, Sound::FAVORITE_USER_JOIN);
-            WulforManager::get()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
+            wulforManagerInstance()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
             Notify::get()->showNotify("", message, Notify::FAVORITE_USER_JOIN);
         }
     }
@@ -497,7 +497,7 @@ void Hub::removeUser_gui(string cid)
             // Show parts in chat
             string message = nick + _(" has quit hub ") + client->getHubName();
             addStatusMessage_gui(nick + _(" has quit"), Msg::STATUS, order == FAVORITE? Sound::FAVORITE_USER_QUIT : Sound::NONE);
-            WulforManager::get()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
+            wulforManagerInstance()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
 
             if (order == FAVORITE)
                 Notify::get()->showNotify("", message, Notify::FAVORITE_USER_QUIT);
@@ -507,7 +507,7 @@ void Hub::removeUser_gui(string cid)
             // Only show parts for favorite users
             string message = nick + _(" has quit hub ") + client->getHubName();
             addStatusMessage_gui(nick + _(" has quit"), Msg::STATUS, Sound::FAVORITE_USER_QUIT);
-            WulforManager::get()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
+            wulforManagerInstance()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
             Notify::get()->showNotify("", message, Notify::FAVORITE_USER_QUIT);
         }
     }
@@ -591,7 +591,7 @@ void Hub::getPassword_gui()
     // Create password dialog
     string title = client->getHubUrl(); //_("Enter hub password")
     GtkWidget *dialog = gtk_dialog_new_with_buttons(title.c_str(),
-                                                    GTK_WINDOW(WulforManager::get()->getMainWindow()->getContainer()),
+                                                    GTK_WINDOW(wulforManagerInstance()->getMainWindow()->getContainer()),
                                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                                     GTK_STOCK_OK,
                                                     GTK_RESPONSE_OK,
@@ -643,7 +643,7 @@ void Hub::onPasswordDialog(GtkWidget *dialog, gint response, gpointer data)
         string password = gtk_entry_get_text(GTK_ENTRY(entry));
         typedef Func1<Hub, string> F1;
         F1 *func = new F1(hub, &Hub::setPassword_client, password);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
     else
         hub->client->disconnect(true);
@@ -942,7 +942,7 @@ void Hub::applyTags_gui(const string cid, const string &line)
                     typedef Func4<Hub, string, int64_t, string, string> F4;
                     target = Util::getPath(Util::PATH_USER_LOCAL) + "Images" + PATH_SEPARATOR_STR + tth;
                     F4 *func = new F4(this, &Hub::download_client, target, size, tth, cid);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 }
             }
         }
@@ -1265,7 +1265,7 @@ void Hub::updateCursor_gui(GtkWidget *widget)
 
 void Hub::preferences_gui()
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
     string fore, back;
     bool bold = false, italic = false;
 
@@ -1398,7 +1398,7 @@ void Hub::getSettingTag_gui(WulforSettingsManager *wsm, const Tag::TypeTag type,
 
 GtkTextTag* Hub::createTag_gui(const string &tagname, Tag::TypeTag type)
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
     GtkTextTag *tag = gtk_text_tag_table_lookup(gtk_text_buffer_get_tag_table(chatBuffer), tagname.c_str());
 
     if (!tag)
@@ -1766,7 +1766,7 @@ gboolean Hub::onMagnetTagEvent_gui(GtkTextTag *tag, GObject *textView, GdkEvent 
         {
         case 1:
             // Search for magnet
-            WulforManager::get()->getMainWindow()->actionMagnet_gui(hub->selectedTagStr);
+            wulforManagerInstance()->getMainWindow()->actionMagnet_gui(hub->selectedTagStr);
             break;
         case 3:
             // Popup magnet context menu
@@ -1961,11 +1961,11 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
         else if (command == "close")
         {
             /// @todo: figure out why this sometimes closes and reopens the tab
-            WulforManager::get()->getMainWindow()->removeBookEntry_gui(hub);
+            wulforManagerInstance()->getMainWindow()->removeBookEntry_gui(hub);
         }
         else if (command == "favorite" || command == "fav")
         {
-            WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::addAsFavorite_client));
+            wulforManagerInstance()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::addAsFavorite_client));
         }
         else if (command == "fuser" || command == "fu")
         {
@@ -1978,7 +1978,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
                 if (hub->userFavoriteMap.find(cid) == hub->userFavoriteMap.end())
                 {
                     Func1<Hub, string> *func = new Func1<Hub, string>(hub, &Hub::addFavoriteUser_client, cid);
-                    WulforManager::get()->dispatchClientFunc(func);
+                    wulforManagerInstance()->dispatchClientFunc(func);
                 } else
                     hub->addStatusMessage_gui(param + _(" is favorite user"), Msg::STATUS, Sound::NONE);
             } else
@@ -1995,7 +1995,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
             if (it != hub->userFavoriteMap.end())
             {
                 Func1<Hub, string> *func = new Func1<Hub, string>(hub, &Hub::removeFavoriteUser_client, it->first);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             else
                 hub->addStatusMessage_gui(param + _(" is not favorite user"), Msg::STATUS, Sound::NONE);
@@ -2014,7 +2014,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
             if (hub->userMap.find(param) != hub->userMap.end())
             {
                 func3 = new F3(hub, &Hub::getFileList_client, hub->userMap[param], false, true);
-                WulforManager::get()->dispatchClientFunc(func3);
+                wulforManagerInstance()->dispatchClientFunc(func3);
             }
             else
                 hub->addStatusMessage_gui(_("Not found user: ") + param, Msg::SYSTEM, Sound::NONE);
@@ -2024,7 +2024,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
             if (hub->userMap.find(param) != hub->userMap.end())
             {
                 func = new F1(hub, &Hub::grantSlot_client, hub->userMap[param]);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             else
                 hub->addStatusMessage_gui(_("Not found user: ") + param, Msg::SYSTEM, Sound::NONE);
@@ -2096,7 +2096,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
             if (param.compare("show") == 0)
             {
                 F2 *func = new F2( hub, &Hub::sendMessage_client, line, false);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             else
             {
@@ -2160,34 +2160,34 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
             if (WGETB("join-open-new-window"))
             {
                 // Assumption: new hub is same encoding as current hub.
-                WulforManager::get()->getMainWindow()->showHub_gui(param, hub->encoding);
+                wulforManagerInstance()->getMainWindow()->showHub_gui(param, hub->encoding);
             }
             else
             {
                 typedef Func2<Hub, string, bool> F2;
                 F2 *func = new F2(hub, &Hub::redirect_client, param, true);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
         }
         else if (command == "me" && !param.empty())
         {
             func2 = new F2(hub, &Hub::sendMessage_client, param, true);
-            WulforManager::get()->dispatchClientFunc(func2);
+            wulforManagerInstance()->dispatchClientFunc(func2);
         }
         else if (command == "pm" && !param.empty())
         {
             if (hub->userMap.find(param) != hub->userMap.end())
-                WulforManager::get()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN, hub->userMap[param], hub->client->getHubUrl());
+                wulforManagerInstance()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN, hub->userMap[param], hub->client->getHubUrl());
             else
                 hub->addStatusMessage_gui(_("Not found user: ") + param, Msg::SYSTEM, Sound::NONE);
         }
         else if (command == "rebuild")
         {
-            WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::rebuildHashData_client));
+            wulforManagerInstance()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::rebuildHashData_client));
         }
         else if (command == "refresh")
         {
-            WulforManager::get()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::refreshFileList_client));
+            wulforManagerInstance()->dispatchClientFunc(new Func0<Hub>(hub, &Hub::refreshFileList_client));
         }
         else if (command == "userlist")
         {
@@ -2206,7 +2206,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
             if( gio_status == G_IO_STATUS_NORMAL )
             {
                 F2 *func = new F2( hub, &Hub::sendMessage_client, string(command_res), false );
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             //g_io_channel_close( gio_chanel );
             g_io_channel_shutdown( gio_chanel ,false, NULL );
@@ -2408,7 +2408,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
                             g_free( output );
 
                             func2 = new F2(hub, &Hub::sendMessage_client, trash, false );
-                            WulforManager::get()->dispatchClientFunc( func2 );
+                            wulforManagerInstance()->dispatchClientFunc( func2 );
                         }
                     }
                     break;
@@ -2423,13 +2423,13 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
                 return;
 
             F1 *func = new F1(hub, &Hub::setPassword_client, param);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
             hub->WaitingPassword = false;
         }
         else if (BOOLSETTING(SEND_UNKNOWN_COMMANDS))
         {
             func2 = new F2(hub, &Hub::sendMessage_client, text, false);
-            WulforManager::get()->dispatchClientFunc(func2);
+            wulforManagerInstance()->dispatchClientFunc(func2);
         }
         else
         {
@@ -2439,7 +2439,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
     else
     {
         func2 = new F2(hub, &Hub::sendMessage_client, text, false);
-        WulforManager::get()->dispatchClientFunc(func2);
+        wulforManagerInstance()->dispatchClientFunc(func2);
     }
 }
 
@@ -2527,7 +2527,7 @@ void Hub::onBrowseItemClicked_gui(GtkMenuItem *item, gpointer data)
             {
                 cid = hub->nickView.getString(&iter, "CID");
                 func = new F3(hub, &Hub::getFileList_client, cid, false, true);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             gtk_tree_path_free(path);
         }
@@ -2556,7 +2556,7 @@ void Hub::onMatchItemClicked_gui(GtkMenuItem *item, gpointer data)
             {
                 cid = hub->nickView.getString(&iter, "CID");
                 func = new F3(hub, &Hub::getFileList_client, cid, true, true);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             gtk_tree_path_free(path);
         }
@@ -2583,7 +2583,7 @@ void Hub::onMsgItemClicked_gui(GtkMenuItem *item, gpointer data)
             if (gtk_tree_model_get_iter(GTK_TREE_MODEL(hub->nickStore), &iter, path))
             {
                 cid = hub->nickView.getString(&iter, "CID");
-                WulforManager::get()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN, cid, hubUrl);
+                wulforManagerInstance()->getMainWindow()->addPrivateMessage_gui(Msg::UNKNOWN, cid, hubUrl);
             }
             gtk_tree_path_free(path);
         }
@@ -2612,7 +2612,7 @@ void Hub::onGrantItemClicked_gui(GtkMenuItem *item, gpointer data)
             {
                 cid = hub->nickView.getString(&iter, "CID");
                 func = new F1(hub, &Hub::grantSlot_client, cid);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             gtk_tree_path_free(path);
         }
@@ -2641,7 +2641,7 @@ void Hub::onRemoveUserItemClicked_gui(GtkMenuItem *item, gpointer data)
             {
                 cid = hub->nickView.getString(&iter, "CID");
                 func = new F1(hub, &Hub::removeUserFromQueue_client, cid);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             gtk_tree_path_free(path);
         }
@@ -2670,7 +2670,7 @@ void Hub::onOpenHubClicked_gui(GtkMenuItem *item, gpointer data)
     (void)item;
     Hub *hub = (Hub *)data;
 
-    WulforManager::get()->getMainWindow()->showHub_gui(hub->selectedTagStr);
+    wulforManagerInstance()->getMainWindow()->showHub_gui(hub->selectedTagStr);
 }
 
 void Hub::onSearchMagnetClicked_gui(GtkMenuItem *item, gpointer data)
@@ -2678,14 +2678,14 @@ void Hub::onSearchMagnetClicked_gui(GtkMenuItem *item, gpointer data)
     (void)item;
     Hub *hub = (Hub *)data;
 
-    WulforManager::get()->getMainWindow()->addSearch_gui(hub->selectedTagStr);
+    wulforManagerInstance()->getMainWindow()->addSearch_gui(hub->selectedTagStr);
 }
 
 void Hub::onDownloadClicked_gui(GtkMenuItem *item, gpointer data)
 {
     (void)item;
     Hub *hub = (Hub *)data;
-    WulforManager::get()->getMainWindow()->fileToDownload_gui(hub->selectedTagStr, SETTING(DOWNLOAD_DIRECTORY));
+    wulforManagerInstance()->getMainWindow()->fileToDownload_gui(hub->selectedTagStr, SETTING(DOWNLOAD_DIRECTORY));
 }
 
 gboolean Hub::onChatCommandButtonRelease_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -2730,7 +2730,7 @@ void Hub::onUseEmoticons_gui(GtkWidget *widget, gpointer data)
 
 void Hub::onDownloadToClicked_gui(GtkMenuItem*, gpointer data)
 {
-    GtkWidget *dialog = WulforManager::get()->getMainWindow()->getChooserDialog_gui();
+    GtkWidget *dialog = wulforManagerInstance()->getMainWindow()->getChooserDialog_gui();
     gtk_window_set_title(GTK_WINDOW(dialog), _("Choose a directory"));
     gtk_file_chooser_set_action(GTK_FILE_CHOOSER(dialog), GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
     gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), Text::fromUtf8(WGETS("magnet-choose-dir")).c_str());
@@ -2749,7 +2749,7 @@ void Hub::onDownloadToClicked_gui(GtkMenuItem*, gpointer data)
             Hub *hub = (Hub *)data;
             string path = Text::toUtf8(temp) + G_DIR_SEPARATOR_S;
 
-            WulforManager::get()->getMainWindow()->fileToDownload_gui(hub->selectedTagStr, path);
+            wulforManagerInstance()->getMainWindow()->fileToDownload_gui(hub->selectedTagStr, path);
         }
     }
     gtk_widget_hide(dialog);
@@ -2760,7 +2760,7 @@ void Hub::onMagnetPropertiesClicked_gui(GtkMenuItem *item, gpointer data)
     (void)item;
     Hub *hub = (Hub *)data;
 
-    WulforManager::get()->getMainWindow()->propertiesMagnetDialog_gui(hub->selectedTagStr);
+    wulforManagerInstance()->getMainWindow()->propertiesMagnetDialog_gui(hub->selectedTagStr);
 }
 
 void Hub::onUserListToggled_gui(GtkWidget *widget, gpointer data)
@@ -2803,7 +2803,7 @@ void Hub::onAddFavoriteUserClicked_gui(GtkMenuItem *item, gpointer data)
                     if (order != FAVORITE)
                     {
                         F1 *func = new F1(hub, &Hub::addFavoriteUser_client, cid);
-                        WulforManager::get()->dispatchClientFunc(func);
+                        wulforManagerInstance()->dispatchClientFunc(func);
                     }
                     else
                         hub->addStatusMessage_gui(nick + _(" is favorite user"), Msg::STATUS, Sound::NONE);
@@ -2844,7 +2844,7 @@ void Hub::onRemoveFavoriteUserClicked_gui(GtkMenuItem *item, gpointer data)
                     if (order == FAVORITE)
                     {
                         F1 *func = new F1(hub, &Hub::removeFavoriteUser_client, cid);
-                        WulforManager::get()->dispatchClientFunc(func);
+                        wulforManagerInstance()->dispatchClientFunc(func);
                     }
                     else
                         hub->addStatusMessage_gui(nick + _(" is not favorite user"), Msg::STATUS, Sound::NONE);
@@ -2878,7 +2878,7 @@ void Hub::addFavoriteUser_gui(ParamMap params)
 
         string message = nick + _(" added to favorites list");
         addStatusMessage_gui(message, Msg::STATUS, Sound::NONE);
-        WulforManager::get()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
+        wulforManagerInstance()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
     }
 }
 
@@ -2905,7 +2905,7 @@ void Hub::removeFavoriteUser_gui(ParamMap params)
 
         string message = nick + _(" removed from favorites list");
         addStatusMessage_gui(message, Msg::STATUS, Sound::NONE);
-        WulforManager::get()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
+        wulforManagerInstance()->getMainWindow()->addPrivateStatusMessage_gui(Msg::STATUS, cid, message);
     }
 }
 
@@ -2914,7 +2914,7 @@ void Hub::addPrivateMessage_gui(Msg::TypeMsg typemsg, string CID, string cid, st
     if (userFavoriteMap.find(CID) != userFavoriteMap.end())
         typemsg = Msg::FAVORITE;
 
-    WulforManager::get()->getMainWindow()->addPrivateMessage_gui(typemsg, cid, url, message, useSetting);
+    wulforManagerInstance()->getMainWindow()->addPrivateMessage_gui(typemsg, cid, url, message, useSetting);
 }
 
 void Hub::addFavoriteUser_client(const string cid)
@@ -3005,7 +3005,7 @@ void Hub::getFileList_client(string cid, bool match, bool full)
                 if (user == dcpp::getContext()->getClientManager()->getMe())
                 {
                     // Don't download file list, open locally instead
-                    WulforManager::get()->getMainWindow()->openOwnList_client(true);
+                    wulforManagerInstance()->getMainWindow()->openOwnList_client(true);
                 }
                 else if (match)
                 {
@@ -3032,7 +3032,7 @@ void Hub::getFileList_client(string cid, bool match, bool full)
     {
         typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
         F3 *func = new F3(this, &Hub::addStatusMessage_gui, message, Msg::SYSTEM, Sound::NONE);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -3053,7 +3053,7 @@ void Hub::grantSlot_client(string cid)
 
     typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
     F3 *func = new F3(this, &Hub::addStatusMessage_gui, message, Msg::STATUS, Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void Hub::removeUserFromQueue_client(string cid)
@@ -3075,7 +3075,7 @@ void Hub::redirect_client(string address, bool follow)
             string error = _("Unable to connect: already connected to the requested hub");
             typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
             F3 *f3 = new F3(this, &Hub::addStatusMessage_gui, error, Msg::STATUS, Sound::NONE);
-            WulforManager::get()->dispatchGuiFunc(f3);
+            wulforManagerInstance()->dispatchGuiFunc(f3);
             return;
         }
 
@@ -3085,7 +3085,7 @@ void Hub::redirect_client(string address, bool follow)
             disconnect_client();
 
             Func0<Hub> *func = new Func0<Hub>(this, &Hub::clearNickList_gui);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
 
             connectClient_client(address, encoding);
         }
@@ -3127,19 +3127,19 @@ void Hub::addAsFavorite_client()
         aEntry.setEncoding(encoding);
         dcpp::getContext()->getFavoriteManager()->addFavorite(aEntry);
         func = new F3(this, &Hub::addStatusMessage_gui, _("Favorite hub added"), Msg::STATUS, Sound::NONE);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
     else
     {
         func = new F3(this, &Hub::addStatusMessage_gui, _("Favorite hub already exists"), Msg::STATUS, Sound::NONE);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
 void Hub::reconnect_client()
 {
     Func0<Hub> *func = new Func0<Hub>(this, &Hub::clearNickList_gui);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 
     if (client)
         client->reconnect();
@@ -3184,7 +3184,7 @@ void Hub::download_client(string target, int64_t size, string tth, string cid)
     {
         typedef Func2<Hub, string, string> F2;
         F2 *f2 = new F2(this, &Hub::loadImage_gui, real, tth);
-        WulforManager::get()->dispatchGuiFunc(f2);
+        wulforManagerInstance()->dispatchGuiFunc(f2);
 
         return;
     }
@@ -3202,7 +3202,7 @@ void Hub::download_client(string target, int64_t size, string tth, string cid)
     {
         typedef Func2<Hub, string, string> F2;
         F2 *f2 = new F2(this, &Hub::loadImage_gui, target, tth);
-        WulforManager::get()->dispatchGuiFunc(f2);
+        wulforManagerInstance()->dispatchGuiFunc(f2);
     }
 }
 
@@ -3232,7 +3232,7 @@ void Hub::on(QueueManagerListener::Finished, QueueItem *item, const string &dir,
     if (!item->isSet(QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_USER_LIST) && !item->isSet(QueueItem::FLAG_XML_BZLIST))
     {
         F2 *f2 = new F2(this, &Hub::loadImage_gui, item->getTarget(), tth);
-        WulforManager::get()->dispatchGuiFunc(f2);
+        wulforManagerInstance()->dispatchGuiFunc(f2);
     }
 }
 
@@ -3294,7 +3294,7 @@ void Hub::onImageDestroy_gui(GtkWidget *widget, gpointer data)
     Hub *hub = (Hub*) data;
 
     // fix crash, if entry delete...
-    if (!WulforManager::get()->isEntry_gui(hub))
+    if (!wulforManagerInstance()->isEntry_gui(hub))
         return;
 
     auto j = hub->imageList.find(widget);
@@ -3370,7 +3370,7 @@ void Hub::onDownloadImageClicked_gui(GtkMenuItem *item, gpointer data)
         target = Util::getPath(Util::PATH_USER_LOCAL) + "Images" + PATH_SEPARATOR_STR + tth;
         typedef Func4<Hub, string, int64_t, string, string> F4;
         F4 *func = new F4(hub, &Hub::download_client, target, size, tth, cid);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -3404,7 +3404,7 @@ void Hub::onOpenImageClicked_gui(GtkMenuItem *item, gpointer data)
     WulforUtil::splitMagnet(magnet, name, size, tth);
     typedef Func1<Hub, string> F1;
     F1 *f = new F1(hub, &Hub::openImage_client, tth);
-    WulforManager::get()->dispatchClientFunc(f);
+    wulforManagerInstance()->dispatchClientFunc(f);
 }
 
 void Hub::openImage_client(string tth)
@@ -3412,7 +3412,7 @@ void Hub::openImage_client(string tth)
     string real = realFile_client(tth);
     typedef Func1<Hub, string> F1;
     F1 *f = new F1(this, &Hub::openImage_gui, real.empty() ? tth : real);
-    WulforManager::get()->dispatchGuiFunc(f);
+    wulforManagerInstance()->dispatchGuiFunc(f);
 }
 
 void Hub::openImage_gui(string target)
@@ -3511,7 +3511,7 @@ void Hub::on(FavoriteManagerListener::UserAdded, const FavoriteUser &user) noexc
     params.insert(ParamMap::value_type("Order", dcpp::getContext()->getClientManager()->isOp(user.getUser(), user.getUrl()) ? "o" : "u"));
 
     Func1<Hub, ParamMap> *func = new Func1<Hub, ParamMap>(this, &Hub::addFavoriteUser_gui, params);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void Hub::on(FavoriteManagerListener::UserRemoved, const FavoriteUser &user) noexcept
@@ -3524,21 +3524,21 @@ void Hub::on(FavoriteManagerListener::UserRemoved, const FavoriteUser &user) noe
     params.insert(ParamMap::value_type("CID", user.getUser()->getCID().toBase32()));
 
     Func1<Hub, ParamMap> *func = new Func1<Hub, ParamMap>(this, &Hub::removeFavoriteUser_gui, params);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void Hub::on(ClientListener::Connecting, Client *) noexcept
 {
     typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
     F3 *f3 = new F3(this, &Hub::addStatusMessage_gui, _("Connecting to ") + client->getHubUrl() + "...", Msg::STATUS, Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(f3);
+    wulforManagerInstance()->dispatchGuiFunc(f3);
 }
 
 void Hub::on(ClientListener::Connected, Client *) noexcept
 {
     typedef Func4<Hub, string, Msg::TypeMsg, Sound::TypeSound, Notify::TypeNotify> F4;
     F4 *func = new F4(this, &Hub::addStatusMessage_gui, _("Connected"), Msg::STATUS, Sound::HUB_CONNECT, Notify::HUB_CONNECT);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void Hub::on(ClientListener::UserUpdated, Client *, const OnlineUser &user) noexcept
@@ -3550,7 +3550,7 @@ void Hub::on(ClientListener::UserUpdated, Client *, const OnlineUser &user) noex
         ParamMap params;
         getParams_client(params, id);
         Func1<Hub, ParamMap> *func = new Func1<Hub, ParamMap>(this, &Hub::updateUser_gui, params);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -3568,7 +3568,7 @@ void Hub::on(ClientListener::UsersUpdated, Client *, const OnlineUserList &list)
             ParamMap params;
             getParams_client(params, id);
             func = new F1(this, &Hub::updateUser_gui, params);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
     }
 }
@@ -3576,7 +3576,7 @@ void Hub::on(ClientListener::UsersUpdated, Client *, const OnlineUserList &list)
 void Hub::on(ClientListener::UserRemoved, Client *, const OnlineUser &user) noexcept
 {
     Func1<Hub, string> *func = new Func1<Hub, string>(this, &Hub::removeUser_gui, user.getUser()->getCID().toBase32());
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void Hub::on(ClientListener::Redirect, Client *, const string &address) noexcept
@@ -3584,17 +3584,17 @@ void Hub::on(ClientListener::Redirect, Client *, const string &address) noexcept
     // redirect_client() crashes unless I put it into the dispatcher (why?)
     typedef Func2<Hub, string, bool> F2;
     F2 *func = new F2(this, &Hub::redirect_client, address, BOOLSETTING(AUTO_FOLLOW));
-    WulforManager::get()->dispatchClientFunc(func);
+    wulforManagerInstance()->dispatchClientFunc(func);
 }
 
 void Hub::on(ClientListener::Failed, Client *, const string &reason) noexcept
 {
     Func0<Hub> *f0 = new Func0<Hub>(this, &Hub::clearNickList_gui);
-    WulforManager::get()->dispatchGuiFunc(f0);
+    wulforManagerInstance()->dispatchGuiFunc(f0);
 
     typedef Func4<Hub, string, Msg::TypeMsg, Sound::TypeSound, Notify::TypeNotify> F4;
     F4 *f4 = new F4(this, &Hub::addStatusMessage_gui, _("Connect failed: ") + reason, Msg::SYSTEM, Sound::HUB_DISCONNECT, Notify::HUB_DISCONNECT);
-    WulforManager::get()->dispatchGuiFunc(f4);
+    wulforManagerInstance()->dispatchGuiFunc(f4);
 }
 
 void Hub::on(ClientListener::GetPassword, Client *) noexcept
@@ -3604,7 +3604,7 @@ void Hub::on(ClientListener::GetPassword, Client *) noexcept
     else
     {
         Func0<Hub> *func = new Func0<Hub>(this, &Hub::getPassword_gui);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -3622,7 +3622,7 @@ void Hub::on(ClientListener::HubUpdated, Client *) noexcept
         hubName += " - " + client->getHubDescription();
 
     F1 *func1 = new F1(this, &BookEntry::setLabel_gui, hubName);
-    WulforManager::get()->dispatchGuiFunc(func1);
+    wulforManagerInstance()->dispatchGuiFunc(func1);
 }
 
 void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexcept
@@ -3659,21 +3659,21 @@ void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexc
             error = _("Ignored private message from hub");
             typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
             F3 *func = new F3(this, &Hub::addStatusMessage_gui, error, Msg::STATUS, Sound::NONE);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
         else if (user->getIdentity().isBot() && BOOLSETTING(IGNORE_BOT_PMS))
         {
             error = _("Ignored private message from bot ") + user->getIdentity().getNick();
             typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
             F3 *func = new F3(this, &Hub::addStatusMessage_gui, error, Msg::STATUS, Sound::NONE);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
         else
         {
             typedef Func6<Hub, Msg::TypeMsg, string, string, string, string, bool> F6;
             F6 *func = new F6(this, &Hub::addPrivateMessage_gui, typemsg, message.from->getUser()->getCID().toBase32(),
                               user->getUser()->getCID().toBase32(), client->getHubUrl(), line, true);
-            WulforManager::get()->dispatchGuiFunc(func);
+            wulforManagerInstance()->dispatchGuiFunc(func);
         }
     }
     else
@@ -3692,7 +3692,7 @@ void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexc
             {
                 typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
                 F3 *func = new F3(this, &Hub::addStatusMessage_gui, line, Msg::STATUS, Sound::NONE);
-                WulforManager::get()->dispatchGuiFunc(func);
+                wulforManagerInstance()->dispatchGuiFunc(func);
 
                 return;
             }
@@ -3710,7 +3710,7 @@ void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexc
 
         typedef Func3<Hub, string, string, Msg::TypeMsg> F3;
         F3 *func = new F3(this, &Hub::addMessage_gui, cid, line, typemsg);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
 
         // Set urgency hint if message contains user's nick
         if (WGETB("bold-hub") && message.from->getIdentity().getUser() != client->getMyIdentity().getUser())
@@ -3719,7 +3719,7 @@ void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexc
             {
                 typedef Func0<Hub> F0;
                 F0 *func = new F0(this, &Hub::setUrgent_gui);
-                WulforManager::get()->dispatchGuiFunc(func);
+                wulforManagerInstance()->dispatchGuiFunc(func);
             }
         }
     }
@@ -3736,7 +3736,7 @@ void Hub::on(ClientListener::StatusMessage, Client *, const string &message, int
             {
                 typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
                 F3 *func = new F3(this, &Hub::addStatusMessage_gui, message, Msg::STATUS, Sound::NONE);
-                WulforManager::get()->dispatchGuiFunc(func);
+                wulforManagerInstance()->dispatchGuiFunc(func);
                 return;
             }
         }
@@ -3753,7 +3753,7 @@ void Hub::on(ClientListener::StatusMessage, Client *, const string &message, int
 
         typedef Func3<Hub, string, string, Msg::TypeMsg> F3;
         F3 *func = new F3(this, &Hub::addMessage_gui, "", message, Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -3761,14 +3761,14 @@ void Hub::on(ClientListener::NickTaken, Client *) noexcept
 {
     typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
     F3 *func = new F3(this, &Hub::addStatusMessage_gui, _("Nick already taken"), Msg::STATUS, Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void Hub::on(ClientListener::SearchFlood, Client *, const string &msg) noexcept
 {
     typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
     F3 *func = new F3(this, &Hub::addStatusMessage_gui, _("Search spam detected from ") + msg, Msg::STATUS, Sound::NONE);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void Hub::disableChat(bool enable)
@@ -3817,7 +3817,7 @@ void Hub::onPartialFileListOpen_gui(GtkMenuItem *item, gpointer data)
             {
                 cid = hub->nickView.getString(&iter, "CID");
                 func = new F3(hub, &Hub::getFileList_client, cid, false, false);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             gtk_tree_path_free(path);
         }

@@ -33,7 +33,7 @@ namespace dht
 {
     vector<string> dhtservers;
  
-    BootstrapManager::BootstrapManager(void)
+    BootstrapManager::BootstrapManager(DHT& dht) : dht_(dht)
     {
         dhtservers.push_back("http://strongdc.sourceforge.net/bootstrap/");
         dhtservers.push_back("http://dht.fly-server.ru/dcDHT.php");
@@ -57,7 +57,7 @@ namespace dht
             // store only active nodes to database
             if(dcpp::getContext()->getClientManager()->isActive(Util::emptyString))
             {
-                url += "&u4=" + DHT::getInstance()->getPort();
+                url += "&u4=" + dht_.getPort();
             }
 
             httpConnection.downloadFile(url);
@@ -147,10 +147,10 @@ namespace dht
             CID key;
             // if our external IP changed from the last time, we can't encrypt packet with this key
             // this won't probably work now
-            if(DHT::getInstance()->getLastExternalIP() == node.udpKey.ip)
+            if(dht_.getLastExternalIP() == node.udpKey.ip)
                 key = node.udpKey.key;
 
-            DHT::getInstance()->send(cmd, node.ip, node.udpPort, node.cid, key);
+            dht_.send(cmd, node.ip, node.udpPort, node.cid, key);
 
             bootstrapNodes.pop_front();
         }

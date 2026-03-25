@@ -30,7 +30,7 @@
 namespace dht
 {
 
-    ConnectionManager::ConnectionManager(void)
+    ConnectionManager::ConnectionManager(DHT& dht) : dht_(dht)
     {
     }
 
@@ -52,7 +52,7 @@ namespace dht
         if(!node->isOnline())
         {
             // do handshake at first
-            DHT::getInstance()->info(node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
+            dht_.info(node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
                 DHT::PING | DHT::MAKE_ONLINE, node->getUser()->getCID(), node->getUdpKey());
             return;
         }
@@ -71,7 +71,7 @@ namespace dht
 
         cmd.addParam(token);
 
-        DHT::getInstance()->send(cmd, node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
+        dht_.send(cmd, node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
             node->getUser()->getCID(), node->getUdpKey());
     }
 
@@ -84,7 +84,7 @@ namespace dht
         if(!node->isOnline())
         {
             // do handshake at first
-            DHT::getInstance()->info(node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
+            dht_.info(node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
                 DHT::PING | DHT::MAKE_ONLINE, node->getUser()->getCID(), node->getUdpKey());
             return;
         }
@@ -108,7 +108,7 @@ namespace dht
             cmd.addParam("PR", protocol);
             cmd.addParam("TO", token);
 
-            DHT::getInstance()->send(cmd, node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
+            dht_.send(cmd, node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
                 node->getUser()->getCID(), node->getUdpKey());
             return;
         }
@@ -116,7 +116,7 @@ namespace dht
         if(!node->getIdentity().isTcpActive())
         {
             AdcCommand err(AdcCommand::SEV_FATAL, AdcCommand::ERROR_PROTOCOL_GENERIC, "IP unknown", AdcCommand::TYPE_UDP);
-            DHT::getInstance()->send(err, node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
+            dht_.send(err, node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
                 node->getUser()->getCID(), node->getUdpKey());
             return;
         }
@@ -155,7 +155,7 @@ namespace dht
             sta.addParam("PR", protocol);
             sta.addParam("TO", token);
 
-            DHT::getInstance()->send(sta, node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
+            dht_.send(sta, node->getIdentity().getIp(), node->getIdentity().getUdpPort(),
                 node->getUser()->getCID(), node->getUdpKey());
             return;
         }

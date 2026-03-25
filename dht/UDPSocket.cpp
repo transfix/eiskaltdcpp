@@ -143,7 +143,7 @@ namespace dht
                     string ip = inet_ntoa(remoteAddr.sin_addr);
                     string port = Util::toString(ntohs(remoteAddr.sin_port));
                     COMMAND_DEBUG(s.substr(0, s.length() - 1), DebugManager::DHT_IN,  ip + ":" + port);
-                    DHT::getInstance()->dispatch(s.substr(0, s.length() - 1), ip, port, isUdpKeyValid);
+                    dht_->dispatch(s.substr(0, s.length() - 1), ip, port, isUdpKeyValid);
                 }
 
                 Thread::sleep(25);

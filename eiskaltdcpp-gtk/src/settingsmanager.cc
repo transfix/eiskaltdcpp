@@ -31,19 +31,18 @@
 using namespace std;
 using namespace dcpp;
 
-// ── Static instance pointer (replaces Singleton<>) ──
-WulforSettingsManager *WulforSettingsManager::instance_ = nullptr;
+// ── Module-level active instance pointer (set/cleared in wulfor.cc) ──
+static WulforSettingsManager *s_settingsInstance = nullptr;
 
-void WulforSettingsManager::newInstance()
+WulforSettingsManager *wulforSettingsInstance()
 {
-    dcassert(!instance_);
-    instance_ = new WulforSettingsManager();
+    dcassert(s_settingsInstance);
+    return s_settingsInstance;
 }
 
-void WulforSettingsManager::deleteInstance()
+void setWulforSettingsInstance(WulforSettingsManager *instance)
 {
-    delete instance_;
-    instance_ = nullptr;
+    s_settingsInstance = instance;
 }
 
 // ── Constructor / Destructor ──

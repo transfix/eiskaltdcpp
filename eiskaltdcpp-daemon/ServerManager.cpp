@@ -46,8 +46,7 @@ void ServerInitialize()
 bool ServerStart()
 {
     dcpp::startup(callBack, nullptr);
-    ServerThread::newInstance();
-    ServersS = ServerThread::getInstance();
+    ServersS = new ServerThread();
 
     if(!ServersS)
         return false;
@@ -66,7 +65,7 @@ void ServerStop()
     logging(bDaemon, bsyslog, true, "waiting");
     ServersS->WaitFor();
     logging(bDaemon, bsyslog, true, "waiting finished");
-    ServersS->release();
+    delete ServersS;
 
     ServersS = nullptr;
     logging(bDaemon, bsyslog, true, "library stops");
@@ -78,8 +77,8 @@ void ServerStop()
 
 void ConfigReload()
 {
-    if (ServerThread::getInstance()) {
-        ServerThread::getInstance()->configReload();
+    if (ServersS) {
+        ServersS->configReload();
         logging(bDaemon, bsyslog, true, "reload configuration success");
     } else {
         logging(bDaemon, bsyslog, true, "reload configuration failed");

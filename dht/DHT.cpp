@@ -54,20 +54,20 @@ namespace dht
     {
         type = ClientBase::DHT;
 
-        IndexManager::newInstance();
+        indexMgr_ = std::make_unique<IndexManager>(*this);
     }
 
     DHT::~DHT(void) throw()
     {
         // when DHT is disabled, we shouldn't try to perform exit cleanup
         if(bucket == nullptr) {
-            IndexManager::deleteInstance();
+            indexMgr_.reset();
             return;
         }
 
         stop(true);
 
-        IndexManager::deleteInstance();
+        indexMgr_.reset();
     }
 
     /*
@@ -87,18 +87,19 @@ namespace dht
             if(!BOOLSETTING(NO_IP_OVERRIDE))
                 dcpp::getContext()->getSettingsManager()->set(SettingsManager::EXTERNAL_IP, Util::emptyString);
 
-            bucket = new KBucket();
+            bucket = new KBucket(*this);
 
-            BootstrapManager::newInstance();
-            SearchManager::newInstance();
-            TaskManager::newInstance();
-            ConnectionManager::newInstance();
+            bootstrapMgr_ = std::make_unique<BootstrapManager>(*this);
+            searchMgr_ = std::make_unique<SearchManager>(*this);
+            taskMgr_ = std::make_unique<TaskManager>(*this);
+            connectionMgr_ = std::make_unique<ConnectionManager>(*this);
 
             loadData();
         }
 
+        socket.setDHT(*this);
         socket.listen();
-        BootstrapManager::getInstance()->bootstrap();
+        getBootstrapManager().bootstrap();
     }
 
     void DHT::stop(bool exiting)
@@ -114,10 +115,10 @@ namespace dht
 
             lastPacket = 0;
 
-            ConnectionManager::deleteInstance();
-            TaskManager::deleteInstance();
-            SearchManager::deleteInstance();
-            BootstrapManager::deleteInstance();
+            connectionMgr_.reset();
+            taskMgr_.reset();
+            searchMgr_.reset();
+            bootstrapMgr_.reset();
 
             delete bucket;
             bucket = nullptr;
@@ -297,7 +298,7 @@ namespace dht
     void DHT::findFile(const string& tth, const string& token)
     {
         if(isConnected())
-            SearchManager::getInstance()->findFile(tth, token);
+            getSearchManager().findFile(tth, token);
     }
 
     /*
@@ -346,7 +347,7 @@ namespace dht
     void DHT::connect(const OnlineUser& ou, const string& token)
     {
         // this is DHT's node, so we can cast ou to Node
-        ConnectionManager::getInstance()->connect((Node*)&ou, token);
+        getConnectionManager().connect((Node*)&ou, token);
     }
 
     /*
@@ -380,7 +381,7 @@ namespace dht
                 bucket->loadNodes(xml);
 
             // load indexes
-            IndexManager::getInstance()->loadIndexes(xml);
+            getIndexManager().loadIndexes(xml);
             xml.stepOut();
         }
         catch(Exception& e)
@@ -407,7 +408,7 @@ namespace dht
         bucket->saveNodes(xml);
 
         // save foreign published files
-        IndexManager::getInstance()->saveIndexes(xml);
+        getIndexManager().saveIndexes(xml);
 
         xml.stepOut();
 
@@ -463,7 +464,7 @@ namespace dht
         addNode(node, true);
 
         // do we wait for any search results from this user?
-        SearchManager::getInstance()->processSearchResults(node->getUser(), Util::toInt(node->getIdentity().get("SL")));
+        getSearchManager().processSearchResults(node->getUser(), Util::toInt(node->getIdentity().get("SL")));
 
         if(it & PING)
         {
@@ -475,32 +476,32 @@ namespace dht
     // incoming search request
     void DHT::handle(AdcCommand::SCH, const Node::Ptr& node, AdcCommand& c) throw()
     {
-        SearchManager::getInstance()->processSearchRequest(node, c);
+        getSearchManager().processSearchRequest(node, c);
     }
 
     // incoming search result
     void DHT::handle(AdcCommand::RES, const Node::Ptr& node, AdcCommand& c) throw()
     {
-        SearchManager::getInstance()->processSearchResult(node, c);
+        getSearchManager().processSearchResult(node, c);
     }
 
     // incoming publish request
     void DHT::handle(AdcCommand::PUB, const Node::Ptr& node, AdcCommand& c) throw()
     {
         if(!isFirewalled()) // we should index this entry only if our UDP port is opened
-            IndexManager::getInstance()->processPublishSourceRequest(node, c);
+            getIndexManager().processPublishSourceRequest(node, c);
     }
 
     // connection request
     void DHT::handle(AdcCommand::CTM, const Node::Ptr& node, AdcCommand& c) throw()
     {
-        ConnectionManager::getInstance()->connectToMe(node, c);
+        getConnectionManager().connectToMe(node, c);
     }
 
     // reverse connection request
     void DHT::handle(AdcCommand::RCM, const Node::Ptr& node, AdcCommand& c) throw()
     {
-        ConnectionManager::getInstance()->revConnectToMe(node, c);
+        getConnectionManager().revConnectToMe(node, c);
     }
 
     // status message
@@ -649,7 +650,7 @@ namespace dht
 
             // get 20 random contacts
             Node::Map nodes;
-            DHT::getInstance()->getClosestNodes(CID::generate(), nodes, 20, 2);
+            getClosestNodes(CID::generate(), nodes, 20, 2);
 
             // add nodelist in XML format
             for(Node::Map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
@@ -709,8 +710,8 @@ namespace dht
 
                     // create verified node, it's not big risk here and allows faster bootstrapping
                     // if this node already exists in our routing table, don't update it's ip/port for security reasons
-                    Node::Ptr node = DHT::getInstance()->createNode(cid, i4, u4, false, true);
-                    DHT::getInstance()->addNode(node, false);
+                    Node::Ptr node = createNode(cid, i4, u4, false, true);
+                    addNode(node, false);
                 }
 
                 xml.stepOut();

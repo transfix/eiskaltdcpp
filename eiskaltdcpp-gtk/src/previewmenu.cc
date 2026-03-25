@@ -62,7 +62,7 @@ bool PreviewMenu::buildMenu_gui(const string &target)
     string appExtensions = "";
     ext = Text::toLower(ext);
 
-    const PreviewApp::List &Apps = WulforSettingsManager::getInstance()->getPreviewApps();
+    const PreviewApp::List &Apps = wulforSettingsInstance()->getPreviewApps();
 
     for (PreviewApp::Iter item = Apps.begin(); item != Apps.end(); ++item)
     {
