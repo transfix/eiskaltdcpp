@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <clocale>
 #include <cstdlib>
 #include <ctime>
 

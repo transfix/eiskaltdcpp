@@ -12,11 +12,42 @@ permissions:
   contents: write     # GitHub Releases
 
 jobs:
+  # ─── Version Info ──────────────────────────────────────────────────
+
+  prepare:
+    name: Prepare version info
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.info.outputs.version }}
+      short_sha: ${{ steps.info.outputs.short_sha }}
+      artifact_prefix: ${{ steps.info.outputs.artifact_prefix }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        sparse-checkout: CMakeLists.txt
+        sparse-checkout-cone-mode: false
+    - name: Compute version and artifact prefix
+      id: info
+      run: |
+        version=$(sed -n 's/^set (APP_VERSION "\(.*\)")/\1/p' CMakeLists.txt)
+        short_sha="${GITHUB_SHA::7}"
+        if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+          dev_suffix=""
+        else
+          dev_suffix="+dev"
+        fi
+        echo "version=${version}" >> "$GITHUB_OUTPUT"
+        echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+        echo "artifact_prefix=eiskaltdcpp-${version}${dev_suffix}-${short_sha}" >> "$GITHUB_OUTPUT"
+
   # ─── Build & Test ────────────────────────────────────────────────────
 
   build-linux-qt6:
     name: Linux / Qt6 (${{ matrix.build_type }})
+    needs: prepare
     runs-on: ubuntu-24.04
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
     strategy:
       matrix:
         build_type: [Debug, Release]
@@ -70,7 +101,7 @@ jobs:
     - name: Upload build tree
       uses: actions/upload-artifact@v4
       with:
-        name: linux-qt6-${{ matrix.build_type }}-build
+        name: ${{ env.AP }}-linux-x64-qt6-${{ matrix.build_type }}-buildtree
         path: build/
         retention-days: 1
 
@@ -78,13 +109,16 @@ jobs:
       if: matrix.build_type == 'Debug'
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-qt6-linux-x64-Debug
+        name: ${{ env.AP }}-linux-x64-qt6-Debug
         path: dist/
         retention-days: 3
 
   build-linux-gtk3:
     name: Linux / GTK3 (${{ matrix.build_type }})
+    needs: prepare
     runs-on: ubuntu-24.04
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
     strategy:
       matrix:
         build_type: [Debug, Release]
@@ -135,7 +169,7 @@ jobs:
     - name: Upload build tree
       uses: actions/upload-artifact@v4
       with:
-        name: linux-gtk3-${{ matrix.build_type }}-build
+        name: ${{ env.AP }}-linux-x64-gtk3-${{ matrix.build_type }}-buildtree
         path: build/
         retention-days: 1
 
@@ -143,12 +177,13 @@ jobs:
       if: matrix.build_type == 'Debug'
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-gtk3-linux-x64-Debug
+        name: ${{ env.AP }}-linux-x64-gtk3-Debug
         path: dist/
         retention-days: 3
 
   build-windows-qt6:
     name: Windows / Qt6 / MSVC (${{ matrix.build_type }})
+    needs: prepare
     runs-on: windows-latest
 
     strategy:
@@ -156,6 +191,7 @@ jobs:
         build_type: [Debug, Release]
 
     env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
       VCPKG_DEFAULT_TRIPLET: x64-windows
       VCPKG_BINARY_SOURCES: 'clear;x-gha,readwrite'
 
@@ -411,23 +447,27 @@ jobs:
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-qt6-windows-x64-${{ matrix.build_type }}
+        name: ${{ env.AP }}-windows-x64-qt6-${{ matrix.build_type }}
         path: dist/
 
     - name: Upload NSIS installer
       if: matrix.build_type == 'Release'
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-qt6-windows-x64-installer
+        name: ${{ env.AP }}-windows-x64-qt6-nsis-installer
         path: install-nsis/*.exe
 
   build-windows-gtk3:
     name: Windows / GTK3 / MSYS2 (${{ matrix.build_type }})
+    needs: prepare
     runs-on: windows-latest
 
     strategy:
       matrix:
         build_type: [Debug, Release]
+
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
 
     defaults:
       run:
@@ -545,12 +585,15 @@ jobs:
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-gtk3-windows-x64-${{ matrix.build_type }}
+        name: ${{ env.AP }}-windows-x64-gtk3-${{ matrix.build_type }}
         path: dist/
 
   build-macos-qt6:
     name: macOS / Qt6 (${{ matrix.arch }}, ${{ matrix.build_type }})
+    needs: prepare
     runs-on: ${{ matrix.runner }}
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
     strategy:
       matrix:
         arch: [arm64]
@@ -604,20 +647,23 @@ jobs:
     - name: Upload build tree
       uses: actions/upload-artifact@v4
       with:
-        name: macos-qt6-${{ matrix.arch }}-${{ matrix.build_type }}-build
+        name: ${{ env.AP }}-macos-${{ matrix.arch }}-qt6-${{ matrix.build_type }}-buildtree
         path: build/
         retention-days: 1
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-qt6-macos-${{ matrix.arch }}-${{ matrix.build_type }}
+        name: ${{ env.AP }}-macos-${{ matrix.arch }}-qt6-${{ matrix.build_type }}
         path: dist/
         retention-days: 3
 
   build-macos-gtk3:
     name: macOS / GTK3 (${{ matrix.arch }}, ${{ matrix.build_type }})
+    needs: prepare
     runs-on: ${{ matrix.runner }}
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
     strategy:
       matrix:
         arch: [arm64]
@@ -671,14 +717,14 @@ jobs:
     - name: Upload build tree
       uses: actions/upload-artifact@v4
       with:
-        name: macos-gtk3-${{ matrix.arch }}-${{ matrix.build_type }}-build
+        name: ${{ env.AP }}-macos-${{ matrix.arch }}-gtk3-${{ matrix.build_type }}-buildtree
         path: build/
         retention-days: 1
 
     - name: Upload distribution
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-gtk3-macos-${{ matrix.arch }}-${{ matrix.build_type }}
+        name: ${{ env.AP }}-macos-${{ matrix.arch }}-gtk3-${{ matrix.build_type }}
         path: dist/
         retention-days: 3
 
@@ -770,7 +816,9 @@ jobs:
   package-linux-qt6:
     name: Package Linux Qt6
     runs-on: ubuntu-24.04
-    needs: build-linux-qt6
+    needs: [prepare, build-linux-qt6]
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
 
     steps:
     - uses: actions/checkout@v4
@@ -791,7 +839,7 @@ jobs:
     - name: Download build tree
       uses: actions/download-artifact@v4
       with:
-        name: linux-qt6-Release-build
+        name: ${{ env.AP }}-linux-x64-qt6-Release-buildtree
         path: build/
 
     - name: Re-run CMake configure (restore install metadata)
@@ -838,13 +886,15 @@ jobs:
     - name: Upload .deb
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-qt6-linux-deb
+        name: ${{ env.AP }}-linux-x64-qt6-deb
         path: "*.deb"
 
   package-linux-gtk3:
     name: Package Linux GTK3
     runs-on: ubuntu-24.04
-    needs: build-linux-gtk3
+    needs: [prepare, build-linux-gtk3]
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
 
     steps:
     - uses: actions/checkout@v4
@@ -863,7 +913,7 @@ jobs:
     - name: Download build tree
       uses: actions/download-artifact@v4
       with:
-        name: linux-gtk3-Release-build
+        name: ${{ env.AP }}-linux-x64-gtk3-Release-buildtree
         path: build/
 
     - name: Re-run CMake configure (restore install metadata)
@@ -909,7 +959,7 @@ jobs:
     - name: Upload .deb
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-gtk3-linux-deb
+        name: ${{ env.AP }}-linux-x64-gtk3-deb
         path: "*.deb"
 
   # ─── macOS Packaging (depends on successful builds) ───────────────
@@ -917,7 +967,9 @@ jobs:
   package-macos-qt6:
     name: Package macOS Qt6 DMG (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    needs: build-macos-qt6
+    needs: [prepare, build-macos-qt6]
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
     strategy:
       matrix:
         include:
@@ -936,7 +988,7 @@ jobs:
     - name: Download build tree
       uses: actions/download-artifact@v4
       with:
-        name: macos-qt6-${{ matrix.arch }}-Release-build
+        name: ${{ env.AP }}-macos-${{ matrix.arch }}-qt6-Release-buildtree
         path: build/
 
     - name: Re-run CMake configure (restore install metadata)
@@ -979,13 +1031,15 @@ jobs:
     - name: Upload DMG
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-qt6-macos-${{ matrix.arch }}-dmg
+        name: ${{ env.AP }}-macos-${{ matrix.arch }}-qt6-dmg
         path: build/*.dmg
 
   package-macos-gtk3:
     name: Package macOS GTK3 DMG (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
-    needs: build-macos-gtk3
+    needs: [prepare, build-macos-gtk3]
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
     strategy:
       matrix:
         include:
@@ -1005,7 +1059,7 @@ jobs:
     - name: Download build tree
       uses: actions/download-artifact@v4
       with:
-        name: macos-gtk3-${{ matrix.arch }}-Release-build
+        name: ${{ env.AP }}-macos-${{ matrix.arch }}-gtk3-Release-buildtree
         path: build/
 
     - name: Re-run CMake configure (restore install metadata)
@@ -1096,7 +1150,7 @@ jobs:
     - name: Upload DMG
       uses: actions/upload-artifact@v4
       with:
-        name: eiskaltdcpp-gtk3-macos-${{ matrix.arch }}-dmg
+        name: ${{ env.AP }}-macos-${{ matrix.arch }}-gtk3-dmg
         path: build/*.dmg
 
   # ─── Release ───────────────────────────────────────────────────────
@@ -1106,6 +1160,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     needs:
+      - prepare
       - build-windows-qt6
       - build-windows-gtk3
       - build-linux-qt6
@@ -1116,6 +1171,8 @@ jobs:
       - package-linux-gtk3
       - package-macos-qt6
       - package-macos-gtk3
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
 
     steps:
     - uses: actions/checkout@v4
@@ -1131,45 +1188,45 @@ jobs:
         TAG="${GITHUB_REF#refs/tags/}"
         # Zip Windows Qt6 (Debug + Release)
         for bt in Debug Release; do
-          dir="release-assets/eiskaltdcpp-qt6-windows-x64-${bt}"
+          dir="release-assets/${AP}-windows-x64-qt6-${bt}"
           if [ -d "$dir" ]; then
             (cd "$dir" && zip -r "../../release/EiskaltDC++-Qt6-${TAG}-windows-x64-${bt}.zip" .)
           fi
         done
         # Zip Windows GTK3 (Debug + Release)
         for bt in Debug Release; do
-          dir="release-assets/eiskaltdcpp-gtk3-windows-x64-${bt}"
+          dir="release-assets/${AP}-windows-x64-gtk3-${bt}"
           if [ -d "$dir" ]; then
             (cd "$dir" && zip -r "../../release/EiskaltDC++-GTK3-${TAG}-windows-x64-${bt}.zip" .)
           fi
         done
         # Zip Linux Qt6 Debug
-        dir="release-assets/eiskaltdcpp-qt6-linux-x64-Debug"
+        dir="release-assets/${AP}-linux-x64-qt6-Debug"
         if [ -d "$dir" ]; then
           (cd "$dir" && zip -r "../../release/EiskaltDC++-Qt6-${TAG}-linux-x64-Debug.zip" .)
         fi
         # Zip Linux GTK3 Debug
-        dir="release-assets/eiskaltdcpp-gtk3-linux-x64-Debug"
+        dir="release-assets/${AP}-linux-x64-gtk3-Debug"
         if [ -d "$dir" ]; then
           (cd "$dir" && zip -r "../../release/EiskaltDC++-GTK3-${TAG}-linux-x64-Debug.zip" .)
         fi
         # Copy Linux .deb files (Release)
-        find release-assets/eiskaltdcpp-qt6-linux-deb -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
-        find release-assets/eiskaltdcpp-gtk3-linux-deb -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
+        find "release-assets/${AP}-linux-x64-qt6-deb" -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
+        find "release-assets/${AP}-linux-x64-gtk3-deb" -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
         # Copy NSIS installer if present
-        find release-assets/eiskaltdcpp-qt6-windows-x64-installer -name '*.exe' -exec cp {} release/ \; 2>/dev/null || true
+        find "release-assets/${AP}-windows-x64-qt6-nsis-installer" -name '*.exe' -exec cp {} release/ \; 2>/dev/null || true
         # Copy macOS DMG files (Release, arm64)
         for arch in arm64; do
-          find release-assets/eiskaltdcpp-qt6-macos-${arch}-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
-          find release-assets/eiskaltdcpp-gtk3-macos-${arch}-dmg -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
+          find "release-assets/${AP}-macos-${arch}-qt6-dmg" -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
+          find "release-assets/${AP}-macos-${arch}-gtk3-dmg" -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
         done
         # Zip macOS Debug (arm64)
         for arch in arm64; do
-          dir="release-assets/eiskaltdcpp-qt6-macos-${arch}-Debug"
+          dir="release-assets/${AP}-macos-${arch}-qt6-Debug"
           if [ -d "$dir" ]; then
             (cd "$dir" && zip -r "../../release/EiskaltDC++-Qt6-${TAG}-macos-${arch}-Debug.zip" .)
           fi
-          dir="release-assets/eiskaltdcpp-gtk3-macos-${arch}-Debug"
+          dir="release-assets/${AP}-macos-${arch}-gtk3-Debug"
           if [ -d "$dir" ]; then
             (cd "$dir" && zip -r "../../release/EiskaltDC++-GTK3-${TAG}-macos-${arch}-Debug.zip" .)
           fi
