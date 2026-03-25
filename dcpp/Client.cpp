@@ -37,7 +37,7 @@ Client::Counts Client::counts;
 uint32_t idCounter = 0;
 
 Client::Client(const string& hubURL, char separator_, bool secure_, Socket::Protocol proto_) :
-    myIdentity(dcpp::getContext()->getClientManager()->getMe(), 0), uniqueId(++idCounter),
+    myIdentity(ctx()->getClientManager()->getMe(), 0), uniqueId(++idCounter),
     reconnDelay(120), lastActivity(GET_TICK()), registered(false), autoReconnect(false),
     encoding(Text::hubDefaultCharset), state(STATE_DISCONNECTED), sock(0),
     hubUrl(hubURL), separator(separator_), proto(proto_),
@@ -48,7 +48,7 @@ Client::Client(const string& hubURL, char separator_, bool secure_, Socket::Prot
 
     keyprint = Util::decodeQuery(query)["kp"];
 
-    dcpp::getContext()->getTimerManager()->addListener(this);
+    ctx()->getTimerManager()->addListener(this);
 }
 
 Client::~Client() {
@@ -56,7 +56,7 @@ Client::~Client() {
 
     // In case we were deleted before we Failed
     ctx()->getFavoriteManager()->removeUserCommand(getHubUrl());
-    dcpp::getContext()->getTimerManager()->removeListener(this);
+    ctx()->getTimerManager()->removeListener(this);
     updateCounts(true);
 }
 

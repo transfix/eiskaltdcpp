@@ -36,12 +36,12 @@ namespace dht
         dht_(dht), nextPublishTime(GET_TICK()), nextSearchTime(GET_TICK()), nextSelfLookup(GET_TICK() + 3*60*1000),
         nextFirewallCheck(GET_TICK() + FWCHECK_TIME), lastBootstrap(0)
     {
-        dcpp::getContext()->getTimerManager()->addListener(this);
+        dht_.ctx()->getTimerManager()->addListener(this);
     }
 
     TaskManager::~TaskManager(void)
     {
-        dcpp::getContext()->getTimerManager()->removeListener(this);
+        dht_.ctx()->getTimerManager()->removeListener(this);
     }
 
     // TimerManagerListener
@@ -75,7 +75,7 @@ namespace dht
         if(aTick >= nextSelfLookup)
         {
             // find myself in the network
-            dht_.getSearchManager().findNode(dcpp::getContext()->getClientManager()->getMe()->getCID());
+            dht_.getSearchManager().findNode(dht_.ctx()->getClientManager()->getMe()->getCID());
             nextSelfLookup = aTick + SELF_LOOKUP_TIMER;
         }
 

@@ -28,6 +28,8 @@
 #include "dcpp/TimerManager.h"
 #include <memory>
 
+namespace dcpp { class DCContext; }
+
 namespace dht
 {
     class BootstrapManager;
@@ -40,8 +42,11 @@ namespace dht
         public Speaker<ClientListener>, public ClientBase
     {
     public:
-        explicit DHT(void);
+        explicit DHT(dcpp::DCContext* ctx);
         ~DHT(void) throw();
+
+        /** DCContext accessor for sub-managers */
+        [[nodiscard]] dcpp::DCContext* ctx() const noexcept { return ctx_; }
 
         enum InfType { NONE = 0, PING = 1, MAKE_ONLINE = 2 };
 
@@ -166,6 +171,8 @@ namespace dht
         std::unique_ptr<IndexManager> indexMgr_;
         std::unique_ptr<TaskManager> taskMgr_;
         std::unique_ptr<ConnectionManager> connectionMgr_;
+
+        dcpp::DCContext* ctx_;  ///< non-owning, set at construction
     };
 
 }

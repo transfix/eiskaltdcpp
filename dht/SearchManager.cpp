@@ -129,14 +129,14 @@ namespace dht
         //  for(IndexManager::SourceList::const_iterator i = sources.begin(); i != sources.end(); ++i)
         //  {
         //      // create user as offline (only TCP connected users will be online)
-        //      UserPtr u = dcpp::getContext()->getClientManager()->getUser(i->getCID());
+        //      UserPtr u = dht_.ctx()->getClientManager()->getUser(i->getCID());
         //      u->setFlag(User::DHT);
         //
         //      // contact node that we are online and we want his info
         //      dht_.info(i->getIp(), i->getUdpPort(), true);
         //
         //      SearchResultPtr sr(new SearchResult(u, SearchResult::TYPE_FILE, 0, 0, i->getSize(), tth, "DHT", Util::emptyString, i->getIp(), TTHValue(tth), token));
-        //      dcpp::getContext()->getSearchManager()->fire(SearchManagerListener::SR(), sr);
+        //      dht_.ctx()->getSearchManager()->fire(SearchManagerListener::SR(), sr);
         //  }
         //
         //  return;
@@ -358,7 +358,7 @@ namespace dht
                     bool partial        = xml.getBoolChildAttrib("PF");
 
                     // don't bother with invalid sources and private IPs
-                    if( !cid || dcpp::getContext()->getClientManager()->getMe()->getCID() == cid || !Utils::isGoodIPPort(i4, u4))
+                    if( !cid || dht_.ctx()->getClientManager()->getMe()->getCID() == cid || !Utils::isGoodIPPort(i4, u4))
                         continue;
 
                     // create user as offline (only TCP connected users will be online)
@@ -374,7 +374,7 @@ namespace dht
 
                         // ask for partial file
                         AdcCommand cmd(AdcCommand::CMD_PSR, AdcCommand::TYPE_UDP);
-                        cmd.addParam("U4", dcpp::getContext()->getSearchManager()->getPort());
+                        cmd.addParam("U4", dht_.ctx()->getSearchManager()->getPort());
                         cmd.addParam("TR", s->term);
 
                         dht_.send(cmd, i4, u4, cid, source->getUdpKey());
@@ -394,7 +394,7 @@ namespace dht
                         else
                         {
                             sr->setSlots(Util::toInt(source->getIdentity().get("SL")));
-                            dcpp::getContext()->getSearchManager()->fire(SearchManagerListener::SR(), sr);
+                            dht_.ctx()->getSearchManager()->fire(SearchManagerListener::SR(), sr);
                         }
                     }
                 }
@@ -410,7 +410,7 @@ namespace dht
                 CID distance = Utils::getDistance(cid, CID(s->term));
 
                 // don't bother with myself and nodes we've already tried or queued
-                if( dcpp::getContext()->getClientManager()->getMe()->getCID() == cid ||
+                if( dht_.ctx()->getClientManager()->getMe()->getCID() == cid ||
                     s->possibleNodes.find(distance) != s->possibleNodes.end() ||
                     s->triedNodes.find(distance) != s->triedNodes.end())
                 {
@@ -521,7 +521,7 @@ namespace dht
                 SearchResultPtr sr = it->second.second;
                 sr->setSlots(slots); // slot count should be known now
 
-                dcpp::getContext()->getSearchManager()->fire(SearchManagerListener::SR(), sr);
+                dht_.ctx()->getSearchManager()->fire(SearchManagerListener::SR(), sr);
                 searchResults.erase(it++);
 
                 ok = true;

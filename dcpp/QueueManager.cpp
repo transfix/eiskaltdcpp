@@ -527,9 +527,9 @@ QueueManager::QueueManager() :
 }
 
 QueueManager::~QueueManager() {
-    dcpp::getContext()->getSearchManager()->removeListener(this);
-    dcpp::getContext()->getTimerManager()->removeListener(this);
-    dcpp::getContext()->getClientManager()->removeListener(this);
+    ctx()->getSearchManager()->removeListener(this);
+    ctx()->getTimerManager()->removeListener(this);
+    ctx()->getClientManager()->removeListener(this);
 
     if(!BOOLSETTING(KEEP_LISTS)) {
         string path = Util::getListPath();

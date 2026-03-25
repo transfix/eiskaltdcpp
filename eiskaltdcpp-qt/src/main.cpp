@@ -178,15 +178,15 @@ int main(int argc, char *argv[])
     migrateConfig();
 #endif
 
-    dcpp::startup(callBack, nullptr);
-    dcpp::getContext()->getTimerManager()->start();
+    auto dcContext = dcpp::startup(callBack, nullptr);
+    dcContext->getTimerManager()->start();
 
-    dcpp::getContext()->getHashManager()->setPriority(Thread::IDLE);
+    dcContext->getHashManager()->setPriority(Thread::IDLE);
     app.setOrganizationName("EiskaltDC++ Team");
     app.setApplicationName("EiskaltDC++ Qt");
     app.setApplicationVersion(QString::fromStdString(eiskaltdcppVersionString));
     
-    { // Begin Qt-widget scope: everything inside is destroyed before dcpp::shutdown()
+    { // Begin Qt-widget scope: everything inside is destroyed before dcpp shutdown
     QtContext ctx;
     // Guard: ensure settings are saved on scope exit.
     // The guard runs before ~QtContext.
@@ -279,7 +279,9 @@ int main(int argc, char *argv[])
     //      Qt widgets, and deregisters the process-wide context.
     }
 
-    dcpp::shutdown();
+    dcContext->shutdown();
+    dcContext.reset();
+    dcpp::setContext(nullptr);
 
     std::cout << QObject::tr("Quit...").toStdString() << std::endl;
 

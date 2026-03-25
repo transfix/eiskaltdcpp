@@ -40,9 +40,9 @@ FinishedManager::FinishedManager() {
 }
 
 FinishedManager::~FinishedManager() {
-    dcpp::getContext()->getDownloadManager()->removeListener(this);
-    dcpp::getContext()->getUploadManager()->removeListener(this);
-    dcpp::getContext()->getQueueManager()->removeListener(this);
+    ctx()->getDownloadManager()->removeListener(this);
+    ctx()->getUploadManager()->removeListener(this);
+    ctx()->getQueueManager()->removeListener(this);
 
     clearDLs();
     clearULs();

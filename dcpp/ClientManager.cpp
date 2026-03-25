@@ -46,7 +46,7 @@ ClientManager::ClientManager() {
 }
 
 ClientManager::~ClientManager() {
-    dcpp::getContext()->getTimerManager()->removeListener(this);
+    ctx()->getTimerManager()->removeListener(this);
 }
 
 Client* ClientManager::getClient(const string& aHubURL) {
@@ -767,16 +767,16 @@ void ClientManager::on(Failed, Client* client, const string&) noexcept {
     fire(ClientManagerListener::ClientDisconnected(), client);
 }
 
-void ClientManager::on(HubUserCommand, Client* client, int aType, int ctx, const string& name, const string& command) noexcept {
+void ClientManager::on(HubUserCommand, Client* client, int aType, int ucCtx, const string& name, const string& command) noexcept {
     if(BOOLSETTING(HUB_USER_COMMANDS)) {
         if(aType == UserCommand::TYPE_REMOVE) {
-            int cmd = dcpp::getContext()->getFavoriteManager()->findUserCommand(name, client->getHubUrl());
+            int cmd = ctx()->getFavoriteManager()->findUserCommand(name, client->getHubUrl());
             if(cmd != -1)
-                dcpp::getContext()->getFavoriteManager()->removeUserCommand(cmd);
+                ctx()->getFavoriteManager()->removeUserCommand(cmd);
         } else if(aType == UserCommand::TYPE_CLEAR) {
-            dcpp::getContext()->getFavoriteManager()->removeHubUserCommands(ctx, client->getHubUrl());
+            ctx()->getFavoriteManager()->removeHubUserCommands(ucCtx, client->getHubUrl());
         } else {
-            dcpp::getContext()->getFavoriteManager()->addUserCommand(aType, ctx, UserCommand::FLAG_NOSAVE, name, command, "", client->getHubUrl());
+            ctx()->getFavoriteManager()->addUserCommand(aType, ucCtx, UserCommand::FLAG_NOSAVE, name, command, "", client->getHubUrl());
         }
     }
 }

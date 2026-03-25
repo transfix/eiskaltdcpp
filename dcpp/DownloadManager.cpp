@@ -48,7 +48,7 @@ DownloadManager::DownloadManager() {
 }
 
 DownloadManager::~DownloadManager() {
-    dcpp::getContext()->getTimerManager()->removeListener(this);
+    ctx()->getTimerManager()->removeListener(this);
     while(true) {
         {
             Lock l(cs);

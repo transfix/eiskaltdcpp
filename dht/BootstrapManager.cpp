@@ -49,13 +49,13 @@ namespace dht
     {
         if(bootstrapNodes.empty())
         {
-            dcpp::getContext()->getLogManager()->message(_("DHT bootstrapping started"));
+            dht_.ctx()->getLogManager()->message(_("DHT bootstrapping started"));
             string dhturl = dhtservers[Util::rand(dhtservers.size())];
             // TODO: make URL settable
-            string url = dhturl  + "?cid=" + dcpp::getContext()->getClientManager()->getMe()->getCID().toBase32() + "&encryption=1";
+            string url = dhturl  + "?cid=" + dht_.ctx()->getClientManager()->getMe()->getCID().toBase32() + "&encryption=1";
 
             // store only active nodes to database
-            if(dcpp::getContext()->getClientManager()->isActive(Util::emptyString))
+            if(dht_.ctx()->getClientManager()->isActive(Util::emptyString))
             {
                 url += "&u4=" + dht_.getPort();
             }
@@ -112,18 +112,18 @@ namespace dht
 
                 remoteXml.stepOut();
 
-                dcpp::getContext()->getLogManager()->message(_("DHT bootstrapping is finished successfully."));
+                dht_.ctx()->getLogManager()->message(_("DHT bootstrapping is finished successfully."));
             }
             catch(Exception& e)
             {
-                dcpp::getContext()->getLogManager()->message(_("DHT bootstrap error: ") + e.getError());
+                dht_.ctx()->getLogManager()->message(_("DHT bootstrap error: ") + e.getError());
             }
         }
     }
 
     void BootstrapManager::on(HttpConnectionListener::Failed, HttpConnection*, const string& aLine) throw()
     {
-        dcpp::getContext()->getLogManager()->message(_("DHT bootstrap error: ") + aLine);
+        dht_.ctx()->getLogManager()->message(_("DHT bootstrap error: ") + aLine);
     }
 
     void BootstrapManager::addBootstrapNode(const string& ip, const string& udpPort, const CID& targetCID, const UDPKey& udpKey)

@@ -68,10 +68,10 @@ ShareManager::ShareManager() : hits(0), xmlListLen(0), bzXmlListLen(0),
 }
 
 ShareManager::~ShareManager() {
-    dcpp::getContext()->getSettingsManager()->removeListener(this);
-    dcpp::getContext()->getTimerManager()->removeListener(this);
-    dcpp::getContext()->getQueueManager()->removeListener(this);
-    dcpp::getContext()->getHashManager()->removeListener(this);
+    ctx()->getSettingsManager()->removeListener(this);
+    ctx()->getTimerManager()->removeListener(this);
+    ctx()->getQueueManager()->removeListener(this);
+    ctx()->getHashManager()->removeListener(this);
 
     join();
 

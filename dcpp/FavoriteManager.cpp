@@ -44,10 +44,10 @@ FavoriteManager::~FavoriteManager() {
     // Guard against null context — can happen if the manager outlives the
     // global DCContext during static destruction (e.g. unit tests).
     if (dcpp::getContext()) {
-        if (dcpp::getContext()->getClientManager())
-            dcpp::getContext()->getClientManager()->removeListener(this);
-        if (dcpp::getContext()->getSettingsManager())
-            dcpp::getContext()->getSettingsManager()->removeListener(this);
+        if (ctx()->getClientManager())
+            ctx()->getClientManager()->removeListener(this);
+        if (ctx()->getSettingsManager())
+            ctx()->getSettingsManager()->removeListener(this);
     }
     if(c) {
         c->removeListener(this);
@@ -712,11 +712,11 @@ void FavoriteManager::refresh(bool forceDownload /* = false */) {
     }
 }
 
-UserCommand::List FavoriteManager::getUserCommands(int ctx, const StringList& hubs) {
+UserCommand::List FavoriteManager::getUserCommands(int ucCtx, const StringList& hubs) {
     vector<bool> isOp(hubs.size());
 
     for(size_t i = 0; i < hubs.size(); ++i) {
-        if(dcpp::getContext()->getClientManager()->isOp(dcpp::getContext()->getClientManager()->getMe(), hubs[i])) {
+        if(ctx()->getClientManager()->isOp(ctx()->getClientManager()->getMe(), hubs[i])) {
             isOp[i] = true;
         }
     }
@@ -725,7 +725,7 @@ UserCommand::List FavoriteManager::getUserCommands(int ctx, const StringList& hu
     UserCommand::List lst;
     for(auto i = userCommands.begin(); i != userCommands.end(); ++i) {
         UserCommand& uc = *i;
-        if(!(uc.getCtx() & ctx)) {
+        if(!(uc.getCtx() & ucCtx)) {
             //printf("%s\n", uc.getName().c_str());
             //printf("false\n");
             continue;

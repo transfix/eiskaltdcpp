@@ -159,7 +159,7 @@ void DCContext::startup(ProgressFn progress) {
     cryptoManager_->loadCertificates();
 
 #ifdef WITH_DHT
-    dht_ = std::make_unique<dht::DHT>();
+    dht_ = std::make_unique<dht::DHT>(this);
 #endif
 
     report(_("Hash database"));
@@ -214,9 +214,7 @@ void DCContext::shutdown() {
     // Skip save() in minimal mode (unit-test path) — there is nothing
     // meaningful to persist AND the static settingTags[] array that
     // save() reads may already be destroyed if we are running inside a
-    // static-destruction handler on MSVC (static destruction order
-    // fiasco between settingTags in SettingsManager.cpp and g_context in
-    // DCPlusPlus.cpp).
+    // static-destruction handler on MSVC.
     if (!minimalMode_) {
         if (queueManager_) queueManager_->saveQueue(true);
         if (clientManager_) clientManager_->saveUsers();

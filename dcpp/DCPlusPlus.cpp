@@ -23,11 +23,18 @@
 
 namespace dcpp {
 
-/// Global context — owned here, accessible via getContext() / setContext().
-static std::unique_ptr<DCContext> g_context;
+/// Non-owning pointer to the active DCContext.  Set by startup() or
+/// setContext(); read by getContext().  NOT a singleton — the DCContext
+/// lifecycle is owned by the application (the unique_ptr returned from
+/// startup()).
+static DCContext* g_activeContext = nullptr;
 
-void startup(void (*f)(void*, const string&), void* p) {
-    g_context = std::make_unique<DCContext>();
+std::unique_ptr<DCContext> startup(void (*f)(void*, const string&), void* p) {
+    auto ctx = std::make_unique<DCContext>();
+
+    // Register BEFORE startup() so that manager constructors that call
+    // getContext() (for listener wiring) see the new DCContext.
+    g_activeContext = ctx.get();
 
     // Adapt the legacy C callback to DCContext's std::function progress API.
     DCContext::ProgressFn progress;
@@ -35,22 +42,16 @@ void startup(void (*f)(void*, const string&), void* p) {
         progress = [f, p](const std::string& msg) { f(p, msg); };
     }
 
-    g_context->startup(std::move(progress));
-}
-
-void shutdown() {
-    if (g_context) {
-        g_context->shutdown();
-        g_context.reset();
-    }
+    ctx->startup(std::move(progress));
+    return ctx;  // caller owns
 }
 
 DCContext* getContext() noexcept {
-    return g_context.get();
+    return g_activeContext;
 }
 
-void setContext(std::unique_ptr<DCContext> ctx) noexcept {
-    g_context = std::move(ctx);
+void setContext(DCContext* ctx) noexcept {
+    g_activeContext = ctx;
 }
 
 } // namespace dcpp

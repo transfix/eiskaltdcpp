@@ -14,6 +14,7 @@
 //---------------------------------------------------------------------------
 #include "stdafx.h"
 #include "dcpp/DCPlusPlus.h"
+#include "dcpp/DCContext.h"
 #include "dcpp/format.h"
 #include "dcpp/Util.h"
 //---------------------------------------------------------------------------
@@ -37,6 +38,8 @@ void callBack(void*, const string &a)
     logging(bDaemon, bsyslog, true, "Loading: " + a);
 }
 
+static std::unique_ptr<dcpp::DCContext> g_daemonCtx;
+
 void ServerInitialize()
 {
     ServersS = nullptr;
@@ -45,7 +48,7 @@ void ServerInitialize()
 
 bool ServerStart()
 {
-    dcpp::startup(callBack, nullptr);
+    g_daemonCtx = dcpp::startup(callBack, nullptr);
     ServersS = new ServerThread();
 
     if(!ServersS)
@@ -69,7 +72,11 @@ void ServerStop()
 
     ServersS = nullptr;
     logging(bDaemon, bsyslog, true, "library stops");
-    dcpp::shutdown();
+    if (g_daemonCtx) {
+        g_daemonCtx->shutdown();
+        g_daemonCtx.reset();
+        dcpp::setContext(nullptr);
+    }
     logging(bDaemon, bsyslog, true, "library was stopped");
     bServerRunning = false;
 }

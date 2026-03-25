@@ -859,7 +859,7 @@ void ConnectionManager::disconnect(const UserPtr& user, int isDownload) {
 }
 
 void ConnectionManager::shutdown() {
-    dcpp::getContext()->getTimerManager()->removeListener(this);
+    ctx()->getTimerManager()->removeListener(this);
     shuttingDown = true;
     disconnect();
     {

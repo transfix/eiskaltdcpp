@@ -178,7 +178,7 @@ void ThrottleManager::waitToken() {
 ThrottleManager::~ThrottleManager()
 {
     shutdown();
-    dcpp::getContext()->getTimerManager()->removeListener(this);
+    ctx()->getTimerManager()->removeListener(this);
 }
 
 // Cooperatively shut down the throttle mechanism.  The timer callback

@@ -68,7 +68,7 @@ AdcHub::AdcHub(const string& aHubURL, bool secure) :
 }
 
 AdcHub::~AdcHub() {
-    dcpp::getContext()->getTimerManager()->removeListener(this);
+    ctx()->getTimerManager()->removeListener(this);
     clearUsers();
 }
 

@@ -51,8 +51,8 @@ UploadManager::UploadManager() noexcept : extra(0), lastGrant(0), running(0), li
 }
 
 UploadManager::~UploadManager() {
-    dcpp::getContext()->getTimerManager()->removeListener(this);
-    dcpp::getContext()->getClientManager()->removeListener(this);
+    ctx()->getTimerManager()->removeListener(this);
+    ctx()->getClientManager()->removeListener(this);
     while(true) {
         {
             Lock l(cs);

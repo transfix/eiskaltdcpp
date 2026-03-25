@@ -1118,13 +1118,13 @@ void HashManager::on(TimerManagerListener::Second, uint64_t tick) noexcept {
     static bool firstcycle = true;
     if (firstcycle){
         int delay = SETTING(HASHING_START_DELAY);
-        SettingsManager *SM = ctx()->getSettingsManager();
+        SettingsManager *SM = dcpp::getContext()->getSettingsManager();
         if (delay > 1800){
             delay = 1800;
             SM->set(SettingsManager::HASHING_START_DELAY, delay);
         }
 
-        if (!ctx()->getShareManager()->isRefreshing()){
+        if (!dcpp::getContext()->getShareManager()->isRefreshing()){
             string  curFile;
             uint64_t bytesLeft;
             size_t  filesLeft = -1;

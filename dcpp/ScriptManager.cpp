@@ -372,7 +372,7 @@ void ScriptManager::load() {
 
     s.create(Socket::TYPE_UDP);
 
-    dcpp::getContext()->getClientManager()->addListener(this);
+    ctx()->getClientManager()->addListener(this);
 }
 
 void ScriptInstance::EvaluateChunk(const string& chunk) {
@@ -397,7 +397,7 @@ void ScriptInstance::EvaluateFile(const string& fn) {
         else if(Util::fileExists(test_path_1))
             script_full_name = test_path_1;
         else {
-            dcpp::getContext()->getLogManager()->message("File '" + fn + "' not found!");
+            ctx()->getLogManager()->message("File '" + fn + "' not found!");
             dcdebug("File '%s' not found!\n",fn.c_str()); // temporary
             return;
         }
@@ -433,7 +433,7 @@ void ScriptInstance::EvaluateFile(const string& fn) {
 }
 
 void ScriptManager::SendDebugMessage(const string &mess) {
-    //dcpp::getContext()->getLogManager()->message(mess);
+    //ctx()->getLogManager()->message(mess);
     dcdebug("%s\n", mess.c_str()); // temporary
 }
 

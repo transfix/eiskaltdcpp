@@ -27,14 +27,20 @@ namespace dcpp {
 class DCContext;
 using std::string;
 
-extern void startup(void (*f)(void*, const string&), void* p);
-extern void shutdown();
+/// Create a DCContext, run startup(), and return ownership to the caller.
+/// Also registers the returned context as the process-wide active context
+/// (readable via getContext()) so that existing code keeps working during
+/// the transition away from the global accessor.
+[[nodiscard]] extern std::unique_ptr<DCContext> startup(void (*f)(void*, const string&), void* p);
 
-/// Returns the global DCContext created by startup(). nullptr before startup / after shutdown.
+/// Returns the active DCContext for this process.  This is a NON-OWNING
+/// convenience pointer — the DCContext is owned by whoever called startup()
+/// or by the test harness that called setContext().  Returns nullptr before
+/// startup / after the owner resets.
 [[nodiscard]] extern DCContext* getContext() noexcept;
 
-/// Replace the global DCContext (for testing). Takes ownership.
-/// The caller must ensure shutdown() of the old context first if applicable.
-extern void setContext(std::unique_ptr<DCContext> ctx) noexcept;
+/// Set the process-wide DCContext pointer (non-owning).
+/// Intended for test harnesses that create their own DCContext.
+extern void setContext(DCContext* ctx) noexcept;
 
 } // namespace dcpp

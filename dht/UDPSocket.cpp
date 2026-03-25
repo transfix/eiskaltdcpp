@@ -246,7 +246,7 @@ namespace dht
                         socket->bind(port, SETTING(BIND_ADDRESS));
                         if(failed)
                         {
-                            dcpp::getContext()->getLogManager()->message(_("DHT enabled again"));
+                            dht_->ctx()->getLogManager()->message(_("DHT enabled again"));
                             failed = false;
                         }
                         break;
@@ -257,7 +257,7 @@ namespace dht
 
                         if(!failed)
                         {
-                            dcpp::getContext()->getLogManager()->message(_("DHT disabled: ") + e.getError());
+                            dht_->ctx()->getLogManager()->message(_("DHT disabled: ") + e.getError());
                             failed = true;
                         }
 
@@ -284,7 +284,7 @@ namespace dht
 
         // pack data
         cmd.addParam("UK", Utils::getUdpKey(ip).toBase32()); // add our key for the IP address
-        string command = cmd.toString(dcpp::getContext()->getClientManager()->getMe()->getCID());
+        string command = cmd.toString(dht_->ctx()->getClientManager()->getMe()->getCID());
         COMMAND_DEBUG(command, DebugManager::DHT_OUT, ip + ":" + port);
 
         Packet* p = new Packet(ip, port, command, targetCID, udpKey);
@@ -373,7 +373,7 @@ namespace dht
             TigerHash th;
             if(tries == 1)
                 th.update(Utils::getUdpKey(remoteIp).data(), sizeof(CID));
-            th.update(dcpp::getContext()->getClientManager()->getMe()->getCID().data(), sizeof(CID));
+            th.update(dht_->ctx()->getClientManager()->getMe()->getCID().data(), sizeof(CID));
 
             RC4_KEY recvKey;
             RC4_set_key(&recvKey, TigerTree::BYTES, th.finalize());

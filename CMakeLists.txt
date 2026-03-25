@@ -248,7 +248,7 @@ string (REGEX REPLACE "^([0-9]+\\.[0-9]+\\.[0-9]+).*" "\\1" VERSION_BASE "${APP_
 message (STATUS "${PROJECT_NAME} full version: ${APP_VERSION}")
 message (STATUS "${PROJECT_NAME} base version: ${VERSION_BASE}")
 
-configure_file (${CMAKE_SOURCE_DIR}/Version.h.in ${CMAKE_BINARY_DIR}/VersionGlobal.h)
+configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/VersionGlobal.h)
 
 if (UNIX)
     add_definitions (-D_GNU_SOURCE)
@@ -307,7 +307,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL GNU OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
     # that pulls in <bits/c++config.h> (triggering its include guard) and then
     # undefs _GLIBCXX_HAVE_POSIX_SEMAPHORE, so the atomic fallback is used.
     if (MINGW AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "15")
-        add_compile_options(-include ${CMAKE_SOURCE_DIR}/cmake/mingw_gcc15_semaphore_fix.h)
+        add_compile_options(-include ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mingw_gcc15_semaphore_fix.h)
     endif ()
     if (USE_GOLD)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-linker-plugin")
@@ -452,18 +452,18 @@ message (STATUS "CMAKE will use these libraries (and headers) during build:
     attr \t: ${XATTR_LIBRARIES} (${IDN2_INCLUDE_DIR})
     ")
 
-configure_file ("${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-    "${CMAKE_BINARY_DIR}/cmake_uninstall.cmake"
+configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
     IMMEDIATE @ONLY)
 add_custom_target (uninstall
-    "${CMAKE_COMMAND}" -P "${CMAKE_BINARY_DIR}/cmake_uninstall.cmake")
+    "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
 
 # ─── CPack configuration ────────────────────────────────────────────
 set (CPACK_PACKAGE_NAME "${PROJECT_NAME_GLOBAL}")
 set (CPACK_PACKAGE_VERSION "${APP_VERSION}")
 set (CPACK_PACKAGE_VENDOR "EiskaltDC++ developers")
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "EiskaltDC++ - Direct Connect and ADC client")
-set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
+set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
 
 if (WIN32)
     # NSIS installer
