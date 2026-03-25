@@ -375,10 +375,10 @@ int main(int argc, char *argv[])
         bacon_message_connection_set_callback(connection, receiver, NULL);
     }
 
-    // Start the DC++ client core
-    dcpp::startup(callBack, NULL);
+    // Start the DC++ client core — caller owns the returned context
+    auto dcContext = dcpp::startup(callBack, NULL);
 
-    dcpp::getContext()->getTimerManager()->start();
+    dcContext->getTimerManager()->start();
 
 #if !GLIB_CHECK_VERSION(2,32,0)
     g_thread_init(NULL);
@@ -408,7 +408,9 @@ int main(int argc, char *argv[])
     }
 
     std::cout << _("Shutting down libeiskaltdcpp...") << std::endl;
-    dcpp::shutdown();
+    dcContext->shutdown();
+    dcContext.reset();
+    dcpp::setContext(nullptr);
     std::cout << _("Quit...") << std::endl;
     return 0;
 }
