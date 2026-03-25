@@ -491,16 +491,6 @@ void FavoriteManager::load(SimpleXML& aXml) {
     }
     // parse groups that have the "Connect" param and send their hubs to WindowManager
     //for(auto i = favHubGroups.begin(), iend = favHubGroups.end(); i != iend; ++i) {
-    //if(i->second.connect) {
-    //FavoriteHubEntryList hubs = getFavoriteHubs(i->first);
-    //for(auto hub = hubs.begin(), hub_end = hubs.end(); hub != hub_end; ++hub) {
-    //StringMap map;
-    //map[WindowInfo::address] = (*hub)->getServer();
-    //WindowManager::getInstance()->add(WindowManager::hub(), map);
-    //}
-    //}
-    //}
-
     aXml.resetCurrentChild();
     if(aXml.findChild("Users")) {
         aXml.stepIn();

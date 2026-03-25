@@ -83,10 +83,6 @@ void IPFilterFrame::slotCheckBoxClick() {
         dcpp::getContext()->getIPFilter()->load();
 
         loadItems();
-
-        //connect(ipfilter::getInstance(), SIGNAL(ruleAdded(QString,eDIRECTION)),
-        //        this, SLOT(slotRuleAdded(QString,eDIRECTION)));
-
     } else {
         dcpp::getContext()->getIPFilter()->shutdown();
     }

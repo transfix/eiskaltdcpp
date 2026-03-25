@@ -23,8 +23,7 @@
 
 namespace dcpp {
 
-/// Global context — owned here, accessible nowhere else (for now).
-/// GUI code continues to use Singleton<T>::getInstance() unchanged.
+/// Global context — owned here, accessible via getContext() / setContext().
 static std::unique_ptr<DCContext> g_context;
 
 void startup(void (*f)(void*, const string&), void* p) {

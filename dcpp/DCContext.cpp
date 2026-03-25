@@ -227,7 +227,7 @@ void DCContext::shutdown() {
     }
 
     // ── Phase 4: destroy managers in dependency-safe order ──────────────
-    // Matches the deleteInstance() sequence in dcpp::shutdown() exactly.
+    // Matches the destruction sequence in dcpp::shutdown() exactly.
     mappingManager_.reset();
     connectivityManager_.reset();
     dynDNS_.reset();
