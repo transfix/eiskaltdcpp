@@ -397,7 +397,7 @@ void ScriptInstance::EvaluateFile(const string& fn) {
         else if(Util::fileExists(test_path_1))
             script_full_name = test_path_1;
         else {
-            ctx()->getLogManager()->message("File '" + fn + "' not found!");
+            dcpp::getContext()->getLogManager()->message("File '" + fn + "' not found!");
             dcdebug("File '%s' not found!\n",fn.c_str()); // temporary
             return;
         }
