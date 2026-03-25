@@ -310,8 +310,12 @@ private:
     SearchTypesIter getSearchType(const string& name);
 };
 
-// Shorthand accessor macros
+// Shorthand accessor macros — global versions (use dcpp::getContext())
 #define SETTING(k) (dcpp::getContext()->getSettingsManager()->get(SettingsManager::k, true))
 #define BOOLSETTING(k) (dcpp::getContext()->getSettingsManager()->getBool(SettingsManager::k, true))
+
+// Context-aware versions — for use inside ContextAware member functions
+#define CTX_SETTING(k) (this->ctx()->getSettingsManager()->get(SettingsManager::k, true))
+#define CTX_BOOLSETTING(k) (this->ctx()->getSettingsManager()->getBool(SettingsManager::k, true))
 
 } // namespace dcpp

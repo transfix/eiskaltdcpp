@@ -12,9 +12,11 @@
 #include <cassert>
 
 class QtContext;
+namespace dcpp { class DCContext; }
 
 /**
- * Mixin that gives any class access to its owning QtContext.
+ * Mixin that gives any class access to its owning QtContext
+ * and the dcpp::DCContext (core library context).
  *
  * Service classes (owned by QtContext) have their context set by
  * QtContext::createFoo() immediately after construction.  During
@@ -33,18 +35,26 @@ public:
     }
     void setQtContext(QtContext* ctx) noexcept { qtCtx_ = ctx; }
 
+    /** Return the dcpp::DCContext for direct library access. */
+    [[nodiscard]] dcpp::DCContext* dcCtx() const noexcept { return dcCtx_; }
+    void setDcContext(dcpp::DCContext* ctx) noexcept { dcCtx_ = ctx; }
+    static void setGlobalDcContext(dcpp::DCContext* ctx) noexcept { g_dcCtx_ = ctx; }
+    [[nodiscard]] static dcpp::DCContext* globalDcContext() noexcept { return g_dcCtx_; }
+
     /** Process-wide current QtContext (set by QtContext ctor/dtor). */
     [[nodiscard]] static QtContext* current() noexcept { return current_; }
     static void setCurrent(QtContext* ctx) noexcept { current_ = ctx; }
 
 protected:
-    QtContextAware() noexcept = default;
-    explicit QtContextAware(QtContext* ctx) noexcept : qtCtx_(ctx) {}
+    QtContextAware() noexcept : dcCtx_(g_dcCtx_) {}
+    explicit QtContextAware(QtContext* ctx) noexcept : qtCtx_(ctx), dcCtx_(g_dcCtx_) {}
     ~QtContextAware() = default;
 
 private:
     QtContext* qtCtx_ = nullptr;
+    dcpp::DCContext* dcCtx_ = nullptr;
     static inline QtContext* current_ = nullptr;
+    static inline dcpp::DCContext* g_dcCtx_ = nullptr;
 };
 
 /**

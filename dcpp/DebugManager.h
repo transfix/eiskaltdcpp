@@ -69,4 +69,8 @@ private:
 #define COMMAND_DEBUG(a,b,c) if (dcpp::getContext()->getDebugManager()) dcpp::getContext()->getDebugManager()->SendCommandMessage(a,b,c);
 #define DETECTION_DEBUG(m) if (dcpp::getContext()->getDebugManager()) dcpp::getContext()->getDebugManager()->SendDetectionMessage(m);
 
+// Context-aware versions — for use inside ContextAware member functions
+#define CTX_COMMAND_DEBUG(a,b,c) if (this->ctx()->getDebugManager()) this->ctx()->getDebugManager()->SendCommandMessage(a,b,c);
+#define CTX_DETECTION_DEBUG(m) if (this->ctx()->getDebugManager()) this->ctx()->getDebugManager()->SendDetectionMessage(m);
+
 } // namespace dcpp

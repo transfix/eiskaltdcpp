@@ -182,6 +182,10 @@ int main(int argc, char *argv[])
     dcContext->getTimerManager()->start();
 
     dcContext->getHashManager()->setPriority(Thread::IDLE);
+
+    // Make dcpp::DCContext* available to all QtContextAware classes
+    QtContextAware::setGlobalDcContext(dcContext.get());
+
     app.setOrganizationName("EiskaltDC++ Team");
     app.setApplicationName("EiskaltDC++ Qt");
     app.setApplicationVersion(QString::fromStdString(eiskaltdcppVersionString));
@@ -282,6 +286,7 @@ int main(int argc, char *argv[])
     dcContext->shutdown();
     dcContext.reset();
     dcpp::setContext(nullptr);
+    QtContextAware::setGlobalDcContext(nullptr);
 
     std::cout << QObject::tr("Quit...").toStdString() << std::endl;
 
