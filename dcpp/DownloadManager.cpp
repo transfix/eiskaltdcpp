@@ -80,23 +80,23 @@ void DownloadManager::on(TimerManagerListener::Second, uint64_t aTick) noexcept 
 
 
         // Automatically remove or disconnect slow sources
-        if((uint32_t)(aTick / 1000) % SETTING(AUTODROP_INTERVAL) == 0) {
+        if((uint32_t)(aTick / 1000) % CTX_SETTING(AUTODROP_INTERVAL) == 0) {
             for(auto d: downloads) {
                 uint64_t timeElapsed = aTick - d->getStart();
                 uint64_t timeInactive = aTick - d->getUserConnection().getLastActivity();
                 uint64_t bytesDownloaded = d->getPos();
-                bool timeElapsedOk = timeElapsed >= (uint32_t)SETTING(AUTODROP_ELAPSED) * 1000;
-                bool timeInactiveOk = timeInactive <= (uint32_t)SETTING(AUTODROP_INACTIVITY) * 1000;
+                bool timeElapsedOk = timeElapsed >= (uint32_t)CTX_SETTING(AUTODROP_ELAPSED) * 1000;
+                bool timeInactiveOk = timeInactive <= (uint32_t)CTX_SETTING(AUTODROP_INACTIVITY) * 1000;
                 bool speedTooLow = timeElapsedOk && timeInactiveOk && bytesDownloaded > 0 ?
-                            bytesDownloaded / timeElapsed * 1000 < (uint32_t)SETTING(AUTODROP_SPEED) : false;
+                            bytesDownloaded / timeElapsed * 1000 < (uint32_t)CTX_SETTING(AUTODROP_SPEED) : false;
                 bool isUserList = d->getType() == Transfer::TYPE_FULL_LIST;
                 bool onlineSourcesOk = isUserList ?
-                            true : ctx()->getQueueManager()->countOnlineSources(d->getPath()) >= SETTING(AUTODROP_MINSOURCES);
-                bool filesizeOk = !isUserList && d->getSize() >= ((int64_t)SETTING(AUTODROP_FILESIZE)) * 1024;
-                bool dropIt = (isUserList && BOOLSETTING(AUTODROP_FILELISTS)) ||
-                        (filesizeOk && BOOLSETTING(AUTODROP_ALL));
+                            true : ctx()->getQueueManager()->countOnlineSources(d->getPath()) >= CTX_SETTING(AUTODROP_MINSOURCES);
+                bool filesizeOk = !isUserList && d->getSize() >= ((int64_t)CTX_SETTING(AUTODROP_FILESIZE)) * 1024;
+                bool dropIt = (isUserList && CTX_BOOLSETTING(AUTODROP_FILELISTS)) ||
+                        (filesizeOk && CTX_BOOLSETTING(AUTODROP_ALL));
                 if(speedTooLow && onlineSourcesOk && dropIt) {
-                    if(BOOLSETTING(AUTODROP_DISCONNECT) && isUserList) {
+                    if(CTX_BOOLSETTING(AUTODROP_DISCONNECT) && isUserList) {
                         d->getUserConnection().disconnect();
                     } else {
                         dropTargets.emplace_back(d->getPath(), d->getUser());
@@ -130,7 +130,7 @@ void DownloadManager::addConnection(UserConnectionPtr conn) {
         return;
     }
 
-    if (BOOLSETTING(IPFILTER) && !ctx()->getIPFilter()->OK(conn->getRemoteIp(),eDIRECTION_IN)) {
+    if (CTX_BOOLSETTING(IPFILTER) && !ctx()->getIPFilter()->OK(conn->getRemoteIp(),eDIRECTION_IN)) {
         conn->error("Your IP is Blocked!");
         ctx()->getLogManager()->message(_("IPFilter: Blocked outgoing connection to ") + conn->getRemoteIp());
         ctx()->getQueueManager()->removeSource(conn->getUser(), QueueItem::Source::FLAG_REMOVED);
@@ -138,7 +138,7 @@ void DownloadManager::addConnection(UserConnectionPtr conn) {
         return;
     }
 
-    if(SETTING(REQUIRE_TLS) && !conn->isSecure()) {
+    if(CTX_SETTING(REQUIRE_TLS) && !conn->isSecure()) {
         conn->error("Secure connection required!");
         ctx()->getQueueManager()->removeSource(conn->getUser(), QueueItem::Source::FLAG_UNENCRYPTED);
         return;
@@ -151,11 +151,11 @@ void DownloadManager::addConnection(UserConnectionPtr conn) {
 bool DownloadManager::startDownload(QueueItem::Priority prio) {
     size_t downloadCount = getDownloadCount();
 
-    bool full = (SETTING(DOWNLOAD_SLOTS) != 0) && (downloadCount >= (size_t)SETTING(DOWNLOAD_SLOTS));
-    full = full || ((SETTING(MAX_DOWNLOAD_SPEED) != 0) && (getRunningAverage() >= (SETTING(MAX_DOWNLOAD_SPEED)*1024)));
+    bool full = (CTX_SETTING(DOWNLOAD_SLOTS) != 0) && (downloadCount >= (size_t)CTX_SETTING(DOWNLOAD_SLOTS));
+    full = full || ((CTX_SETTING(MAX_DOWNLOAD_SPEED) != 0) && (getRunningAverage() >= (CTX_SETTING(MAX_DOWNLOAD_SPEED)*1024)));
 
     if(full) {
-        bool extraFull = (SETTING(DOWNLOAD_SLOTS) != 0) && (getDownloadCount() >= (size_t)(SETTING(DOWNLOAD_SLOTS)+3));
+        bool extraFull = (CTX_SETTING(DOWNLOAD_SLOTS) != 0) && (getDownloadCount() >= (size_t)(CTX_SETTING(DOWNLOAD_SLOTS)+3));
         if(extraFull) {
             return false;
         }
@@ -251,7 +251,7 @@ void DownloadManager::startData(UserConnection* aSource, int64_t start, int64_t 
         return;
     }
 
-    if((d->getType() == Transfer::TYPE_FILE || d->getType() == Transfer::TYPE_FULL_LIST) && SETTING(BUFFER_SIZE) > 0 ) {
+    if((d->getType() == Transfer::TYPE_FILE || d->getType() == Transfer::TYPE_FULL_LIST) && CTX_SETTING(BUFFER_SIZE) > 0 ) {
         d->setFile(new BufferedOutputStream<true>(d->getFile()));
     }
 
@@ -349,7 +349,7 @@ void DownloadManager::endData(UserConnection* aSource) {
         dcdebug("Download finished: %s, size " I64_FMT ", downloaded " I64_FMT "\n", d->getPath().c_str(),
                 static_cast<long long int>(d->getSize()), static_cast<long long int>(d->getPos()));
 
-        if(BOOLSETTING(LOG_DOWNLOADS) && (BOOLSETTING(LOG_FILELIST_TRANSFERS) || d->getType() == Transfer::TYPE_FILE)) {
+        if(CTX_BOOLSETTING(LOG_DOWNLOADS) && (CTX_BOOLSETTING(LOG_FILELIST_TRANSFERS) || d->getType() == Transfer::TYPE_FILE)) {
             logDownload(aSource, d);
         }
     }

@@ -531,7 +531,7 @@ QueueManager::~QueueManager() {
     ctx()->getTimerManager()->removeListener(this);
     ctx()->getClientManager()->removeListener(this);
 
-    if(!BOOLSETTING(KEEP_LISTS)) {
+    if(!CTX_BOOLSETTING(KEEP_LISTS)) {
         string path = Util::getListPath();
 
         std::sort(protectedFileLists.begin(), protectedFileLists.end());
@@ -603,11 +603,11 @@ void QueueManager::on(TimerManagerListener::Minute, uint64_t aTick) noexcept {
         }
 
 #ifdef WITH_DHT
-        if(BOOLSETTING(USE_DHT) && SETTING(INCOMING_CONNECTIONS) != SettingsManager::INCOMING_FIREWALL_PASSIVE)
+        if(CTX_BOOLSETTING(USE_DHT) && CTX_SETTING(INCOMING_CONNECTIONS) != SettingsManager::INCOMING_FIREWALL_PASSIVE)
             tthPub = fileQueue.findPFSPubTTH();
 #endif
 
-        if(BOOLSETTING(AUTO_SEARCH) && (aTick >= nextSearch) && (fileQueue.getSize() > 0)) {
+        if(CTX_BOOLSETTING(AUTO_SEARCH) && (aTick >= nextSearch) && (fileQueue.getSize() > 0)) {
             // We keep 30 recent searches to avoid duplicate searches
             while((recent.size() >= fileQueue.getSize()) || (recent.size() > 30)) {
                 recent.erase(recent.begin());
@@ -617,8 +617,8 @@ void QueueManager::on(TimerManagerListener::Minute, uint64_t aTick) noexcept {
             if(qi) {
                 searchString = qi->getTTH().toBase32();
                 recent.push_back(qi->getTarget());
-                nextSearch = aTick + (SETTING(AUTO_SEARCH_TIME) * 60000);
-                if (BOOLSETTING(REPORT_ALTERNATES))
+                nextSearch = aTick + (CTX_SETTING(AUTO_SEARCH_TIME) * 60000);
+                if (CTX_BOOLSETTING(REPORT_ALTERNATES))
                     ctx()->getLogManager()->message(str(F_("Searching TTH alternates for: %1%")%Util::getFileName(qi->getTargetFileName())));
             }
         }
@@ -666,7 +666,7 @@ string QueueManager::getListPath(const HintedUser& user) {
 void QueueManager::add(const string& aTarget, int64_t aSize, const TTHValue& root)
 {
     // Check if we're not downloading something already in our share
-    if (BOOLSETTING(DONT_DL_ALREADY_SHARED))
+    if (CTX_BOOLSETTING(DONT_DL_ALREADY_SHARED))
     {
         if (ctx()->getShareManager()->isTTHShared(root))
         {
@@ -680,7 +680,7 @@ void QueueManager::add(const string& aTarget, int64_t aSize, const TTHValue& roo
     // Check if it's a zero-byte file, if so, create and return...
     if (aSize == 0)
     {
-        if (!BOOLSETTING(SKIP_ZERO_BYTE))
+        if (!CTX_BOOLSETTING(SKIP_ZERO_BYTE))
         {
             File::ensureDirectory(target);
             File f(target, File::WRITE, File::CREATE);
@@ -691,7 +691,7 @@ void QueueManager::add(const string& aTarget, int64_t aSize, const TTHValue& roo
     Lock l(cs);
 
     // This will be pretty slow on large queues...
-    if (BOOLSETTING(DONT_DL_ALREADY_QUEUED))
+    if (CTX_BOOLSETTING(DONT_DL_ALREADY_QUEUED))
     {
         auto ql = fileQueue.find(root);
         if (!ql.empty())
@@ -729,7 +729,7 @@ void QueueManager::add(const string& aTarget, int64_t aSize, const TTHValue& roo
     }
 
     // Check if we're not downloading something already in our share
-    if(BOOLSETTING(DONT_DL_ALREADY_SHARED)){
+    if(CTX_BOOLSETTING(DONT_DL_ALREADY_SHARED)){
         if (ctx()->getShareManager()->isTTHShared(root)){
             throw QueueException(_("A file with the same hash already exists in your share"));
         }
@@ -746,7 +746,7 @@ void QueueManager::add(const string& aTarget, int64_t aSize, const TTHValue& roo
 
     // Check if it's a zero-byte file, if so, create and return...
     if(aSize == 0) {
-        if(!BOOLSETTING(SKIP_ZERO_BYTE)) {
+        if(!CTX_BOOLSETTING(SKIP_ZERO_BYTE)) {
             File::ensureDirectory(target);
             File f(target, File::WRITE, File::CREATE);
         }
@@ -757,7 +757,7 @@ void QueueManager::add(const string& aTarget, int64_t aSize, const TTHValue& roo
         Lock l(cs);
 
         // This will be pretty slow on large queues...
-        if(BOOLSETTING(DONT_DL_ALREADY_QUEUED) && !(aFlags & QueueItem::FLAG_USER_LIST)) {
+        if(CTX_BOOLSETTING(DONT_DL_ALREADY_QUEUED) && !(aFlags & QueueItem::FLAG_USER_LIST)) {
             auto ql = fileQueue.find(root);
             if (!ql.empty()) {
                 // Found one or more existing queue items, lets see if we can add the source to them
@@ -1219,7 +1219,7 @@ void QueueManager::moveStuckFile(QueueItem* qi) {
 
     string target = qi->getTarget();
 
-    if(!BOOLSETTING(KEEP_FINISHED_FILES)) {
+    if(!CTX_BOOLSETTING(KEEP_FINISHED_FILES)) {
         fire(QueueManagerListener::Removed(), qi);
         fileQueue.remove(qi);
     } else {
@@ -1323,7 +1323,7 @@ void QueueManager::putDownload(Download* aDownload, bool finished) noexcept {
                             q->addSegment(d->getSegment());
                         }
 
-                        if (q->isFinished() && BOOLSETTING(SFV_CHECK)) {
+                        if (q->isFinished() && CTX_BOOLSETTING(SFV_CHECK)) {
                             crcError = checkSfv(q, d.get());
                         }
 
@@ -1332,7 +1332,7 @@ void QueueManager::putDownload(Download* aDownload, bool finished) noexcept {
                             if( d->getType() == Transfer::TYPE_FILE && !d->getTempTarget().empty() && (Util::stricmp(d->getPath().c_str(), d->getTempTarget().c_str()) != 0) ) {
                                 moveFile(d->getTempTarget(), d->getPath());
                             }
-                            if (BOOLSETTING(LOG_FINISHED_DOWNLOADS) && d->getType() == Transfer::TYPE_FILE) {
+                            if (CTX_BOOLSETTING(LOG_FINISHED_DOWNLOADS) && d->getType() == Transfer::TYPE_FILE) {
                                 logFinishedDownload(q, d.get(), crcError);
                             }
 
@@ -1340,7 +1340,7 @@ void QueueManager::putDownload(Download* aDownload, bool finished) noexcept {
 
                             userQueue.remove(q);
 
-                            if(!BOOLSETTING(KEEP_FINISHED_FILES) || d->getType() == Transfer::TYPE_FULL_LIST) {
+                            if(!CTX_BOOLSETTING(KEEP_FINISHED_FILES) || d->getType() == Transfer::TYPE_FULL_LIST) {
                                 fire(QueueManagerListener::Removed(), q);
                                 fileQueue.remove(q);
                             } else {
@@ -1625,7 +1625,7 @@ void QueueManager::saveQueue(bool force) noexcept {
         string b32tmp;
         for(auto& i: fileQueue.getQueue()) {
             QueueItem* qi = i.second;
-            if(!qi->isSet(QueueItem::FLAG_USER_LIST) || (qi->isSet(QueueItem::FLAG_USER_LIST) && SETTING(KEEP_LISTS))) {
+            if(!qi->isSet(QueueItem::FLAG_USER_LIST) || (qi->isSet(QueueItem::FLAG_USER_LIST) && CTX_SETTING(KEEP_LISTS))) {
                 f.write(LIT("\t<Download Target=\""));
                 f.write(SimpleXML::escape(qi->getTarget(), tmp, true));
                 f.write(LIT("\" Size=\""));
@@ -1826,7 +1826,7 @@ void QueueLoader::endTag(const string& name) {
 }
 
 void QueueManager::noDeleteFileList(const string& path) {
-    if(!BOOLSETTING(KEEP_LISTS)) {
+    if(!CTX_BOOLSETTING(KEEP_LISTS)) {
         protectedFileLists.push_back(path);
     }
 }
@@ -1844,7 +1844,7 @@ void QueueManager::on(SearchManagerListener::SR, const SearchResultPtr& sr) noex
             // Size compare to avoid popular spoof
             if(qi->getSize() == sr->getSize() && !qi->isSource(sr->getUser())) {
                 try {
-                    if(!BOOLSETTING(AUTO_SEARCH_AUTO_MATCH))
+                    if(!CTX_BOOLSETTING(AUTO_SEARCH_AUTO_MATCH))
                         wantConnection = addSource(qi, HintedUser(sr->getUser(), sr->getHubURL()), 0);
                     added = true;
                 } catch(const Exception&) {
@@ -1855,7 +1855,7 @@ void QueueManager::on(SearchManagerListener::SR, const SearchResultPtr& sr) noex
         }
     }
 
-    if(added && BOOLSETTING(AUTO_SEARCH_AUTO_MATCH)) {
+    if(added && CTX_BOOLSETTING(AUTO_SEARCH_AUTO_MATCH)) {
         try {
             addList(HintedUser(sr->getUser(), sr->getHubURL()), QueueItem::FLAG_MATCH_QUEUE);
         } catch(const Exception&) {

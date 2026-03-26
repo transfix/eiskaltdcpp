@@ -348,7 +348,7 @@ void AdcHub::handle(AdcCommand::CTM, AdcCommand& c) noexcept {
     const string& token = c.getParam(2);
 
     bool secure = false;
-    if(protocol == CLIENT_PROTOCOL && !SETTING(REQUIRE_TLS)) {
+    if(protocol == CLIENT_PROTOCOL && !CTX_SETTING(REQUIRE_TLS)) {
         // Nothing special
     } else if(protocol == SECURE_CLIENT_PROTOCOL_TEST && ctx()->getCryptoManager()->TLSOk()) {
         secure = true;
@@ -378,7 +378,7 @@ void AdcHub::handle(AdcCommand::RCM, AdcCommand& c) noexcept {
     const string& token = c.getParam(1);
 
     bool secure;
-    if(protocol == CLIENT_PROTOCOL && !SETTING(REQUIRE_TLS)) {
+    if(protocol == CLIENT_PROTOCOL && !CTX_SETTING(REQUIRE_TLS)) {
         secure = false;
     } else if(protocol == SECURE_CLIENT_PROTOCOL_TEST && ctx()->getCryptoManager()->TLSOk()) {
         secure = true;
@@ -392,7 +392,7 @@ void AdcHub::handle(AdcCommand::RCM, AdcCommand& c) noexcept {
         return;
     }
 
-    if (!u->getIdentity().supports(NAT0_FEATURE) && !BOOLSETTING(ALLOW_NATT))
+    if (!u->getIdentity().supports(NAT0_FEATURE) && !CTX_BOOLSETTING(ALLOW_NATT))
         return;
 
     // Attempt to traverse NATs and/or firewalls with TCP.
@@ -599,7 +599,7 @@ void AdcHub::handle(AdcCommand::NAT, AdcCommand& c) noexcept {
     if (c.getParameters().size() < 3)
         return;
 
-    if (!BOOLSETTING(ALLOW_NATT))
+    if (!CTX_BOOLSETTING(ALLOW_NATT))
         return;
 
     OnlineUser* u = findUser(c.getFrom());
@@ -636,7 +636,7 @@ void AdcHub::handle(AdcCommand::RNT, AdcCommand& c) noexcept {
 
     // Sent request for NAT traversal cooperation, which
     // was acknowledged (with requisite local port information).
-    if(!BOOLSETTING(ALLOW_NATT))
+    if(!CTX_BOOLSETTING(ALLOW_NATT))
         return;
 
     OnlineUser* u = findUser(c.getFrom());
@@ -697,7 +697,7 @@ void AdcHub::connect(const OnlineUser& user, string const& token, bool secure) {
         }
         proto = &SECURE_CLIENT_PROTOCOL_TEST;
     } else {
-        if(user.getUser()->isSet(User::NO_ADC_1_0_PROTOCOL) || SETTING(REQUIRE_TLS)) {
+        if(user.getUser()->isSet(User::NO_ADC_1_0_PROTOCOL) || CTX_SETTING(REQUIRE_TLS)) {
             /// @todo log, consider removing from queue
             return;
         }
@@ -897,7 +897,7 @@ void AdcHub::sendSearch(AdcCommand& c) {
     } else {
         string features = c.getFeatures();
         c.setType(AdcCommand::TYPE_FEATURE);
-        if (BOOLSETTING(ALLOW_NATT)) {
+        if (CTX_BOOLSETTING(ALLOW_NATT)) {
             c.setFeatures(features + '+' + TCP4_FEATURE + '-' + NAT0_FEATURE);
             send(c);
             c.setFeatures(features + '+' + NAT0_FEATURE);
@@ -967,11 +967,11 @@ void AdcHub::info(bool /*alwaysSend*/) {
     addParam(lastInfoMap, c, "PD", ctx()->getClientManager()->getMyPID().toBase32());
     addParam(lastInfoMap, c, "NI", getCurrentNick());
     addParam(lastInfoMap, c, "DE", getCurrentDescription());
-    addParam(lastInfoMap, c, "SL", Util::toString(SETTING(SLOTS)));
+    addParam(lastInfoMap, c, "SL", Util::toString(CTX_SETTING(SLOTS)));
     addParam(lastInfoMap, c, "FS", Util::toString(ctx()->getUploadManager()->getFreeSlots()));
     addParam(lastInfoMap, c, "SS", ctx()->getShareManager()->getShareSizeString());
     addParam(lastInfoMap, c, "SF", Util::toString(ctx()->getShareManager()->getSharedFiles()));
-    addParam(lastInfoMap, c, "EM", SETTING(EMAIL));
+    addParam(lastInfoMap, c, "EM", CTX_SETTING(EMAIL));
     addParam(lastInfoMap, c, "HN", Util::toString(counts.normal));
     addParam(lastInfoMap, c, "HR", Util::toString(counts.registered));
     addParam(lastInfoMap, c, "HO", Util::toString(counts.op));
@@ -979,16 +979,16 @@ void AdcHub::info(bool /*alwaysSend*/) {
     addParam(lastInfoMap, c, "VE", app_version);
     addParam(lastInfoMap, c, "AW", Util::getAway() ? "1" : Util::emptyString);
     int limit = ctx()->getThrottleManager()->getDownLimit();
-    if (limit > 0 && BOOLSETTING(THROTTLE_ENABLE)) {
+    if (limit > 0 && CTX_BOOLSETTING(THROTTLE_ENABLE)) {
         addParam(lastInfoMap, c, "DS", Util::toString(limit * 1024));
     } else {
         addParam(lastInfoMap, c, "DS", Util::emptyString);
     }
     limit = ctx()->getThrottleManager()->getUpLimit();
-    if (limit > 0 && BOOLSETTING(THROTTLE_ENABLE)) {
+    if (limit > 0 && CTX_BOOLSETTING(THROTTLE_ENABLE)) {
         addParam(lastInfoMap, c, "US", Util::toString(limit * 1024));
     } else {
-        addParam(lastInfoMap, c, "US", Util::toString((long)(Util::toDouble(SETTING(UPLOAD_SPEED))*1024*1024/8)));
+        addParam(lastInfoMap, c, "US", Util::toString((long)(Util::toDouble(CTX_SETTING(UPLOAD_SPEED))*1024*1024/8)));
     }
 
     string su(SEGA_FEATURE);
@@ -1000,8 +1000,8 @@ void AdcHub::info(bool /*alwaysSend*/) {
 
     if (!getFavIp().empty()) {
         addParam(lastInfoMap, c, "I4", getFavIp());
-    } else if(BOOLSETTING(NO_IP_OVERRIDE) && !SETTING(EXTERNAL_IP).empty()) {
-        addParam(lastInfoMap, c, "I4", Socket::resolve(SETTING(EXTERNAL_IP)));
+    } else if(CTX_BOOLSETTING(NO_IP_OVERRIDE) && !CTX_SETTING(EXTERNAL_IP).empty()) {
+        addParam(lastInfoMap, c, "I4", Socket::resolve(CTX_SETTING(EXTERNAL_IP)));
     } else {
         addParam(lastInfoMap, c, "I4", "0.0.0.0");
     }
@@ -1011,7 +1011,7 @@ void AdcHub::info(bool /*alwaysSend*/) {
         su += "," + TCP4_FEATURE;
         su += "," + UDP4_FEATURE;
     } else {
-        if (BOOLSETTING(ALLOW_NATT))
+        if (CTX_BOOLSETTING(ALLOW_NATT))
             su += "," + NAT0_FEATURE;
         else
             addParam(lastInfoMap, c, "I4", "");
@@ -1075,15 +1075,15 @@ void AdcHub::on(Connected c) noexcept {
     AdcCommand cmd(AdcCommand::CMD_SUP, AdcCommand::TYPE_HUB);
     cmd.addParam(BAS0_SUPPORT).addParam(BASE_SUPPORT).addParam(TIGR_SUPPORT);
 
-    if(BOOLSETTING(HUB_USER_COMMANDS)) {
+    if(CTX_BOOLSETTING(HUB_USER_COMMANDS)) {
         cmd.addParam(UCM0_SUPPORT);
     }
-    if(BOOLSETTING(SEND_BLOOM)) {
+    if(CTX_BOOLSETTING(SEND_BLOOM)) {
         cmd.addParam(BLO0_SUPPORT);
     }
     cmd.addParam(ZLIF_SUPPORT);
 #ifdef WITH_DHT
-    if (BOOLSETTING(USE_DHT))
+    if (CTX_BOOLSETTING(USE_DHT))
         cmd.addParam(DHT0_SUPPORT);
 #endif
     send(cmd);
@@ -1097,7 +1097,7 @@ void AdcHub::on(Line l, const string& aLine) noexcept {
         return;
     }
 
-    if(BOOLSETTING(ADC_DEBUG)) {
+    if(CTX_BOOLSETTING(ADC_DEBUG)) {
         fire(ClientListener::StatusMessage(), this, "<ADC>" + aLine + "</ADC>");
     }
 #ifdef LUA_SCRIPT

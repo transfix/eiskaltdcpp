@@ -65,7 +65,7 @@ UploadManager::~UploadManager() {
 
 bool UploadManager::hasUpload ( UserConnection& aSource ) {
     Lock l(cs);
-    if (!aSource.getSocket() || SETTING(ALLOW_SIM_UPLOADS))
+    if (!aSource.getSocket() || CTX_SETTING(ALLOW_SIM_UPLOADS))
         return false;
 
     for ( UploadList::const_iterator i = uploads.begin(); i != uploads.end(); ++i ) {
@@ -151,7 +151,7 @@ bool UploadManager::prepareFile(UserConnection& aSource, const string& aType, co
                     return false;
                 }
 
-                free = free || (sz <= (int64_t)(SETTING(SET_MINISLOT_SIZE) * 1024) );
+                free = free || (sz <= (int64_t)(CTX_SETTING(SET_MINISLOT_SIZE) * 1024) );
 
                 f->setPos(start);
                 is = f;
@@ -349,13 +349,13 @@ int64_t UploadManager::getRunningAverage() {
 
 bool UploadManager::getAutoSlot() {
     /** A 0 in settings means disable */
-    if(SETTING(MIN_UPLOAD_SPEED) == 0)
+    if(CTX_SETTING(MIN_UPLOAD_SPEED) == 0)
         return false;
     /** Only grant one slot per 30 sec */
     if(GET_TICK() < getLastGrant() + 30*1000)
         return false;
     /** Grant if upload speed is less than the threshold speed */
-    return getRunningAverage() < (SETTING(MIN_UPLOAD_SPEED)*1024);
+    return getRunningAverage() < (CTX_SETTING(MIN_UPLOAD_SPEED)*1024);
 }
 
 void UploadManager::removeUpload(Upload* aUpload) {
@@ -466,7 +466,7 @@ void UploadManager::on(UserConnectionListener::TransmitDone, UserConnection* aSo
 
     aSource->setState(UserConnection::STATE_GET);
 
-    if(BOOLSETTING(LOG_UPLOADS) && u->getType() != Transfer::TYPE_TREE && (BOOLSETTING(LOG_FILELIST_TRANSFERS) || u->getType() != Transfer::TYPE_FULL_LIST)) {
+    if(CTX_BOOLSETTING(LOG_UPLOADS) && u->getType() != Transfer::TYPE_TREE && (CTX_BOOLSETTING(LOG_FILELIST_TRANSFERS) || u->getType() != Transfer::TYPE_FULL_LIST)) {
         StringMap params;
         u->getParams(*aSource, params);
         LOG(LogManager::UPLOAD, params);
@@ -538,7 +538,7 @@ const UploadManager::FileSet& UploadManager::getWaitingUserFiles(const UserPtr& 
 
 void UploadManager::addConnection(UserConnectionPtr conn) {
     Lock l(cs);
-    if (!BOOLSETTING(ALLOW_UPLOAD_MULTI_HUB)) {
+    if (!CTX_BOOLSETTING(ALLOW_UPLOAD_MULTI_HUB)) {
         for(auto u: uploads) {
             if (u->getUserConnection().getRemoteIp() == conn->getRemoteIp()) {
                 conn->disconnect();
@@ -546,7 +546,7 @@ void UploadManager::addConnection(UserConnectionPtr conn) {
             }
         }
     }
-    if (BOOLSETTING(IPFILTER) && !ctx()->getIPFilter()->OK(conn->getRemoteIp(),eDIRECTION_OUT)) {
+    if (CTX_BOOLSETTING(IPFILTER) && !ctx()->getIPFilter()->OK(conn->getRemoteIp(),eDIRECTION_OUT)) {
         conn->error("Your IP is Blocked!");// TODO translate
         ctx()->getLogManager()->message(_("IPFilter: Blocked incoming connection to ") + conn->getRemoteIp()); // TODO translate
         //ctx()->getQueueManager()->removeSource(conn->getUser(), QueueItem::Source::FLAG_REMOVED);
@@ -554,7 +554,7 @@ void UploadManager::addConnection(UserConnectionPtr conn) {
         return;
     }
 
-    if(SETTING(REQUIRE_TLS) && !conn->isSecure()) {
+    if(CTX_SETTING(REQUIRE_TLS) && !conn->isSecure()) {
         conn->error("Secure connection required!");
         conn->disconnect();
         return;
@@ -594,7 +594,7 @@ void UploadManager::on(TimerManagerListener::Minute, uint64_t /* aTick */) noexc
 
         waitingUsers.erase(i, waitingUsers.end());
 
-        if( BOOLSETTING(AUTO_KICK) ) {
+        if( CTX_BOOLSETTING(AUTO_KICK) ) {
             for(auto u: uploads) {
                 if(u->getUser()->isOnline()) {
                     u->unsetFlag(Upload::FLAG_PENDING_KICK);
@@ -606,7 +606,7 @@ void UploadManager::on(TimerManagerListener::Minute, uint64_t /* aTick */) noexc
                     continue;
                 }
 
-                if(BOOLSETTING(AUTO_KICK_NO_FAVS) && ctx()->getFavoriteManager()->isFavoriteUser(u->getUser())) {
+                if(CTX_BOOLSETTING(AUTO_KICK_NO_FAVS) && ctx()->getFavoriteManager()->isFavoriteUser(u->getUser())) {
                     continue;
                 }
 

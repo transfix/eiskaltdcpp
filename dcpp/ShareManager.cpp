@@ -459,7 +459,7 @@ void ShareManager::addDirectory(const string& realPath, const string& virtualNam
         throw ShareException(_("Directory is hidden"));
     }
 
-    if(Util::stricmp(SETTING(TEMP_DOWNLOAD_DIRECTORY), realPath) == 0) {
+    if(Util::stricmp(CTX_SETTING(TEMP_DOWNLOAD_DIRECTORY), realPath) == 0) {
         throw ShareException(_("The temporary download directory cannot be shared"));
     }
     list<string> removeMap;
@@ -640,7 +640,7 @@ ShareManager::Directory::Ptr ShareManager::buildTree(const string& aName, const 
     auto lastFileIter = dir->files.begin();
 
     FileFindIter end;
-    const string l_skip_list = SETTING(SKIPLIST_SHARE);
+    const string l_skip_list = CTX_SETTING(SKIPLIST_SHARE);
 #ifdef _WIN32
     for(FileFindIter i(aName + "*"); i != end; ++i) {
 #else
@@ -657,9 +657,9 @@ ShareManager::Directory::Ptr ShareManager::buildTree(const string& aName, const 
 
         if(name == "." || name == "..")
             continue;
-        if(!BOOLSETTING(SHARE_HIDDEN) && i->isHidden())
+        if(!CTX_BOOLSETTING(SHARE_HIDDEN) && i->isHidden())
             continue;
-        if(!BOOLSETTING(FOLLOW_LINKS) && i->isLink())
+        if(!CTX_BOOLSETTING(FOLLOW_LINKS) && i->isLink())
             continue;
 
         int64_t size = i->getSize();
@@ -677,9 +677,9 @@ ShareManager::Directory::Ptr ShareManager::buildTree(const string& aName, const 
         }
         if(i->isDirectory()) {
             string newName = aName + name + PATH_SEPARATOR;
-            if((::strcmp(newName.c_str(), SETTING(TEMP_DOWNLOAD_DIRECTORY).c_str()) != 0)
+            if((::strcmp(newName.c_str(), CTX_SETTING(TEMP_DOWNLOAD_DIRECTORY).c_str()) != 0)
                     && (::strcmp(newName.c_str(), Util::getPath(Util::PATH_USER_CONFIG).c_str()) != 0)
-                    && (::strcmp(newName.c_str(), SETTING(LOG_DIRECTORY).c_str()) != 0)) {
+                    && (::strcmp(newName.c_str(), CTX_SETTING(LOG_DIRECTORY).c_str()) != 0)) {
                 dir->directories[name] = buildTree(newName, dir);
             }
         } else {
@@ -689,15 +689,15 @@ ShareManager::Directory::Ptr ShareManager::buildTree(const string& aName, const 
                     (name != "desktop.ini") &&
                     (name != "folder.htt")
                     ) {
-                if (!BOOLSETTING(SHARE_TEMP_FILES) &&
+                if (!CTX_BOOLSETTING(SHARE_TEMP_FILES) &&
                         (::strcmp(l_ext.c_str(), ".dctmp") == 0)) {
                     ctx()->getLogManager()->message(str(F_("Skip share temp file: %1% (Size: %2%)")
                                                            % Util::addBrackets(fileName) % Util::formatBytes(size)));
                     continue;
                 }
-                if (BOOLSETTING(SHARE_SKIP_ZERO_BYTE) && size == 0)
+                if (CTX_BOOLSETTING(SHARE_SKIP_ZERO_BYTE) && size == 0)
                     continue;
-                if(Util::stricmp(fileName, SETTING(TLS_PRIVATE_KEY_FILE)) == 0) {
+                if(Util::stricmp(fileName, CTX_SETTING(TLS_PRIVATE_KEY_FILE)) == 0) {
                     continue;
                 }
                 try {
@@ -718,7 +718,7 @@ bool ShareManager::checkHidden(const string& aName) const {
     FileFindIter ff = FileFindIter(aName.substr(0, aName.size() - 1));
 
     if (ff != FileFindIter()) {
-        return (BOOLSETTING(SHARE_HIDDEN) || !ff->isHidden());
+        return (CTX_BOOLSETTING(SHARE_HIDDEN) || !ff->isHidden());
     }
 
     return true;
@@ -744,7 +744,7 @@ bool ShareManager::checkHidden(const string& aName) const
             hidden = true;
     }
 
-    return (BOOLSETTING(SHARE_HIDDEN) || !hidden);
+    return (CTX_BOOLSETTING(SHARE_HIDDEN) || !hidden);
 }
 #endif // !_WIN32
 //NOTE: freedcpp +]
@@ -779,7 +779,7 @@ void ShareManager::updateIndices(Directory& dir, const decltype(std::declval<Dir
     if(j == tthIndex.end()) {
         dir.size+=f.getSize();
     } else {
-        if(!SETTING(LIST_DUPES)) {
+        if(!CTX_SETTING(LIST_DUPES)) {
             try {
                 ctx()->getLogManager()->message(str(F_("Duplicate file will not be shared: %1% (Size: %2% B) Dupe matched against: %3%")
                                                        % Util::addBrackets(dir.getRealPath(f.getName())) % Util::toString(f.getSize()) % Util::addBrackets(j->second->getParent()->getRealPath(j->second->getName()))));
@@ -1480,7 +1480,7 @@ ShareManager::Directory::Ptr ShareManager::getDirectory(const string& fname) {
 }
 
 void ShareManager::on(QueueManagerListener::FileMoved, const string& realPath) noexcept {
-    if(BOOLSETTING(ADD_FINISHED_INSTANTLY)) {
+    if(CTX_BOOLSETTING(ADD_FINISHED_INSTANTLY)) {
         // Check if finished download is supposed to be shared
         Lock l(cs);
         for(auto& i: shares) {
@@ -1521,8 +1521,8 @@ void ShareManager::on(HashManagerListener::TTHDone, const string& realPath, cons
 }
 
 void ShareManager::on(TimerManagerListener::Minute, uint64_t tick) noexcept {
-    if (SETTING(AUTO_REFRESH_TIME) > 0) {
-        if(lastFullUpdate + SETTING(AUTO_REFRESH_TIME) * 60 * 1000 <= tick) {
+    if (CTX_SETTING(AUTO_REFRESH_TIME) > 0) {
+        if(lastFullUpdate + CTX_SETTING(AUTO_REFRESH_TIME) * 60 * 1000 <= tick) {
             refresh(true, true);
         }
     }

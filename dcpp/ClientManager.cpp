@@ -603,7 +603,7 @@ void ClientManager::on(AdcSearch, Client* c, const AdcCommand& adc, const CID& f
 
 void ClientManager::search(int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken, void* aOwner) {
 #ifdef WITH_DHT
-    if(BOOLSETTING(USE_DHT) && aFileType == SearchManager::TYPE_TTH)
+    if(CTX_BOOLSETTING(USE_DHT) && aFileType == SearchManager::TYPE_TTH)
         ctx()->getDHT()->findFile(aString);
 #endif
     Lock l(cs);
@@ -616,7 +616,7 @@ void ClientManager::search(int aSizeMode, int64_t aSize, int aFileType, const st
 
 uint64_t ClientManager::search(StringList& who, int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken, const StringList& aExtList, void* aOwner) {
 #ifdef WITH_DHT
-    if(BOOLSETTING(USE_DHT) && aFileType == SearchManager::TYPE_TTH)
+    if(CTX_BOOLSETTING(USE_DHT) && aFileType == SearchManager::TYPE_TTH)
         ctx()->getDHT()->findFile(aString, aToken);
 #endif
     Lock l(cs);
@@ -663,7 +663,7 @@ UserPtr& ClientManager::getMe() {
 
 const CID& ClientManager::getMyPID() {
     if(!pid)
-        pid = CID(SETTING(PRIVATE_ID));
+        pid = CID(CTX_SETTING(PRIVATE_ID));
     return pid;
 }
 
@@ -768,7 +768,7 @@ void ClientManager::on(Failed, Client* client, const string&) noexcept {
 }
 
 void ClientManager::on(HubUserCommand, Client* client, int aType, int ucCtx, const string& name, const string& command) noexcept {
-    if(BOOLSETTING(HUB_USER_COMMANDS)) {
+    if(CTX_BOOLSETTING(HUB_USER_COMMANDS)) {
         if(aType == UserCommand::TYPE_REMOVE) {
             int cmd = ctx()->getFavoriteManager()->findUserCommand(name, client->getHubUrl());
             if(cmd != -1)
@@ -783,7 +783,7 @@ void ClientManager::on(HubUserCommand, Client* client, int aType, int ucCtx, con
 int ClientManager::getMode(const string& aHubUrl) const {
 
     if(aHubUrl.empty())
-        return SETTING(INCOMING_CONNECTIONS);
+        return CTX_SETTING(INCOMING_CONNECTIONS);
 
     int mode = 0;
     const FavoriteHubEntry* hub = ctx()->getFavoriteManager()->getFavoriteHubEntry(aHubUrl);
@@ -796,10 +796,10 @@ int ClientManager::getMode(const string& aHubUrl) const {
             mode = SettingsManager::INCOMING_FIREWALL_PASSIVE;
             break;
         default:
-            mode = SETTING(INCOMING_CONNECTIONS);
+            mode = CTX_SETTING(INCOMING_CONNECTIONS);
         }
     } else {
-        mode = SETTING(INCOMING_CONNECTIONS);
+        mode = CTX_SETTING(INCOMING_CONNECTIONS);
     }
     return mode;
 }

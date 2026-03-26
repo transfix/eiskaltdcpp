@@ -60,14 +60,14 @@ ConnectionManager::ConnectionManager() :
 void ConnectionManager::listen() {
     disconnect();
 
-    server = new Server(ctx(), false, Util::toString(SETTING(TCP_PORT)), SETTING(BIND_ADDRESS));
+    server = new Server(ctx(), false, Util::toString(CTX_SETTING(TCP_PORT)), CTX_SETTING(BIND_ADDRESS));
 
     if(!ctx()->getCryptoManager()->TLSOk()) {
-        dcdebug("Skipping secure port: %d\n", SETTING(TLS_PORT));
+        dcdebug("Skipping secure port: %d\n", CTX_SETTING(TLS_PORT));
         return;
     }
 
-    secureServer = new Server(ctx(), true, Util::toString(SETTING(TLS_PORT)), SETTING(BIND_ADDRESS));
+    secureServer = new Server(ctx(), true, Util::toString(CTX_SETTING(TLS_PORT)), CTX_SETTING(BIND_ADDRESS));
 }
 
 ConnectionQueueItem::ConnectionQueueItem(const HintedUser &aUser, bool aDownload) :
@@ -244,7 +244,7 @@ static const uint32_t FLOOD_ADD = 2000;
 ConnectionManager::Server::Server(DCContext* ctx, const bool secure_, const string& aPort, const string& ip_ /* = "0.0.0.0" */) : secure(secure_), die(false), ctx_(ctx) {
     sock.create();
     sock.setSocketOpt(SO_REUSEADDR, 1);
-    ip = SETTING(BIND_IFACE)? sock.getIfaceI4(SETTING(BIND_IFACE_NAME)).c_str() : ip_;
+    ip = CTX_SETTING(BIND_IFACE)? sock.getIfaceI4(CTX_SETTING(BIND_IFACE_NAME)).c_str() : ip_;
     port = sock.bind(aPort, ip);
     sock.listen();
 
@@ -431,7 +431,7 @@ void ConnectionManager::on(AdcCommand::SUP, UserConnection* aSource, const AdcCo
 
     if(aSource->isSet(UserConnection::FLAG_INCOMING)) {
         StringList defFeatures = adcFeatures;
-        if(BOOLSETTING(COMPRESS_TRANSFERS)) {
+        if(CTX_BOOLSETTING(COMPRESS_TRANSFERS)) {
             defFeatures.push_back("AD" + UserConnection::FEATURE_ZLIB_GET);
         }
         aSource->sup(defFeatures);
@@ -448,7 +448,7 @@ void ConnectionManager::on(AdcCommand::STA, UserConnection*, const AdcCommand&) 
 
 void ConnectionManager::on(UserConnectionListener::Connected, UserConnection* aSource) noexcept {
     // incorrect check because aSource->getUser().get() == nullptr
-    if(aSource->isSecure() && !aSource->isTrusted() && !BOOLSETTING(ALLOW_UNTRUSTED_CLIENTS)) {
+    if(aSource->isSecure() && !aSource->isTrusted() && !CTX_BOOLSETTING(ALLOW_UNTRUSTED_CLIENTS)) {
         putConnection(aSource);
         //        ctx()->getQueueManager()->removeSource(aSource->getUser(), QueueItem::Source::FLAG_UNTRUSTED);
         return;
@@ -460,7 +460,7 @@ void ConnectionManager::on(UserConnectionListener::Connected, UserConnection* aS
         aSource->lock(ctx()->getCryptoManager()->getLock(), ctx()->getCryptoManager()->getPk() + "Ref=" + aSource->getHubUrl());
     } else {
         StringList defFeatures = adcFeatures;
-        if(BOOLSETTING(COMPRESS_TRANSFERS)) {
+        if(CTX_BOOLSETTING(COMPRESS_TRANSFERS)) {
             defFeatures.push_back("AD" + UserConnection::FEATURE_ZLIB_GET);
         }
         aSource->sup(defFeatures);
@@ -548,7 +548,7 @@ void ConnectionManager::on(UserConnectionListener::CLock, UserConnection* aSourc
 
     if( ctx()->getCryptoManager()->isExtended(aLock) ) {
         StringList defFeatures = features;
-        if(BOOLSETTING(COMPRESS_TRANSFERS)) {
+        if(CTX_BOOLSETTING(COMPRESS_TRANSFERS)) {
             defFeatures.push_back(UserConnection::FEATURE_ZLIB_GET);
         }
 
@@ -671,7 +671,7 @@ void ConnectionManager::on(AdcCommand::INF, UserConnection* aSource, const AdcCo
 
     // Leaks CSUPs, other client's CINF, and ADC connection's presence. Allows removing
     // user from queue by waiting long enough for aSource->getUser() to function.
-    if(SETTING(REQUIRE_TLS) && !aSource->isSet(UserConnection::FLAG_NMDC) && !aSource->isSecure()) {
+    if(CTX_SETTING(REQUIRE_TLS) && !aSource->isSet(UserConnection::FLAG_NMDC) && !aSource->isSecure()) {
         putConnection(aSource);
         ctx()->getQueueManager()->removeSource(aSource->getUser(), QueueItem::Source::FLAG_UNENCRYPTED);
         return;

@@ -634,7 +634,7 @@ void FavoriteManager::setUserDescription(const UserPtr& aUser, const string& des
 }
 
 StringList FavoriteManager::getHubLists() {
-    StringTokenizer<string> lists(SETTING(HUBLIST_SERVERS), ';');
+    StringTokenizer<string> lists(CTX_SETTING(HUBLIST_SERVERS), ';');
     return lists.getTokens();
 }
 

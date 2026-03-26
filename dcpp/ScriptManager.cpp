@@ -363,7 +363,7 @@ void ScriptManager::load() {
     Lunar<LuaManager>::Register(L);
 
     //create default text formatting function, in case startup.lua or formatting.lua isn't present.
-    uint32_t color = SETTING(TEXT_COLOR);
+    uint32_t color = CTX_SETTING(TEXT_COLOR);
     //this create a dcpp namespace. However, if startup.lua executes, if first clobbers this.
     string function =
             "dcpp = {_init_me_anyway = true}\n"

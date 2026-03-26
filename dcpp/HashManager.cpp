@@ -738,9 +738,9 @@ bool HashManager::Hasher::fastHash(const string& fname, uint8_t* buf, TigerTree&
         if (size > 0) {
             // Start a new overlapped read
             ResetEvent(over.hEvent);
-            if (SETTING(MAX_HASH_SPEED) > 0) {
+            if (CTX_SETTING(MAX_HASH_SPEED) > 0) {
                 uint64_t now = GET_TICK();
-                uint64_t minTime = hn * 1000LL / (SETTING(MAX_HASH_SPEED) * 1024LL * 1024LL);
+                uint64_t minTime = hn * 1000LL / (CTX_SETTING(MAX_HASH_SPEED) * 1024LL * 1024LL);
                 if (lastRead + minTime > now) {
                     uint64_t diff = now - lastRead;
                     Thread::sleep(minTime - diff);
@@ -827,7 +827,7 @@ bool HashManager::Hasher::fastHash(const string& filename, uint8_t* , TigerTree&
         return true;
     }
 
-    static const int64_t BUF_BYTES = (SETTING(HASH_BUFFER_SIZE_MB) >= 1)? SETTING(HASH_BUFFER_SIZE_MB)*1024*1024 : 0x800000;
+    static const int64_t BUF_BYTES = (CTX_SETTING(HASH_BUFFER_SIZE_MB) >= 1)? CTX_SETTING(HASH_BUFFER_SIZE_MB)*1024*1024 : 0x800000;
     static const int64_t BUF_SIZE = BUF_BYTES - (BUF_BYTES % getpagesize());
 
     int fd = open(Text::fromUtf8(filename).c_str(), O_RDONLY);
@@ -836,7 +836,7 @@ bool HashManager::Hasher::fastHash(const string& filename, uint8_t* , TigerTree&
         return false;
     }
 
-    const int maxHashSpeed = SETTING(MAX_HASH_SPEED);
+    const int maxHashSpeed = CTX_SETTING(MAX_HASH_SPEED);
     int64_t pos = 0;
     int64_t size_read = 0;
     void *buf = NULL;
@@ -866,13 +866,13 @@ bool HashManager::Hasher::fastHash(const string& filename, uint8_t* , TigerTree&
     }
 
     uint64_t lastRead = GET_TICK();
-    unsigned long mmap_flags = static_cast<bool>(SETTING(HASH_BUFFER_PRIVATE))? MAP_PRIVATE : MAP_SHARED;
+    unsigned long mmap_flags = static_cast<bool>(CTX_SETTING(HASH_BUFFER_PRIVATE))? MAP_PRIVATE : MAP_SHARED;
 #ifdef MAP_POPULATE
-    if (static_cast<bool>(SETTING(HASH_BUFFER_POPULATE)))
+    if (static_cast<bool>(CTX_SETTING(HASH_BUFFER_POPULATE)))
         mmap_flags |= MAP_POPULATE;
 #endif
 #ifdef MAP_NORESERVE
-    if (static_cast<bool>(SETTING(HASH_BUFFER_NORESERVE)))
+    if (static_cast<bool>(CTX_SETTING(HASH_BUFFER_NORESERVE)))
         mmap_flags |= MAP_NORESERVE;
 #endif
     while (pos < size && !stop) {
@@ -992,7 +992,7 @@ int HashManager::Hasher::run() {
                 buf = (uint8_t*)VirtualAlloc(NULL, 2*BUF_SIZE, MEM_COMMIT, PAGE_READWRITE);
             }
 #else
-            static const int64_t BUF_BYTES = (SETTING(HASH_BUFFER_SIZE_MB) >= 1)? SETTING(HASH_BUFFER_SIZE_MB)*1024*1024 : 0x800000;
+            static const int64_t BUF_BYTES = (CTX_SETTING(HASH_BUFFER_SIZE_MB) >= 1)? CTX_SETTING(HASH_BUFFER_SIZE_MB)*1024*1024 : 0x800000;
             static const int64_t BUF_SIZE = BUF_BYTES - (BUF_BYTES % getpagesize());
 #endif
 
@@ -1018,9 +1018,9 @@ int HashManager::Hasher::run() {
                 tth = &fastTTH;
 
 #ifdef _WIN32
-                if(!virtualBuf || !BOOLSETTING(FAST_HASH) || !fastHash(fname, buf, fastTTH, size, xcrc32)) {
+                if(!virtualBuf || !CTX_BOOLSETTING(FAST_HASH) || !fastHash(fname, buf, fastTTH, size, xcrc32)) {
 #else
-                if(!BOOLSETTING(FAST_HASH) || !fastHash(fname, 0, fastTTH, size, xcrc32)) {
+                if(!CTX_BOOLSETTING(FAST_HASH) || !fastHash(fname, 0, fastTTH, size, xcrc32)) {
 #endif
                     tth = &slowTTH;
                     crc32 = CRC32Filter();
@@ -1028,9 +1028,9 @@ int HashManager::Hasher::run() {
                     size_t n = 0;
                     do {
                         size_t bufSize = BUF_SIZE;
-                        if(SETTING(MAX_HASH_SPEED)> 0) {
+                        if(CTX_SETTING(MAX_HASH_SPEED)> 0) {
                             uint64_t now = GET_TICK();
-                            uint64_t minTime = n * 1000LL / (SETTING(MAX_HASH_SPEED) * 1024LL * 1024LL);
+                            uint64_t minTime = n * 1000LL / (CTX_SETTING(MAX_HASH_SPEED) * 1024LL * 1024LL);
                             if(lastRead + minTime> now) {
                                 Thread::sleep(minTime - (now - lastRead));
                             }
@@ -1117,7 +1117,7 @@ void HashManager::on(TimerManagerListener::Second, uint64_t tick) noexcept {
     //fprintf(stdout,"%lld\n", tick); fflush(stdout);
     static bool firstcycle = true;
     if (firstcycle){
-        int delay = SETTING(HASHING_START_DELAY);
+        int delay = CTX_SETTING(HASHING_START_DELAY);
         SettingsManager *SM = ctx()->getSettingsManager();
         if (delay > 1800){
             delay = 1800;

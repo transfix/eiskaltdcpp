@@ -92,7 +92,7 @@ void SearchManager::listen() {
         socket->create(Socket::TYPE_UDP);
         socket->setBlocking(true);
         socket->setSocketOpt(SO_REUSEADDR, 1);
-        port = socket->bind(Util::toString(SETTING(UDP_PORT)), SETTING(BIND_IFACE)? socket->getIfaceI4(SETTING(BIND_IFACE_NAME)).c_str() : SETTING(BIND_ADDRESS));
+        port = socket->bind(Util::toString(CTX_SETTING(UDP_PORT)), CTX_SETTING(BIND_IFACE)? socket->getIfaceI4(CTX_SETTING(BIND_IFACE_NAME)).c_str() : CTX_SETTING(BIND_ADDRESS));
         start();
     } catch(...) {
         socket.reset();
@@ -143,7 +143,7 @@ int SearchManager::run() {
                 socket->disconnect();
                 socket->create(Socket::TYPE_UDP);
                 socket->setBlocking(true);
-                socket->bind(port, SETTING(BIND_ADDRESS));
+                socket->bind(port, CTX_SETTING(BIND_ADDRESS));
                 if(failed) {
                     ctx()->getLogManager()->message(_("Search enabled again"));
                     failed = false;
