@@ -373,7 +373,7 @@ int64_t DownloadManager::getRunningAverage() {
 void DownloadManager::logDownload(UserConnection* aSource, Download* d) {
     StringMap params;
     d->getParams(*aSource, params);
-    LOG(LogManager::DOWNLOAD, params);
+    CTX_LOG(LogManager::DOWNLOAD, params);
 }
 
 void DownloadManager::on(UserConnectionListener::MaxedOut, UserConnection* aSource) noexcept {
