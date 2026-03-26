@@ -42,7 +42,7 @@
 namespace dcpp {
 
 ClientManager::ClientManager() {
-    dcpp::getContext()->getTimerManager()->addListener(this);
+    ctx()->getTimerManager()->addListener(this);
 }
 
 ClientManager::~ClientManager() {

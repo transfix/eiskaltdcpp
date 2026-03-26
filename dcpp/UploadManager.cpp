@@ -46,8 +46,8 @@ static const string UPLOAD_AREA = "Uploads";
 
 
 UploadManager::UploadManager() noexcept : extra(0), lastGrant(0), running(0), limits(NULL), lastFreeSlots(-1) {
-    dcpp::getContext()->getClientManager()->addListener(this);
-    dcpp::getContext()->getTimerManager()->addListener(this);
+    ctx()->getClientManager()->addListener(this);
+    ctx()->getTimerManager()->addListener(this);
 }
 
 UploadManager::~UploadManager() {

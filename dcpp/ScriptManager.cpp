@@ -31,8 +31,29 @@
 #include "Thread.h"
 #include <cstddef>
 #include "DCPlusPlus.h"
+#include "DCContext.h"
 
 namespace dcpp {
+
+// ── Lua-registry DCContext storage ──────────────────────────────────────
+// We store DCContext* in the Lua registry so that Lua C callbacks (which
+// are free functions with no `this`) can reach the core context.
+static const char kLuaDCContextKey = 'K'; // unique address used as key
+
+static void luaStoreDCContext(lua_State* L, DCContext* ctx) {
+    lua_pushlightuserdata(L, const_cast<char*>(&kLuaDCContextKey));
+    lua_pushlightuserdata(L, ctx);
+    lua_settable(L, LUA_REGISTRYINDEX);
+}
+
+static DCContext* luaGetDCContext(lua_State* L) {
+    lua_pushlightuserdata(L, const_cast<char*>(&kLuaDCContextKey));
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    auto* ctx = static_cast<DCContext*>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    return ctx;
+}
+// ────────────────────────────────────────────────────────────────────────
 
 static void callalert (lua_State *L, int status) {
     if (status != 0) {
@@ -42,7 +63,7 @@ static void callalert (lua_State *L, int status) {
             lua_call(L, 1, 0);
         }
         else {  /* no _ALERT function; print it on stderr */
-            dcpp::getContext()->getScriptManager()->SendDebugMessage(Text::acpToUtf8(string("LUA ERROR: ") + lua_tostring(L, -2)));
+            luaGetDCContext(L)->getScriptManager()->SendDebugMessage(Text::acpToUtf8(string("LUA ERROR: ") + lua_tostring(L, -2)));
             lua_pop(L, 2);  /* remove error message and _ALERT */
         }
     }
@@ -99,14 +120,14 @@ Lunar<LuaManager>::RegType LuaManager::methods[] = {
 int LuaManager::DeleteClient(lua_State* L){
     if (lua_gettop(L) == 1 && lua_islightuserdata(L, -1)){
         Client* client = (Client*) lua_touserdata(L, -1);
-        dcpp::getContext()->getClientManager()->putClient(client);
+        luaGetDCContext(L)->getClientManager()->putClient(client);
     }
     return 0;
 }
 
 int LuaManager::CreateClient(lua_State* L) {
     if (lua_gettop(L) == 2 && lua_isstring(L, -2) && lua_isstring(L, -1)){
-        Client* client = dcpp::getContext()->getClientManager()->getClient(lua_tostring(L, -2));
+        Client* client = luaGetDCContext(L)->getClientManager()->getClient(lua_tostring(L, -2));
         Identity ident;
         ident.setNick(lua_tostring(L, -1));
         client->setMyIdentity(ident);
@@ -173,7 +194,7 @@ int LuaManager::SendHubMessage(lua_State* L) {
 int LuaManager::GenerateDebugMessage(lua_State* L) {
     /* arguments: socket, buffer, address */
     if (lua_gettop(L) == 1 && lua_isstring(L, -1))
-        dcpp::getContext()->getScriptManager()->SendDebugMessage(lua_tostring(L, -1));
+        luaGetDCContext(L)->getScriptManager()->SendDebugMessage(lua_tostring(L, -1));
 
     return 0;
 }
@@ -182,7 +203,7 @@ int LuaManager::SendUDPPacket(lua_State* L) {
     /* arguments: ip:port, data */
     if (lua_gettop(L) == 2 && lua_isstring(L, -2) && lua_isstring(L, -1)) {
         StringList sl = StringTokenizer<string>(lua_tostring(L, -2), ':').getTokens();
-        dcpp::getContext()->getScriptManager()->s.writeTo(sl[0], sl[1], lua_tostring(L, -1), string(lua_tostring(L, -1)).size());
+        luaGetDCContext(L)->getScriptManager()->s.writeTo(sl[0], sl[1], lua_tostring(L, -1), string(lua_tostring(L, -1)).size());
     }
 
     return 0;
@@ -201,15 +222,15 @@ int LuaManager::GetSetting(lua_State* L) {
     /* arguments: string */
     int n;
     SettingsManager::Types type;
-    if(lua_gettop(L) == 1 && lua_isstring(L, -1) && dcpp::getContext()->getSettingsManager()->getType(lua_tostring(L, -1), n, type)) {
+    if(lua_gettop(L) == 1 && lua_isstring(L, -1) && luaGetDCContext(L)->getSettingsManager()->getType(lua_tostring(L, -1), n, type)) {
         if(type == SettingsManager::TYPE_STRING) {
-            lua_pushstring(L, dcpp::getContext()->getSettingsManager()->get((SettingsManager::StrSetting)n).c_str());
+            lua_pushstring(L, luaGetDCContext(L)->getSettingsManager()->get((SettingsManager::StrSetting)n).c_str());
             return 1;
         } else if(type == SettingsManager::TYPE_INT) {
-            lua_pushnumber(L, dcpp::getContext()->getSettingsManager()->get((SettingsManager::IntSetting)n));
+            lua_pushnumber(L, luaGetDCContext(L)->getSettingsManager()->get((SettingsManager::IntSetting)n));
             return 1;
         } else if(type == SettingsManager::TYPE_INT64) {
-            lua_pushnumber(L, static_cast<lua_Number>(dcpp::getContext()->getSettingsManager()->get((SettingsManager::Int64Setting)n)));
+            lua_pushnumber(L, static_cast<lua_Number>(luaGetDCContext(L)->getSettingsManager()->get((SettingsManager::Int64Setting)n)));
             return 1;
         }
     }
@@ -312,12 +333,12 @@ int LuaManager::RunTimer(lua_State* L) {
     /* arguments: bool:on/off */
     if(lua_gettop(L) == 1 && lua_isnumber(L, -1)) {
         bool on = lua_tonumber(L, 1) != 0;      //shut VC++ up
-        ScriptManager* sm = dcpp::getContext()->getScriptManager();
+        ScriptManager* sm = luaGetDCContext(L)->getScriptManager();
         if(on != sm->getTimerEnabled()) {
             if(on)
-                dcpp::getContext()->getTimerManager()->addListener(sm);
+                luaGetDCContext(L)->getTimerManager()->addListener(sm);
             else
-                dcpp::getContext()->getTimerManager()->removeListener(sm);
+                luaGetDCContext(L)->getTimerManager()->removeListener(sm);
             sm->setTimerEnabled(on);
         }
     } else {
@@ -336,6 +357,7 @@ ScriptManager::ScriptManager() : timerEnabled(false) {
 
 void ScriptManager::load() {
     L = luaL_newstate();//lua_open();
+    luaStoreDCContext(L, ctx());
     luaL_openlibs(L);
 
     Lunar<LuaManager>::Register(L);
@@ -397,7 +419,7 @@ void ScriptInstance::EvaluateFile(const string& fn) {
         else if(Util::fileExists(test_path_1))
             script_full_name = test_path_1;
         else {
-            dcpp::getContext()->getLogManager()->message("File '" + fn + "' not found!");
+            luaGetDCContext(L)->getLogManager()->message("File '" + fn + "' not found!");
             dcdebug("File '%s' not found!\n",fn.c_str()); // temporary
             return;
         }
@@ -423,7 +445,7 @@ void ScriptInstance::EvaluateFile(const string& fn) {
             script_full_name = test_path_2;
 #endif // __linux
         else {
-            dcpp::getContext()->getLogManager()->message("File '" + fn + "' not found!");
+            luaGetDCContext(L)->getLogManager()->message("File '" + fn + "' not found!");
             printf("File '%s' not found!\n",fn.c_str()); fflush(stdout);// temporary
             return;
         }
@@ -479,7 +501,7 @@ bool ScriptInstance::MakeCallRaw(const string& table, const string& method, int 
         }
         const char *msg = lua_tostring(L, -1);
         string formatted_msg = (msg != NULL)?string("LUA Error: ") + msg:string("LUA Error: (unknown)");
-        dcpp::getContext()->getScriptManager()->SendDebugMessage(formatted_msg);
+        luaGetDCContext(L)->getScriptManager()->SendDebugMessage(formatted_msg);
         dcassert(lua_gettop(L) == 1);
         lua_pop(L, 1);
     } else {

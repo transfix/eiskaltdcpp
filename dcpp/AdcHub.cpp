@@ -64,7 +64,7 @@ vector<StringList> AdcHub::searchExts;
 
 AdcHub::AdcHub(const string& aHubURL, bool secure) :
     Client(aHubURL, '\n', secure, Socket::PROTO_ADC), oldPassword(false), sid(0) {
-    dcpp::getContext()->getTimerManager()->addListener(this);
+    ctx()->getTimerManager()->addListener(this);
 }
 
 AdcHub::~AdcHub() {

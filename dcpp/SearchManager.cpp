@@ -52,7 +52,7 @@ const char* SearchManager::getTypeStr(int type) {
 }
 
 SearchManager::SearchManager() :
-    stop(false)
+    stop(false), queue(ctx())
 {
     queue.start();
 }
@@ -255,27 +255,27 @@ int SearchManager::UdpQueue::run() {
             }
 
             string hubIpPort = x.substr(i, j-i);
-            string url = dcpp::getContext()->getClientManager()->findHub(hubIpPort);
+            string url = ctx()->getClientManager()->findHub(hubIpPort);
 
-            string encoding = dcpp::getContext()->getClientManager()->findHubEncoding(url);
+            string encoding = ctx()->getClientManager()->findHubEncoding(url);
             nick = Text::toUtf8(nick, encoding);
             file = Text::toUtf8(file, encoding);
             hubName = Text::toUtf8(hubName, encoding);
 
-            UserPtr user = dcpp::getContext()->getClientManager()->findUser(nick, url);
+            UserPtr user = ctx()->getClientManager()->findUser(nick, url);
             if(!user) {
                 // Could happen if hub has multiple URLs / IPs
-                user = dcpp::getContext()->getClientManager()->findLegacyUser(nick);
+                user = ctx()->getClientManager()->findLegacyUser(nick);
                 if(!user)
                     continue;
             }
 
-            dcpp::getContext()->getClientManager()->setIPUser(user, remoteIp);
+            ctx()->getClientManager()->setIPUser(user, remoteIp);
 
             string tth;
             if(hubName.compare(0, 4, "TTH:") == 0) {
                 tth = hubName.substr(4);
-                StringList names = dcpp::getContext()->getClientManager()->getHubNames(user->getCID(), Util::emptyString);
+                StringList names = ctx()->getClientManager()->getHubNames(user->getCID(), Util::emptyString);
                 hubName = names.empty() ? _("Offline") : Util::toString(names);
             }
 
@@ -285,7 +285,7 @@ int SearchManager::UdpQueue::run() {
 
             SearchResultPtr sr(new SearchResult(user, type, slots, freeSlots, size,
                                                 file, hubName, url, remoteIp, TTHValue(tth), Util::emptyString));
-            dcpp::getContext()->getSearchManager()->fire(SearchManagerListener::SR(), sr);
+            ctx()->getSearchManager()->fire(SearchManagerListener::SR(), sr);
 
         } else if(x.compare(1, 4, "RES ") == 0 && x[x.length() - 1] == 0x0a) {
             AdcCommand c(x.substr(0, x.length()-1));
@@ -295,14 +295,14 @@ int SearchManager::UdpQueue::run() {
             if(cid.size() != 39)
                 continue;
 
-            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+            UserPtr user = ctx()->getClientManager()->findUser(CID(cid));
             if(!user)
                 continue;
 
             // This should be handled by AdcCommand really...
             c.getParameters().erase(c.getParameters().begin());
 
-            dcpp::getContext()->getSearchManager()->onRES(c, user, remoteIp);
+            ctx()->getSearchManager()->onRES(c, user, remoteIp);
 
         } if(x.compare(1, 4, "PSR ") == 0 && x[x.length() - 1] == 0x0a) {
             AdcCommand c(x.substr(0, x.length()-1));
@@ -312,12 +312,12 @@ int SearchManager::UdpQueue::run() {
             if(cid.size() != 39)
                 continue;
 
-            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+            UserPtr user = ctx()->getClientManager()->findUser(CID(cid));
             // when user == NULL then it is probably NMDC user, check it later
 
             c.getParameters().erase(c.getParameters().begin());
 
-            dcpp::getContext()->getSearchManager()->onPSR(c, user, remoteIp);
+            ctx()->getSearchManager()->onPSR(c, user, remoteIp);
 
         } /*else if(x.compare(1, 4, "SCH ") == 0 && x[x.length() - 1] == 0x0a) {
         try {

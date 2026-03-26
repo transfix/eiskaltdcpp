@@ -60,11 +60,11 @@ public:
     /** We don't keep leaves for blocks smaller than this... */
     static const int64_t MIN_BLOCK_SIZE;
 
-    HashManager() {
-        dcpp::getContext()->getTimerManager()->addListener(this);
+    HashManager() : hasher(ctx()), store(ctx()) {
+        ctx()->getTimerManager()->addListener(this);
     }
     virtual ~HashManager() {
-        dcpp::getContext()->getTimerManager()->removeListener(this);
+        ctx()->getTimerManager()->removeListener(this);
         hasher.join();
     }
 
@@ -111,10 +111,12 @@ public:
     }
 
     struct HashPauser {
-        HashPauser();
+        explicit HashPauser(DCContext* ctx);
         ~HashPauser();
 
+        [[nodiscard]] DCContext* ctx() const noexcept { return ctx_; }
     private:
+        DCContext* ctx_;
         bool resume;
     };
 
@@ -126,7 +128,9 @@ public:
 private:
     class Hasher : public Thread {
     public:
-        Hasher() : stop(false), running(false), paused(0), rebuild(false), currentSize(0) { }
+        explicit Hasher(DCContext* ctx) : stop(false), running(false), paused(0), rebuild(false), currentSize(0), ctx_(ctx) { }
+
+        [[nodiscard]] DCContext* ctx() const noexcept { return ctx_; }
 
         void hashFile(const string& fileName, int64_t size) noexcept;
 
@@ -155,6 +159,7 @@ private:
         bool rebuild;
         string currentFile;
         int64_t currentSize;
+        DCContext* ctx_;
 
         void instantPause();
     };
@@ -163,7 +168,8 @@ private:
 
     class HashStore {
     public:
-        HashStore();
+        explicit HashStore(DCContext* ctx);
+        [[nodiscard]] DCContext* ctx() const noexcept { return ctx_; }
         void addFile(const string& aFileName, uint32_t aTimeStamp, const TigerTree& tth, bool aUsed);
 
         void load();
@@ -211,6 +217,7 @@ private:
         unordered_map<TTHValue, TreeInfo> treeIndex;
 
         bool dirty;
+        DCContext* ctx_;
 
         void createDataFile(const string& name);
 

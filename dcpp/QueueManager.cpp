@@ -519,9 +519,9 @@ QueueManager::QueueManager() :
     dirty(true),
     nextSearch(0)
 {
-    dcpp::getContext()->getTimerManager()->addListener(this);
-    dcpp::getContext()->getSearchManager()->addListener(this);
-    dcpp::getContext()->getClientManager()->addListener(this);
+    ctx()->getTimerManager()->addListener(this);
+    ctx()->getSearchManager()->addListener(this);
+    ctx()->getClientManager()->addListener(this);
 
     File::ensureDirectory(Util::getListPath());
 }

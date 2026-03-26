@@ -61,10 +61,10 @@ ShareManager::ShareManager() : hits(0), xmlListLen(0), bzXmlListLen(0),
     xmlDirty(true), forceXmlRefresh(false), refreshDirs(false), update(false), initial(true), listN(0), refreshing(false),
     lastXmlUpdate(0), lastFullUpdate(GET_TICK()), bloom(1<<20)
 {
-    dcpp::getContext()->getSettingsManager()->addListener(this);
-    dcpp::getContext()->getTimerManager()->addListener(this);
-    dcpp::getContext()->getQueueManager()->addListener(this);
-    dcpp::getContext()->getHashManager()->addListener(this);
+    ctx()->getSettingsManager()->addListener(this);
+    ctx()->getTimerManager()->addListener(this);
+    ctx()->getQueueManager()->addListener(this);
+    ctx()->getHashManager()->addListener(this);
 }
 
 ShareManager::~ShareManager() {
@@ -482,7 +482,7 @@ void ShareManager::addDirectory(const string& realPath, const string& virtualNam
         removeDirectory(i);
     }
 
-    HashManager::HashPauser pauser;
+    HashManager::HashPauser pauser(ctx());
 
     auto dp = buildTree(realPath, Directory::Ptr());
 
@@ -577,7 +577,7 @@ void ShareManager::removeDirectory(const string& realPath) {
 
     shares.erase(i);
 
-    HashManager::HashPauser pauser;
+    HashManager::HashPauser pauser(ctx());
 
     // Readd all directories with the same vName
     for(i = shares.begin(); i != shares.end(); ++i) {
@@ -844,7 +844,7 @@ int ShareManager::run() {
         refreshDirs = false;
 
     if(refreshDirs) {
-        HashManager::HashPauser pauser;
+        HashManager::HashPauser pauser(ctx());
         ctx()->getLogManager()->message(_("File list refresh initiated"));
 
         lastFullUpdate = GET_TICK();
@@ -1267,7 +1267,7 @@ void ShareManager::search(SearchResultList& results, const string& aString, int 
                                                     i->second->getParent()->getFullName() + i->second->getName(), i->second->getTTH()));
 
                 results.push_back(sr);
-                dcpp::getContext()->getShareManager()->addHits(1);
+                ctx()->getShareManager()->addHits(1);
             }
         }
         return;

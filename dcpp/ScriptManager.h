@@ -113,7 +113,7 @@ class ScriptManager: public ScriptInstance, public Speaker<ScriptManagerListener
 
 public:
     ScriptManager();
-    virtual ~ScriptManager() noexcept { if (L) lua_close(L); if(timerEnabled) dcpp::getContext()->getTimerManager()->removeListener(this); }
+    virtual ~ScriptManager() noexcept { if (L) lua_close(L); if(timerEnabled) ctx()->getTimerManager()->removeListener(this); }
 
     void load();
     void  SendDebugMessage(const string& s);

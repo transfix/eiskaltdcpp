@@ -93,8 +93,10 @@ public:
 private:
     class UdpQueue: public Thread {
     public:
-        UdpQueue() : stop(false) {}
+        explicit UdpQueue(DCContext* ctx) : stop(false), ctx_(ctx) {}
         ~UdpQueue() noexcept { shutdown(); }
+
+        [[nodiscard]] DCContext* ctx() const noexcept { return ctx_; }
 
         int run();
         void shutdown() {
@@ -117,6 +119,7 @@ private:
         deque<pair<string, string> > resultList;
 
         bool stop;
+        DCContext* ctx_;
     } queue;
 
     CriticalSection cs;

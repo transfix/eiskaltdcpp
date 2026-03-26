@@ -33,9 +33,9 @@
 namespace dcpp {
 
 FavoriteManager::FavoriteManager() : lastId(0), useHttp(false), running(false), c(nullptr), lastServer(0), listType(TYPE_NORMAL), dontSave(false) {
-    dcpp::getContext()->getSettingsManager()->addListener(this);
-    if (dcpp::getContext()->getClientManager())
-        dcpp::getContext()->getClientManager()->addListener(this);
+    ctx()->getSettingsManager()->addListener(this);
+    if (ctx()->getClientManager())
+        ctx()->getClientManager()->addListener(this);
 
     File::ensureDirectory(Util::getHubListsPath());
 }
@@ -43,7 +43,7 @@ FavoriteManager::FavoriteManager() : lastId(0), useHttp(false), running(false), 
 FavoriteManager::~FavoriteManager() {
     // Guard against null context — can happen if the manager outlives the
     // global DCContext during static destruction (e.g. unit tests).
-    if (dcpp::getContext()) {
+    if (ctx()) {
         if (ctx()->getClientManager())
             ctx()->getClientManager()->removeListener(this);
         if (ctx()->getSettingsManager())

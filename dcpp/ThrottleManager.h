@@ -79,7 +79,7 @@ private:
 public:
     ThrottleManager() : activeWaiter(-1), n_lock(0), halt(0), downTokens(0), upTokens(0)
     {
-        dcpp::getContext()->getTimerManager()->addListener(this);
+        ctx()->getTimerManager()->addListener(this);
     }
 
     virtual ~ThrottleManager();

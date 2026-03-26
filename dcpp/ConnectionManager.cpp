@@ -39,7 +39,7 @@ ConnectionManager::ConnectionManager() :
     secureServer(0),
     shuttingDown(false)
 {
-    dcpp::getContext()->getTimerManager()->addListener(this);
+    ctx()->getTimerManager()->addListener(this);
 
     features = {
         UserConnection::FEATURE_MINISLOTS,
@@ -60,14 +60,14 @@ ConnectionManager::ConnectionManager() :
 void ConnectionManager::listen() {
     disconnect();
 
-    server = new Server(false, Util::toString(SETTING(TCP_PORT)), SETTING(BIND_ADDRESS));
+    server = new Server(ctx(), false, Util::toString(SETTING(TCP_PORT)), SETTING(BIND_ADDRESS));
 
     if(!ctx()->getCryptoManager()->TLSOk()) {
         dcdebug("Skipping secure port: %d\n", SETTING(TLS_PORT));
         return;
     }
 
-    secureServer = new Server(true, Util::toString(SETTING(TLS_PORT)), SETTING(BIND_ADDRESS));
+    secureServer = new Server(ctx(), true, Util::toString(SETTING(TLS_PORT)), SETTING(BIND_ADDRESS));
 }
 
 ConnectionQueueItem::ConnectionQueueItem(const HintedUser &aUser, bool aDownload) :
@@ -241,7 +241,7 @@ const string& ConnectionManager::getSecurePort() const {
 static const uint32_t FLOOD_TRIGGER = 20000;
 static const uint32_t FLOOD_ADD = 2000;
 
-ConnectionManager::Server::Server(const bool secure_, const string& aPort, const string& ip_ /* = "0.0.0.0" */) : secure(secure_), die(false) {
+ConnectionManager::Server::Server(DCContext* ctx, const bool secure_, const string& aPort, const string& ip_ /* = "0.0.0.0" */) : secure(secure_), die(false), ctx_(ctx) {
     sock.create();
     sock.setSocketOpt(SO_REUSEADDR, 1);
     ip = SETTING(BIND_IFACE)? sock.getIfaceI4(SETTING(BIND_IFACE_NAME)).c_str() : ip_;
@@ -262,7 +262,7 @@ int ConnectionManager::Server::run() noexcept {
         try {
             while(!die) {
                 if(sock.wait(POLL_TIMEOUT, Socket::WAIT_READ) == Socket::WAIT_READ) {
-                    dcpp::getContext()->getConnectionManager()->accept(sock, secure);
+                    ctx()->getConnectionManager()->accept(sock, secure);
                 }
             }
         } catch(const Exception& e) {
@@ -277,7 +277,7 @@ int ConnectionManager::Server::run() noexcept {
                 sock.bind(port, ip);
                 sock.listen();
                 if(failed) {
-                    dcpp::getContext()->getLogManager()->message(_("Connectivity restored"));
+                    ctx()->getLogManager()->message(_("Connectivity restored"));
                     failed = false;
                 }
                 break;
@@ -285,7 +285,7 @@ int ConnectionManager::Server::run() noexcept {
                 dcdebug("ConnectionManager::Server::run Stopped listening: %s\n", e.getError().c_str());
 
                 if(!failed) {
-                    dcpp::getContext()->getLogManager()->message(str(F_("Connectivity error: %1%") % e.getError()));
+                    ctx()->getLogManager()->message(str(F_("Connectivity error: %1%") % e.getError()));
                     failed = true;
                 }
 

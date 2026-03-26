@@ -270,7 +270,7 @@ void HashManager::HashStore::addTree(const TigerTree& tt) noexcept {
             treeIndex.emplace(tt.getRoot(), TreeInfo(tt.getFileSize(), index, tt.getBlockSize()));
             dirty = true;
         } catch (const FileException& e) {
-            dcpp::getContext()->getLogManager()->message(str(F_("Error saving hash data: %1%") % e.getError()));
+            ctx()->getLogManager()->message(str(F_("Error saving hash data: %1%") % e.getError()));
         }
     }
 }
@@ -427,7 +427,7 @@ void HashManager::HashStore::rebuild() {
         dirty = true;
         save();
     } catch (const Exception& e) {
-        dcpp::getContext()->getLogManager()->message(str(F_("Hashing failed: %1%") % e.getError()));
+        ctx()->getLogManager()->message(str(F_("Hashing failed: %1%") % e.getError()));
     }
 }
 
@@ -482,7 +482,7 @@ void HashManager::HashStore::save() {
 
             dirty = false;
         } catch (const FileException& e) {
-            dcpp::getContext()->getLogManager()->message(str(F_("Error saving hash data: %1%") % e.getError()));
+            ctx()->getLogManager()->message(str(F_("Error saving hash data: %1%") % e.getError()));
         }
     }
 }
@@ -581,8 +581,8 @@ void HashLoader::startTag(const string& name, StringPairList& attribs, bool simp
     }
 }
 
-HashManager::HashStore::HashStore() :
-    dirty(false) {
+HashManager::HashStore::HashStore(DCContext* ctx) :
+    dirty(false), ctx_(ctx) {
 
     Util::migrate(getDataFile());
 
@@ -615,7 +615,7 @@ void HashManager::HashStore::createDataFile(const string& name) {
         dat.write(&start, sizeof(start));
 
     } catch (const FileException& e) {
-        dcpp::getContext()->getLogManager()->message(str(F_("Error creating hash data file: %1%") % e.getError()));
+        ctx()->getLogManager()->message(str(F_("Error creating hash data file: %1%") % e.getError()));
     }
 }
 
@@ -964,9 +964,9 @@ int HashManager::Hasher::run() {
         if(stop)
             break;
         if(rebuild) {
-            dcpp::getContext()->getHashManager()->doRebuild();
+            ctx()->getHashManager()->doRebuild();
             rebuild = false;
-            dcpp::getContext()->getLogManager()->message(_("Hash database rebuilt"));
+            ctx()->getLogManager()->message(_("Hash database rebuilt"));
             continue;
         }
         {
@@ -1060,12 +1060,12 @@ int HashManager::Hasher::run() {
                     speed = size * _LL(1000) / (end - start);
                 }
                 if(xcrc32 && xcrc32->getValue() != sfv.getCRC()) {
-                    dcpp::getContext()->getLogManager()->message(str(F_("%1% not shared; calculated CRC32 does not match the one found in SFV file.") % Util::addBrackets(fname)));
+                    ctx()->getLogManager()->message(str(F_("%1% not shared; calculated CRC32 does not match the one found in SFV file.") % Util::addBrackets(fname)));
                 } else {
-                    dcpp::getContext()->getHashManager()->hashDone(fname, timestamp, *tth, speed, size);
+                    ctx()->getHashManager()->hashDone(fname, timestamp, *tth, speed, size);
                 }
             } catch(const FileException& e) {
-                dcpp::getContext()->getLogManager()->message(str(F_("Error hashing %1%: %2%") % Util::addBrackets(fname) % e.getError()));
+                ctx()->getLogManager()->message(str(F_("Error hashing %1%: %2%") % Util::addBrackets(fname) % e.getError()));
             }
         }
         {
@@ -1088,13 +1088,13 @@ int HashManager::Hasher::run() {
     return 0;
 }
 
-HashManager::HashPauser::HashPauser() {
-    resume = !dcpp::getContext()->getHashManager()->isHashingPaused();
+HashManager::HashPauser::HashPauser(DCContext* ctx) : ctx_(ctx) {
+    resume = !ctx_->getHashManager()->isHashingPaused();
 }
 
 HashManager::HashPauser::~HashPauser() {
     if(resume)
-        dcpp::getContext()->getHashManager()->resumeHashing();
+        ctx()->getHashManager()->resumeHashing();
 }
 
 bool HashManager::pauseHashing() noexcept {
@@ -1118,13 +1118,13 @@ void HashManager::on(TimerManagerListener::Second, uint64_t tick) noexcept {
     static bool firstcycle = true;
     if (firstcycle){
         int delay = SETTING(HASHING_START_DELAY);
-        SettingsManager *SM = dcpp::getContext()->getSettingsManager();
+        SettingsManager *SM = ctx()->getSettingsManager();
         if (delay > 1800){
             delay = 1800;
             SM->set(SettingsManager::HASHING_START_DELAY, delay);
         }
 
-        if (!dcpp::getContext()->getShareManager()->isRefreshing()){
+        if (!ctx()->getShareManager()->isRefreshing()){
             string  curFile;
             uint64_t bytesLeft;
             size_t  filesLeft = -1;

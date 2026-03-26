@@ -34,9 +34,9 @@
 namespace dcpp {
 
 FinishedManager::FinishedManager() {
-    dcpp::getContext()->getDownloadManager()->addListener(this);
-    dcpp::getContext()->getUploadManager()->addListener(this);
-    dcpp::getContext()->getQueueManager()->addListener(this);
+    ctx()->getDownloadManager()->addListener(this);
+    ctx()->getUploadManager()->addListener(this);
+    ctx()->getQueueManager()->addListener(this);
 }
 
 FinishedManager::~FinishedManager() {
