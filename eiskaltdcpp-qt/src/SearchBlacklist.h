@@ -34,7 +34,7 @@ public:
         TTH
     };
 
-    SearchBlacklist();
+    explicit SearchBlacklist(dcpp::DCContext& ctx);
     ~SearchBlacklist() override;
 
     /// Access through QtContext — NOT a singleton.

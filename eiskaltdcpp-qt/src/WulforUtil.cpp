@@ -83,7 +83,8 @@ using namespace dcpp;
 
 const QString WulforUtil::magnetSignature = "magnet:?xt=urn:tree:tiger:";
 
-WulforUtil::WulforUtil()
+WulforUtil::WulforUtil(dcpp::DCContext& ctx)
+    : QtContextAware(ctx)
 {
     qRegisterMetaType< QMap<QString,QVariant> >("VarMap");
     qRegisterMetaType<dcpp::UserPtr>("dcpp::UserPtr");

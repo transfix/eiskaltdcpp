@@ -28,7 +28,7 @@ public:
     bool isRTL() { return rtl; }
 
 public:
-    ResourceManager() : rtl(false) { }
+    explicit ResourceManager(DCContext& ctx) : ContextAware(ctx), rtl(false) { }
     virtual ~ResourceManager() { }
 
 private:

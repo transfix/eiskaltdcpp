@@ -105,8 +105,8 @@ protected:
     }
 
 public:
-    FinishedTransfers(QWidget *parent = nullptr) :
-        FinishedTransferProxy(parent), db_opened(false)
+    FinishedTransfers(dcpp::DCContext& ctx, QWidget *parent = nullptr) :
+        QtContextAware(ctx), FinishedTransferProxy(parent), db_opened(false)
     {
         setupUi(this);
 

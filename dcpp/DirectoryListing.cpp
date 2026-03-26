@@ -31,11 +31,12 @@
 #include "SimpleXMLReader.h"
 #include "StringTokenizer.h"
 #include "version.h"
-#include "DCPlusPlus.h"
+#include "DCContext.h"
 
 namespace dcpp {
 
-DirectoryListing::DirectoryListing(const HintedUser& aUser) :
+DirectoryListing::DirectoryListing(DCContext& ctx, const HintedUser& aUser) :
+    ctx_(ctx),
     user(aUser),
     root(new Directory(NULL, Util::emptyString, false, false))
 {
@@ -45,7 +46,7 @@ DirectoryListing::~DirectoryListing() {
     delete root;
 }
 
-UserPtr DirectoryListing::getUserFromFilename(const string& fileName) {
+UserPtr DirectoryListing::getUserFromFilename(DCContext& ctx, const string& fileName) {
     // General file list name format: [username].[CID].[xml|xml.bz2]
 
     string name = Util::getFileName(fileName);

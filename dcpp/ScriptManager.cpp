@@ -40,9 +40,9 @@ namespace dcpp {
 // are free functions with no `this`) can reach the core context.
 static const char kLuaDCContextKey = 'K'; // unique address used as key
 
-static void luaStoreDCContext(lua_State* L, DCContext* ctx) {
+static void luaStoreDCContext(lua_State* L, DCContext& ctx) {
     lua_pushlightuserdata(L, const_cast<char*>(&kLuaDCContextKey));
-    lua_pushlightuserdata(L, ctx);
+    lua_pushlightuserdata(L, &ctx);
     lua_settable(L, LUA_REGISTRYINDEX);
 }
 
@@ -352,7 +352,7 @@ int LuaManager::RunTimer(lua_State* L) {
 lua_State* ScriptInstance::L = 0;       //filled in by scriptmanager.
 CriticalSection ScriptInstance::cs;
 
-ScriptManager::ScriptManager() : timerEnabled(false) {
+ScriptManager::ScriptManager(DCContext& ctx) : ContextAware(ctx), timerEnabled(false) {
 }
 
 void ScriptManager::load() {
@@ -394,7 +394,7 @@ void ScriptManager::load() {
 
     s.create(Socket::TYPE_UDP);
 
-    ctx()->getClientManager()->addListener(this);
+    ctx().getClientManager()->addListener(this);
 }
 
 void ScriptInstance::EvaluateChunk(const string& chunk) {
@@ -455,7 +455,7 @@ void ScriptInstance::EvaluateFile(const string& fn) {
 }
 
 void ScriptManager::SendDebugMessage(const string &mess) {
-    //ctx()->getLogManager()->message(mess);
+    //ctx().getLogManager()->message(mess);
     dcdebug("%s\n", mess.c_str()); // temporary
 }
 

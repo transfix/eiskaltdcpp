@@ -32,7 +32,8 @@
 
 using namespace dcpp;
 
-FavoriteUsers::FavoriteUsers(QWidget *parent) :
+FavoriteUsers::FavoriteUsers(dcpp::DCContext& ctx, QWidget *parent) :
+    QtContextAware(ctx),
     QWidget(parent)
 {
     setupUi(this);

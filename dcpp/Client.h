@@ -167,7 +167,7 @@ public:
     void reloadSettings(bool updateNick);
 protected:
     friend class ClientManager;
-    Client(const string& hubURL, char separator, bool secure_, Socket::Protocol proto_);
+    Client(DCContext& ctx, const string& hubURL, char separator, bool secure_, Socket::Protocol proto_);
     virtual ~Client();
     struct Counts {
     private:

@@ -70,7 +70,7 @@ private:
     void failDownload(UserConnection* aSource, const string& reason);
 
 public:
-    DownloadManager();
+    explicit DownloadManager(DCContext& ctx);
     virtual ~DownloadManager();
 
 private:

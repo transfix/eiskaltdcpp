@@ -45,12 +45,12 @@ protected:
     virtual void on(TTHDone, const dcpp::string& , const dcpp::TTHValue&) throw();
 
 public:
-    HashManagerScript(QObject *parent = nullptr);
+    HashManagerScript(dcpp::DCContext& ctx, QObject *parent = nullptr);
     ~HashManagerScript();
 
 private:
-    HashManagerScript(const HashManagerScript&);
-    HashManagerScript &operator=(const HashManagerScript&);
+    HashManagerScript(const HashManagerScript&) = delete;
+    HashManagerScript& operator=(const HashManagerScript&) = delete;
 
     dcpp::HashManager *HM;
 };

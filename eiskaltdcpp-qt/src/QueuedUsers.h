@@ -120,7 +120,7 @@ protected:
     void closeEvent(QCloseEvent *e);
 
 public:
-    QueuedUsers();
+    explicit QueuedUsers(dcpp::DCContext& ctx);
     ~QueuedUsers() override;
 
 

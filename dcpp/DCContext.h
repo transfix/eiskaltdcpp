@@ -57,22 +57,22 @@ class ScriptManager;
 class DCContext;  // forward for ContextAware
 
 /**
- * Mixin base for classes that hold a back-pointer to their owning DCContext.
+ * Mixin base for classes that hold a back-reference to their owning DCContext.
  *
- * All manager classes inherit from ContextAware. During the migration period
- * ctx() may return nullptr when managers are still created via the Singleton path.
+ * All manager classes inherit from ContextAware.  The context is set once
+ * at construction time and is guaranteed non-null for the lifetime of the
+ * object — no two-phase init, no global state.
  */
 class ContextAware {
 public:
-    [[nodiscard]] DCContext* ctx() const noexcept { return ctx_; }
-    void setContext(DCContext* ctx) noexcept { ctx_ = ctx; }
+    [[nodiscard]] DCContext& ctx() const noexcept { return ctx_; }
 
 protected:
-    ContextAware() noexcept = default;
+    explicit ContextAware(DCContext& ctx) noexcept : ctx_(ctx) {}
     ~ContextAware() = default;
 
 private:
-    DCContext* ctx_ = nullptr;
+    DCContext& ctx_;
 };
 
 /**
@@ -82,15 +82,15 @@ private:
  * exact reverse.  Each manager is held in a unique_ptr so destruction
  * happens in reverse declaration order automatically.
  *
- * Usage (migration period — singletons still active):
+ * Usage:
  *   auto ctx = std::make_unique<DCContext>();
- *   ctx->startup(progressCallback);
+ *   ctx.startup(progressCallback);
  *   // … run application …
- *   ctx->shutdown();
+ *   ctx.shutdown();
  *   ctx.reset();  // or let scope handle it
  *
- * Every owned manager's ctx() will point back here for cross-manager
- * access without going through global singletons.
+ * Every owned manager's ctx() returns a reference back here for
+ * cross-manager access without going through global singletons.
  */
 class DCContext {
 public:

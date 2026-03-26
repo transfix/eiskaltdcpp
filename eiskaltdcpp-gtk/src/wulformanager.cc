@@ -20,6 +20,7 @@
 
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
+#include "GtkContextAware.hh"
 #include <iostream>
 #include <glib/gi18n.h>
 #include "hashdialog.hh"
@@ -44,8 +45,9 @@ void setWulforManagerInstance(WulforManager *instance)
     s_managerInstance = instance;
 }
 
-WulforManager::WulforManager(int argc, char **argv)
-    : clientCondValue(0)
+WulforManager::WulforManager(dcpp::DCContext& dcCtx, int argc, char **argv)
+    : dcCtx_(dcCtx)
+    , clientCondValue(0)
     , abort(false)
 {
     if (argc > 1)
@@ -109,7 +111,7 @@ WulforManager::WulforManager(int argc, char **argv)
     // Post-init: apply settings and create main window
     std::string lang = WGETS("translation-lang");
     if (!lang.empty())
-        dcpp::Util::setLang(lang);
+        dcpp::Util::setLang(dcCtx_, lang);
 
     createMainWindow();
     dcpp::Text::hubDefaultCharset = WGETS("default-charset");
@@ -151,7 +153,7 @@ WulforManager::~WulforManager()
 void WulforManager::createMainWindow()
 {
     dcassert(!mainWin);
-    mainWin = new MainWindow();
+    mainWin = new MainWindow(dcCtx_);
     WulforManager::insertEntry_gui(mainWin);
     mainWin->show();
 }

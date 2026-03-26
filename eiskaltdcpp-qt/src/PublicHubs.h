@@ -76,7 +76,7 @@ Q_SIGNALS:
     void coreCacheLoaded(const QString&);
 
 public:
-    PublicHubs(QWidget *parent = nullptr);
+    PublicHubs(dcpp::DCContext& ctx, QWidget *parent = nullptr);
     ~PublicHubs();
 
 

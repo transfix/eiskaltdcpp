@@ -60,7 +60,7 @@ public:
     };
 
 public:
-    DebugManager() noexcept { };
+    explicit DebugManager(DCContext& ctx) noexcept : ContextAware(ctx) { };
     virtual ~DebugManager() noexcept { };
 
 private:
@@ -70,7 +70,7 @@ private:
 #define DETECTION_DEBUG(m) if (dcpp::getContext()->getDebugManager()) dcpp::getContext()->getDebugManager()->SendDetectionMessage(m);
 
 // Context-aware versions — for use inside ContextAware member functions
-#define CTX_COMMAND_DEBUG(a,b,c) if (this->ctx()->getDebugManager()) this->ctx()->getDebugManager()->SendCommandMessage(a,b,c);
-#define CTX_DETECTION_DEBUG(m) if (this->ctx()->getDebugManager()) this->ctx()->getDebugManager()->SendDetectionMessage(m);
+#define CTX_COMMAND_DEBUG(a,b,c) if (this->ctx().getDebugManager()) this->ctx().getDebugManager()->SendCommandMessage(a,b,c);
+#define CTX_DETECTION_DEBUG(m) if (this->ctx().getDebugManager()) this->ctx().getDebugManager()->SendDetectionMessage(m);
 
 } // namespace dcpp

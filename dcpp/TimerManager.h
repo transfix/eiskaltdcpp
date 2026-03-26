@@ -52,7 +52,7 @@ public:
     static time_t getTime() { return (time_t)time(NULL); }
     static uint64_t getTick();
 public:
-    TimerManager();
+    explicit TimerManager(DCContext& ctx);
     virtual ~TimerManager();
 
 private:

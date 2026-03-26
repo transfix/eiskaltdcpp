@@ -154,7 +154,8 @@ private:
 
     class FileMover : public Thread {
     public:
-        FileMover() : active(false) { }
+        explicit FileMover(DCContext& ctx) : ctx_(ctx), active(false) { }
+        DCContext& ctx() const { return ctx_; }
         virtual ~FileMover() { join(); }
 
         void moveFile(const string& source, const string& target);
@@ -162,6 +163,7 @@ private:
     private:
         typedef pair<string, string> FilePair;
 
+        DCContext& ctx_;
         bool active;
         CriticalSection cs;
 
@@ -194,7 +196,8 @@ private:
     /** All queue items by target */
     class FileQueue {
     public:
-        FileQueue() : lastInsert(queue.end()) { }
+        explicit FileQueue(DCContext& ctx) : ctx_(ctx), lastInsert(queue.end()) { }
+        DCContext& ctx() const { return ctx_; }
         ~FileQueue() {
             for(auto& i : queue)
                 delete i.second;
@@ -219,6 +222,7 @@ private:
         void move(QueueItem* qi, const string& aTarget);
         void remove(QueueItem* qi);
     private:
+        DCContext& ctx_;
         QueueItem::StringMap queue;
         /** A hint where to insert an item... */
         QueueItem::StringIter lastInsert;
@@ -227,6 +231,8 @@ private:
     /** All queue items indexed by user (this is a cache for the FileQueue really...) */
     class UserQueue {
     public:
+        explicit UserQueue(DCContext& ctx) : ctx_(ctx) { }
+        DCContext& ctx() const { return ctx_; }
         void add(QueueItem* qi);
         void add(QueueItem* qi, const UserPtr& aUser);
         QueueItem* getNext(const UserPtr& aUser, QueueItem::Priority minPrio = QueueItem::LOWEST, int64_t wantedSize = 0,int64_t lastSpeed =0 ,bool allowRemove = true);
@@ -244,6 +250,7 @@ private:
         }
         int64_t getQueued(const UserPtr& aUser) const;
     private:
+        DCContext& ctx_;
         /** QueueItems by priority and user (this is where the download order is determined) */
         QueueItem::UserListMap userQueue[QueueItem::LAST];
         /** Currently running downloads, a QueueItem is always either here or in the userQueue */
@@ -251,7 +258,7 @@ private:
     };
 
 public:
-    QueueManager();
+    explicit QueueManager(DCContext& ctx);
     virtual ~QueueManager();
 
 private:
@@ -282,7 +289,7 @@ private:
 
     void load(const SimpleXML& aXml);
     void moveFile(const string& source, const string& target);
-    static void moveFile_(const string& source, const string& target);
+    static void moveFile_(DCContext& ctx, const string& source, const string& target);
     void moveStuckFile(QueueItem* qi);
     void rechecked(QueueItem* qi);
 

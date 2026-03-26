@@ -42,7 +42,7 @@ typedef std::vector<IPFilterElem*> IPList;
 class IPFilter : public dcpp::ContextAware
 {
 public:
-    IPFilter();
+    explicit IPFilter(dcpp::DCContext& ctx);
     virtual ~IPFilter();
 
     static uint32_t StringToUint32(const std::string&);

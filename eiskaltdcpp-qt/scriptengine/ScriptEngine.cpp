@@ -215,7 +215,8 @@ QJSValue ScriptBridge::createIcon(const QString &path) {
     return m_engine->toScriptValue(QIcon(path));
 }
 
-ScriptEngine::ScriptEngine() :
+ScriptEngine::ScriptEngine(dcpp::DCContext& ctx) :
+        QtContextAware(ctx),
         QObject(nullptr)
 {
     DEBUG_BLOCK

@@ -200,7 +200,7 @@ ShareBrowser::ShareBrowser(UserPtr _user, const QString &_file, const QString &_
         proxy(nullptr),
         file(_file),
         jump_to(_jump_to),
-        listing(HintedUser(_user, "")),
+        listing(qtCtx()->dcCtx(), HintedUser(_user, "")),
         user(_user),
         share_size(0),
         current_size(0),

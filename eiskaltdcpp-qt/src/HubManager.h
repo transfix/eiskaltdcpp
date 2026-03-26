@@ -33,7 +33,7 @@ friend class HubFrame;
 typedef QHash<QString, HubFrame*> HubHash;
 
 public:
-    explicit HubManager();
+    explicit HubManager(dcpp::DCContext& ctx);
     ~HubManager() override;
 
 

@@ -76,13 +76,13 @@ double Transfer::getAverageSpeed() const {
 
 void Transfer::getParams(const UserConnection& aSource, ParamMap& params) {
     params["userCID"] = aSource.getUser()->getCID().toBase32();
-    params["userNI"] = Util::toString(dcpp::getContext()->getClientManager()->getNicks(aSource.getUser()->getCID(), aSource.getHubUrl()));
+    params["userNI"] = Util::toString(aSource.ctx().getClientManager()->getNicks(aSource.getUser()->getCID(), aSource.getHubUrl()));
     params["userI4"] = aSource.getRemoteIp();
-    StringList hubNames = dcpp::getContext()->getClientManager()->getHubNames(aSource.getUser()->getCID(), aSource.getHubUrl());
+    StringList hubNames = aSource.ctx().getClientManager()->getHubNames(aSource.getUser()->getCID(), aSource.getHubUrl());
     if(hubNames.empty())
         hubNames.push_back(_("Offline"));
     params["hub"] = Util::toString(hubNames);
-    StringList hubs = dcpp::getContext()->getClientManager()->getHubs(aSource.getUser()->getCID(), aSource.getHubUrl());
+    StringList hubs = aSource.ctx().getClientManager()->getHubs(aSource.getUser()->getCID(), aSource.getHubUrl());
     if(hubs.empty())
         hubs.push_back(_("Offline"));
     params["hubURL"] = Util::toString(hubs);

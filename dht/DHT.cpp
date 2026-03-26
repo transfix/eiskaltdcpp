@@ -44,7 +44,7 @@
 namespace dht
 {
 
-    DHT::DHT(dcpp::DCContext* ctx)
+    DHT::DHT(dcpp::DCContext& ctx)
         : bucket(nullptr)
         , lastExternalIP(Util::getLocalIp()) // hack
         , lastPacket(0)
@@ -80,13 +80,13 @@ namespace dht
             return;
 
         // start with global firewalled status
-        firewalled = !ctx_->getClientManager()->isActive(Util::emptyString);
+        firewalled = !ctx_.getClientManager()->isActive(Util::emptyString);
         requestFWCheck = true;
 
         if(!bucket)
         {
             if(!BOOLSETTING(NO_IP_OVERRIDE))
-                ctx_->getSettingsManager()->set(SettingsManager::EXTERNAL_IP, Util::emptyString);
+                ctx_.getSettingsManager()->set(SettingsManager::EXTERNAL_IP, Util::emptyString);
 
             bucket = new KBucket(*this);
 
@@ -151,7 +151,7 @@ namespace dht
                 return;
 
             // ignore message from myself
-            if(CID(cid) == ctx_->getClientManager()->getMe()->getCID() || ip == lastExternalIP)
+            if(CID(cid) == ctx_.getClientManager()->getMe()->getCID() || ip == lastExternalIP)
                 return;
 
             lastPacket = GET_TICK();
@@ -236,7 +236,7 @@ namespace dht
     Node::Ptr DHT::createNode(const CID& cid, const string& ip, const string& port, bool update, bool isUdpKeyValid)
     {
         // create user as offline (only TCP connected users will be online)
-        UserPtr u = ctx_->getClientManager()->getUser(cid);
+        UserPtr u = ctx_.getClientManager()->getUser(cid);
 
         Lock l(cs);
         return bucket->createNode(u, ip, port, update, isUdpKeyValid);
@@ -260,7 +260,7 @@ namespace dht
                 // put him online so we can make a connection with him
                 node->inc();
                 node->setOnline(true);
-                ctx_->getClientManager()->putOnline(node.get());
+                ctx_.getClientManager()->putOnline(node.get());
             }
         }
 
@@ -313,9 +313,9 @@ namespace dht
         cmd.addParam("TY", Util::toString(type));
         cmd.addParam("VE", fullADCVersionString);
         cmd.addParam("NI", SETTING(NICK));
-        cmd.addParam("SL", Util::toString(ctx_->getUploadManager()->getSlots()));
+        cmd.addParam("SL", Util::toString(ctx_.getUploadManager()->getSlots()));
 
-        int limit = ctx_->getThrottleManager()->getUpLimit();
+        int limit = ctx_.getThrottleManager()->getUpLimit();
         if (SETTING(THROTTLE_ENABLE) && limit > 0) {
             cmd.addParam("US", Util::toString(limit*1024));
         } else {
@@ -323,11 +323,11 @@ namespace dht
         }
 
         string su;
-        if(ctx_->getCryptoManager()->TLSOk())
+        if(ctx_.getCryptoManager()->TLSOk())
             su += ADCS_FEATURE ",";
 
         // TCP status according to global status
-        if(ctx_->getClientManager()->isActive(Util::emptyString))
+        if(ctx_.getClientManager()->isActive(Util::emptyString))
             su += TCP4_FEATURE ",";
 
         // UDP status according to UDP status check
@@ -530,13 +530,13 @@ namespace dht
 
                 try
                 {
-                    string fileName = Util::getFileName(ctx_->getShareManager()->toVirtual(TTHValue(tth)));
-                    ctx_->getLogManager()->message(str(F_("DHT (%1%): File published: %2%") % fromIP % fileName));
+                    string fileName = Util::getFileName(ctx_.getShareManager()->toVirtual(TTHValue(tth)));
+                    ctx_.getLogManager()->message(str(F_("DHT (%1%): File published: %2%") % fromIP % fileName));
                 }
                 catch(ShareException&)
                 {
                     // published non-shared file??? Maybe partial file
-                    ctx_->getLogManager()->message(str(F_("DHT (%1%): Partial file published: %2%") % fromIP % tth));
+                    ctx_.getLogManager()->message(str(F_("DHT (%1%): Partial file published: %2%") % fromIP % tth));
 
                 }
 #endif
@@ -591,19 +591,19 @@ namespace dht
                     {
                         // we are probably firewalled, so our internal UDP port is unaccessible
                         if(externalIP != lastExternalIP || !firewalled)
-                            ctx_->getLogManager()->message(str(F_("DHT: Firewalled UDP status set (IP: %1%)") % externalIP));
+                            ctx_.getLogManager()->message(str(F_("DHT: Firewalled UDP status set (IP: %1%)") % externalIP));
                         firewalled = true;
                     }
                     else
                     {
                         if(externalIP != lastExternalIP || firewalled)
-                            ctx_->getLogManager()->message(str(F_("DHT: Our UDP port seems to be opened (IP: %1%)") % externalIP));
+                            ctx_.getLogManager()->message(str(F_("DHT: Our UDP port seems to be opened (IP: %1%)") % externalIP));
 
                         firewalled = false;
                     }
 
                     if(!BOOLSETTING(NO_IP_OVERRIDE))
-                        ctx_->getSettingsManager()->set(SettingsManager::EXTERNAL_IP, externalIP);
+                        ctx_.getSettingsManager()->set(SettingsManager::EXTERNAL_IP, externalIP);
 
                     firewalledChecks.clear();
                     firewalledWanted.clear();
@@ -618,14 +618,14 @@ namespace dht
         // display message in all other cases
         //string msg = c.getParam(2);
         //if(!msg.empty())
-        //  ctx_->getLogManager()->message("DHT (" + fromIP + "): " + msg);
+        //  ctx_.getLogManager()->message("DHT (" + fromIP + "): " + msg);
     }
 
     // partial file request
     void DHT::handle(AdcCommand::PSR, const Node::Ptr& node, AdcCommand& c) throw()
     {
         c.getParameters().erase(c.getParameters().begin());  // remove CID from UDP command
-        ctx_->getSearchManager()->onPSR(c, node->getUser(), node->getIdentity().getIp());
+        ctx_.getSearchManager()->onPSR(c, node->getUser(), node->getIdentity().getIp());
     }
 
     // private message
@@ -699,7 +699,7 @@ namespace dht
                         continue;
 
                     // don't bother with myself
-                    if(ctx_->getClientManager()->getMe()->getCID() == cid)
+                    if(ctx_.getClientManager()->getMe()->getCID() == cid)
                         continue;
 
                     const string i4    = xml.getChildAttrib("I4");

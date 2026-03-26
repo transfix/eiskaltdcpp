@@ -66,6 +66,7 @@
 #include <locale.h>
 
 #include "CID.h"
+#include "DCContext.h"
 
 #include "FastAlloc.h"
 
@@ -1289,10 +1290,10 @@ string Util::getIpCountry (string IP) {
     return Util::emptyString; //if doesn't returned anything already, something is wrong...
 }
 
-void Util::setLang(const string &lang)
+void Util::setLang(DCContext& ctx, const string &lang)
 {
     if(!lang.empty()) {
-        if (SettingsManager *SM = dcpp::getContext()->getSettingsManager()) {
+        if (SettingsManager *SM = ctx.getSettingsManager()) {
             SM->set(SettingsManager::LANGUAGE, lang);
         }
 #ifdef _WIN32
@@ -1395,18 +1396,18 @@ bool Util::getAway() {
     return away;
 }
 
-void Util::setAway(bool b) {
+void Util::setAway(DCContext& ctx, bool b) {
     bool changed = b != away;
     away = b;
     if(away)
         awayTime = time(NULL);
 
     if(changed)
-        dcpp::getContext()->getClientManager()->infoUpdated();
+        ctx.getClientManager()->infoUpdated();
 }
 
-void Util::switchAway() {
-    setAway(!away);
+void Util::switchAway(DCContext& ctx) {
+    setAway(ctx, !away);
 }
 
 string Util::formatAdditionalInfo(const string& aIp, bool sIp, bool sCC) {

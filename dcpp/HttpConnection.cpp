@@ -28,7 +28,7 @@
 
 namespace dcpp {
 
-HttpConnection::HttpConnection(const string& aUserAgent) :
+HttpConnection::HttpConnection(DCContext& ctx, const string& aUserAgent) :
     userAgent(aUserAgent),
     port("80"),
     size(-1),
@@ -38,7 +38,8 @@ HttpConnection::HttpConnection(const string& aUserAgent) :
     lastTick(0),
     connState(CONN_UNKNOWN),
     connType(TYPE_POST),
-    socket(0)
+    socket(0),
+    ctx_(ctx)
 {
 }
 
@@ -129,7 +130,7 @@ void HttpConnection::prepareRequest(RequestType type) {
         userAgent = dcpp::fullHTTPVersionString;
 
     if(!socket)
-        socket = BufferedSocket::getSocket(0x0a);
+        socket = BufferedSocket::getSocket(0x0a, ctx());
 
 
     socket->addListener(this);

@@ -26,7 +26,7 @@ class ShortcutManager: public QObject,
 friend class QtContext;
 
 public:
-    ShortcutManager();
+    explicit ShortcutManager(dcpp::DCContext& ctx);
     ~ShortcutManager() override;
 
 

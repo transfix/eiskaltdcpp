@@ -26,7 +26,7 @@
 #include <QDebug>
 #endif
 
-QueuedUsers::QueuedUsers(){
+QueuedUsers::QueuedUsers(dcpp::DCContext& ctx) : QtContextAware(ctx) {
     setupUi(this);
 
     setUnload(false);

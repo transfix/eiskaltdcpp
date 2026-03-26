@@ -19,6 +19,8 @@
 
 #include <memory>
 
+namespace dcpp { class DCContext; }
+
 // Forward declarations — no heavy includes in this header.
 class WulforSettings;
 class SearchBlacklist;
@@ -82,7 +84,7 @@ class LogManagerScript;
  */
 class QtContext {
 public:
-    QtContext();
+    explicit QtContext(dcpp::DCContext& dcCtx);
     ~QtContext();
 
     // Non-copyable, non-movable
@@ -90,6 +92,9 @@ public:
     QtContext& operator=(const QtContext&) = delete;
     QtContext(QtContext&&) = delete;
     QtContext& operator=(QtContext&&) = delete;
+
+    /** Access the core library context. */
+    [[nodiscard]] dcpp::DCContext& dcCtx() const noexcept { return dcCtx_; }
 
     // ── Service creation (call in dependency order) ────────────────────
     void createSettings();
@@ -174,6 +179,8 @@ public:
 #endif // QT_CONTEXT_MINIMAL
 
 private:
+    dcpp::DCContext& dcCtx_;
+
     // Destruction is reverse of declaration order.
     // Declare in creation-dependency order (earliest first).
     std::unique_ptr<WulforSettings>     settings_;

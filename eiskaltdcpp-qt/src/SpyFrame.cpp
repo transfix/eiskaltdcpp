@@ -25,8 +25,9 @@
 
 using namespace dcpp;
 
-SpyFrame::SpyFrame(QWidget *parent)
-    : QWidget(parent)
+SpyFrame::SpyFrame(dcpp::DCContext& ctx, QWidget *parent)
+    : QtContextAware(ctx)
+    , QWidget(parent)
     , model(new SpyModel())
 {
     setupUi(this);

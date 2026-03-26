@@ -283,7 +283,7 @@ public:
     bool parseCoreCmd(string& ret, const string& key, const string& value);
 
 public:
-    SettingsManager();
+    explicit SettingsManager(DCContext& ctx);
     virtual ~SettingsManager() { }
 
 private:
@@ -315,7 +315,7 @@ private:
 #define BOOLSETTING(k) (dcpp::getContext()->getSettingsManager()->getBool(SettingsManager::k, true))
 
 // Context-aware versions — for use inside ContextAware member functions
-#define CTX_SETTING(k) (this->ctx()->getSettingsManager()->get(SettingsManager::k, true))
-#define CTX_BOOLSETTING(k) (this->ctx()->getSettingsManager()->getBool(SettingsManager::k, true))
+#define CTX_SETTING(k) (this->ctx().getSettingsManager()->get(SettingsManager::k, true))
+#define CTX_BOOLSETTING(k) (this->ctx().getSettingsManager()->getBool(SettingsManager::k, true))
 
 } // namespace dcpp

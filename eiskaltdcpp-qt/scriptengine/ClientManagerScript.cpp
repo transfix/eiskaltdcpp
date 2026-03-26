@@ -27,31 +27,19 @@ static QStringList toQStringList(const dcpp::StringList &list){
     return ret;
 }
 
-ClientManagerScript::ClientManagerScript(QObject *parent) :
+ClientManagerScript::ClientManagerScript(dcpp::DCContext& ctx, QObject *parent) :
+    QtContextAware(ctx),
     QObject(parent)
 {
     CM = dcpp::getContext()->getClientManager();
     CM->addListener(this);
 }
 
-ClientManagerScript::ClientManagerScript(const ClientManagerScript &)
-{
-    CM = dcpp::getContext()->getClientManager();
-    CM->addListener(this);
-}
 
 
 ClientManagerScript::~ClientManagerScript()
 {
     CM->removeListener(this);
-}
-
-ClientManagerScript &ClientManagerScript::operator=(const ClientManagerScript &)
-{
-    CM = dcpp::getContext()->getClientManager();
-    CM->addListener(this);
-
-    return *this;
 }
 
 

@@ -112,8 +112,8 @@ class ScriptManager: public ScriptInstance, public Speaker<ScriptManagerListener
     Socket s;
 
 public:
-    ScriptManager();
-    virtual ~ScriptManager() noexcept { if (L) lua_close(L); if(timerEnabled) ctx()->getTimerManager()->removeListener(this); }
+    explicit ScriptManager(DCContext& ctx);
+    virtual ~ScriptManager() noexcept { if (L) lua_close(L); if(timerEnabled) ctx().getTimerManager()->removeListener(this); }
 
     void load();
     void  SendDebugMessage(const string& s);

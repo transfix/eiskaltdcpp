@@ -155,7 +155,7 @@ private Q_SLOTS:
     void downloadComplete(QString);
 
 public:
-    TransferView(QWidget* = nullptr);
+    TransferView(dcpp::DCContext& ctx, QWidget* = nullptr);
     ~TransferView() override;
 
 

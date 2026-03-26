@@ -29,7 +29,8 @@
 
 using namespace dcpp;
 
-ADLS::ADLS(QWidget *parent):
+ADLS::ADLS(dcpp::DCContext& ctx, QWidget *parent):
+        QtContextAware(ctx),
         QWidget(parent),
         model(nullptr)
 {

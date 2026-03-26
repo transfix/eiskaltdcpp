@@ -33,7 +33,7 @@ class PrivateMessage:
         public dcpp::ClientManagerListener
 {
 public:
-    PrivateMessage(const std::string &_cid, const std::string &_hubUrl);
+    PrivateMessage(dcpp::DCContext& dcCtx, const std::string &_cid, const std::string &_hubUrl);
     virtual ~PrivateMessage();
     virtual void show();
 
@@ -88,6 +88,7 @@ private:
     virtual void on(dcpp::ClientManagerListener::UserConnected, const dcpp::UserPtr& aUser) noexcept;
     virtual void on(dcpp::ClientManagerListener::UserDisconnected, const dcpp::UserPtr& aUser) noexcept;
 
+    dcpp::DCContext& dcCtx_;
     GtkTextBuffer *messageBuffer;
     GtkTextMark *mark, *start_mark, *end_mark, *tag_mark, *emot_mark;
     std::string cid;

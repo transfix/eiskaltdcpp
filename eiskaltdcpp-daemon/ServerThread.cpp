@@ -1304,7 +1304,7 @@ class ServerThreadListLoader : public dcpp::Thread
 bool ServerThread::openFileList(const string& filelist) {
     auto it = listsMap.find(filelist);
     if (it == listsMap.end()) {
-        UserPtr u = DirectoryListing::getUserFromFilename(filelist);
+        UserPtr u = DirectoryListing::getUserFromFilename(*dcpp::getContext(), filelist);
         if (!u)
             return false;
         // Use the nick from the file name in case the user is offline and core only returns CID
@@ -1316,7 +1316,7 @@ bool ServerThread::openFileList(const string& filelist) {
             nick = name.substr(0, loc);
         }
         HintedUser user(u, Util::emptyString);
-        DirectoryListing* dl = new DirectoryListing(user);
+        DirectoryListing* dl = new DirectoryListing(*dcpp::getContext(), user);
         //buildList(filelist, nick, dl, false);
         ServerThreadListLoader* stld = new ServerThreadListLoader(filelist, nick, dl);
         try {

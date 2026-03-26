@@ -26,7 +26,7 @@ namespace dcpp {
 class DynDNS : private HttpConnectionListener, public ContextAware
 {
 public:
-    DynDNS();
+    explicit DynDNS(DCContext& ctx);
     virtual ~DynDNS();
 
     void load();

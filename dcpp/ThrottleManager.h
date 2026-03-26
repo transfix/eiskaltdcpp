@@ -48,12 +48,12 @@ public:
 
     void shutdown();
 
-    static SettingsManager::IntSetting getCurSetting(SettingsManager::IntSetting setting);
+    SettingsManager::IntSetting getCurSetting(SettingsManager::IntSetting setting);
 
-    static int getUpLimit();
-    static int getDownLimit();
+    int getUpLimit();
+    int getDownLimit();
 
-    static void setSetting(SettingsManager::IntSetting setting, int value);
+    void setSetting(SettingsManager::IntSetting setting, int value);
 
 private:
     // stack up throttled read & write threads
@@ -77,9 +77,9 @@ private:
     int64_t         upTokens;
 
 public:
-    ThrottleManager() : activeWaiter(-1), n_lock(0), halt(0), downTokens(0), upTokens(0)
+    explicit ThrottleManager(DCContext& ctx) : ContextAware(ctx), activeWaiter(-1), n_lock(0), halt(0), downTokens(0), upTokens(0)
     {
-        ctx()->getTimerManager()->addListener(this);
+        this->ctx().getTimerManager()->addListener(this);
     }
 
     virtual ~ThrottleManager();

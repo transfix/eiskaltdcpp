@@ -24,7 +24,6 @@
 #include <dcpp/stdinc.h>
 #include <dcpp/DCPlusPlus.h>
 #include "bacon-message-connection.hh"
-#include "GtkContextAware.hh"
 #include "settingsmanager.hh"
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
@@ -379,9 +378,6 @@ int main(int argc, char *argv[])
     // Start the DC++ client core — caller owns the returned context
     auto dcContext = dcpp::startup(callBack, NULL);
 
-    // Make dcpp::DCContext* available to all GtkContextAware classes
-    GtkContextAware::setGlobalDcContext(dcContext.get());
-
     dcContext->getTimerManager()->start();
 
 #if !GLIB_CHECK_VERSION(2,32,0)
@@ -402,7 +398,7 @@ int main(int argc, char *argv[])
     {
         WulforSettingsManager settingsMgr;
         setWulforSettingsInstance(&settingsMgr);
-        WulforManager wulforMgr(argc, argv);
+        WulforManager wulforMgr(*dcContext, argc, argv);
         setWulforManagerInstance(&wulforMgr);
         gtk_main();
         bacon_message_connection_free(connection);
@@ -412,7 +408,6 @@ int main(int argc, char *argv[])
     }
 
     std::cout << _("Shutting down libeiskaltdcpp...") << std::endl;
-    GtkContextAware::setGlobalDcContext(nullptr);
     dcContext->shutdown();
     dcContext.reset();
     dcpp::setContext(nullptr);

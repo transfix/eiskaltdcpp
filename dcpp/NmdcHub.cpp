@@ -38,8 +38,8 @@
 
 namespace dcpp {
 
-NmdcHub::NmdcHub(const string& aHubURL, bool secure) :
-    Client(aHubURL, '|', secure, Socket::PROTO_NMDC),
+NmdcHub::NmdcHub(DCContext& ctx, const string& aHubURL, bool secure) :
+    Client(ctx, aHubURL, '|', secure, Socket::PROTO_NMDC),
     supportFlags(0),
     lastUpdate(0)
 {
@@ -83,9 +83,9 @@ OnlineUser& NmdcHub::getUser(const string& aNick) {
 
     UserPtr p;
     if(aNick == getCurrentNick()) {
-        p = ctx()->getClientManager()->getMe();
+        p = ctx().getClientManager()->getMe();
     } else {
-        p = ctx()->getClientManager()->getUser(aNick, getHubUrl());
+        p = ctx().getClientManager()->getUser(aNick, getHubUrl());
     }
 
     {
@@ -97,7 +97,7 @@ OnlineUser& NmdcHub::getUser(const string& aNick) {
         }
     }
 
-    ctx()->getClientManager()->putOnline(u);
+    ctx().getClientManager()->putOnline(u);
     return *u;
 }
 
@@ -125,7 +125,7 @@ void NmdcHub::putUser(const string& aNick) {
         ou = i->second;
         users.erase(i);
     }
-    ctx()->getClientManager()->putOffline(ou);
+    ctx().getClientManager()->putOffline(ou);
     delete ou;
 }
 
@@ -138,7 +138,7 @@ void NmdcHub::clearUsers() {
     }
 
     for(auto& i: u2) {
-        ctx()->getClientManager()->putOffline(i.second);
+        ctx().getClientManager()->putOffline(i.second);
         delete i.second;
     }
 }
@@ -263,7 +263,7 @@ void NmdcHub::onLine(const string& aLine) noexcept {
         //printf("$Search->%s\n", seeker.c_str()); fflush(stdout);
         // Filter own searches
         if(isActive()) {
-            if(seeker == (getLocalIp() + ":" + ctx()->getSearchManager()->getPort())) {
+            if(seeker == (getLocalIp() + ":" + ctx().getSearchManager()->getPort())) {
                 return;
             }
         } else {
@@ -472,12 +472,12 @@ void NmdcHub::onLine(const string& aLine) noexcept {
         bool secure = false;
         if(port[port.size() - 1] == 'S') {
             port.erase(port.size() - 1);
-            if(ctx()->getCryptoManager()->TLSOk()) {
+            if(ctx().getCryptoManager()->TLSOk()) {
                 secure = true;
             }
         }
 
-        if(BOOLSETTING(ALLOW_NATT)) {
+        if(CTX_BOOLSETTING(ALLOW_NATT)) {
             if(port[port.size() - 1] == 'N') {
                 if(senderNick.empty())
                     return;
@@ -485,7 +485,7 @@ void NmdcHub::onLine(const string& aLine) noexcept {
                 port.erase(port.size() - 1);
 
                 // Trigger connection attempt sequence locally ...
-                ctx()->getConnectionManager()->nmdcConnect(server, port, sock->getLocalPort(),
+                ctx().getConnectionManager()->nmdcConnect(server, port, sock->getLocalPort(),
                                                               BufferedSocket::NAT_CLIENT, getMyNick(), getHubUrl(), getEncoding(), secure);
 
                 // ... and signal other client to do likewise.
@@ -495,7 +495,7 @@ void NmdcHub::onLine(const string& aLine) noexcept {
                 port.erase(port.size() - 1);
 
                 // Trigger connection attempt sequence locally
-                ctx()->getConnectionManager()->nmdcConnect(server, port, sock->getLocalPort(),
+                ctx().getConnectionManager()->nmdcConnect(server, port, sock->getLocalPort(),
                                                               BufferedSocket::NAT_SERVER, getMyNick(), getHubUrl(), getEncoding(), secure);
                 return;
             }
@@ -504,7 +504,7 @@ void NmdcHub::onLine(const string& aLine) noexcept {
         if(port.empty())
             return;
         // For simplicity, we make the assumption that users on a hub have the same character encoding
-        ctx()->getConnectionManager()->nmdcConnect(server, port, getMyNick(), getHubUrl(), getEncoding(), secure);
+        ctx().getConnectionManager()->nmdcConnect(server, port, getMyNick(), getHubUrl(), getEncoding(), secure);
     } else if(cmd == "$RevConnectToMe") {
         if(state != STATE_NORMAL) {
             return;
@@ -521,8 +521,8 @@ void NmdcHub::onLine(const string& aLine) noexcept {
 
         if(isActive()) {
             connectToMe(*u);
-        } else if(BOOLSETTING(ALLOW_NATT) && (u->getIdentity().getStatus() & Identity::NAT)) {
-            bool secure = ctx()->getCryptoManager()->TLSOk() && u->getUser()->isSet(User::TLS);
+        } else if(CTX_BOOLSETTING(ALLOW_NATT) && (u->getIdentity().getStatus() & Identity::NAT)) {
+            bool secure = ctx().getCryptoManager()->TLSOk() && u->getUser()->isSet(User::TLS);
             // NMDC v2.205 supports "$ConnectToMe sender_nick remote_nick ip:port", but many NMDC hubsofts block it
             // sender_nick at the end should work at least in most used hubsofts
             send("$ConnectToMe " + fromUtf8(u->getIdentity().getNick()) + " " +
@@ -539,7 +539,7 @@ void NmdcHub::onLine(const string& aLine) noexcept {
             }
         }
     } else if(cmd == "$SR") {
-        ctx()->getSearchManager()->onSearchResult(aLine);
+        ctx().getSearchManager()->onSearchResult(aLine);
     } else if(cmd == "$HubName") {
         // If " - " found, the first part goes to hub name, rest to description
         // If no " - " found, first word goes to hub name, rest to description
@@ -623,7 +623,7 @@ void NmdcHub::onLine(const string& aLine) noexcept {
                     lock = param;
             }
 
-            if(ctx()->getCryptoManager()->isExtended(lock)) {
+            if(ctx().getCryptoManager()->isExtended(lock)) {
                 StringList feat = {
                     "UserCommand",
                     "NoGetINFO",
@@ -633,18 +633,18 @@ void NmdcHub::onLine(const string& aLine) noexcept {
                     "ZPipe0"
                 };
 
-                if(ctx()->getCryptoManager()->TLSOk())
+                if(ctx().getCryptoManager()->TLSOk())
                     feat.push_back("TLS");
 
 #ifdef WITH_DHT
-                if(BOOLSETTING(USE_DHT))
+                if(CTX_BOOLSETTING(USE_DHT))
                     feat.push_back("DHT0");
 #endif
 
                 supports(feat);
             }
 
-            key(ctx()->getCryptoManager()->makeKey(lock));
+            key(ctx().getCryptoManager()->makeKey(lock));
             OnlineUser& ou = getUser(getCurrentNick());
             validateNick(ou.getIdentity().getNick());
         }
@@ -851,9 +851,9 @@ void NmdcHub::connectToMe(const OnlineUser& aUser) {
     checkstate();
     dcdebug("NmdcHub::connectToMe %s\n", aUser.getIdentity().getNick().c_str());
     string nick = fromUtf8(aUser.getIdentity().getNick());
-    ctx()->getConnectionManager()->nmdcExpect(nick, getMyNick(), getHubUrl());
-    bool secure = ctx()->getCryptoManager()->TLSOk() && aUser.getUser()->isSet(User::TLS);
-    string port = secure ? ctx()->getConnectionManager()->getSecurePort() : ctx()->getConnectionManager()->getPort();
+    ctx().getConnectionManager()->nmdcExpect(nick, getMyNick(), getHubUrl());
+    bool secure = ctx().getCryptoManager()->TLSOk() && aUser.getUser()->isSet(User::TLS);
+    string port = secure ? ctx().getConnectionManager()->getSecurePort() : ctx().getConnectionManager()->getPort();
     send("$ConnectToMe " + nick + " " + getLocalIp() + ":" + port + (secure ? "S" : "") + "|");
 }
 
@@ -876,39 +876,39 @@ void NmdcHub::myInfo(bool alwaysSend) {
     char StatusMode = Identity::NORMAL;
 
     char modeChar = '?';
-    if(SETTING(OUTGOING_CONNECTIONS) == SettingsManager::OUTGOING_SOCKS5)
+    if(CTX_SETTING(OUTGOING_CONNECTIONS) == SettingsManager::OUTGOING_SOCKS5)
         modeChar = '5';
     else if(isActive())
         modeChar = 'A';
     else
         modeChar = 'P';
     string uploadSpeed;
-    int upLimit = ctx()->getThrottleManager()->getUpLimit();
-    if (upLimit > 0 && BOOLSETTING(THROTTLE_ENABLE)) {
+    int upLimit = ctx().getThrottleManager()->getUpLimit();
+    if (upLimit > 0 && CTX_BOOLSETTING(THROTTLE_ENABLE)) {
         uploadSpeed = Util::toString(upLimit) + " KiB/s";
     } else {
-        uploadSpeed = SETTING(UPLOAD_SPEED);
+        uploadSpeed = CTX_SETTING(UPLOAD_SPEED);
     }
     if(Util::getAway()) {
         StatusMode |= Identity::AWAY;
     }
-    if(BOOLSETTING(ALLOW_NATT) && !isActive()) {
+    if(CTX_BOOLSETTING(ALLOW_NATT) && !isActive()) {
         StatusMode |= Identity::NAT;
     }
-    if (ctx()->getCryptoManager()->TLSOk()) {
+    if (ctx().getCryptoManager()->TLSOk()) {
         StatusMode |= Identity::TLS;
     }
 
-    bool gslotf = BOOLSETTING(SHOW_FREE_SLOTS_DESC);
-    string gslot = "["+Util::toString(ctx()->getUploadManager()->getFreeSlots())+"]";
-    string uMin = (SETTING(MIN_UPLOAD_SPEED) == 0) ? Util::emptyString : ",O:" + Util::toString(SETTING(MIN_UPLOAD_SPEED));
+    bool gslotf = CTX_BOOLSETTING(SHOW_FREE_SLOTS_DESC);
+    string gslot = "["+Util::toString(ctx().getUploadManager()->getFreeSlots())+"]";
+    string uMin = (CTX_SETTING(MIN_UPLOAD_SPEED) == 0) ? Util::emptyString : ",O:" + Util::toString(CTX_SETTING(MIN_UPLOAD_SPEED));
     string myInfoA =
             "$MyINFO $ALL " + fromUtf8(getMyNick()) + " " +
             fromUtf8(escape((gslotf ? gslot :"")+getCurrentDescription())) + " <"+ getClientId().c_str() + ",M:" + modeChar + ",H:" + getCounts();
-    string myInfoB = ",S:" + Util::toString(SETTING(SLOTS));
+    string myInfoB = ",S:" + Util::toString(CTX_SETTING(SLOTS));
     string myInfoC = uMin +
-            ">$ $" + uploadSpeed + StatusMode + "$" + fromUtf8(escape(SETTING(EMAIL))) + '$';
-    string myInfoD = ctx()->getShareManager()->getShareSizeString() + "$|";
+            ">$ $" + uploadSpeed + StatusMode + "$" + fromUtf8(escape(CTX_SETTING(EMAIL))) + '$';
+    string myInfoD = ctx().getShareManager()->getShareSizeString() + "$|";
     // we always send A and C; however, B (slots) and D (share size) can frequently change so we delay them if needed
     if(alwaysSend ||
             ((lastMyInfoA != myInfoA || lastMyInfoC != myInfoC) && lastUpdate + 2*60*1000 < GET_TICK())
@@ -934,8 +934,8 @@ void NmdcHub::search(int aSizeType, int64_t aSize, int aFileType, const string& 
         tmp[i] = '$';
     }
     string tmp2;
-    if(isActive() && !BOOLSETTING(SEARCH_PASSIVE)) {
-        tmp2 = getLocalIp() + ':' + ctx()->getSearchManager()->getPort();
+    if(isActive() && !CTX_BOOLSETTING(SEARCH_PASSIVE)) {
+        tmp2 = getLocalIp() + ':' + ctx().getSearchManager()->getPort();
     } else {
         tmp2 = "Hub:" + fromUtf8(getMyNick());
     }
@@ -1050,7 +1050,7 @@ void NmdcHub::on(Line, const string& aLine) noexcept {
     if (onClientMessage(this, validateMessage(aLine, true)))
         return;
 #endif
-    if (BOOLSETTING(NMDC_DEBUG))
+    if (CTX_BOOLSETTING(NMDC_DEBUG))
         fire(ClientListener::StatusMessage(), this, "<NMDC>" + aLine + "</NMDC>");
     Client::on(Line(), aLine);
     onLine(aLine);

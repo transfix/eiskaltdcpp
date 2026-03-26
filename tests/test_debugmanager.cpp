@@ -52,7 +52,7 @@ struct TestListener : public DebugManagerListener {
 TEST_CASE("DebugManager: SendCommandMessage fires listener", "[DebugManager]") {
     test::TestContext tc;
 
-    DebugManager dm;
+    DebugManager dm(*tc.ownedCtx);
     TestListener listener;
     dm.addListener(&listener);
 
@@ -69,7 +69,7 @@ TEST_CASE("DebugManager: SendCommandMessage fires listener", "[DebugManager]") {
 TEST_CASE("DebugManager: multiple command messages", "[DebugManager]") {
     test::TestContext tc;
 
-    DebugManager dm;
+    DebugManager dm(*tc.ownedCtx);
     TestListener listener;
     dm.addListener(&listener);
 
@@ -90,7 +90,7 @@ TEST_CASE("DebugManager: multiple command messages", "[DebugManager]") {
 TEST_CASE("DebugManager: SendDetectionMessage fires listener", "[DebugManager]") {
     test::TestContext tc;
 
-    DebugManager dm;
+    DebugManager dm(*tc.ownedCtx);
     TestListener listener;
     dm.addListener(&listener);
 
@@ -107,7 +107,7 @@ TEST_CASE("DebugManager: SendDetectionMessage fires listener", "[DebugManager]")
 TEST_CASE("DebugManager: multiple listeners receive events", "[DebugManager]") {
     test::TestContext tc;
 
-    DebugManager dm;
+    DebugManager dm(*tc.ownedCtx);
     TestListener l1, l2;
     dm.addListener(&l1);
     dm.addListener(&l2);
@@ -126,7 +126,7 @@ TEST_CASE("DebugManager: multiple listeners receive events", "[DebugManager]") {
 TEST_CASE("DebugManager: removing listener stops events", "[DebugManager]") {
     test::TestContext tc;
 
-    DebugManager dm;
+    DebugManager dm(*tc.ownedCtx);
     TestListener listener;
     dm.addListener(&listener);
 
@@ -143,7 +143,7 @@ TEST_CASE("DebugManager: removing listener stops events", "[DebugManager]") {
 TEST_CASE("DebugManager: removeListeners clears all", "[DebugManager]") {
     test::TestContext tc;
 
-    DebugManager dm;
+    DebugManager dm(*tc.ownedCtx);
     TestListener l1, l2;
     dm.addListener(&l1);
     dm.addListener(&l2);

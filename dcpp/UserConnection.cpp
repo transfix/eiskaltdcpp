@@ -166,21 +166,21 @@ void UserConnection::connect(const string& aServer, const string& aPort, const s
     dcassert(!socket);
 
     port = aPort;
-    socket = BufferedSocket::getSocket(0);
+    socket = BufferedSocket::getSocket(0, ctx());
     socket->addListener(this);
-    socket->connect(aServer, aPort, localPort, natRole, isSet(FLAG_SECURE), BOOLSETTING(ALLOW_UNTRUSTED_CLIENTS), true, Socket::PROTO_DEFAULT);
+    socket->connect(aServer, aPort, localPort, natRole, isSet(FLAG_SECURE), ctx().getSettingsManager()->getBool(SettingsManager::ALLOW_UNTRUSTED_CLIENTS), true, Socket::PROTO_DEFAULT);
 }
 
 void UserConnection::accept(const Socket& aServer) {
     dcassert(!socket);
-    socket = BufferedSocket::getSocket(0);
+    socket = BufferedSocket::getSocket(0, ctx());
     socket->addListener(this);
-    socket->accept(aServer, isSet(FLAG_SECURE), BOOLSETTING(ALLOW_UNTRUSTED_CLIENTS));
+    socket->accept(aServer, isSet(FLAG_SECURE), ctx().getSettingsManager()->getBool(SettingsManager::ALLOW_UNTRUSTED_CLIENTS));
 }
 
 void UserConnection::inf(bool withToken) {
     AdcCommand c(AdcCommand::CMD_INF);
-    c.addParam("ID", dcpp::getContext()->getClientManager()->getMyCID().toBase32());
+    c.addParam("ID", ctx().getClientManager()->getMyCID().toBase32());
     if(withToken) {
         c.addParam("TO", getToken());
     }

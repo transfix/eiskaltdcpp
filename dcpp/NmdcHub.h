@@ -100,7 +100,7 @@ private:
     FloodMap seekers;
     FloodMap flooders;
 
-    NmdcHub(const string& aHubURL, bool secure);
+    NmdcHub(DCContext& ctx, const string& aHubURL, bool secure);
     virtual ~NmdcHub();
 
     void clearUsers();

@@ -136,7 +136,7 @@ private:
     bool dontSave;
 
 public:
-    FavoriteManager();
+    explicit FavoriteManager(DCContext& ctx);
     virtual ~FavoriteManager();
 
 private:

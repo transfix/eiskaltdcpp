@@ -136,7 +136,7 @@ Q_SIGNALS:
     void coreStatusUpdated(VarMap);
 
 public:
-    DownloadQueue(QWidget* = nullptr);
+    DownloadQueue(dcpp::DCContext& ctx, QWidget* = nullptr);
     ~DownloadQueue() override;
 
 

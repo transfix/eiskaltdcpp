@@ -67,11 +67,11 @@ void MappingManager::close() {
 int MappingManager::run() {
     // cache these
     const string
-            conn_port = ctx()->getConnectionManager()->getPort(),
-            secure_port = ctx()->getConnectionManager()->getSecurePort(),
-            search_port = ctx()->getSearchManager()->getPort();
+            conn_port = ctx().getConnectionManager()->getPort(),
+            secure_port = ctx().getConnectionManager()->getSecurePort(),
+            search_port = ctx().getSearchManager()->getPort();
 #ifdef WITH_DHT
-    const string dht_port = ctx()->getDHT()->getPort();
+    const string dht_port = ctx().getDHT()->getPort();
 #endif
 
     for(auto &i : impls) {
@@ -121,7 +121,7 @@ int MappingManager::run() {
             string ExternalIP = impl.getExternalIP();
             if(!ExternalIP.empty()) {
                 // woohoo, we got the external IP from the UPnP framework
-                ctx()->getSettingsManager()->set(SettingsManager::EXTERNAL_IP, ExternalIP);
+                ctx().getSettingsManager()->set(SettingsManager::EXTERNAL_IP, ExternalIP);
             } else {
                 //:-( Looks like we have to rely on the user setting the external IP manually
                 // no need to do cleanup here because the mappings work
@@ -129,14 +129,14 @@ int MappingManager::run() {
             }
         }
 
-        ctx()->getConnectivityManager()->mappingFinished(true);
+        ctx().getConnectivityManager()->mappingFinished(true);
 
         break;
     }
 
     if(!opened) {
         log(_("Failed to create port mappings"));
-        ctx()->getConnectivityManager()->mappingFinished(false);
+        ctx().getConnectivityManager()->mappingFinished(false);
     }
     portMapping = false;
     return 0;
@@ -150,7 +150,7 @@ void MappingManager::close(UPnP& impl) {
 }
 
 void MappingManager::log(const string& message) {
-    ctx()->getConnectivityManager()->log(str(F_("UPnP: %1%") % message));
+    ctx().getConnectivityManager()->log(str(F_("UPnP: %1%") % message));
 }
 
 #ifdef USE_MINIUPNP

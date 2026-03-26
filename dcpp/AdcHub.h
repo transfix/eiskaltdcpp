@@ -88,7 +88,7 @@ private:
     friend class CommandHandler<AdcHub>;
     friend class Identity;
 
-    AdcHub(const string& aHubURL, bool secure);
+    AdcHub(DCContext& ctx, const string& aHubURL, bool secure);
 
     AdcHub(const AdcHub&);
     AdcHub& operator=(const AdcHub&);

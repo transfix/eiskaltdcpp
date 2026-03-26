@@ -42,8 +42,9 @@
 
 using namespace dcpp;
 
-WulforSettings::WulforSettings()
-    : settings(_q(Util::getPath(Util::PATH_USER_CONFIG)) + "EiskaltDC++_Qt.conf", QSettings::IniFormat)
+WulforSettings::WulforSettings(dcpp::DCContext& ctx)
+    : QtContextAware(ctx)
+    , settings(_q(Util::getPath(Util::PATH_USER_CONFIG)) + "EiskaltDC++_Qt.conf", QSettings::IniFormat)
     , configFileOld(_q(Util::getPath(Util::PATH_USER_CONFIG)) + "EiskaltDC++.xml")
     , appTranslator(nullptr)
     , qtTranslator(nullptr)
@@ -425,7 +426,7 @@ void WulforSettings::loadTranslation(){
         loadQtTranslation(lcName);
         installTranslator(appTranslator, lcName, "en", translationsPath);
 
-        dcpp::Util::setLang(lcName.toStdString());
+        dcpp::Util::setLang(dcCtx(), lcName.toStdString());
 
         setStr(WS_APP_ASPELL_LANG, lcName);
 #ifdef USE_ASPELL
@@ -444,7 +445,7 @@ void WulforSettings::loadTranslation(){
         loadQtTranslation(lcName);
         installTranslator(appTranslator, lcName, "en", translationsPath);
 
-        dcpp::Util::setLang(lcName.toStdString());
+        dcpp::Util::setLang(dcCtx(), lcName.toStdString());
 
         setStr(WS_APP_ASPELL_LANG, lcName);
 #ifdef USE_ASPELL

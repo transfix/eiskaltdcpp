@@ -34,6 +34,7 @@
 #include <dcpp/version.h>
 #include <dcpp/HashManager.h>
 #include "dcpp/DCPlusPlus.h"
+#include "GtkContextAware.hh"
 #include "downloadqueue.hh"
 #include "favoritehubs.hh"
 #include "favoriteusers.hh"
@@ -61,8 +62,9 @@
 using namespace std;
 using namespace dcpp;
 
-MainWindow::MainWindow():
+MainWindow::MainWindow(dcpp::DCContext& dcCtx):
     Entry(Entry::MAIN_WINDOW, "mainwindow.ui"),
+    dcCtx_(dcCtx),
     current_width(-1),
     current_height(-1),
     is_maximized(FALSE),
@@ -877,7 +879,7 @@ void MainWindow::showHub_gui(string address, string encoding)
 
     if (!entry)
     {
-        entry = new Hub(address, encoding);
+        entry = new Hub(dcCtx_, address, encoding);
         addBookEntry_gui(entry);
 
         EntryList.push_back(address);
@@ -937,7 +939,7 @@ void MainWindow::addPrivateMessage_gui(Msg::TypeMsg typemsg, string cid, string 
 
     if (!entry)
     {
-        entry = new PrivateMessage(cid, hubUrl);
+        entry = new PrivateMessage(dcCtx_, cid, hubUrl);
         addBookEntry_gui(entry);
 
         EntryList.push_back(cid);
@@ -1559,13 +1561,13 @@ gboolean MainWindow::onWindowState_gui(GtkWidget*, GdkEventWindowState *event, g
     {
         mw->minimized = true;
         if (BOOLSETTING(SettingsManager::AUTO_AWAY) && !Util::getAway())
-            Util::setAway(true);
+            Util::setAway(mw->dcCtx_, true);
     }
     else if (!mw->minimized || (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED ) != 0)
     {
         mw->minimized = false;
         if (BOOLSETTING(SettingsManager::AUTO_AWAY) && !Util::getManualAway())
-            Util::setAway(false);
+            Util::setAway(mw->dcCtx_, false);
     }
 
     mw->is_maximized = (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) != 0;

@@ -58,7 +58,7 @@ Q_SIGNALS:
     void coreIncomingSearch(const QString&, bool);
 
 public:
-    explicit SpyFrame(QWidget *parent = nullptr);
+    explicit SpyFrame(dcpp::DCContext& ctx, QWidget *parent = nullptr);
     ~SpyFrame();
 
 

@@ -76,10 +76,10 @@ private Q_SLOTS:
             int mins_done = (counter*timer.interval()/1000)/60;
 
             if (mins <= mins_done)
-                dcpp::Util::setAway(true);
+                dcpp::Util::setAway(qtCtx()->dcCtx(), true);
         }
         else if (has_activity && !dcpp::Util::getManualAway())
-            dcpp::Util::setAway(false);
+            dcpp::Util::setAway(qtCtx()->dcCtx(), false);
     }
 
 private:

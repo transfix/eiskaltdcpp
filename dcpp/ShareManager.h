@@ -240,7 +240,7 @@ private:
 
 
 public:
-    ShareManager();
+    explicit ShareManager(DCContext& ctx);
     virtual ~ShareManager();
 
 private:

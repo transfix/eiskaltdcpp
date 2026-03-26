@@ -108,7 +108,7 @@ private:
     void addFailedUpload(const UserConnection& source, string filename);
 
 public:
-    UploadManager() noexcept;
+    explicit UploadManager(DCContext& ctx) noexcept;
     virtual ~UploadManager();
 
 private:

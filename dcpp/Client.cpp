@@ -36,8 +36,9 @@ Client::Counts Client::counts;
 
 uint32_t idCounter = 0;
 
-Client::Client(const string& hubURL, char separator_, bool secure_, Socket::Protocol proto_) :
-    myIdentity(ctx()->getClientManager()->getMe(), 0), uniqueId(++idCounter),
+Client::Client(DCContext& ctx, const string& hubURL, char separator_, bool secure_, Socket::Protocol proto_) :
+    ContextAware(ctx),
+    myIdentity(this->ctx().getClientManager()->getMe(), 0), uniqueId(++idCounter),
     reconnDelay(120), lastActivity(GET_TICK()), registered(false), autoReconnect(false),
     encoding(Text::hubDefaultCharset), state(STATE_DISCONNECTED), sock(0),
     hubUrl(hubURL), separator(separator_), proto(proto_),
@@ -48,15 +49,15 @@ Client::Client(const string& hubURL, char separator_, bool secure_, Socket::Prot
 
     keyprint = Util::decodeQuery(query)["kp"];
 
-    ctx()->getTimerManager()->addListener(this);
+    this->ctx().getTimerManager()->addListener(this);
 }
 
 Client::~Client() {
     dcassert(!sock);
 
     // In case we were deleted before we Failed
-    ctx()->getFavoriteManager()->removeUserCommand(getHubUrl());
-    ctx()->getTimerManager()->removeListener(this);
+    ctx().getFavoriteManager()->removeUserCommand(getHubUrl());
+    ctx().getTimerManager()->removeListener(this);
     updateCounts(true);
 }
 
@@ -74,7 +75,7 @@ void Client::shutdown() {
 }
 
 void Client::reloadSettings(bool updateNick) {
-    auto fav = ctx()->getFavoriteManager()->getFavoriteHubEntry(getHubUrl());
+    auto fav = ctx().getFavoriteManager()->getFavoriteHubEntry(getHubUrl());
 
     string ClientId;
     if (::strncmp(getHubUrl().c_str(),"adc://", 6) == 0 ||
@@ -119,7 +120,7 @@ void Client::reloadSettings(bool updateNick) {
 }
 
 bool Client::isActive() const {
-    return ctx()->getClientManager()->isActive(hubUrl);
+    return ctx().getClientManager()->isActive(hubUrl);
 }
 
 void Client::connect() {
@@ -132,15 +133,15 @@ void Client::connect() {
     setReconnDelay(SETTING(RECONNECT_DELAY));
     reloadSettings(true);
     setRegistered(false);
-    setMyIdentity(Identity(ctx()->getClientManager()->getMe(), 0));
+    setMyIdentity(Identity(ctx().getClientManager()->getMe(), 0));
     setHubIdentity(Identity());
 
     state = STATE_CONNECTING;
 
     try {
-        sock = BufferedSocket::getSocket(separator);
+        sock = BufferedSocket::getSocket(separator, ctx());
         sock->addListener(this);
-        sock->connect(address, port, secure, BOOLSETTING(ALLOW_UNTRUSTED_HUBS), true, proto);
+        sock->connect(address, port, secure, CTX_BOOLSETTING(ALLOW_UNTRUSTED_HUBS), true, proto);
     } catch(const Exception& e) {
         shutdown();
         /// @todo at this point, this hub instance is completely useless
@@ -182,7 +183,7 @@ void Client::on(Connected) noexcept {
 
 void Client::on(Failed, const string& aLine) noexcept {
     state = STATE_DISCONNECTED;
-    ctx()->getFavoriteManager()->removeUserCommand(getHubUrl());
+    ctx().getFavoriteManager()->removeUserCommand(getHubUrl());
     sock->removeListener(this);
     fire(ClientListener::Failed(), this, aLine);
 }

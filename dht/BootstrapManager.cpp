@@ -33,7 +33,7 @@ namespace dht
 {
     vector<string> dhtservers;
  
-    BootstrapManager::BootstrapManager(DHT& dht) : dht_(dht)
+    BootstrapManager::BootstrapManager(DHT& dht) : dht_(dht), httpConnection(dht.ctx())
     {
         dhtservers.push_back("http://strongdc.sourceforge.net/bootstrap/");
         dhtservers.push_back("http://dht.fly-server.ru/dcDHT.php");
@@ -49,13 +49,13 @@ namespace dht
     {
         if(bootstrapNodes.empty())
         {
-            dht_.ctx()->getLogManager()->message(_("DHT bootstrapping started"));
+            dht_.ctx().getLogManager()->message(_("DHT bootstrapping started"));
             string dhturl = dhtservers[Util::rand(dhtservers.size())];
             // TODO: make URL settable
-            string url = dhturl  + "?cid=" + dht_.ctx()->getClientManager()->getMe()->getCID().toBase32() + "&encryption=1";
+            string url = dhturl  + "?cid=" + dht_.ctx().getClientManager()->getMe()->getCID().toBase32() + "&encryption=1";
 
             // store only active nodes to database
-            if(dht_.ctx()->getClientManager()->isActive(Util::emptyString))
+            if(dht_.ctx().getClientManager()->isActive(Util::emptyString))
             {
                 url += "&u4=" + dht_.getPort();
             }
@@ -112,18 +112,18 @@ namespace dht
 
                 remoteXml.stepOut();
 
-                dht_.ctx()->getLogManager()->message(_("DHT bootstrapping is finished successfully."));
+                dht_.ctx().getLogManager()->message(_("DHT bootstrapping is finished successfully."));
             }
             catch(Exception& e)
             {
-                dht_.ctx()->getLogManager()->message(_("DHT bootstrap error: ") + e.getError());
+                dht_.ctx().getLogManager()->message(_("DHT bootstrap error: ") + e.getError());
             }
         }
     }
 
     void BootstrapManager::on(HttpConnectionListener::Failed, HttpConnection*, const string& aLine) throw()
     {
-        dht_.ctx()->getLogManager()->message(_("DHT bootstrap error: ") + aLine);
+        dht_.ctx().getLogManager()->message(_("DHT bootstrap error: ") + aLine);
     }
 
     void BootstrapManager::addBootstrapNode(const string& ip, const string& udpPort, const CID& targetCID, const UDPKey& udpKey)

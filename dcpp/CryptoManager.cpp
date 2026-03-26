@@ -42,8 +42,9 @@ static const char ciphersuites[] =
         "AES256-GCM-SHA384:AES256-SHA256:AES256-SHA:AES128-SHA"
         "!aNULL:!eNULL:!EXPORT:!DES:!RC4:!3DES:!MD5:!PSK";
 
-CryptoManager::CryptoManager()
+CryptoManager::CryptoManager(DCContext& ctx)
     :
+      ContextAware(ctx),
       certsLoaded(false),
       lock("EXTENDEDPROTOCOLABCABCABCABCABCABC"),
       pk("DCPLUSPLUS" VERSIONSTRING)
@@ -194,7 +195,7 @@ void CryptoManager::generateCertificate() {
 
             // Set CID
             CHECK((X509_NAME_add_entry_by_txt(nm, "CN", MBSTRING_ASC,
-                                              (const unsigned char*)ctx()->getClientManager()->getMyCID().toBase32().c_str(), -1, -1, 0)))
+                                              (const unsigned char*)ctx().getClientManager()->getMyCID().toBase32().c_str(), -1, -1, 0)))
 
             // Prepare self-signed cert
             ASN1_INTEGER_set(serial, (long)Util::rand());
@@ -242,7 +243,7 @@ void CryptoManager::loadCertificates() noexcept {
     const string& key = SETTING(TLS_PRIVATE_KEY_FILE);
 
     if(cert.empty() || key.empty()) {
-        ctx()->getLogManager()->message(_("TLS disabled, no certificate file set"));
+        ctx().getLogManager()->message(_("TLS disabled, no certificate file set"));
         return;
     }
 
@@ -250,45 +251,45 @@ void CryptoManager::loadCertificates() noexcept {
         // Try to generate them...
         try {
             generateCertificate();
-            ctx()->getLogManager()->message(_("Generated new TLS certificate"));
+            ctx().getLogManager()->message(_("Generated new TLS certificate"));
         } catch(const CryptoException& e) {
-            ctx()->getLogManager()->message(str(F_("TLS disabled, failed to generate certificate: %1%") % e.getError()));
+            ctx().getLogManager()->message(str(F_("TLS disabled, failed to generate certificate: %1%") % e.getError()));
         }
     }
 
     if(SSL_CTX_use_certificate_file(serverContext, cert.c_str(), SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        ctx()->getLogManager()->message(_("Failed to load certificate file"));
+        ctx().getLogManager()->message(_("Failed to load certificate file"));
         return;
     }
     if(SSL_CTX_use_certificate_file(clientContext, cert.c_str(), SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        ctx()->getLogManager()->message(_("Failed to load certificate file"));
+        ctx().getLogManager()->message(_("Failed to load certificate file"));
         return;
     }
 
     if(SSL_CTX_use_certificate_file(serverVerContext, cert.c_str(), SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        ctx()->getLogManager()->message(_("Failed to load certificate file"));
+        ctx().getLogManager()->message(_("Failed to load certificate file"));
         return;
     }
     if(SSL_CTX_use_certificate_file(clientVerContext, cert.c_str(), SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        ctx()->getLogManager()->message(_("Failed to load certificate file"));
+        ctx().getLogManager()->message(_("Failed to load certificate file"));
         return;
     }
 
     if(SSL_CTX_use_PrivateKey_file(serverContext, key.c_str(), SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        ctx()->getLogManager()->message(_("Failed to load private key"));
+        ctx().getLogManager()->message(_("Failed to load private key"));
         return;
     }
     if(SSL_CTX_use_PrivateKey_file(clientContext, key.c_str(), SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        ctx()->getLogManager()->message(_("Failed to load private key"));
+        ctx().getLogManager()->message(_("Failed to load private key"));
         return;
     }
 
     if(SSL_CTX_use_PrivateKey_file(serverVerContext, key.c_str(), SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        ctx()->getLogManager()->message(_("Failed to load private key"));
+        ctx().getLogManager()->message(_("Failed to load private key"));
         return;
     }
     if(SSL_CTX_use_PrivateKey_file(clientVerContext, key.c_str(), SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        ctx()->getLogManager()->message(_("Failed to load private key"));
+        ctx().getLogManager()->message(_("Failed to load private key"));
         return;
     }
 
@@ -303,7 +304,7 @@ void CryptoManager::loadCertificates() noexcept {
                 SSL_CTX_load_verify_locations(serverContext, i.c_str(), NULL) != SSL_SUCCESS ||
                 SSL_CTX_load_verify_locations(serverVerContext, i.c_str(), NULL) != SSL_SUCCESS
                 ) {
-            ctx()->getLogManager()->message("Failed to load trusted certificate from " + i);
+            ctx().getLogManager()->message("Failed to load trusted certificate from " + i);
         }
     }
 
@@ -354,7 +355,7 @@ bool CryptoManager::checkCertificate() noexcept {
     std::string cn((char*)buf, i);
     OPENSSL_free(buf);
 
-    if(cn != ctx()->getClientManager()->getMyCID().toBase32()) {
+    if(cn != ctx().getClientManager()->getMyCID().toBase32()) {
         return false;
     }
 

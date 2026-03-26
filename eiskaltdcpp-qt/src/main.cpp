@@ -183,15 +183,12 @@ int main(int argc, char *argv[])
 
     dcContext->getHashManager()->setPriority(Thread::IDLE);
 
-    // Make dcpp::DCContext* available to all QtContextAware classes
-    QtContextAware::setGlobalDcContext(dcContext.get());
-
     app.setOrganizationName("EiskaltDC++ Team");
     app.setApplicationName("EiskaltDC++ Qt");
     app.setApplicationVersion(QString::fromStdString(eiskaltdcppVersionString));
     
     { // Begin Qt-widget scope: everything inside is destroyed before dcpp shutdown
-    QtContext ctx;
+    QtContext ctx(*dcContext);
     // Guard: ensure settings are saved on scope exit.
     // The guard runs before ~QtContext.
     auto cleanupGuard = qScopeGuard([&]() {
@@ -286,7 +283,6 @@ int main(int argc, char *argv[])
     dcContext->shutdown();
     dcContext.reset();
     dcpp::setContext(nullptr);
-    QtContextAware::setGlobalDcContext(nullptr);
 
     std::cout << QObject::tr("Quit...").toStdString() << std::endl;
 

@@ -93,7 +93,7 @@ namespace dht
             Node::Ptr& node = *it;
             if(node->isOnline())
             {
-                dht_.ctx()->getClientManager()->putOffline(node.get());
+                dht_.ctx().getClientManager()->putOffline(node.get());
                 node->dec();
             }
         }
@@ -127,7 +127,7 @@ namespace dht
             {
                 // try to get node from ClientManager (user can be online but not in our routing table)
                 // this fixes the bug with DHT node online twice
-                node = (Node*)dht_.ctx()->getClientManager()->findDHTNode(u->getCID());
+                node = (Node*)dht_.ctx().getClientManager()->findDHTNode(u->getCID());
                 node = node.get();
             }
 
@@ -260,7 +260,7 @@ namespace dht
 
                     if(node->isOnline())
                     {
-                        dht_.ctx()->getClientManager()->putOffline(node.get());
+                        dht_.ctx().getClientManager()->putOffline(node.get());
                         node->dec();
                     }
 

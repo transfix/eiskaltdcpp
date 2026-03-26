@@ -19,7 +19,8 @@
 #include "dcpp/Util.h"
 #include "dcpp/DCPlusPlus.h"
 
-LogManagerScript::LogManagerScript(QObject *parent) :
+LogManagerScript::LogManagerScript(dcpp::DCContext& ctx, QObject *parent) :
+    QtContextAware(ctx),
     QObject(parent)
 {
     dcpp::getContext()->getLogManager()->addListener(this);

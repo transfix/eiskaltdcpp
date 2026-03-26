@@ -105,7 +105,7 @@ const string SettingsManager::settingTags[] =
     // Floats: none currently
 };
 
-SettingsManager::SettingsManager()
+SettingsManager::SettingsManager(DCContext& ctx) : ContextAware(ctx)
 {
 
     connectionSpeeds.clear();

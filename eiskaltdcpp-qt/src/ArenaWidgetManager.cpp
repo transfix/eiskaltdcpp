@@ -18,7 +18,7 @@
 
 #include <QApplication>
 
-ArenaWidgetManager::ArenaWidgetManager() : QObject(nullptr) {
+ArenaWidgetManager::ArenaWidgetManager(dcpp::DCContext& ctx) : QtContextAware(ctx), QObject(nullptr) {
     DEBUG_BLOCK
 }
 

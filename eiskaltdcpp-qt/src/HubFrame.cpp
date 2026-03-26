@@ -1541,7 +1541,7 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
 
     if (cmd == "/away"){
         if (Util::getAway() && emptyParam){
-            Util::setAway(false);
+            Util::setAway(qtCtx()->dcCtx(), false);
             Util::setManualAway(false);
 
             if (fr == this)
@@ -1550,7 +1550,7 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
                 pm->addStatus(tr("Away mode off"));
         }
         else {
-            Util::setAway(true);
+            Util::setAway(qtCtx()->dcCtx(), true);
             Util::setManualAway(true);
 
             if (!emptyParam){
@@ -1765,7 +1765,7 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
     }
 #endif
     else if (cmd == "/back"){
-        Util::setAway(false);
+        Util::setAway(qtCtx()->dcCtx(), false);
 
         if (fr == this)
             addStatus(tr("Away mode off"));

@@ -131,11 +131,11 @@ private:
 
     class Server : public Thread {
     public:
-        Server(DCContext* ctx, const bool secure_, const std::string& port, const string& ip = "0.0.0.0");
+        Server(DCContext& ctx, const bool secure_, const std::string& port, const string& ip = "0.0.0.0");
         virtual ~Server() { die = true; join(); }
 
         const string& getPort() const { return port; }
-        [[nodiscard]] DCContext* ctx() const noexcept { return ctx_; }
+        [[nodiscard]] DCContext& ctx() const noexcept { return ctx_; }
 
     private:
         virtual int run() noexcept;
@@ -145,7 +145,7 @@ private:
         string ip;
         bool secure;
         bool die;
-        DCContext* ctx_;
+        DCContext& ctx_;
     };
 
     friend class Server;
@@ -173,7 +173,7 @@ private:
     bool shuttingDown;
 
 public:
-    ConnectionManager();
+    explicit ConnectionManager(DCContext& ctx);
     virtual ~ConnectionManager() { shutdown(); }
 
 private:

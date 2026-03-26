@@ -37,7 +37,8 @@ static int getBitPos(unsigned eventId){
     return -1;
 }
 
-Notification::Notification(QObject *parent) :
+Notification::Notification(dcpp::DCContext& ctx, QObject *parent) :
+    QtContextAware(ctx),
     QObject(parent), tray(nullptr), notify(nullptr), suppressSnd(false), suppressTxt(false)
 {
     switchModule(static_cast<unsigned>(qtCtx()->settings()->getInt(WI_NOTIFY_MODULE)));

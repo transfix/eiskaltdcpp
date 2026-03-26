@@ -148,7 +148,8 @@ TransferView::Menu::Action TransferView::Menu::exec(){
     return None;
 }
 
-TransferView::TransferView(QWidget *parent):
+TransferView::TransferView(dcpp::DCContext& ctx, QWidget *parent):
+        QtContextAware(ctx),
         QWidget(parent),
         model(nullptr)
 {

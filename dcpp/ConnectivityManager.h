@@ -53,7 +53,7 @@ public:
     void updateLast();
 
 public:
-    ConnectivityManager();
+    explicit ConnectivityManager(DCContext& ctx);
     virtual ~ConnectivityManager() { }
 
 private:

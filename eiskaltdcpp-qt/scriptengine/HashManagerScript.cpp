@@ -17,30 +17,18 @@
 #include "dcpp/MerkleTree.h"
 #include "dcpp/DCPlusPlus.h"
 
-HashManagerScript::HashManagerScript(QObject *parent) :
+HashManagerScript::HashManagerScript(dcpp::DCContext& ctx, QObject *parent) :
+    QtContextAware(ctx),
     QObject(parent)
 {
     HM = dcpp::getContext()->getHashManager();
     HM->addListener(this);
 }
 
-HashManagerScript::HashManagerScript(const HashManagerScript &)
-{
-    HM = dcpp::getContext()->getHashManager();
-    HM->addListener(this);
-}
 
 HashManagerScript::~HashManagerScript()
 {
     HM->removeListener(this);
-}
-
-HashManagerScript &HashManagerScript::operator=(const HashManagerScript &)
-{
-    HM = dcpp::getContext()->getHashManager();
-    HM->addListener(this);
-
-    return *this;
 }
 
 void HashManagerScript::stopHashing(const QString &baseDir) {

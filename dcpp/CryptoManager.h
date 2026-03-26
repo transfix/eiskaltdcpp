@@ -54,7 +54,7 @@ public:
 
     bool TLSOk() const noexcept;
 public:
-    CryptoManager();
+    explicit CryptoManager(DCContext& ctx);
     virtual ~CryptoManager();
 
 private:

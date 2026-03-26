@@ -164,7 +164,7 @@ class WulforSettings :
     typedef QMap<QString, QString> WStrMap;
 
 public:
-    WulforSettings();
+    explicit WulforSettings(dcpp::DCContext& ctx);
     ~WulforSettings() override;
 
     /// Access through QtContext — NOT a singleton.

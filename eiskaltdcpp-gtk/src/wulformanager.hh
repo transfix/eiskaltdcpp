@@ -27,10 +27,12 @@
 #include "func.hh"
 #include "mainwindow.hh"
 
+namespace dcpp { class DCContext; }
+
 class WulforManager
 {
 public:
-    WulforManager(int argc, char **argv);
+    WulforManager(dcpp::DCContext& dcCtx, int argc, char **argv);
     ~WulforManager();
 
     WulforManager(const WulforManager&) = delete;
@@ -84,6 +86,7 @@ private:
 #else
     GRWLock entryMutex;
 #endif
+    dcpp::DCContext& dcCtx_;
     GThread *clientThread;
     bool abort;
 };

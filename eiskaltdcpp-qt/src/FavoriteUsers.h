@@ -80,7 +80,7 @@ private Q_SLOTS:
     void remUser(const QString &);
 
 public:
-    FavoriteUsers(QWidget *parent = nullptr);
+    FavoriteUsers(dcpp::DCContext& ctx, QWidget *parent = nullptr);
     ~FavoriteUsers() override;
 
 

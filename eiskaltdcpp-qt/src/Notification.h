@@ -45,7 +45,7 @@ Q_OBJECT
 friend class QtContext;
 
 public:
-    explicit Notification(QObject *parent = nullptr);
+    explicit Notification(dcpp::DCContext& ctx, QObject *parent = nullptr);
     ~Notification() override;
 
 

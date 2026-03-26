@@ -211,6 +211,7 @@ public:
 private:
     int64_t chunkSize;
     BufferedSocket* socket;
+    DCContext& ctx_;
     bool secure;
     UserPtr user;
 
@@ -222,11 +223,16 @@ private:
     };
 
     // We only want ConnectionManager to create this...
-    UserConnection(bool secure_) noexcept : encoding(Text::systemCharset), state(STATE_UNCONNECTED),
-        lastActivity(0), speed(0), chunkSize(0), socket(0), secure(secure_), download(NULL) {
+    UserConnection(bool secure_, DCContext& ctx) noexcept : encoding(Text::systemCharset), state(STATE_UNCONNECTED),
+        lastActivity(0), speed(0), chunkSize(0), socket(0), ctx_(ctx), secure(secure_), download(NULL) {
         if (secure_)
             setFlag(FLAG_SECURE);
     }
+
+public:
+    DCContext& ctx() const { return ctx_; }
+
+private:
 
     virtual ~UserConnection() {
         BufferedSocket::putSocket(socket);

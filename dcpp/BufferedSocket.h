@@ -33,6 +33,8 @@
 
 namespace dcpp {
 
+class DCContext;
+
 using std::deque;
 using std::function;
 using std::pair;
@@ -57,8 +59,8 @@ public:
      * @param sep Line separator
      * @return An unconnected socket
      */
-    static BufferedSocket* getSocket(char sep) {
-        return new BufferedSocket(sep);
+    static BufferedSocket* getSocket(char sep, DCContext& ctx) {
+        return new BufferedSocket(sep, ctx);
     }
 
     static void putSocket(BufferedSocket* aSock) {
@@ -153,9 +155,11 @@ public:
         InputStream* stream;
     };
 
-    BufferedSocket(char aSeparator);
+    BufferedSocket(char aSeparator, DCContext& ctx);
 
     virtual ~BufferedSocket();
+
+    DCContext& ctx() const { return ctx_; }
 
     CriticalSection cs;
 
@@ -172,6 +176,7 @@ public:
     ByteVector sendBuf;
 
     unique_ptr<Socket> sock;
+    DCContext& ctx_;
     State state;
     bool disconnecting;
 

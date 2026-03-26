@@ -31,7 +31,7 @@ void LogManager::log(Area area, ParamMap& params) noexcept {
 }
 
 void LogManager::message(const string& msg) {
-    if(BOOLSETTING(LOG_SYSTEM)) {
+    if(CTX_BOOLSETTING(LOG_SYSTEM)) {
         ParamMap params;
         params["message"] = msg;
         log(SYSTEM, params);
@@ -53,7 +53,7 @@ LogManager::List LogManager::getLastLogs() {
 }
 
 string LogManager::getPath(Area area, ParamMap& params) const {
-    return SETTING(LOG_DIRECTORY) + Util::formatParams(getSetting(area, FILE), params, true);
+    return CTX_SETTING(LOG_DIRECTORY) + Util::formatParams(getSetting(area, FILE), params, true);
 }
 
 string LogManager::getPath(Area area) const {
@@ -62,11 +62,11 @@ string LogManager::getPath(Area area) const {
 }
 
 const string& LogManager::getSetting(int area, int sel) const {
-    return ctx()->getSettingsManager()->get(static_cast<SettingsManager::StrSetting>(options[area][sel]), true);
+    return ctx().getSettingsManager()->get(static_cast<SettingsManager::StrSetting>(options[area][sel]), true);
 }
 
 void LogManager::saveSetting(int area, int sel, const string& setting) {
-    ctx()->getSettingsManager()->set(static_cast<SettingsManager::StrSetting>(options[area][sel]), setting);
+    ctx().getSettingsManager()->set(static_cast<SettingsManager::StrSetting>(options[area][sel]), setting);
 }
 
 void LogManager::log(const string& area, const string& msg) noexcept {
@@ -82,7 +82,7 @@ void LogManager::log(const string& area, const string& msg) noexcept {
     }
 }
 
-LogManager::LogManager() {
+LogManager::LogManager(DCContext& ctx) : ContextAware(ctx) {
     options[UPLOAD][FILE]              = SettingsManager::LOG_FILE_UPLOAD;
     options[UPLOAD][FORMAT]            = SettingsManager::LOG_FORMAT_POST_UPLOAD;
     options[DOWNLOAD][FILE]            = SettingsManager::LOG_FILE_DOWNLOAD;

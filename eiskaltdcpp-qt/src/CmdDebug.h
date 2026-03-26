@@ -42,7 +42,7 @@ class CmdDebug : public QWidget,
 
     friend class QtContext;
 public:
-    explicit CmdDebug(QWidget *parent = nullptr);
+    explicit CmdDebug(dcpp::DCContext& ctx, QWidget *parent = nullptr);
     ~CmdDebug() override;
 
     QWidget *getWidget();

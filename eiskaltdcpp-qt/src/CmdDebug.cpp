@@ -24,8 +24,9 @@
 #include "QtContext.h"
 #include "QtContextAware.h"
 
-CmdDebug::CmdDebug(QWidget *parent)
-    : QWidget(parent)
+CmdDebug::CmdDebug(dcpp::DCContext& ctx, QWidget *parent)
+    : QtContextAware(ctx)
+    , QWidget(parent)
     , d_ptr(new CmdDebugPrivate())
 {
     setupUi(this);

@@ -34,7 +34,8 @@
 
 using namespace dcpp;
 
-FavoriteHubs::FavoriteHubs(QWidget *parent):
+FavoriteHubs::FavoriteHubs(dcpp::DCContext& ctx, QWidget *parent):
+    QtContextAware(ctx),
     QWidget(parent),
     model(nullptr)
 {

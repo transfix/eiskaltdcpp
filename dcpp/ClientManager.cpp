@@ -41,27 +41,25 @@
 
 namespace dcpp {
 
-ClientManager::ClientManager() {
-    ctx()->getTimerManager()->addListener(this);
+ClientManager::ClientManager(DCContext& ctx) : ContextAware(ctx) {
+    this->ctx().getTimerManager()->addListener(this);
 }
 
 ClientManager::~ClientManager() {
-    ctx()->getTimerManager()->removeListener(this);
+    ctx().getTimerManager()->removeListener(this);
 }
 
 Client* ClientManager::getClient(const string& aHubURL) {
     Client* c;
     if(Util::strnicmp("adc://", aHubURL.c_str(), 6) == 0) {
-        c = new AdcHub(aHubURL, false);
+        c = new AdcHub(ctx(), aHubURL, false);
     } else if(Util::strnicmp("adcs://", aHubURL.c_str(), 7) == 0) {
-        c = new AdcHub(aHubURL, true);
+        c = new AdcHub(ctx(), aHubURL, true);
     } else if(Util::strnicmp("nmdcs://", aHubURL.c_str(), 8) == 0) {
-        c = new NmdcHub(aHubURL, true);
+        c = new NmdcHub(ctx(), aHubURL, true);
     } else {
-        c = new NmdcHub(aHubURL, false);
+        c = new NmdcHub(ctx(), aHubURL, false);
     }
-
-    c->setContext(ctx());
 
     {
         Lock l(cs);
@@ -91,11 +89,11 @@ size_t ClientManager::getUserCount() const {
 }
 
 StringList ClientManager::getHubs(const CID& cid, const string& hintUrl) {
-    return getHubs(cid, hintUrl, ctx()->getFavoriteManager()->isPrivate(hintUrl));
+    return getHubs(cid, hintUrl, ctx().getFavoriteManager()->isPrivate(hintUrl));
 }
 
 StringList ClientManager::getHubNames(const CID& cid, const string& hintUrl) {
-    return getHubNames(cid, hintUrl, ctx()->getFavoriteManager()->isPrivate(hintUrl));
+    return getHubNames(cid, hintUrl, ctx().getFavoriteManager()->isPrivate(hintUrl));
 }
 
 StringList ClientManager::getHubUrls(const CID& cid) const {
@@ -109,7 +107,7 @@ StringList ClientManager::getHubUrls(const CID& cid) const {
 }
 
 StringList ClientManager::getNicks(const CID& cid, const string& hintUrl) {
-    return getNicks(cid, hintUrl, ctx()->getFavoriteManager()->isPrivate(hintUrl));
+    return getNicks(cid, hintUrl, ctx().getFavoriteManager()->isPrivate(hintUrl));
 }
 
 StringList ClientManager::getHubs(const CID& cid, const string& hintUrl, bool priv) {
@@ -369,7 +367,7 @@ void ClientManager::putOffline(OnlineUser* ou, bool disconnect) noexcept {
         UserPtr& u = ou->getUser();
         u->unsetFlag(User::ONLINE);
         if(disconnect)
-            ctx()->getConnectionManager()->disconnect(u);
+            ctx().getConnectionManager()->disconnect(u);
         fire(ClientManagerListener::UserDisconnected(), u);
     } else if(diff > 1) {
         fire(ClientManagerListener::UserUpdated(), *ou);
@@ -415,7 +413,7 @@ OnlineUser* ClientManager::findOnlineUser(const CID& cid, const string& hintUrl,
 }
 
 void ClientManager::connect(const HintedUser& user, const string& token) {
-    bool priv = ctx()->getFavoriteManager()->isPrivate(user.hint);
+    bool priv = ctx().getFavoriteManager()->isPrivate(user.hint);
 
     Lock l(cs);
     OnlineUser* u = findOnlineUser(user, priv);
@@ -426,7 +424,7 @@ void ClientManager::connect(const HintedUser& user, const string& token) {
 }
 
 void ClientManager::privateMessage(const HintedUser& user, const string& msg, bool thirdPerson) {
-    bool priv = ctx()->getFavoriteManager()->isPrivate(user.hint);
+    bool priv = ctx().getFavoriteManager()->isPrivate(user.hint);
 
     Lock l(cs);
     OnlineUser* u = findOnlineUser(user, priv);
@@ -501,12 +499,12 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
     bool isTTHSearch = ((aFileType == SearchManager::TYPE_TTH) && (aString.compare(0, 4, "TTH:") == 0));
 
     // We don't wan't to answer passive searches if we're in passive mode...
-    if(isPassive && !ctx()->getClientManager()->isActive(aClient->getHubUrl())) {
+    if(isPassive && !ctx().getClientManager()->isActive(aClient->getHubUrl())) {
         return;
     }
 
     SearchResultList l;
-    ctx()->getShareManager()->search(l, aString, aSearchType, aSize, aFileType, aClient, isPassive ? 5 : 10);
+    ctx().getShareManager()->search(l, aString, aSearchType, aSize, aFileType, aClient, isPassive ? 5 : 10);
     //      dcdebug("Found %d items (%s)\n", l.size(), aString.c_str());
     if(!l.empty()) {
         if(isPassive) {
@@ -540,9 +538,9 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
     } else if(!isPassive && isTTHSearch) {
         PartsInfo partialInfo;
         TTHValue aTTH(aString.substr(4));
-        if(!ctx()->getQueueManager()->handlePartialSearch(aTTH, partialInfo)) {
+        if(!ctx().getQueueManager()->handlePartialSearch(aTTH, partialInfo)) {
             // if not found, try to find in finished list
-            if(!ctx()->getFinishedManager()->handlePartialRequest(aTTH, partialInfo)) {
+            if(!ctx().getFinishedManager()->handlePartialRequest(aTTH, partialInfo)) {
                 return;
             }
         }
@@ -555,9 +553,9 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
         }
 
         try {
-            AdcCommand cmd = ctx()->getSearchManager()->toPSR(true, aClient->getMyNick(), aClient->getIpPort(), aTTH.toBase32(), partialInfo);
+            AdcCommand cmd = ctx().getSearchManager()->toPSR(true, aClient->getMyNick(), aClient->getIpPort(), aTTH.toBase32(), partialInfo);
             Socket s;
-            s.writeTo(ip, port, cmd.toString(ctx()->getClientManager()->getMe()->getCID()));
+            s.writeTo(ip, port, cmd.toString(ctx().getClientManager()->getMe()->getCID()));
         } catch(...) {
             dcdebug("Partial search caught error\n");
         }
@@ -576,7 +574,7 @@ void ClientManager::on(AdcSearch, Client* c, const AdcCommand& adc, const CID& f
         }
 
     }
-    ctx()->getSearchManager()->respond(adc, from, isUdpActive, c->getIpPort());
+    ctx().getSearchManager()->respond(adc, from, isUdpActive, c->getIpPort());
 
     Speaker<ClientManagerListener>::fire(ClientManagerListener::IncomingSearch(), [&adc]() -> string
     {
@@ -604,7 +602,7 @@ void ClientManager::on(AdcSearch, Client* c, const AdcCommand& adc, const CID& f
 void ClientManager::search(int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken, void* aOwner) {
 #ifdef WITH_DHT
     if(CTX_BOOLSETTING(USE_DHT) && aFileType == SearchManager::TYPE_TTH)
-        ctx()->getDHT()->findFile(aString);
+        ctx().getDHT()->findFile(aString);
 #endif
     Lock l(cs);
     for(auto i: clients) {
@@ -617,7 +615,7 @@ void ClientManager::search(int aSizeMode, int64_t aSize, int aFileType, const st
 uint64_t ClientManager::search(StringList& who, int aSizeMode, int64_t aSize, int aFileType, const string& aString, const string& aToken, const StringList& aExtList, void* aOwner) {
 #ifdef WITH_DHT
     if(CTX_BOOLSETTING(USE_DHT) && aFileType == SearchManager::TYPE_TTH)
-        ctx()->getDHT()->findFile(aString, aToken);
+        ctx().getDHT()->findFile(aString, aToken);
 #endif
     Lock l(cs);
     uint64_t estimateSearchSpan = 0;
@@ -770,13 +768,13 @@ void ClientManager::on(Failed, Client* client, const string&) noexcept {
 void ClientManager::on(HubUserCommand, Client* client, int aType, int ucCtx, const string& name, const string& command) noexcept {
     if(CTX_BOOLSETTING(HUB_USER_COMMANDS)) {
         if(aType == UserCommand::TYPE_REMOVE) {
-            int cmd = ctx()->getFavoriteManager()->findUserCommand(name, client->getHubUrl());
+            int cmd = ctx().getFavoriteManager()->findUserCommand(name, client->getHubUrl());
             if(cmd != -1)
-                ctx()->getFavoriteManager()->removeUserCommand(cmd);
+                ctx().getFavoriteManager()->removeUserCommand(cmd);
         } else if(aType == UserCommand::TYPE_CLEAR) {
-            ctx()->getFavoriteManager()->removeHubUserCommands(ucCtx, client->getHubUrl());
+            ctx().getFavoriteManager()->removeHubUserCommands(ucCtx, client->getHubUrl());
         } else {
-            ctx()->getFavoriteManager()->addUserCommand(aType, ucCtx, UserCommand::FLAG_NOSAVE, name, command, "", client->getHubUrl());
+            ctx().getFavoriteManager()->addUserCommand(aType, ucCtx, UserCommand::FLAG_NOSAVE, name, command, "", client->getHubUrl());
         }
     }
 }
@@ -786,7 +784,7 @@ int ClientManager::getMode(const string& aHubUrl) const {
         return CTX_SETTING(INCOMING_CONNECTIONS);
 
     int mode = 0;
-    const FavoriteHubEntry* hub = ctx()->getFavoriteManager()->getFavoriteHubEntry(aHubUrl);
+    const FavoriteHubEntry* hub = ctx().getFavoriteManager()->getFavoriteHubEntry(aHubUrl);
     if(hub) {
         switch(hub->getMode()) {
         case 1 :
@@ -864,7 +862,7 @@ bool ClientManager::ucExecuteLua(const string& ucCommand, StringMap& params) noe
         }
         //@todo: use filter? I opted for no here, but this means Lua has to be careful about
         //filtering if it cares.
-        dcpp::getContext()->getScriptManager()->EvaluateChunk(Util::formatParams(chunk, params, false));
+        ctx().getScriptManager()->EvaluateChunk(Util::formatParams(chunk, params, false));
         executedlua = true;
         i = j + 1;
     }

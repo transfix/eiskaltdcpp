@@ -115,7 +115,7 @@ public:
     };
     typedef vector<DestDir> DestDirList;
 
-    ADLSearchManager();
+    explicit ADLSearchManager(DCContext& ctx);
     virtual ~ADLSearchManager();
 
     // Search collection

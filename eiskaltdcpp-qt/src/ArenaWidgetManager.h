@@ -25,7 +25,7 @@ friend class QtContext;
 friend class ArenaWidgetFactory;
 
 public:
-    ArenaWidgetManager();
+    explicit ArenaWidgetManager(dcpp::DCContext& ctx);
     ~ArenaWidgetManager() override;
 
 

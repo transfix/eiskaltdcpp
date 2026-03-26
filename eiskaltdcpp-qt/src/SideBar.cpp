@@ -663,7 +663,7 @@ void SideBarView::slotSideBarDblClicked(const QModelIndex &index){
             return;
 
         file = QDir::toNativeSeparators ( file );
-        UserPtr user = dcpp::DirectoryListing::getUserFromFilename ( _tq ( file ) );
+        UserPtr user = dcpp::DirectoryListing::getUserFromFilename ( qtCtx()->dcCtx(), _tq ( file ) );
 
         if ( user )
             ArenaWidgetFactory().create<ShareBrowser, UserPtr, QString, QString> ( user, file, "" );

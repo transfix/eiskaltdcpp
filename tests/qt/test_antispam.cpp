@@ -28,7 +28,7 @@ static void ensureContext() {
     if (!g_tc)
         g_tc = std::make_unique<dcpp::test::TestContext>();
     if (!qtCtx()) {
-        g_qtCtx = std::make_unique<QtContext>();  // auto-registers
+        g_qtCtx = std::make_unique<QtContext>(*dcpp::getContext());  // auto-registers
         g_qtCtx->createSettings();
         std::atexit(cleanupQtContext);
     }

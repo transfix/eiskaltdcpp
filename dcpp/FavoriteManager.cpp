@@ -32,23 +32,19 @@
 
 namespace dcpp {
 
-FavoriteManager::FavoriteManager() : lastId(0), useHttp(false), running(false), c(nullptr), lastServer(0), listType(TYPE_NORMAL), dontSave(false) {
-    ctx()->getSettingsManager()->addListener(this);
-    if (ctx()->getClientManager())
-        ctx()->getClientManager()->addListener(this);
+FavoriteManager::FavoriteManager(DCContext& ctx) : ContextAware(ctx), lastId(0), useHttp(false), running(false), c(nullptr), lastServer(0), listType(TYPE_NORMAL), dontSave(false) {
+    this->ctx().getSettingsManager()->addListener(this);
+    if (this->ctx().getClientManager())
+        this->ctx().getClientManager()->addListener(this);
 
     File::ensureDirectory(Util::getHubListsPath());
 }
 
 FavoriteManager::~FavoriteManager() {
-    // Guard against null context — can happen if the manager outlives the
-    // global DCContext during static destruction (e.g. unit tests).
-    if (ctx()) {
-        if (ctx()->getClientManager())
-            ctx()->getClientManager()->removeListener(this);
-        if (ctx()->getSettingsManager())
-            ctx()->getSettingsManager()->removeListener(this);
-    }
+    if (ctx().getClientManager())
+        ctx().getClientManager()->removeListener(this);
+    if (ctx().getSettingsManager())
+        ctx().getSettingsManager()->removeListener(this);
     if(c) {
         c->removeListener(this);
         delete c;
@@ -145,8 +141,8 @@ void FavoriteManager::removeHubUserCommands(int ctx, const string& hub) {
 void FavoriteManager::addFavoriteUser(const UserPtr& aUser) {
     Lock l(cs);
     if(users.find(aUser->getCID()) == users.end()) {
-        StringList urls = ctx()->getClientManager()->getHubs(aUser->getCID(), Util::emptyString);
-        StringList nicks = ctx()->getClientManager()->getNicks(aUser->getCID(), Util::emptyString);
+        StringList urls = ctx().getClientManager()->getHubs(aUser->getCID(), Util::emptyString);
+        StringList nicks = ctx().getClientManager()->getNicks(aUser->getCID(), Util::emptyString);
 
         /// @todo make this an error probably...
         if(urls.empty())
@@ -503,9 +499,9 @@ void FavoriteManager::load(SimpleXML& aXml) {
             if(cid.length() != 39) {
                 if(nick.empty() || hubUrl.empty())
                     continue;
-                u = ctx()->getClientManager()->getUser(nick, hubUrl);
+                u = ctx().getClientManager()->getUser(nick, hubUrl);
             } else {
-                u = ctx()->getClientManager()->getUser(CID(cid));
+                u = ctx().getClientManager()->getUser(CID(cid));
             }
             auto i = users.emplace(u->getCID(), FavoriteUser(u, nick, hubUrl)).first;
 
@@ -540,7 +536,7 @@ void FavoriteManager::load(SimpleXML& aXml) {
         while(aXml.findChild("Directory")) {
             string virt = aXml.getChildAttrib("Name");
             string d(aXml.getChildData());
-            ctx()->getFavoriteManager()->addFavoriteDir(d, virt);
+            ctx().getFavoriteManager()->addFavoriteDir(d, virt);
         }
         try {
             aXml.stepOut();
@@ -705,7 +701,7 @@ void FavoriteManager::refresh(bool forceDownload /* = false */) {
         }
         fire(FavoriteManagerListener::DownloadStarting(), publicListServer);
         if(c == NULL)
-            c = new HttpConnection();
+            c = new HttpConnection(ctx());
         c->addListener(this);
         c->downloadFile(publicListServer);
         running = true;
@@ -716,7 +712,7 @@ UserCommand::List FavoriteManager::getUserCommands(int ucCtx, const StringList& 
     vector<bool> isOp(hubs.size());
 
     for(size_t i = 0; i < hubs.size(); ++i) {
-        if(ctx()->getClientManager()->isOp(ctx()->getClientManager()->getMe(), hubs[i])) {
+        if(ctx().getClientManager()->isOp(ctx().getClientManager()->getMe(), hubs[i])) {
             isOp[i] = true;
         }
     }

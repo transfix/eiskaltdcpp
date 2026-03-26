@@ -19,7 +19,7 @@
 
 using namespace dcpp;
 
-ShortcutManager::ShortcutManager(){
+ShortcutManager::ShortcutManager(dcpp::DCContext& ctx) : QtContextAware(ctx) {
     load();
 }
 

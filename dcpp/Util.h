@@ -57,6 +57,8 @@ extern "C" int  _nl_msg_cat_cntr;
 
 namespace dcpp {
 
+class DCContext;
+
 #define LIT(x) x, (sizeof(x)-1)
 
 /** Evaluates op(pair<T1, T2>.first, compareTo) */
@@ -428,11 +430,11 @@ public:
 
     static string getIpCountry (string IP);
 
-    static void setLang(const string& lang);
+    static void setLang(DCContext& ctx, const string& lang);
 
     static bool getAway();
-    static void setAway(bool b);
-    static void switchAway();
+    static void setAway(DCContext& ctx, bool b);
+    static void switchAway(DCContext& ctx);
 
     static bool getManualAway() { return manualAway; }
     static void setManualAway(bool aManualAway) { manualAway = aManualAway; }

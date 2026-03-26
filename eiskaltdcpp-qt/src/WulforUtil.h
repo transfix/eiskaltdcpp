@@ -52,7 +52,7 @@ class WulforUtil :
 friend class QtContext;
 
 public:
-    WulforUtil();
+    explicit WulforUtil(dcpp::DCContext& ctx);
     ~WulforUtil() override;
 
 

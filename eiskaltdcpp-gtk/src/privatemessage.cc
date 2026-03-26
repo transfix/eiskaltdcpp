@@ -28,6 +28,7 @@
 #include "emoticonsdialog.hh"
 #include "emoticons.hh"
 #include "wulformanager.hh"
+#include "GtkContextAware.hh"
 #include "WulforUtil.hh"
 #include "search.hh"
 #include "sound.hh"
@@ -35,8 +36,9 @@
 using namespace std;
 using namespace dcpp;
 
-PrivateMessage::PrivateMessage(const string &_cid, const string &_hubUrl):
+PrivateMessage::PrivateMessage(dcpp::DCContext& dcCtx, const string &_cid, const string &_hubUrl):
     BookEntry(Entry::PRIVATE_MESSAGE, WulforUtil::getNicks(_cid, _hubUrl), "privatemessage.ui", _cid),
+    dcCtx_(dcCtx),
     cid(_cid),
     hubUrl(_hubUrl),
     historyIndex(0),
@@ -914,14 +916,14 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         {
             if (Util::getAway() && param.empty())
             {
-                Util::setAway(false);
+                Util::setAway(pm->dcCtx_, false);
                 Util::setManualAway(false);
                 pm->addStatusMessage_gui(_("Away mode off"), Msg::SYSTEM);
                 pm->sentAwayMessage = false;
             }
             else
             {
-                Util::setAway(true);
+                Util::setAway(pm->dcCtx_, true);
                 Util::setManualAway(true);
                 Util::setAwayMessage(param);
                 pm->addStatusMessage_gui(_("Away mode on: ") + Util::getAwayMessage(), Msg::SYSTEM);
@@ -929,7 +931,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
         else if (command == "back")
         {
-            Util::setAway(false);
+            Util::setAway(pm->dcCtx_, false);
             pm->addStatusMessage_gui(_("Away mode off"), Msg::SYSTEM);
         }
         else if (command == "clear")

@@ -229,20 +229,20 @@ void HashManager::hashDone(const string& aFileName, uint32_t aTimeStamp, const T
         store.addFile(aFileName, aTimeStamp, tth, true);
         m_streamstore.saveTree(aFileName, tth);
     } catch (const Exception& e) {
-        ctx()->getLogManager()->message(str(F_("Hashing failed: %1%") % e.getError()));
+        ctx().getLogManager()->message(str(F_("Hashing failed: %1%") % e.getError()));
         return;
     }
 
     fire(HashManagerListener::TTHDone(), aFileName, tth.getRoot());
 
     if (speed > 0) {
-        ctx()->getLogManager()->message(str(F_("Finished hashing: %1% (%2% at %3%/s)") % Util::addBrackets(aFileName) %
+        ctx().getLogManager()->message(str(F_("Finished hashing: %1% (%2% at %3%/s)") % Util::addBrackets(aFileName) %
                                                Util::formatBytes(size) % Util::formatBytes(speed)));
     } else if(size >= 0) {
-        ctx()->getLogManager()->message(str(F_("Finished hashing: %1% (%2%)") % Util::addBrackets(aFileName) %
+        ctx().getLogManager()->message(str(F_("Finished hashing: %1% (%2%)") % Util::addBrackets(aFileName) %
                                                Util::formatBytes(size)));
     } else {
-        ctx()->getLogManager()->message(str(F_("Finished hashing: %1%") % Util::addBrackets(aFileName)));
+        ctx().getLogManager()->message(str(F_("Finished hashing: %1%") % Util::addBrackets(aFileName)));
     }
 }
 
@@ -270,7 +270,7 @@ void HashManager::HashStore::addTree(const TigerTree& tt) noexcept {
             treeIndex.emplace(tt.getRoot(), TreeInfo(tt.getFileSize(), index, tt.getBlockSize()));
             dirty = true;
         } catch (const FileException& e) {
-            ctx()->getLogManager()->message(str(F_("Error saving hash data: %1%") % e.getError()));
+            ctx().getLogManager()->message(str(F_("Error saving hash data: %1%") % e.getError()));
         }
     }
 }
@@ -427,7 +427,7 @@ void HashManager::HashStore::rebuild() {
         dirty = true;
         save();
     } catch (const Exception& e) {
-        ctx()->getLogManager()->message(str(F_("Hashing failed: %1%") % e.getError()));
+        ctx().getLogManager()->message(str(F_("Hashing failed: %1%") % e.getError()));
     }
 }
 
@@ -482,7 +482,7 @@ void HashManager::HashStore::save() {
 
             dirty = false;
         } catch (const FileException& e) {
-            ctx()->getLogManager()->message(str(F_("Error saving hash data: %1%") % e.getError()));
+            ctx().getLogManager()->message(str(F_("Error saving hash data: %1%") % e.getError()));
         }
     }
 }
@@ -581,7 +581,7 @@ void HashLoader::startTag(const string& name, StringPairList& attribs, bool simp
     }
 }
 
-HashManager::HashStore::HashStore(DCContext* ctx) :
+HashManager::HashStore::HashStore(DCContext& ctx) :
     dirty(false), ctx_(ctx) {
 
     Util::migrate(getDataFile());
@@ -615,7 +615,7 @@ void HashManager::HashStore::createDataFile(const string& name) {
         dat.write(&start, sizeof(start));
 
     } catch (const FileException& e) {
-        ctx()->getLogManager()->message(str(F_("Error creating hash data file: %1%") % e.getError()));
+        ctx().getLogManager()->message(str(F_("Error creating hash data file: %1%") % e.getError()));
     }
 }
 
@@ -964,9 +964,9 @@ int HashManager::Hasher::run() {
         if(stop)
             break;
         if(rebuild) {
-            ctx()->getHashManager()->doRebuild();
+            ctx().getHashManager()->doRebuild();
             rebuild = false;
-            ctx()->getLogManager()->message(_("Hash database rebuilt"));
+            ctx().getLogManager()->message(_("Hash database rebuilt"));
             continue;
         }
         {
@@ -1060,12 +1060,12 @@ int HashManager::Hasher::run() {
                     speed = size * _LL(1000) / (end - start);
                 }
                 if(xcrc32 && xcrc32->getValue() != sfv.getCRC()) {
-                    ctx()->getLogManager()->message(str(F_("%1% not shared; calculated CRC32 does not match the one found in SFV file.") % Util::addBrackets(fname)));
+                    ctx().getLogManager()->message(str(F_("%1% not shared; calculated CRC32 does not match the one found in SFV file.") % Util::addBrackets(fname)));
                 } else {
-                    ctx()->getHashManager()->hashDone(fname, timestamp, *tth, speed, size);
+                    ctx().getHashManager()->hashDone(fname, timestamp, *tth, speed, size);
                 }
             } catch(const FileException& e) {
-                ctx()->getLogManager()->message(str(F_("Error hashing %1%: %2%") % Util::addBrackets(fname) % e.getError()));
+                ctx().getLogManager()->message(str(F_("Error hashing %1%: %2%") % Util::addBrackets(fname) % e.getError()));
             }
         }
         {
@@ -1088,13 +1088,13 @@ int HashManager::Hasher::run() {
     return 0;
 }
 
-HashManager::HashPauser::HashPauser(DCContext* ctx) : ctx_(ctx) {
-    resume = !ctx_->getHashManager()->isHashingPaused();
+HashManager::HashPauser::HashPauser(DCContext& ctx) : ctx_(ctx) {
+    resume = !ctx_.getHashManager()->isHashingPaused();
 }
 
 HashManager::HashPauser::~HashPauser() {
     if(resume)
-        ctx()->getHashManager()->resumeHashing();
+        ctx().getHashManager()->resumeHashing();
 }
 
 bool HashManager::pauseHashing() noexcept {
@@ -1118,13 +1118,13 @@ void HashManager::on(TimerManagerListener::Second, uint64_t tick) noexcept {
     static bool firstcycle = true;
     if (firstcycle){
         int delay = CTX_SETTING(HASHING_START_DELAY);
-        SettingsManager *SM = ctx()->getSettingsManager();
+        SettingsManager *SM = ctx().getSettingsManager();
         if (delay > 1800){
             delay = 1800;
             SM->set(SettingsManager::HASHING_START_DELAY, delay);
         }
 
-        if (!ctx()->getShareManager()->isRefreshing()){
+        if (!ctx().getShareManager()->isRefreshing()){
             string  curFile;
             uint64_t bytesLeft;
             size_t  filesLeft = -1;

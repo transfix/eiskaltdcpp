@@ -38,6 +38,7 @@
 #include "UserCommandMenu.hh"
 #include "wulformanager.hh"
 #include "WulforUtil.hh"
+#include "GtkContextAware.hh"
 #include <dcpp/StringTokenizer.h>
 
 #include "VersionGlobal.h"
@@ -63,8 +64,9 @@ inline bool isEmptyString(gchar *c)
     return false;
 }
 
-Hub::Hub(const string &address, const string &encoding):
+Hub::Hub(dcpp::DCContext& dcCtx, const string &address, const string &encoding):
     BookEntry(Entry::HUB, address, "hub.ui", address),
+    dcCtx_(dcCtx),
     client(NULL),
     historyIndex(0),
     totalShared(0),
@@ -1921,13 +1923,13 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
         {
             if (Util::getAway() && param.empty())
             {
-                Util::setAway(false);
+                Util::setAway(hub->dcCtx_, false);
                 Util::setManualAway(false);
                 hub->addStatusMessage_gui(_("Away mode off"), Msg::SYSTEM, Sound::NONE);
             }
             else
             {
-                Util::setAway(true);
+                Util::setAway(hub->dcCtx_, true);
                 Util::setManualAway(true);
                 Util::setAwayMessage(param);
                 hub->addStatusMessage_gui(_("Away mode on: ") + Util::getAwayMessage(), Msg::SYSTEM, Sound::NONE);
@@ -1935,7 +1937,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
         else if (command == "back")
         {
-            Util::setAway(false);
+            Util::setAway(hub->dcCtx_, false);
             hub->addStatusMessage_gui(_("Away mode off"), Msg::SYSTEM, Sound::NONE);
         }
         else if (command == "clear")

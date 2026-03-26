@@ -83,7 +83,7 @@ protected:
     virtual bool eventFilter(QObject *obj, QEvent *e);
 
 public:
-    explicit Secretary(QWidget *parent = nullptr);
+    explicit Secretary(dcpp::DCContext& ctx, QWidget *parent = nullptr);
     ~Secretary() override;
 
 

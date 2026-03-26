@@ -84,7 +84,7 @@ private Q_SLOTS:
     void slotUpdateComboBox_CID();
 
 public:
-    FavoriteHubs(QWidget* = nullptr);
+    FavoriteHubs(dcpp::DCContext& ctx, QWidget* = nullptr);
     ~FavoriteHubs() override;
 
 

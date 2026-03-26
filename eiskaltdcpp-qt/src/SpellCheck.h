@@ -27,7 +27,7 @@ Q_OBJECT
 friend class QtContext;
 
 public:
-    SpellCheck(QObject *parent = nullptr);
+    SpellCheck(dcpp::DCContext& ctx, QObject *parent = nullptr);
     ~SpellCheck() override;
 
 

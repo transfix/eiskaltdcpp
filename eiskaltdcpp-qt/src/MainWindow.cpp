@@ -230,7 +230,8 @@ static const QString &TOOLBUTTON_STYLE = "mainwindow/toolbar-toolbutton-style";
 static const QString &EMPTY_SETTINGS = "mainwindow/empty-settings";
 static const QString &SIDEBAR_SHOW_CLOSEBUTTONS = "mainwindow/sidebar-with-close-buttons";
 
-MainWindow::MainWindow (QWidget *parent):
+MainWindow::MainWindow (dcpp::DCContext& ctx, QWidget *parent):
+        QtContextAware(ctx),
         QMainWindow(parent),
         d_ptr(new MainWindowPrivate())
 {
@@ -446,7 +447,7 @@ void MainWindow::showEvent(QShowEvent *e){
         this->resize(QSize(d->w, d->h));
 
     if (qtCtx()->settings()->getBool(WB_APP_AUTO_AWAY) && !Util::getManualAway()){
-        Util::setAway(false);
+        Util::setAway(dcCtx(), false);
 
         d->toolsAwayOff->setChecked(true);
     }
@@ -518,7 +519,7 @@ void MainWindow::hideEvent(QHideEvent *e){
         d->sideDock->hide();
 
     if (qtCtx()->settings()->getBool(WB_APP_AUTO_AWAY)){
-        Util::setAway(true);
+        Util::setAway(dcCtx(), true);
 
         d->toolsAwayOn->setChecked(true);
     }
@@ -1984,7 +1985,7 @@ void MainWindow::slotFileBrowseFilelist(){
         return;
 
     file = QDir::toNativeSeparators(file);
-    UserPtr user = DirectoryListing::getUserFromFilename(_tq(file));
+    UserPtr user = DirectoryListing::getUserFromFilename(dcCtx(), _tq(file));
 
     if (user) {
         ArenaWidgetFactory().create<ShareBrowser, UserPtr, QString, QString>(user, file, "");
@@ -2414,7 +2415,7 @@ void MainWindow::slotToolsSwitchAway(){
 
     bool away = d->toolsAwayOn->isChecked();
 
-    Util::setAway(away);
+    Util::setAway(dcCtx(), away);
     Util::setManualAway(away);
 }
 

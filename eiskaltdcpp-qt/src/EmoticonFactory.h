@@ -34,7 +34,7 @@ typedef QList<QTextDocument*> TextDocumentList;
 friend class QtContext;
 
 public:
-    EmoticonFactory();
+    explicit EmoticonFactory(dcpp::DCContext& ctx);
     ~EmoticonFactory() override;
 
 

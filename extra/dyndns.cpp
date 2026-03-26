@@ -22,9 +22,11 @@
 
 namespace dcpp {
 
-DynDNS::DynDNS() :
+DynDNS::DynDNS(DCContext& ctx) :
+    ContextAware(ctx),
     request(false),
-    minutesCounter(0)
+    minutesCounter(0),
+    httpConnection(this->ctx())
 {
     httpConnection.addListener(this);
 }

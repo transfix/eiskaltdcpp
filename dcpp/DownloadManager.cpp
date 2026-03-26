@@ -43,12 +43,12 @@ namespace dcpp {
 
 static const string DOWNLOAD_AREA = "Downloads";
 
-DownloadManager::DownloadManager() {
-    ctx()->getTimerManager()->addListener(this);
+DownloadManager::DownloadManager(DCContext& ctx) : ContextAware(ctx) {
+    this->ctx().getTimerManager()->addListener(this);
 }
 
 DownloadManager::~DownloadManager() {
-    ctx()->getTimerManager()->removeListener(this);
+    ctx().getTimerManager()->removeListener(this);
     while(true) {
         {
             Lock l(cs);
@@ -91,7 +91,7 @@ void DownloadManager::on(TimerManagerListener::Second, uint64_t aTick) noexcept 
                             bytesDownloaded / timeElapsed * 1000 < (uint32_t)CTX_SETTING(AUTODROP_SPEED) : false;
                 bool isUserList = d->getType() == Transfer::TYPE_FULL_LIST;
                 bool onlineSourcesOk = isUserList ?
-                            true : ctx()->getQueueManager()->countOnlineSources(d->getPath()) >= CTX_SETTING(AUTODROP_MINSOURCES);
+                            true : ctx().getQueueManager()->countOnlineSources(d->getPath()) >= CTX_SETTING(AUTODROP_MINSOURCES);
                 bool filesizeOk = !isUserList && d->getSize() >= ((int64_t)CTX_SETTING(AUTODROP_FILESIZE)) * 1024;
                 bool dropIt = (isUserList && CTX_BOOLSETTING(AUTODROP_FILELISTS)) ||
                         (filesizeOk && CTX_BOOLSETTING(AUTODROP_ALL));
@@ -106,7 +106,7 @@ void DownloadManager::on(TimerManagerListener::Second, uint64_t aTick) noexcept 
         }
     }
     for(auto& i: dropTargets) {
-        ctx()->getQueueManager()->removeSource(i.first, i.second, QueueItem::Source::FLAG_SLOW_SOURCE);
+        ctx().getQueueManager()->removeSource(i.first, i.second, QueueItem::Source::FLAG_SLOW_SOURCE);
     }
 }
 
@@ -125,22 +125,22 @@ void DownloadManager::addConnection(UserConnectionPtr conn) {
     if(!conn->isSet(UserConnection::FLAG_SUPPORTS_TTHF) || !conn->isSet(UserConnection::FLAG_SUPPORTS_ADCGET)) {
         // Can't download from these...
         conn->getUser()->setFlag(User::OLD_CLIENT);
-        ctx()->getQueueManager()->removeSource(conn->getUser(), QueueItem::Source::FLAG_NO_TTHF);
+        ctx().getQueueManager()->removeSource(conn->getUser(), QueueItem::Source::FLAG_NO_TTHF);
         conn->disconnect();
         return;
     }
 
-    if (CTX_BOOLSETTING(IPFILTER) && !ctx()->getIPFilter()->OK(conn->getRemoteIp(),eDIRECTION_IN)) {
+    if (CTX_BOOLSETTING(IPFILTER) && !ctx().getIPFilter()->OK(conn->getRemoteIp(),eDIRECTION_IN)) {
         conn->error("Your IP is Blocked!");
-        ctx()->getLogManager()->message(_("IPFilter: Blocked outgoing connection to ") + conn->getRemoteIp());
-        ctx()->getQueueManager()->removeSource(conn->getUser(), QueueItem::Source::FLAG_REMOVED);
+        ctx().getLogManager()->message(_("IPFilter: Blocked outgoing connection to ") + conn->getRemoteIp());
+        ctx().getQueueManager()->removeSource(conn->getUser(), QueueItem::Source::FLAG_REMOVED);
         conn->disconnect();
         return;
     }
 
     if(CTX_SETTING(REQUIRE_TLS) && !conn->isSecure()) {
         conn->error("Secure connection required!");
-        ctx()->getQueueManager()->removeSource(conn->getUser(), QueueItem::Source::FLAG_UNENCRYPTED);
+        ctx().getQueueManager()->removeSource(conn->getUser(), QueueItem::Source::FLAG_UNENCRYPTED);
         return;
     }
 
@@ -170,13 +170,13 @@ bool DownloadManager::startDownload(QueueItem::Priority prio) {
 }
 
 void DownloadManager::checkDownloads(UserConnection* aConn) {
-    QueueItem::Priority prio = ctx()->getQueueManager()->hasDownload(aConn->getUser());
+    QueueItem::Priority prio = ctx().getQueueManager()->hasDownload(aConn->getUser());
     if(!startDownload(prio)) {
         removeConnection(aConn);
         return;
     }
 
-    Download* d = ctx()->getQueueManager()->getDownload(*aConn, aConn->isSet(UserConnection::FLAG_SUPPORTS_TTHL));
+    Download* d = ctx().getQueueManager()->getDownload(*aConn, aConn->isSet(UserConnection::FLAG_SUPPORTS_TTHL));
 
     if(!d) {
         Lock l(cs);
@@ -242,7 +242,7 @@ void DownloadManager::startData(UserConnection* aSource, int64_t start, int64_t 
     }
 
     try {
-        ctx()->getQueueManager()->setFile(d);
+        ctx().getQueueManager()->setFile(d);
     } catch(const FileException& e) {
         failDownload(aSource, str(F_("Could not open target file: %1%") % e.getError()));
         return;
@@ -325,9 +325,9 @@ void DownloadManager::endData(UserConnection* aSource) {
             removeDownload(d);
             fire(DownloadManagerListener::Failed(), d, _("Full tree does not match TTH root"));
 
-            ctx()->getQueueManager()->removeSource(d->getPath(), aSource->getUser(), QueueItem::Source::FLAG_BAD_TREE, false);
+            ctx().getQueueManager()->removeSource(d->getPath(), aSource->getUser(), QueueItem::Source::FLAG_BAD_TREE, false);
 
-            ctx()->getQueueManager()->putDownload(d, false);
+            ctx().getQueueManager()->putDownload(d, false);
 
             checkDownloads(aSource);
             return;
@@ -357,7 +357,7 @@ void DownloadManager::endData(UserConnection* aSource) {
     removeDownload(d);
     fire(DownloadManagerListener::Complete(), d);
 
-    ctx()->getQueueManager()->putDownload(d, true);
+    ctx().getQueueManager()->putDownload(d, true);
     checkDownloads(aSource);
 }
 
@@ -406,7 +406,7 @@ void DownloadManager::failDownload(UserConnection* aSource, const string& reason
         removeDownload(d);
         fire(DownloadManagerListener::Failed(), d, reason);
 
-        ctx()->getQueueManager()->putDownload(d, false);
+        ctx().getQueueManager()->putDownload(d, false);
     }
 
     removeConnection(aSource);
@@ -500,9 +500,9 @@ void DownloadManager::fileNotAvailable(UserConnection* aSource) {
     removeDownload(d);
     fire(DownloadManagerListener::Failed(), d, str(F_("%1%: File not available") % Util::addBrackets(d->getTargetFileName())));
 
-    ctx()->getQueueManager()->removeSource(d->getPath(), aSource->getUser(), d->getType() == Transfer::TYPE_TREE ? QueueItem::Source::FLAG_NO_TREE : QueueItem::Source::FLAG_FILE_NOT_AVAILABLE, false);
+    ctx().getQueueManager()->removeSource(d->getPath(), aSource->getUser(), d->getType() == Transfer::TYPE_TREE ? QueueItem::Source::FLAG_NO_TREE : QueueItem::Source::FLAG_FILE_NOT_AVAILABLE, false);
 
-    ctx()->getQueueManager()->putDownload(d, false);
+    ctx().getQueueManager()->putDownload(d, false);
 
     checkDownloads(aSource);
 }

@@ -142,7 +142,7 @@ public:
     void userCommand(const HintedUser& user, const UserCommand& uc, ParamMap& params, bool compatibility);
     int getMode(const string& aHubUrl) const;
     bool isActive(const string& aHubUrl = Util::emptyString) const { return getMode(aHubUrl) != SettingsManager::INCOMING_FIREWALL_PASSIVE; }
-    static bool ucExecuteLua(const string& cmd, StringMap& params) noexcept;
+    bool ucExecuteLua(const string& cmd, StringMap& params) noexcept;
 
     Lock lock() { return Lock(cs); }
 
@@ -188,7 +188,7 @@ private:
     CID pid;
 
 public:
-    ClientManager();
+    explicit ClientManager(DCContext& ctx);
     virtual ~ClientManager();
 
 private:

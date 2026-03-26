@@ -13,7 +13,8 @@
 
 #include <QtDebug>
 
-HubManager::HubManager():
+HubManager::HubManager(dcpp::DCContext& ctx):
+        QtContextAware(ctx),
         active(nullptr)
 {
 }

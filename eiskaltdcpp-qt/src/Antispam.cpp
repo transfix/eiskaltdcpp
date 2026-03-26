@@ -69,7 +69,8 @@ AntiSpam& operator <<(AntiSpam &sp, const QString &list){
     return sp;
 }
 
-AntiSpam::AntiSpam():
+AntiSpam::AntiSpam(dcpp::DCContext& ctx):
+        QtContextAware(ctx),
         state(eIN_BLACK)
 {
     try_count = 0;

@@ -26,7 +26,8 @@
 
 using namespace dcpp;
 
-PublicHubs::PublicHubs(QWidget *parent) :
+PublicHubs::PublicHubs(dcpp::DCContext& ctx, QWidget *parent) :
+    QtContextAware(ctx),
     QWidget(parent), proxy(nullptr)
 {
     setupUi(this);

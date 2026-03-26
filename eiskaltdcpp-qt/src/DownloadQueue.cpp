@@ -209,7 +209,8 @@ QVariant DownloadQueue::Menu::getArg(){
     return arg;
 }
 
-DownloadQueue::DownloadQueue(QWidget *parent):
+DownloadQueue::DownloadQueue(dcpp::DCContext& ctx, QWidget *parent):
+        QtContextAware(ctx),
         QWidget(parent), d_ptr(new DownloadQueuePrivate())
 {
     setupUi(this);

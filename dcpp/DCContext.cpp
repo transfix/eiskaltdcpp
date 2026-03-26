@@ -56,12 +56,10 @@ namespace dcpp {
 
 namespace {
 
-/// Construct a manager and wire its context pointer.
+/// Construct a manager, passing the DCContext& as first constructor arg.
 template<typename T, typename... Args>
-std::unique_ptr<T> makeManager(DCContext* ctx, Args&&... args) {
-    auto ptr = std::make_unique<T>(std::forward<Args>(args)...);
-    ptr->setContext(ctx);
-    return ptr;
+std::unique_ptr<T> makeManager(DCContext& ctx, Args&&... args) {
+    return std::make_unique<T>(ctx, std::forward<Args>(args)...);
 }
 
 } // anonymous namespace
@@ -87,9 +85,9 @@ void DCContext::startupMinimal() {
     Util::initialize();
 
     // Create only the essential managers needed for SETTING() and logging
-    resourceManager_  = makeManager<ResourceManager>(this);
-    settingsManager_  = makeManager<SettingsManager>(this);
-    logManager_       = makeManager<LogManager>(this);
+    resourceManager_  = makeManager<ResourceManager>(*this);
+    settingsManager_  = makeManager<SettingsManager>(*this);
+    logManager_       = makeManager<LogManager>(*this);
 
     minimalMode_ = true;
     running_ = true;
@@ -115,36 +113,36 @@ void DCContext::startup(ProgressFn progress) {
     bind_textdomain_codeset(PACKAGE, "UTF-8");
 
     // ── Create managers in dependency order ──────────────────────────────
-    resourceManager_     = makeManager<ResourceManager>(this);
-    settingsManager_     = makeManager<SettingsManager>(this);
-    logManager_          = makeManager<LogManager>(this);
-    timerManager_        = makeManager<TimerManager>(this);
-    hashManager_         = makeManager<HashManager>(this);
-    cryptoManager_       = makeManager<CryptoManager>(this);
-    searchManager_       = makeManager<SearchManager>(this);
-    clientManager_       = makeManager<ClientManager>(this);
-    connectionManager_   = makeManager<ConnectionManager>(this);
-    downloadManager_     = makeManager<DownloadManager>(this);
-    uploadManager_       = makeManager<UploadManager>(this);
-    throttleManager_     = makeManager<ThrottleManager>(this);
-    queueManager_        = makeManager<QueueManager>(this);
-    shareManager_        = makeManager<ShareManager>(this);
-    favoriteManager_     = makeManager<FavoriteManager>(this);
-    finishedManager_     = makeManager<FinishedManager>(this);
-    adlSearchManager_    = makeManager<ADLSearchManager>(this);
-    connectivityManager_ = makeManager<ConnectivityManager>(this);
-    mappingManager_      = makeManager<MappingManager>(this);
-    debugManager_        = makeManager<DebugManager>(this);
-    dynDNS_              = makeManager<DynDNS>(this);
-    ipFilter_            = makeManager<IPFilter>(this);
+    resourceManager_     = makeManager<ResourceManager>(*this);
+    settingsManager_     = makeManager<SettingsManager>(*this);
+    logManager_          = makeManager<LogManager>(*this);
+    timerManager_        = makeManager<TimerManager>(*this);
+    hashManager_         = makeManager<HashManager>(*this);
+    cryptoManager_       = makeManager<CryptoManager>(*this);
+    searchManager_       = makeManager<SearchManager>(*this);
+    clientManager_       = makeManager<ClientManager>(*this);
+    connectionManager_   = makeManager<ConnectionManager>(*this);
+    downloadManager_     = makeManager<DownloadManager>(*this);
+    uploadManager_       = makeManager<UploadManager>(*this);
+    throttleManager_     = makeManager<ThrottleManager>(*this);
+    queueManager_        = makeManager<QueueManager>(*this);
+    shareManager_        = makeManager<ShareManager>(*this);
+    favoriteManager_     = makeManager<FavoriteManager>(*this);
+    finishedManager_     = makeManager<FinishedManager>(*this);
+    adlSearchManager_    = makeManager<ADLSearchManager>(*this);
+    connectivityManager_ = makeManager<ConnectivityManager>(*this);
+    mappingManager_      = makeManager<MappingManager>(*this);
+    debugManager_        = makeManager<DebugManager>(*this);
+    dynDNS_              = makeManager<DynDNS>(*this);
+    ipFilter_            = makeManager<IPFilter>(*this);
 #ifdef LUA_SCRIPT
-    scriptManager_       = makeManager<ScriptManager>(this);
+    scriptManager_       = makeManager<ScriptManager>(*this);
 #endif
 
     // ── Load persistent state ───────────────────────────────────────────
     settingsManager_->load();
 
-    Util::setLang(SETTING(LANGUAGE));
+    Util::setLang(*this, SETTING(LANGUAGE));
 #ifdef USE_MINIUPNP
     mappingManager_->runMiniUPnP();
 #endif
@@ -159,7 +157,7 @@ void DCContext::startup(ProgressFn progress) {
     cryptoManager_->loadCertificates();
 
 #ifdef WITH_DHT
-    dht_ = std::make_unique<dht::DHT>(this);
+    dht_ = std::make_unique<dht::DHT>(*this);
 #endif
 
     report(_("Hash database"));

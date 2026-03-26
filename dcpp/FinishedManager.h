@@ -86,7 +86,7 @@ public:
     //end
 
 public:
-    FinishedManager();
+    explicit FinishedManager(DCContext& ctx);
     virtual ~FinishedManager();
 
 private:

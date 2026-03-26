@@ -19,7 +19,8 @@
 #include <QDir>
 #include <QtDebug>
 
-SpellCheck::SpellCheck(QObject *parent) :
+SpellCheck::SpellCheck(dcpp::DCContext& ctx, QObject *parent) :
+    QtContextAware(ctx),
     QObject(parent),
     spell_checker(nullptr)
 {

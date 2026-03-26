@@ -20,7 +20,7 @@ class GlobalTimer: public QObject,
 {
     Q_OBJECT
 public:
-    GlobalTimer();
+    explicit GlobalTimer(dcpp::DCContext& ctx);
     ~GlobalTimer() override;
 
 

@@ -40,7 +40,7 @@ namespace dcpp {
 int ThrottleManager::read(Socket* sock, void* buffer, size_t len)
 {
     int64_t readSize = -1;
-    size_t downs = ctx()->getDownloadManager()->getDownloadCount();
+    size_t downs = ctx().getDownloadManager()->getDownloadCount();
     auto downLimit = getDownLimit(); // avoid even intra-function races
     if(!CTX_BOOLSETTING(THROTTLE_ENABLE) || !getCurThrottling() || downLimit == 0 || downs == 0)
         return sock->read(buffer, len);
@@ -78,7 +78,7 @@ int ThrottleManager::read(Socket* sock, void* buffer, size_t len)
 int ThrottleManager::write(Socket* sock, void* buffer, size_t& len)
 {
     bool gotToken = false;
-    size_t ups = ctx()->getUploadManager()->getUploadCount();
+    size_t ups = ctx().getUploadManager()->getUploadCount();
     auto upLimit = getUpLimit(); // avoid even intra-function races
     if(!CTX_BOOLSETTING(THROTTLE_ENABLE) || !getCurThrottling() || upLimit == 0 || ups == 0)
         return sock->write(buffer, len);
@@ -114,14 +114,14 @@ SettingsManager::IntSetting ThrottleManager::getCurSetting(SettingsManager::IntS
     SettingsManager::IntSetting downLimit = SettingsManager::MAX_DOWNLOAD_SPEED_MAIN;
     SettingsManager::IntSetting slots     = SettingsManager::SLOTS_PRIMARY;
 
-    if(BOOLSETTING(TIME_DEPENDENT_THROTTLE)) {
+    if(CTX_BOOLSETTING(TIME_DEPENDENT_THROTTLE)) {
         time_t currentTime;
         time(&currentTime);
         int currentHour = localtime(&currentTime)->tm_hour;
-        if((SETTING(BANDWIDTH_LIMIT_START) < SETTING(BANDWIDTH_LIMIT_END) &&
-            currentHour >= SETTING(BANDWIDTH_LIMIT_START) && currentHour < SETTING(BANDWIDTH_LIMIT_END)) ||
-                (SETTING(BANDWIDTH_LIMIT_START) > SETTING(BANDWIDTH_LIMIT_END) &&
-                 (currentHour >= SETTING(BANDWIDTH_LIMIT_START) || currentHour < SETTING(BANDWIDTH_LIMIT_END))))
+        if((CTX_SETTING(BANDWIDTH_LIMIT_START) < CTX_SETTING(BANDWIDTH_LIMIT_END) &&
+            currentHour >= CTX_SETTING(BANDWIDTH_LIMIT_START) && currentHour < CTX_SETTING(BANDWIDTH_LIMIT_END)) ||
+                (CTX_SETTING(BANDWIDTH_LIMIT_START) > CTX_SETTING(BANDWIDTH_LIMIT_END) &&
+                 (currentHour >= CTX_SETTING(BANDWIDTH_LIMIT_START) || currentHour < CTX_SETTING(BANDWIDTH_LIMIT_END))))
         {
             upLimit   = SettingsManager::MAX_UPLOAD_SPEED_ALTERNATE;
             downLimit = SettingsManager::MAX_DOWNLOAD_SPEED_ALTERNATE;
@@ -142,16 +142,16 @@ SettingsManager::IntSetting ThrottleManager::getCurSetting(SettingsManager::IntS
 }
 
 int ThrottleManager::getUpLimit() {
-    return dcpp::getContext()->getSettingsManager()->get(getCurSetting(SettingsManager::MAX_UPLOAD_SPEED_MAIN));
+    return ctx().getSettingsManager()->get(getCurSetting(SettingsManager::MAX_UPLOAD_SPEED_MAIN));
 }
 
 int ThrottleManager::getDownLimit() {
-    return dcpp::getContext()->getSettingsManager()->get(getCurSetting(SettingsManager::MAX_DOWNLOAD_SPEED_MAIN));
+    return ctx().getSettingsManager()->get(getCurSetting(SettingsManager::MAX_DOWNLOAD_SPEED_MAIN));
 }
 
 void ThrottleManager::setSetting(SettingsManager::IntSetting setting, int value) {
-    dcpp::getContext()->getSettingsManager()->set(setting, value);
-    dcpp::getContext()->getClientManager()->infoUpdated();
+    ctx().getSettingsManager()->set(setting, value);
+    ctx().getClientManager()->infoUpdated();
 }
 
 bool ThrottleManager::getCurThrottling() {
@@ -178,7 +178,7 @@ void ThrottleManager::waitToken() {
 ThrottleManager::~ThrottleManager()
 {
     shutdown();
-    ctx()->getTimerManager()->removeListener(this);
+    ctx().getTimerManager()->removeListener(this);
 }
 
 // Cooperatively shut down the throttle mechanism.  The timer callback
@@ -210,7 +210,7 @@ void ThrottleManager::shutdown()
 // TimerManagerListener
 void ThrottleManager::on(TimerManagerListener::Second, uint64_t /* aTick */) noexcept
 {
-    int newSlots = ctx()->getSettingsManager()->get(getCurSetting(SettingsManager::SLOTS));
+    int newSlots = ctx().getSettingsManager()->get(getCurSetting(SettingsManager::SLOTS));
     if(newSlots != CTX_SETTING(SLOTS)) {
         setSetting(SettingsManager::SLOTS, newSlots);
     }

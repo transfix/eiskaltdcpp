@@ -255,7 +255,7 @@ friend class QtContext;
         void notifyMessage(int, const QString&, const QString&);
 
     public:
-        MainWindow (QWidget *parent=nullptr);
+        MainWindow (dcpp::DCContext& ctx, QWidget *parent=nullptr);
         ~MainWindow() override;
 
 

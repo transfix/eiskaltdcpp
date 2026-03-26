@@ -29,7 +29,8 @@ static const QString EmoticonSectionName = "emoticons-map";
 static const QString EmoticonSubsectionName = "emoticon";
 static const QString EmoticonTextSectionName = "name";
 
-EmoticonFactory::EmoticonFactory() :
+EmoticonFactory::EmoticonFactory(dcpp::DCContext& ctx) :
+    QtContextAware(ctx),
     QObject(nullptr)
 {
 }

@@ -19,7 +19,7 @@
 
 #include "dcpp/Util.h"
 
-SearchBlacklist::SearchBlacklist(){
+SearchBlacklist::SearchBlacklist(dcpp::DCContext& ctx) : QtContextAware(ctx) {
     list[NAME] = {};
     list[TTH]  = {};
 

@@ -21,24 +21,25 @@ using namespace dcpp;
 
 // ── ContextAware tests ─────────────────────────────────────────────────
 
-TEST_CASE("ContextAware default ctx is nullptr", "[ContextAware]") {
-    struct TestAware : public ContextAware {};
-
-    TestAware obj;
-    REQUIRE(obj.ctx() == nullptr);
-}
-
-TEST_CASE("ContextAware::setContext stores and retrieves pointer", "[ContextAware]") {
-    struct TestAware : public ContextAware {};
+TEST_CASE("ContextAware ctx returns the injected DCContext", "[ContextAware]") {
+    struct TestAware : public ContextAware {
+        explicit TestAware(DCContext& ctx) : ContextAware(ctx) {}
+    };
 
     DCContext ctx;
-    TestAware obj;
+    TestAware obj(ctx);
+    REQUIRE(&obj.ctx() == &ctx);
+}
 
-    obj.setContext(&ctx);
-    REQUIRE(obj.ctx() == &ctx);
+TEST_CASE("ContextAware ctx is the same reference for multiple objects", "[ContextAware]") {
+    struct TestAware : public ContextAware {
+        explicit TestAware(DCContext& ctx) : ContextAware(ctx) {}
+    };
 
-    obj.setContext(nullptr);
-    REQUIRE(obj.ctx() == nullptr);
+    DCContext ctx;
+    TestAware a(ctx), b(ctx);
+
+    REQUIRE(&a.ctx() == &b.ctx());
 }
 
 // ── DCContext lifecycle tests ───────────────────────────────────────────

@@ -27,7 +27,7 @@ namespace dcpp {
 
 using namespace std::chrono;
 
-TimerManager::TimerManager() {
+TimerManager::TimerManager(DCContext& ctx) : ContextAware(ctx) {
     // This mutex will be unlocked only upon shutdown
     mtx.lock();
 }

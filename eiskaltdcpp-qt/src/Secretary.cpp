@@ -29,8 +29,9 @@
 #include "QtContext.h"
 #include "QtContextAware.h"
 
-Secretary::Secretary(QWidget *parent)
-    : QWidget(parent)
+Secretary::Secretary(dcpp::DCContext& ctx, QWidget *parent)
+    : QtContextAware(ctx)
+    , QWidget(parent)
     , d_ptr(new SecretaryPrivate())
 {
     setupUi(this);

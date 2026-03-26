@@ -36,7 +36,7 @@ class AntiSpam :
 
     friend class QtContext;
 public:
-    AntiSpam();
+    explicit AntiSpam(dcpp::DCContext& ctx);
     ~AntiSpam() override;
 
 

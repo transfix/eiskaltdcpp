@@ -80,7 +80,7 @@ private Q_SLOTS:
     void slotDownButtonClicked();
 
 public:
-    ADLS(QWidget* = nullptr);
+    ADLS(dcpp::DCContext& ctx, QWidget* = nullptr);
     ~ADLS() override;
 
 

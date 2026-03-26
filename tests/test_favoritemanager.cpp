@@ -32,11 +32,10 @@ static void cleanupFavoriteManager() {
 static void ensureContext() {
     if (!g_tc) {
         g_tc = std::make_unique<dcpp::test::TestContext>();
-        // Construct FavoriteManager manually (minimal context has no ClientManager,
+        // Construct FavoriteManager with context reference (minimal context has no ClientManager,
         // but the constructor null-guards the listener registration).
         // Saves go to temp dir automatically via TestContext path overrides.
-        g_fm = std::make_unique<FavoriteManager>();
-        g_fm->setContext(getContext());
+        g_fm = std::make_unique<FavoriteManager>(*getContext());
         // Register cleanup AFTER TestContext's atexit → runs FIRST (LIFO).
         std::atexit(cleanupFavoriteManager);
     }

@@ -63,7 +63,7 @@ private Q_SLOTS:
     void slotProcessChangedFiles();
 
 public:
-    ScriptEngine();
+    explicit ScriptEngine(dcpp::DCContext& ctx);
     virtual ~ScriptEngine();
 
 private:
@@ -73,8 +73,8 @@ private:
     void loadQMLScript(const QString&);
 #endif
 
-    ScriptEngine(const ScriptEngine&) {}
-    ScriptEngine &operator =(const ScriptEngine&){ return *this; }
+    ScriptEngine(const ScriptEngine&) = delete;
+    ScriptEngine &operator =(const ScriptEngine&) = delete;
 
     void registerStaticMembers(QJSEngine &);
     void registerDynamicMembers(QJSEngine &);

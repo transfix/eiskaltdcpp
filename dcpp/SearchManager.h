@@ -93,10 +93,10 @@ public:
 private:
     class UdpQueue: public Thread {
     public:
-        explicit UdpQueue(DCContext* ctx) : stop(false), ctx_(ctx) {}
+        explicit UdpQueue(DCContext& ctx) : stop(false), ctx_(ctx) {}
         ~UdpQueue() noexcept { shutdown(); }
 
-        [[nodiscard]] DCContext* ctx() const noexcept { return ctx_; }
+        [[nodiscard]] DCContext& ctx() const noexcept { return ctx_; }
 
         int run();
         void shutdown() {
@@ -119,7 +119,7 @@ private:
         deque<pair<string, string> > resultList;
 
         bool stop;
-        DCContext* ctx_;
+        DCContext& ctx_;
     } queue;
 
     CriticalSection cs;
@@ -127,7 +127,7 @@ private:
     string port;
     bool stop;
 public:
-    SearchManager();
+    explicit SearchManager(DCContext& ctx);
     virtual ~SearchManager();
 
 private:

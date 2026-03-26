@@ -59,14 +59,14 @@ TEST_CASE("DCContext: getDHT is null after startupMinimal", "[dht][DCContext]") 
 
 TEST_CASE("DHT: constructor creates IndexManager", "[dht]") {
     ensureContext();
-    dht::DHT dht(dcpp::getContext());
+    dht::DHT dht(*dcpp::getContext());
     // IndexManager is created in DHT constructor
     REQUIRE_NOTHROW(dht.getIndexManager());
 }
 
 TEST_CASE("DHT: sub-managers null before start", "[dht]") {
     ensureContext();
-    dht::DHT dht(dcpp::getContext());
+    dht::DHT dht(*dcpp::getContext());
     // Only IndexManager is created in constructor; others are created in start()
     // Accessing them before start() would dereference null unique_ptrs, so
     // we just verify DHT can be constructed and destroyed without start().
@@ -80,7 +80,7 @@ TEST_CASE("DHT: getPort returns empty when DHT disabled", "[dht]") {
     bool orig = sm->getBool(SettingsManager::USE_DHT, true);
     sm->set(SettingsManager::USE_DHT, false);
 
-    dht::DHT dht(dcpp::getContext());
+    dht::DHT dht(*dcpp::getContext());
     REQUIRE(dht.getPort().empty());
 
     sm->set(SettingsManager::USE_DHT, orig);
@@ -88,19 +88,19 @@ TEST_CASE("DHT: getPort returns empty when DHT disabled", "[dht]") {
 
 TEST_CASE("DHT: isConnected is false on fresh instance", "[dht]") {
     ensureContext();
-    dht::DHT dht(dcpp::getContext());
+    dht::DHT dht(*dcpp::getContext());
     REQUIRE_FALSE(dht.isConnected());
 }
 
 TEST_CASE("DHT: isFirewalled is true on fresh instance", "[dht]") {
     ensureContext();
-    dht::DHT dht(dcpp::getContext());
+    dht::DHT dht(*dcpp::getContext());
     REQUIRE(dht.isFirewalled());
 }
 
 TEST_CASE("DHT: hub URL is DHT network name", "[dht]") {
     ensureContext();
-    dht::DHT dht(dcpp::getContext());
+    dht::DHT dht(*dcpp::getContext());
     REQUIRE_FALSE(dht.getHubUrl().empty());
     REQUIRE_FALSE(dht.getHubName().empty());
     REQUIRE(dht.getHubUrl() == dht.getHubName());
@@ -108,7 +108,7 @@ TEST_CASE("DHT: hub URL is DHT network name", "[dht]") {
 
 TEST_CASE("DHT: isOp returns false", "[dht]") {
     ensureContext();
-    dht::DHT dht(dcpp::getContext());
+    dht::DHT dht(*dcpp::getContext());
     REQUIRE_FALSE(dht.isOp());
 }
 
