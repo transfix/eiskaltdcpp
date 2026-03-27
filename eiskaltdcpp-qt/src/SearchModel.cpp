@@ -109,7 +109,7 @@ QVariant SearchModel::data(const QModelIndex &index, int role) const
             if (filterRole == static_cast<int>(SearchFrame::Highlight)){
                 TTHValue t(_tq(item->data(COLUMN_SF_TTH).toString()));
 
-                if (dcpp::getContext()->getShareManager()->isTTHShared(t)){
+                if (qtCtx()->dcCtx().getShareManager()->isTTHShared(t)){
                     static QColor c;
 
                     c.setNamedColor(qtCtx()->settings()->getStr(WS_APP_SHARED_FILES_COLOR));
@@ -126,7 +126,7 @@ QVariant SearchModel::data(const QModelIndex &index, int role) const
         case Qt::ToolTipRole:
         {
             TTHValue t(_tq(item->data(COLUMN_SF_TTH).toString()));
-            ShareManager *SM = dcpp::getContext()->getShareManager();
+            ShareManager *SM = qtCtx()->dcCtx().getShareManager();
 
             try{
                 QString toolTip = _q(SM->toReal(SM->toVirtual(t)));

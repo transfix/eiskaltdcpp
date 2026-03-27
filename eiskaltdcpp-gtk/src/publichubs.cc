@@ -26,10 +26,11 @@
 using namespace std;
 using namespace dcpp;
 
-PublicHubs::PublicHubs():
+PublicHubs::PublicHubs(dcpp::DCContext& dcCtx):
     BookEntry(Entry::PUBLIC_HUBS, _("Public Hubs"), "publichubs.ui"),
     hubs(0),
-    filter("")
+    filter(""),
+    dcCtx_(dcCtx)
 {
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR(getWidget("statusMain")),false);
@@ -103,7 +104,7 @@ PublicHubs::PublicHubs():
 
 PublicHubs::~PublicHubs()
 {
-    dcpp::getContext()->getFavoriteManager()->removeListener(this);
+    dcCtx_.getFavoriteManager()->removeListener(this);
     gtk_widget_destroy(getWidget("configureDialog"));
     g_object_unref(getWidget("menu"));
 }
@@ -112,7 +113,7 @@ void PublicHubs::show()
 {
     buildHubList_gui();
 
-    dcpp::getContext()->getFavoriteManager()->addListener(this);
+    dcCtx_.getFavoriteManager()->addListener(this);
     Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::downloadList_client);
     wulforManagerInstance()->dispatchClientFunc(func);
 }
@@ -120,8 +121,8 @@ void PublicHubs::show()
 // Populate the public hubs list
 void PublicHubs::buildHubList_gui()
 {
-    StringList list = dcpp::getContext()->getFavoriteManager()->getHubLists();
-    int selected = dcpp::getContext()->getFavoriteManager()->getSelectedHubList();
+    StringList list = dcCtx_.getFavoriteManager()->getHubLists();
+    int selected = dcCtx_.getFavoriteManager()->getSelectedHubList();
 
     for (auto &it : list)
     {
@@ -359,7 +360,7 @@ void PublicHubs::onConfigure_gui(GtkWidget*, gpointer data)
         if (!lists.empty())
             lists.erase(lists.size() - 1);
 
-        dcpp::getContext()->getSettingsManager()->set(SettingsManager::HUBLIST_SERVERS, lists);
+        ph->dcCtx_.getSettingsManager()->set(SettingsManager::HUBLIST_SERVERS, lists);
     }
 }
 
@@ -426,12 +427,12 @@ void PublicHubs::onCellEdited_gui(GtkCellRendererText*, char *path, char *text, 
 
 void PublicHubs::downloadList_client()
 {
-    hubs = dcpp::getContext()->getFavoriteManager()->getPublicHubs();
+    hubs = dcCtx_.getFavoriteManager()->getPublicHubs();
 
     if (hubs.empty())
-        dcpp::getContext()->getFavoriteManager()->refresh();
+        dcCtx_.getFavoriteManager()->refresh();
 
-    dcpp::getContext()->getFavoriteManager()->save();
+    dcCtx_.getFavoriteManager()->save();
 
     Func0<PublicHubs> *func = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
     wulforManagerInstance()->dispatchGuiFunc(func);
@@ -439,13 +440,13 @@ void PublicHubs::downloadList_client()
 
 void PublicHubs::refresh_client(int pos)
 {
-    dcpp::getContext()->getFavoriteManager()->setHubList(pos);
-    dcpp::getContext()->getFavoriteManager()->refresh();
+    dcCtx_.getFavoriteManager()->setHubList(pos);
+    dcCtx_.getFavoriteManager()->refresh();
 }
 
 void PublicHubs::addFav_client(FavoriteHubEntry entry)
 {
-    dcpp::getContext()->getFavoriteManager()->addFavorite(entry);
+    dcCtx_.getFavoriteManager()->addFavorite(entry);
 }
 
 void PublicHubs::on(FavoriteManagerListener::DownloadStarting, const string &file) noexcept
@@ -471,7 +472,7 @@ void PublicHubs::on(FavoriteManagerListener::DownloadFinished, const string &fil
     Func *f2 = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
     wulforManagerInstance()->dispatchGuiFunc(f2);
 
-    hubs = dcpp::getContext()->getFavoriteManager()->getPublicHubs();
+    hubs = dcCtx_.getFavoriteManager()->getPublicHubs();
 
     Func0<PublicHubs> *f0 = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
     wulforManagerInstance()->dispatchGuiFunc(f0);
@@ -484,7 +485,7 @@ void PublicHubs::on(FavoriteManagerListener::LoadedFromCache, const string &file
     Func *func = new Func(this, &PublicHubs::setStatus_gui, "statusMain", msg);
     wulforManagerInstance()->dispatchGuiFunc(func);
 
-    hubs = dcpp::getContext()->getFavoriteManager()->getPublicHubs();
+    hubs = dcCtx_.getFavoriteManager()->getPublicHubs();
 
     Func0<PublicHubs> *f0 = new Func0<PublicHubs>(this, &PublicHubs::updateList_gui);
     wulforManagerInstance()->dispatchGuiFunc(f0);

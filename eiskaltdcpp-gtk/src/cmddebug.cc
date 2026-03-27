@@ -29,8 +29,9 @@
 using namespace std;
 using namespace dcpp;
 
-cmddebug::cmddebug():
-    BookEntry(Entry::CMD,_("CMD"),"cmddebug.ui")
+cmddebug::cmddebug(dcpp::DCContext& dcCtx):
+    BookEntry(Entry::CMD,_("CMD"),"cmddebug.ui"),
+    dcCtx_(dcCtx)
 {
     buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (getWidget("cmdtextview")));
     gtk_text_buffer_get_end_iter(buffer, &iter);
@@ -47,7 +48,7 @@ cmddebug::cmddebug():
 
 cmddebug::~cmddebug()
 {
-    dcpp::getContext()->getDebugManager()->removeListener(this);
+    dcCtx_.getDebugManager()->removeListener(this);
 }
 
 void cmddebug::add_gui(string file)
@@ -78,7 +79,7 @@ void cmddebug::add_gui(string file)
 void cmddebug::init()
 {
     start();
-    dcpp::getContext()->getDebugManager()->addListener(this);
+    dcCtx_.getDebugManager()->addListener(this);
 }
 
 void cmddebug::show()

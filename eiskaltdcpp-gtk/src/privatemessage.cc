@@ -37,7 +37,7 @@ using namespace std;
 using namespace dcpp;
 
 PrivateMessage::PrivateMessage(dcpp::DCContext& dcCtx, const string &_cid, const string &_hubUrl):
-    BookEntry(Entry::PRIVATE_MESSAGE, WulforUtil::getNicks(_cid, _hubUrl), "privatemessage.ui", _cid),
+    BookEntry(Entry::PRIVATE_MESSAGE, WulforUtil::getNicks(dcCtx_, _cid, _hubUrl), "privatemessage.ui", _cid),
     dcCtx_(dcCtx),
     cid(_cid),
     hubUrl(_hubUrl),
@@ -150,10 +150,10 @@ PrivateMessage::PrivateMessage(dcpp::DCContext& dcCtx, const string &_cid, const
 
     gtk_widget_grab_focus(getWidget("entry"));
     history.push_back("");
-    const UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(_cid));
+    const UserPtr user = dcCtx_.getClientManager()->findUser(CID(_cid));
     isBot = user ? user->isSet(User::BOT) : false;
 
-    setLabel_gui(WulforUtil::getNicks(_cid, _hubUrl) + " [" + WulforUtil::getHubNames(_cid, _hubUrl) + "]");
+    setLabel_gui(WulforUtil::getNicks(dcCtx_, _cid, _hubUrl) + " [" + WulforUtil::getHubNames(dcCtx_, _cid, _hubUrl) + "]");
 
     /* initial tags map */
     TagsMap[Tag::TAG_PRIVATE] = createTag_gui("TAG_PRIVATE", Tag::TAG_PRIVATE);
@@ -174,7 +174,7 @@ PrivateMessage::PrivateMessage(dcpp::DCContext& dcCtx, const string &_cid, const
 
 PrivateMessage::~PrivateMessage()
 {
-    dcpp::getContext()->getClientManager()->removeListener(this);
+    dcCtx_.getClientManager()->removeListener(this);
 
     if (handCursor)
     {
@@ -196,7 +196,7 @@ PrivateMessage::~PrivateMessage()
 
 void PrivateMessage::show()
 {
-    dcpp::getContext()->getClientManager()->addListener(this);
+    dcCtx_.getClientManager()->addListener(this);
 }
 
 void PrivateMessage::addMessage_gui(string message, Msg::TypeMsg typemsg)
@@ -207,11 +207,11 @@ void PrivateMessage::addMessage_gui(string message, Msg::TypeMsg typemsg)
     {
         StringMap params;
         params["message"] = message;
-        params["hubNI"] = WulforUtil::getHubNames(cid, hubUrl);
+        params["hubNI"] = WulforUtil::getHubNames(dcCtx_, cid, hubUrl);
         params["hubURL"] = hubUrl;
         params["userCID"] = cid;
-        params["userNI"] = dcpp::getContext()->getClientManager()->getNicks(CID(cid), hubUrl)[0];
-        params["myCID"] = dcpp::getContext()->getClientManager()->getMe()->getCID().toBase32();
+        params["userNI"] = dcCtx_.getClientManager()->getNicks(CID(cid), hubUrl)[0];
+        params["myCID"] = dcCtx_.getClientManager()->getMe()->getCID().toBase32();
         LOG(LogManager::PM, params);
     }
 
@@ -1030,7 +1030,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
         else if (command == "dcpps" && !param.empty())
         {
-            string msg = dcpp::getContext()->getSettingsManager()->parseCoreCmd (param);
+            string msg = pm->dcCtx_.getSettingsManager()->parseCoreCmd (param);
             pm->addStatusMessage_gui(msg, Msg::SYSTEM);
         }
         else if (command == "help")
@@ -1405,11 +1405,11 @@ void PrivateMessage::updateOnlineStatus_gui(bool online)
 
 void PrivateMessage::sendMessage_client(string message)
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
     if (user && user->isOnline())
     {
         // FIXME: WTF does the 3rd param (bool thirdPerson) do? A: Used for /me stuff
-        dcpp::getContext()->getClientManager()->privateMessage(HintedUser(user, hubUrl), message, false);
+        dcCtx_.getClientManager()->privateMessage(HintedUser(user, hubUrl), message, false);
     }
     else
     {
@@ -1421,33 +1421,33 @@ void PrivateMessage::sendMessage_client(string message)
 
 void PrivateMessage::addFavoriteUser_client()
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
-    if (user && dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user))
+    if (user && dcCtx_.getFavoriteManager()->isFavoriteUser(user))
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
-        F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(user, hubUrl) + _(" is favorite user"),
+        F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(dcCtx_, user, hubUrl) + _(" is favorite user"),
                           Msg::STATUS);
         wulforManagerInstance()->dispatchGuiFunc(func);
     }
     else
     {
-        dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
+        dcCtx_.getFavoriteManager()->addFavoriteUser(user);
     }
 }
 
 void PrivateMessage::removeFavoriteUser_client()
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
-    if (user && dcpp::getContext()->getFavoriteManager()->isFavoriteUser(user))
+    if (user && dcCtx_.getFavoriteManager()->isFavoriteUser(user))
     {
-        dcpp::getContext()->getFavoriteManager()->removeFavoriteUser(user);
+        dcCtx_.getFavoriteManager()->removeFavoriteUser(user);
     }
     else
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
-        F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(user, hubUrl) + _(" is not favorite user"),
+        F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(dcCtx_, user, hubUrl) + _(" is not favorite user"),
                           Msg::STATUS);
         wulforManagerInstance()->dispatchGuiFunc(func);
     }
@@ -1457,9 +1457,9 @@ void PrivateMessage::getFileList_client()
 {
     try
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
         if (user)
-            dcpp::getContext()->getQueueManager()->addList(HintedUser(user, hubUrl), QueueItem::FLAG_CLIENT_VIEW);
+            dcCtx_.getQueueManager()->addList(HintedUser(user, hubUrl), QueueItem::FLAG_CLIENT_VIEW);
     }
     catch (const Exception& e)
     {
@@ -1471,10 +1471,10 @@ void PrivateMessage::getFileList_client()
 
 void PrivateMessage::grantSlot_client()
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
     if (user)
     {
-        dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
+        dcCtx_.getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
     }
     else
     {

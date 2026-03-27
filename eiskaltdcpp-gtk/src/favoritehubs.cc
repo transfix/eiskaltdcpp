@@ -28,8 +28,9 @@
 using namespace std;
 using namespace dcpp;
 
-FavoriteHubs::FavoriteHubs():
-    BookEntry(Entry::FAVORITE_HUBS, _("Favorite Hubs"), "favoritehubs.ui")
+FavoriteHubs::FavoriteHubs(dcpp::DCContext& dcCtx):
+    BookEntry(Entry::FAVORITE_HUBS, _("Favorite Hubs"), "favoritehubs.ui"),
+    dcCtx_(dcCtx)
 {
     // Configure the dialog
     gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("favoriteHubsDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -103,7 +104,7 @@ FavoriteHubs::FavoriteHubs():
 
 FavoriteHubs::~FavoriteHubs()
 {
-    dcpp::getContext()->getFavoriteManager()->removeListener(this);
+    dcCtx_.getFavoriteManager()->removeListener(this);
 
     gtk_widget_destroy(getWidget("favoriteHubsDialog"));
     g_object_unref(getWidget("menu"));
@@ -113,7 +114,7 @@ void FavoriteHubs::show()
 {
     initializeList_client();
     //wulforManagerInstance()->dispatchClientFunc(new Func0<FavoriteHubs>(this, &FavoriteHubs::initializeList_client));
-    dcpp::getContext()->getFavoriteManager()->addListener(this);
+    dcCtx_.getFavoriteManager()->addListener(this);
 }
 
 void FavoriteHubs::addEntry_gui(StringMap params)
@@ -529,7 +530,7 @@ void FavoriteHubs::onCheckButtonToggled_gui(GtkToggleButton *button, gpointer da
 void FavoriteHubs::initializeList_client()
 {
     StringMap params;
-    const FavoriteHubEntryList& fl = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
+    const FavoriteHubEntryList& fl = dcCtx_.getFavoriteManager()->getFavoriteHubs();
 
     for (auto it = fl.begin(); it != fl.end(); ++it)
     {
@@ -573,15 +574,15 @@ void FavoriteHubs::addEntry_client(StringMap params)
     entry.setDisableChat(Util::toInt(params["Disable Chat"]));
     entry.setExternalIP(params["External IP"]);
     entry.setUseInternetIP(Util::toInt(params["Internet IP"]));
-    dcpp::getContext()->getFavoriteManager()->addFavorite(entry);
+    dcCtx_.getFavoriteManager()->addFavorite(entry);
 
-    const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
+    const FavoriteHubEntryList &fh = dcCtx_.getFavoriteManager()->getFavoriteHubs();
     wulforManagerInstance()->getMainWindow()->updateFavoriteHubMenu_client(fh);
 }
 
 void FavoriteHubs::editEntry_client(string address, StringMap params)
 {
-    FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address);
+    FavoriteHubEntry *entry = dcCtx_.getFavoriteManager()->getFavoriteHubEntry(address);
 
     if (entry)
     {
@@ -598,34 +599,34 @@ void FavoriteHubs::editEntry_client(string address, StringMap params)
         entry->setDisableChat(Util::toInt(params["Disable Chat"]));
         entry->setExternalIP(params["External IP"]);
         entry->setUseInternetIP(Util::toInt(params["Internet IP"]));
-        dcpp::getContext()->getFavoriteManager()->save();
+        dcCtx_.getFavoriteManager()->save();
 
-        const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
+        const FavoriteHubEntryList &fh = dcCtx_.getFavoriteManager()->getFavoriteHubs();
         wulforManagerInstance()->getMainWindow()->updateFavoriteHubMenu_client(fh);
     }
 }
 
 void FavoriteHubs::removeEntry_client(string address)
 {
-    FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address);
+    FavoriteHubEntry *entry = dcCtx_.getFavoriteManager()->getFavoriteHubEntry(address);
 
     if (entry)
     {
-        dcpp::getContext()->getFavoriteManager()->removeFavorite(entry);
+        dcCtx_.getFavoriteManager()->removeFavorite(entry);
 
-        const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
+        const FavoriteHubEntryList &fh = dcCtx_.getFavoriteManager()->getFavoriteHubs();
         wulforManagerInstance()->getMainWindow()->updateFavoriteHubMenu_client(fh);
     }
 }
 
 void FavoriteHubs::setConnect_client(string address, bool active)
 {
-    FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address);
+    FavoriteHubEntry *entry = dcCtx_.getFavoriteManager()->getFavoriteHubEntry(address);
 
     if (entry)
     {
         entry->setConnect(active);
-        dcpp::getContext()->getFavoriteManager()->save();
+        dcCtx_.getFavoriteManager()->save();
     }
 }
 

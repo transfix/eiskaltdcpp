@@ -49,7 +49,7 @@ void ServerInitialize()
 bool ServerStart()
 {
     g_daemonCtx = dcpp::startup(callBack, nullptr);
-    ServersS = new ServerThread();
+    ServersS = new ServerThread(*g_daemonCtx);
 
     if(!ServersS)
         return false;

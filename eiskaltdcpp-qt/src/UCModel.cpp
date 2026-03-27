@@ -143,7 +143,7 @@ void UCModel::sort(int column, Qt::SortOrder order) {
 }
 
 void UCModel::loadUC(){
-    UserCommand::List list = dcpp::getContext()->getFavoriteManager()->getUserCommands();
+    UserCommand::List list = qtCtx()->dcCtx().getFavoriteManager()->getUserCommands();
     for (const UserCommand& uc : list) {
         if(!uc.isSet(UserCommand::FLAG_NOSAVE))
             addUC(uc);
@@ -170,7 +170,7 @@ void UCModel::newUC(){
     UCDialog ucd(qtCtx()->mainWindow());
 
     if (ucd.exec() == QDialog::Accepted){
-        addUC(dcpp::getContext()->getFavoriteManager()->addUserCommand(ucd.getType(),
+        addUC(qtCtx()->dcCtx().getFavoriteManager()->addUserCommand(ucd.getType(),
                                                              ucd.getCtx(),
                                                              0,
                                                              _tq(ucd.getName()),
@@ -196,7 +196,7 @@ void UCModel::changeUC(const QModelIndex &i){
 
     if (ucd.exec() == QDialog::Accepted){
         UserCommand uc;
-        dcpp::getContext()->getFavoriteManager()->getUserCommand(item->id, uc);
+        qtCtx()->dcCtx().getFavoriteManager()->getUserCommand(item->id, uc);
 
         uc.setName(_tq(ucd.getName()));
         uc.setCommand(_tq(ucd.getCmd()));
@@ -204,7 +204,7 @@ void UCModel::changeUC(const QModelIndex &i){
         uc.setType(ucd.getType());
         uc.setCtx(ucd.getCtx());
         uc.setTo(_tq(ucd.lineEdit_TO->text()));
-        dcpp::getContext()->getFavoriteManager()->updateUserCommand(uc);
+        qtCtx()->dcCtx().getFavoriteManager()->updateUserCommand(uc);
 
         item->name = ((uc.getType() == dcpp::UserCommand::TYPE_SEPARATOR)? tr("Separator") : _q(uc.getName()));
         item->comm = _q(uc.getCommand());
@@ -226,7 +226,7 @@ void UCModel::remUC(const QModelIndex &i){
     if (!rootItem->childItems.contains(item))
         return;
     
-    dcpp::getContext()->getFavoriteManager()->removeUserCommand(item->id);
+    qtCtx()->dcCtx().getFavoriteManager()->removeUserCommand(item->id);
 
     beginRemoveRows(QModelIndex(), item->row(), item->row());
     rootItem->childItems.removeAt(item->row());
@@ -249,7 +249,7 @@ void UCModel::moveUp(const QModelIndex &i){
     rootItem->childItems.insert(r-1, item);
     emit layoutChanged();
 
-    dcpp::getContext()->getFavoriteManager()->moveUserCommand(item->id, -1);
+    qtCtx()->dcCtx().getFavoriteManager()->moveUserCommand(item->id, -1);
 
     emit selectIndex(index(item->row(), 0, QModelIndex()));
 }
@@ -269,7 +269,7 @@ void UCModel::moveDown(const QModelIndex &i){
     rootItem->childItems.insert(r+1, item);
     emit layoutChanged();
 
-    dcpp::getContext()->getFavoriteManager()->moveUserCommand(item->id, 1);
+    qtCtx()->dcCtx().getFavoriteManager()->moveUserCommand(item->id, 1);
 
     emit selectIndex(index(item->row(), 0, QModelIndex()));
 }

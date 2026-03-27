@@ -26,13 +26,15 @@
 #include "treeview.hh"
 #include "wulformanager.hh"
 
+namespace dcpp { class DCContext; }
+
 
 class cmddebug:
         public BookEntry,
         private dcpp::DebugManagerListener, public dcpp::Thread
 {
 public:
-    cmddebug();
+    explicit cmddebug(dcpp::DCContext& dcCtx);
     virtual ~cmddebug();
     virtual void show();
 
@@ -80,4 +82,5 @@ private:
     bool scrollToBottom;
     GtkTextMark *cmdMark;
 
+    dcpp::DCContext& dcCtx_;
 };

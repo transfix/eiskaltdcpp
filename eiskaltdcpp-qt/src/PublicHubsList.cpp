@@ -11,6 +11,7 @@
  */
 
 #include "PublicHubsList.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 
 #include <QInputDialog>
@@ -27,7 +28,7 @@ PublicHubsList::PublicHubsList(QWidget *parent): QDialog(parent)
 {
     setupUi(this);
 
-    listWidget->addItems(_q(dcpp::getContext()->getSettingsManager()->get(SettingsManager::HUBLIST_SERVERS))
+    listWidget->addItems(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HUBLIST_SERVERS))
                          .split(";", Qt::SkipEmptyParts));
 
     connect(pushButton_DOWN, &QPushButton::clicked, this, &PublicHubsList::slotDown);
@@ -43,7 +44,7 @@ void PublicHubsList::slotAccepted(){
     for (int i = 0; i < listWidget->count(); i++)
         hubs += (hubs.isEmpty()? "" : ";") + listWidget->item(i)->text();
 
-    dcpp::getContext()->getSettingsManager()->set(SettingsManager::HUBLIST_SERVERS, _tq(hubs));
+    qtCtx()->dcCtx().getSettingsManager()->set(SettingsManager::HUBLIST_SERVERS, _tq(hubs));
 }
 
 void PublicHubsList::slotDown(){

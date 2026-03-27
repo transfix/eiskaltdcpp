@@ -21,7 +21,7 @@ HashManagerScript::HashManagerScript(dcpp::DCContext& ctx, QObject *parent) :
     QtContextAware(ctx),
     QObject(parent)
 {
-    HM = dcpp::getContext()->getHashManager();
+    HM = dcCtx().getHashManager();
     HM->addListener(this);
 }
 

@@ -66,10 +66,11 @@ ServerThread::SearchFilter ServerThread::searchFilter;
 Json::Rpc::HTTPServer * jsonserver;
 #endif
 
-ServerThread::ServerThread()
+ServerThread::ServerThread(dcpp::DCContext& dcCtx)
     : lastUp(0)
     , lastDown(0)
-    , lastUpdate(GET_TICK()) {
+    , lastUpdate(GET_TICK())
+    , dcCtx_(dcCtx) {
 }
 
 ServerThread::~ServerThread() {
@@ -81,11 +82,11 @@ void ServerThread::Resume() {
 }
 
 int ServerThread::run() {
-    dcpp::getContext()->getTimerManager()->start();
-    dcpp::getContext()->getTimerManager()->addListener(this);
-    dcpp::getContext()->getQueueManager()->addListener(this);
-    dcpp::getContext()->getLogManager()->addListener(this);
-    dcpp::getContext()->getSearchManager()->addListener(this);
+    dcCtx_.getTimerManager()->start();
+    dcCtx_.getTimerManager()->addListener(this);
+    dcCtx_.getQueueManager()->addListener(this);
+    dcCtx_.getLogManager()->addListener(this);
+    dcCtx_.getSearchManager()->addListener(this);
 
     try {
         File::ensureDirectory(SETTING(LOG_DIRECTORY));
@@ -94,11 +95,11 @@ int ServerThread::run() {
     startSocket(false);
     autoConnect();
 #ifdef LUA_SCRIPT
-    dcpp::getContext()->getScriptManager()->load();
+    dcCtx_.getScriptManager()->load();
     if (BOOLSETTING(USE_LUA)) {
         // Start as late as possible, as we might (formatting.lua) need to examine settings
         string defaultluascript = "startup.lua";
-        dcpp::getContext()->getScriptManager()->EvaluateFile(defaultluascript);
+        dcCtx_.getScriptManager()->EvaluateFile(defaultluascript);
     }
 #endif
 #ifdef XMLRPC_DAEMON
@@ -277,12 +278,12 @@ bool ServerThread::ignoreSearchResult(SearchResultPtr result)
 }
 
 void ServerThread::Close() {
-    dcpp::getContext()->getSearchManager()->disconnect();
+    dcCtx_.getSearchManager()->disconnect();
 
-    dcpp::getContext()->getLogManager()->removeListener(this);
-    dcpp::getContext()->getQueueManager()->removeListener(this);
-    dcpp::getContext()->getTimerManager()->removeListener(this);
-    dcpp::getContext()->getSearchManager()->removeListener(this);
+    dcCtx_.getLogManager()->removeListener(this);
+    dcCtx_.getQueueManager()->removeListener(this);
+    dcCtx_.getTimerManager()->removeListener(this);
+    dcCtx_.getSearchManager()->removeListener(this);
 #ifdef XMLRPC_DAEMON
     server->terminate();
     delete server;
@@ -293,7 +294,7 @@ void ServerThread::Close() {
     delete jsonserver;
 #endif
 
-    dcpp::getContext()->getConnectionManager()->disconnect();
+    dcCtx_.getConnectionManager()->disconnect();
     disconnectAll();
 }
 
@@ -302,7 +303,7 @@ void ServerThread::WaitFor() {
 }
 
 void ServerThread::autoConnect() {
-    const FavoriteHubEntryList& favhublist = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
+    const FavoriteHubEntryList& favhublist = dcCtx_.getFavoriteManager()->getFavoriteHubs();
     for (const auto& hub : favhublist) {
         if (hub->getConnect()) {
             string address = hub->getServer();
@@ -313,7 +314,7 @@ void ServerThread::autoConnect() {
 }
 
 void ServerThread::connectClient(const string& address, const string& encoding) {
-    if (dcpp::getContext()->getClientManager()->isConnected(address))
+    if (dcCtx_.getClientManager()->isConnected(address))
         printf("Already connected to %s\n", address.c_str());
     string tmp;
     ClientIter i = clientsMap.find(address);
@@ -323,7 +324,7 @@ void ServerThread::connectClient(const string& address, const string& encoding) 
         tmp = "UTF-8";
     else if (encoding.empty())
         tmp = Text::systemCharset;
-    Client* client = dcpp::getContext()->getClientManager()->getClient(address);
+    Client* client = dcCtx_.getClientManager()->getClient(address);
     if (client) {
         client->setEncoding(tmp);
         client->addListener(this);
@@ -337,7 +338,7 @@ void ServerThread::disconnectClient(const string& address) {
         Client* cl = i->second.curclient;
         cl->removeListener(this);
         cl->disconnect(true);
-        dcpp::getContext()->getClientManager()->putClient(cl);
+        dcCtx_.getClientManager()->putClient(cl);
         clientsMap[i->first].curclient = nullptr;
     }
 }
@@ -347,7 +348,7 @@ void ServerThread::on(TimerManagerListener::Second, uint64_t aTick) noexcept {
     int64_t upDiff = Socket::getTotalUp() - lastUp;
     int64_t downDiff = Socket::getTotalDown() - lastDown;
 
-    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
+    SettingsManager *SM = dcCtx_.getSettingsManager();
     SM->set(SettingsManager::TOTAL_UPLOAD,   SETTING(TOTAL_UPLOAD)   + upDiff);
     SM->set(SettingsManager::TOTAL_DOWNLOAD, SETTING(TOTAL_DOWNLOAD) + downDiff);
 
@@ -440,13 +441,13 @@ void ServerThread::on(ClientListener::Message, Client *cl, const ChatMessage& me
         if (BOOLSETTING(LOG_PRIVATE_CHAT)) {
             const string& hint = cl->getHubUrl();
             const CID& cid = message.replyTo->getUser()->getCID();
-            bool priv = dcpp::getContext()->getFavoriteManager()->isPrivate(hint);
+            bool priv = dcCtx_.getFavoriteManager()->isPrivate(hint);
             params["message"] = Text::fromUtf8(msg);
-            params["hubNI"] = Util::toString(dcpp::getContext()->getClientManager()->getHubNames(cid, hint, priv));
-            params["hubURL"] = Util::toString(dcpp::getContext()->getClientManager()->getHubs(cid, hint, priv));
+            params["hubNI"] = Util::toString(dcCtx_.getClientManager()->getHubNames(cid, hint, priv));
+            params["hubURL"] = Util::toString(dcCtx_.getClientManager()->getHubs(cid, hint, priv));
             params["userCID"] = cid.toBase32();
-            params["userNI"] = dcpp::getContext()->getClientManager()->getNicks(cid, hint, priv)[0];
-            params["myCID"] = dcpp::getContext()->getClientManager()->getMe()->getCID().toBase32();
+            params["userNI"] = dcCtx_.getClientManager()->getNicks(cid, hint, priv)[0];
+            params["myCID"] = dcCtx_.getClientManager()->getMe()->getCID().toBase32();
             LOG(LogManager::PM, params);
         }
     } else {
@@ -508,13 +509,13 @@ void ServerThread::on(SearchManagerListener::SR, const SearchResultPtr& result) 
 
 void ServerThread::startSocket(bool changed) {
     if (changed)
-        dcpp::getContext()->getConnectivityManager()->updateLast();
+        dcCtx_.getConnectivityManager()->updateLast();
     try {
-        dcpp::getContext()->getConnectivityManager()->setup(true);
+        dcCtx_.getConnectivityManager()->setup(true);
     } catch (const Exception& e) {
         showPortsError(e.getError());
     }
-    dcpp::getContext()->getClientManager()->infoUpdated();
+    dcCtx_.getClientManager()->infoUpdated();
 }
 
 void ServerThread::showPortsError(const string& port) {
@@ -560,9 +561,9 @@ bool ServerThread::sendPrivateMessage(const string& hub, const string& nick, con
             auto it = i->second.curuserlist.find(nick);
             if (it == i->second.curuserlist.end())
                 return false;
-            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(it->second));
+            UserPtr user = dcCtx_.getClientManager()->findUser(CID(it->second));
             if (user && user->isOnline()) {
-                dcpp::getContext()->getClientManager()->privateMessage(HintedUser(user, hub), thirdPerson ? message.substr(4) : message, thirdPerson);
+                dcCtx_.getClientManager()->privateMessage(HintedUser(user, hub), thirdPerson ? message.substr(4) : message, thirdPerson);
                 return true;
             } else {
                 return false;
@@ -582,23 +583,23 @@ bool ServerThread::getFileList(const string& hub, const string& nick, bool match
                 auto it = clientsMap[hub].curuserlist.find(nick);
                 if (it == clientsMap[hub].curuserlist.end())
                     return false;
-                UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(it->second));
+                UserPtr user = dcCtx_.getClientManager()->findUser(CID(it->second));
                 if (user && user->isOnline()) {
                     const HintedUser hintedUser(user, hub);
-                    if (user == dcpp::getContext()->getClientManager()->getMe()) {
+                    if (user == dcCtx_.getClientManager()->getMe()) {
                         // Don't download file list, open locally instead
                         //WulforManager::get()->getMainWindow()->openOwnList_client(TRUE);
                     } else if (match) {
-                        dcpp::getContext()->getQueueManager()->addList(hintedUser, QueueItem::FLAG_MATCH_QUEUE);
+                        dcCtx_.getQueueManager()->addList(hintedUser, QueueItem::FLAG_MATCH_QUEUE);
                     } else {
-                        dcpp::getContext()->getQueueManager()->addList(hintedUser, QueueItem::FLAG_CLIENT_VIEW);
+                        dcCtx_.getQueueManager()->addList(hintedUser, QueueItem::FLAG_CLIENT_VIEW);
                     }
                     return true;
                 } else {
                     return false;
                 }
             } catch (const Exception &e) {
-                dcpp::getContext()->getLogManager()->message(e.getError());
+                dcCtx_.getLogManager()->message(e.getError());
             }
         }
     }
@@ -635,7 +636,7 @@ void ServerThread::parseSearchResult(SearchResultPtr result, StringMap &resultMa
         resultMap["Size"] = Util::formatBytes(result->getSize());
         resultMap["Exact Size"] = Util::formatExactSize(result->getSize());
         resultMap["Icon"] = "icon-file";
-        resultMap["Shared"] = Util::toString(dcpp::getContext()->getShareManager()->isTTHShared(result->getTTH()));
+        resultMap["Shared"] = Util::toString(dcCtx_.getShareManager()->isTTHShared(result->getTTH()));
     } else {
         string path = revertSeparator(result->getFile());
         resultMap["Filename"] = Util::getLastDir(path) + PATH_SEPARATOR;
@@ -652,10 +653,10 @@ void ServerThread::parseSearchResult(SearchResultPtr result, StringMap &resultMa
         }
     }
 
-    resultMap["Nick"] = Util::toString(dcpp::getContext()->getClientManager()->getNicks(result->getUser()->getCID(), result->getHubURL()));
+    resultMap["Nick"] = Util::toString(dcCtx_.getClientManager()->getNicks(result->getUser()->getCID(), result->getHubURL()));
     resultMap["CID"] = result->getUser()->getCID().toBase32();
     resultMap["Slots"] = result->getSlotString();
-    resultMap["Connection"] = dcpp::getContext()->getClientManager()->getConnection(result->getUser()->getCID());
+    resultMap["Connection"] = dcCtx_.getClientManager()->getConnection(result->getUser()->getCID());
     resultMap["Hub"] = result->getHubName().empty() ? result->getHubURL().c_str() : result->getHubName().c_str();
     resultMap["Hub URL"] = result->getHubURL();
     resultMap["IP"] = result->getIP();
@@ -726,7 +727,7 @@ bool ServerThread::sendSearchOnHubs(const string& search, const int& searchtype,
     int ftype = searchtype;
     string ftypeStr;
     if (ftype > SearchManager::TYPE_ANY && ftype < SearchManager::TYPE_LAST) {
-        ftypeStr = dcpp::getContext()->getSearchManager()->getTypeStr(ftype);
+        ftypeStr = dcCtx_.getSearchManager()->getTypeStr(ftype);
     } else {
         ftype = SearchManager::TYPE_ANY;
     }
@@ -735,10 +736,10 @@ bool ServerThread::sendSearchOnHubs(const string& search, const int& searchtype,
     try {
         if (ftype == SearchManager::TYPE_ANY) {
             // Custom searchtype
-            exts = dcpp::getContext()->getSettingsManager()->getExtensions(ftypeStr);
+            exts = dcCtx_.getSettingsManager()->getExtensions(ftypeStr);
         } else if ((ftype > SearchManager::TYPE_ANY && ftype < SearchManager::TYPE_DIRECTORY) || ftype == SearchManager::TYPE_CD_IMAGE) {
             // Predefined searchtype
-            exts = dcpp::getContext()->getSettingsManager()->getExtensions(string(1, '0' + ftype));
+            exts = dcCtx_.getSettingsManager()->getExtensions(string(1, '0' + ftype));
         }
     } catch (const SearchTypeException&) {
         ftype = SearchManager::TYPE_ANY;
@@ -748,7 +749,7 @@ bool ServerThread::sendSearchOnHubs(const string& search, const int& searchtype,
     searchFilter.token = Util::toString(Util::rand());
     searchFilter.isHash = (ftype == SearchManager::TYPE_TTH);
 
-    dcpp::getContext()->getSearchManager()->search(clients, ssearch, lllsize, SearchManager::TypeModes(ftype), mode, searchFilter.token, exts);
+    dcCtx_.getSearchManager()->search(clients, ssearch, lllsize, SearchManager::TypeModes(ftype), mode, searchFilter.token, exts);
 
     return true;
 }
@@ -780,22 +781,22 @@ bool ServerThread::clearSearchResults(const string& huburl) {
 }
 
 void ServerThread::listShare(string& listshare, const string& sseparator) {
-    StringPairList directories = dcpp::getContext()->getShareManager()->getDirectories();
+    StringPairList directories = dcCtx_.getShareManager()->getDirectories();
     for (const auto& dir : directories) {
         listshare.append("\n");
         listshare.append(dir.second + sseparator);
         listshare.append(dir.first + sseparator);
-        listshare.append(Util::formatBytes(dcpp::getContext()->getShareManager()->getShareSize(dir.second)) + sseparator);
+        listshare.append(Util::formatBytes(dcCtx_.getShareManager()->getShareSize(dir.second)) + sseparator);
         listshare.append("\n");
     }
 }
 
 bool ServerThread::delDirFromShare(const string& sdirectory) {
-    StringPairList directories = dcpp::getContext()->getShareManager()->getDirectories();
+    StringPairList directories = dcCtx_.getShareManager()->getDirectories();
     for (const auto& dir : directories) {
         if (!dir.first.compare(sdirectory)) {
-            dcpp::getContext()->getShareManager()->removeDirectory(dir.second);
-            dcpp::getContext()->getShareManager()->refresh(true);
+            dcCtx_.getShareManager()->removeDirectory(dir.second);
+            dcCtx_.getShareManager()->refresh(true);
             return true;
         }
     }
@@ -803,11 +804,11 @@ bool ServerThread::delDirFromShare(const string& sdirectory) {
 }
 
 bool ServerThread::renameDirInShare(const string& sdirectory, const string& svirtname) {
-    StringPairList directories = dcpp::getContext()->getShareManager()->getDirectories();
+    StringPairList directories = dcCtx_.getShareManager()->getDirectories();
     for (const auto& dir : directories) {
         if (!dir.second.compare(sdirectory)) {
-            dcpp::getContext()->getShareManager()->renameDirectory(sdirectory, svirtname);
-            dcpp::getContext()->getShareManager()->refresh(true);
+            dcCtx_.getShareManager()->renameDirectory(sdirectory, svirtname);
+            dcCtx_.getShareManager()->refresh(true);
             return true;
         }
     }
@@ -816,8 +817,8 @@ bool ServerThread::renameDirInShare(const string& sdirectory, const string& svir
 
 bool ServerThread::addDirInShare(const string& sdirectory, const string& svirtname) {
     if (Util::fileExists(sdirectory.c_str())) {
-        dcpp::getContext()->getShareManager()->addDirectory(sdirectory, svirtname);
-        dcpp::getContext()->getShareManager()->refresh(true);
+        dcCtx_.getShareManager()->addDirectory(sdirectory, svirtname);
+        dcCtx_.getShareManager()->refresh(true);
         return true;
     }
     return false;
@@ -830,9 +831,9 @@ bool ServerThread::addInQueue(const string& sddir, const string& name, const int
     try
     {
         if (sddir.empty())
-            dcpp::getContext()->getQueueManager()->add(SETTING(DOWNLOAD_DIRECTORY) + PATH_SEPARATOR_STR + name, size, TTHValue(tth));
+            dcCtx_.getQueueManager()->add(SETTING(DOWNLOAD_DIRECTORY) + PATH_SEPARATOR_STR + name, size, TTHValue(tth));
         else
-            dcpp::getContext()->getQueueManager()->add(sddir + PATH_SEPARATOR_STR + name, size, TTHValue(tth));
+            dcCtx_.getQueueManager()->add(sddir + PATH_SEPARATOR_STR + name, size, TTHValue(tth));
     }
     catch (const Exception& e)
     {
@@ -859,16 +860,16 @@ bool ServerThread::setPriorityQueueItem(const string& target, const unsigned int
     }
 
     if (target[target.length() - 1] == PATH_SEPARATOR) {
-        const QueueItem::StringMap& ll = dcpp::getContext()->getQueueManager()->lockQueue();
+        const QueueItem::StringMap& ll = dcCtx_.getQueueManager()->lockQueue();
         string *file;
         for (const auto& item : ll) {
             file = item.first;
             if (file->length() >= target.length() && file->substr(0, target.length()) == target)
-                dcpp::getContext()->getQueueManager()->setPriority(*file, p);
+                dcCtx_.getQueueManager()->setPriority(*file, p);
         }
-        dcpp::getContext()->getQueueManager()->unlockQueue();
+        dcCtx_.getQueueManager()->unlockQueue();
     } else {
-        dcpp::getContext()->getQueueManager()->setPriority(target, p);
+        dcCtx_.getQueueManager()->setPriority(target, p);
     }
     return true;
 }
@@ -880,36 +881,36 @@ void ServerThread::getItemSources(QueueItem* item, const string& separator, stri
             ++online_tmp;
         if (!sources.empty())
             sources += separator;
-        nick = Util::toString(dcpp::getContext()->getClientManager()->getNicks(s.getUser().user->getCID(), s.getUser().hint));
+        nick = Util::toString(dcCtx_.getClientManager()->getNicks(s.getUser().user->getCID(), s.getUser().hint));
         sources += nick;
     }
 }
 
 void ServerThread::getItemSourcesbyTarget(const string& target, const string& separator, string& sources, unsigned int& online) {
-    const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
+    const QueueItem::StringMap &ll = dcCtx_.getQueueManager()->lockQueue();
     for (const auto& item : ll) {
         if (target == *(item.first)) {
             getItemSources(item.second, separator, sources, online);
         }
     }
-    dcpp::getContext()->getQueueManager()->unlockQueue();
+    dcCtx_.getQueueManager()->unlockQueue();
 }
 
 void ServerThread::getItemDescbyTarget(const string& target, StringMap& sm) {
-    const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
+    const QueueItem::StringMap &ll = dcCtx_.getQueueManager()->lockQueue();
     for (const auto& item : ll) {
         if (target == *(item.first)) {
             getQueueParams(item.second,sm);
         }
     }
-    dcpp::getContext()->getQueueManager()->unlockQueue();
+    dcCtx_.getQueueManager()->unlockQueue();
 }
 
 void ServerThread::queueClear()
 {
-    QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
+    QueueItem::StringMap &ll = dcCtx_.getQueueManager()->lockQueue();
     ll.clear();
-    dcpp::getContext()->getQueueManager()->unlockQueue();
+    dcCtx_.getQueueManager()->unlockQueue();
 }
 
 void ServerThread::getQueueParams(QueueItem* item, StringMap& params) {
@@ -965,7 +966,7 @@ void ServerThread::getQueueParams(QueueItem* item, StringMap& params) {
     // Error
     params["Errors"] = "";
     for (const auto& s : item->getBadSources()) {
-        nick = Util::toString(dcpp::getContext()->getClientManager()->getNicks(s.getUser().user->getCID(), s.getUser().hint));
+        nick = Util::toString(dcCtx_.getClientManager()->getNicks(s.getUser().user->getCID(), s.getUser().hint));
 
         if (!s.isSet(QueueItem::Source::FLAG_REMOVED)) {
             if (params["Errors"].size() > 0)
@@ -1004,24 +1005,24 @@ void ServerThread::listQueueTargets(string& listqueue, const string& sseparator)
         separator = "\n";
     else
         separator = sseparator;
-    const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
+    const QueueItem::StringMap &ll = dcCtx_.getQueueManager()->lockQueue();
 
     for (const auto& item : ll) {
         listqueue += *(item.first);
         listqueue += separator;
     }
-    dcpp::getContext()->getQueueManager()->unlockQueue();
+    dcCtx_.getQueueManager()->unlockQueue();
 }
 
 //void ServerThread::updatelistQueueTargets() {
-    //const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
+    //const QueueItem::StringMap &ll = dcCtx_.getQueueManager()->lockQueue();
     //queuesMap.clear();
     //unsigned int i = 0;
     //for (const auto& item : ll) {
         //queuesMap[i] = *(item.first);
          //++i;
     //}
-    //dcpp::getContext()->getQueueManager()->unlockQueue();
+    //dcCtx_.getQueueManager()->unlockQueue();
 //}
 
 //void ServerThread::on(Added, QueueItem* item) noexcept {
@@ -1050,13 +1051,13 @@ void ServerThread::listQueueTargets(string& listqueue, const string& sseparator)
 //}
 
 void ServerThread::listQueue(unordered_map<string,StringMap>& listqueue) {
-    const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
+    const QueueItem::StringMap &ll = dcCtx_.getQueueManager()->lockQueue();
     for (const auto& item : ll) {
         StringMap sm;
         getQueueParams(item.second,sm);
         listqueue[*(item.first)] = sm;
     }
-    dcpp::getContext()->getQueueManager()->unlockQueue();
+    dcCtx_.getQueueManager()->unlockQueue();
 }
 
 void ServerThread::listHubsFullDesc(unordered_map<string,StringMap>& listhubs) {
@@ -1079,20 +1080,20 @@ bool ServerThread::moveQueueItem(const string& source, const string& target) {
             // Can't modify QueueItem::StringMap in the loop, so we have to queue them.
             vector<string> targets;
             string *file;
-            const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
+            const QueueItem::StringMap &ll = dcCtx_.getQueueManager()->lockQueue();
 
             for (const auto& item : ll) {
                 file = item.first;
                 if (file->length() >= source.length() && file->substr(0, source.length()) == source)
                     targets.push_back(*file);
             }
-            dcpp::getContext()->getQueueManager()->unlockQueue();
+            dcCtx_.getQueueManager()->unlockQueue();
 
             for (const auto& item : targets) {
-                dcpp::getContext()->getQueueManager()->move(item, target + item.substr(source.length()));
+                dcCtx_.getQueueManager()->move(item, target + item.substr(source.length()));
             }
         } else {
-            dcpp::getContext()->getQueueManager()->move(source, target);
+            dcCtx_.getQueueManager()->move(source, target);
         }
         return true;
     }
@@ -1104,20 +1105,20 @@ bool ServerThread::removeQueueItem(const string& target) {
         if (target[target.length() - 1] == PATH_SEPARATOR) {
             string *file;
             vector<string> targets;
-            const QueueItem::StringMap &ll = dcpp::getContext()->getQueueManager()->lockQueue();
+            const QueueItem::StringMap &ll = dcCtx_.getQueueManager()->lockQueue();
 
             for (const auto& item : ll) {
                 file = item.first;
                 if (file->length() >= target.length() && file->substr(0, target.length()) == target)
                     targets.push_back(*file);
             }
-            dcpp::getContext()->getQueueManager()->unlockQueue();
+            dcCtx_.getQueueManager()->unlockQueue();
 
             for (const auto& item : targets) {
-                dcpp::getContext()->getQueueManager()->remove(item);
+                dcCtx_.getQueueManager()->remove(item);
             }
         } else {
-            dcpp::getContext()->getQueueManager()->remove(target);
+            dcCtx_.getQueueManager()->remove(target);
         }
         return true;
     }
@@ -1125,21 +1126,21 @@ bool ServerThread::removeQueueItem(const string& target) {
 }
 
 void ServerThread::getHashStatus(string& target, uint64_t& bytesLeft, size_t& filesLeft, string& status) {
-    dcpp::getContext()->getHashManager()->getStats(target, bytesLeft, filesLeft);
-    status = dcpp::getContext()->getHashManager()->isHashingPaused() ? "pause" : bytesLeft > 0 ? "hashing" : "idle";
+    dcCtx_.getHashManager()->getStats(target, bytesLeft, filesLeft);
+    status = dcCtx_.getHashManager()->isHashingPaused() ? "pause" : bytesLeft > 0 ? "hashing" : "idle";
 }
 
 bool ServerThread::pauseHash() {
-    bool paused = dcpp::getContext()->getHashManager()->isHashingPaused();
+    bool paused = dcCtx_.getHashManager()->isHashingPaused();
     if (paused)
-        dcpp::getContext()->getHashManager()->resumeHashing();
+        dcCtx_.getHashManager()->resumeHashing();
     else
-        dcpp::getContext()->getHashManager()->pauseHashing();
+        dcCtx_.getHashManager()->pauseHashing();
     return !paused;
 }
 
 void ServerThread::matchAllList() {
-    dcpp::getContext()->getQueueManager()->matchAllListings();
+    dcCtx_.getQueueManager()->matchAllListings();
 }
 
 //void ServerThread::getHubUserList(StringMap& userlist, const string& huburl) {
@@ -1232,9 +1233,9 @@ bool ServerThread::getUserInfo(StringMap& userinfo, const string& nick, const st
         auto it = i->second.curuserlist.find(nick);
         if (it == i->second.curuserlist.end())
             return false;
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(it->second));
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(it->second));
         if (user && user->isOnline()) {
-            Identity id = dcpp::getContext()->getClientManager()->getOnlineUserIdentity(user);
+            Identity id = dcCtx_.getClientManager()->getOnlineUserIdentity(user);
             if (!id.isHidden()) {
                 getParamsUser(userinfo, id);
                 return true;
@@ -1273,7 +1274,7 @@ class ServerThreadListLoader : public dcpp::Thread
             try {
                 dl->getRoot()->setName(nick);
                 dl->loadFile(Util::getListPath() + filelist);
-                dcpp::getContext()->getADLSearchManager()->matchListing(*dl);
+                dl->ctx().getADLSearchManager()->matchListing(*dl);
             } catch (const Exception&) {}
             delete this;// Cleanup the thread object
             return 0;
@@ -1290,7 +1291,7 @@ class ServerThreadListLoader : public dcpp::Thread
         //listing->getRoot()->setName(nick);
         ////if (full) {
             //listing->loadFile(Util::getListPath() + filelist);
-            //dcpp::getContext()->getADLSearchManager()->matchListing(*(listing));
+            //dcCtx_.getADLSearchManager()->matchListing(*(listing));
         ////}
     //}
     //catch (const Exception &e)
@@ -1304,11 +1305,11 @@ class ServerThreadListLoader : public dcpp::Thread
 bool ServerThread::openFileList(const string& filelist) {
     auto it = listsMap.find(filelist);
     if (it == listsMap.end()) {
-        UserPtr u = DirectoryListing::getUserFromFilename(*dcpp::getContext(), filelist);
+        UserPtr u = DirectoryListing::getUserFromFilename(dcCtx_, filelist);
         if (!u)
             return false;
         // Use the nick from the file name in case the user is offline and core only returns CID
-        string nick = Util::toString(dcpp::getContext()->getClientManager()->getNicks(u->getCID(), ""));
+        string nick = Util::toString(dcCtx_.getClientManager()->getNicks(u->getCID(), ""));
         if (nick.find(u->getCID().toBase32(), 1) != string::npos)
         {
             string name = Util::getFileName(filelist);
@@ -1316,7 +1317,7 @@ bool ServerThread::openFileList(const string& filelist) {
             nick = name.substr(0, loc);
         }
         HintedUser user(u, Util::emptyString);
-        DirectoryListing* dl = new DirectoryListing(*dcpp::getContext(), user);
+        DirectoryListing* dl = new DirectoryListing(dcCtx_, user);
         //buildList(filelist, nick, dl, false);
         ServerThreadListLoader* stld = new ServerThreadListLoader(filelist, nick, dl);
         try {
@@ -1468,16 +1469,16 @@ bool ServerThread::downloadFileFromList(DirectoryListing::File *file, DirectoryL
 
 bool ServerThread::settingsGetSet(string& out, const string& param, const string& value)
 {
-    bool b = dcpp::getContext()->getSettingsManager()->parseCoreCmd(out, param, value);
+    bool b = dcCtx_.getSettingsManager()->parseCoreCmd(out, param, value);
     return b;
 }
 
 void ServerThread::ipFilterList(string& out, const string& separator)
 {
-    if (!dcpp::getContext()->getIPFilter())
+    if (!dcCtx_.getIPFilter())
         return;
     string sep = separator.empty()? ";" : separator;
-    IPList list = dcpp::getContext()->getIPFilter()->getRules();
+    IPList list = dcCtx_.getIPFilter()->getRules();
     for (unsigned int i = 0; i < list.size(); ++i) {
 
         IPFilterElem *el = list.at(i);
@@ -1503,28 +1504,28 @@ void ServerThread::ipFilterList(string& out, const string& separator)
 void ServerThread::ipFilterOnOff(bool on)
 {
     if (on) {
-        dcpp::getContext()->getIPFilter()->load();
-        dcpp::getContext()->getSettingsManager()->set(SettingsManager::IPFILTER, 1);
+        dcCtx_.getIPFilter()->load();
+        dcCtx_.getSettingsManager()->set(SettingsManager::IPFILTER, 1);
     } else {
-        dcpp::getContext()->getIPFilter()->shutdown();
-        dcpp::getContext()->getSettingsManager()->set(SettingsManager::IPFILTER, 0);
+        dcCtx_.getIPFilter()->shutdown();
+        dcCtx_.getSettingsManager()->set(SettingsManager::IPFILTER, 0);
     }
 }
 
 void ServerThread::ipFilterPurgeRules(const string& rules) {
-    if (!dcpp::getContext()->getIPFilter())
+    if (!dcCtx_.getIPFilter())
         return;
     StringTokenizer<string> purge( rules, ";" );
     for(const auto &token : purge.getTokens()) {
         if (!token.find("!"))
-            dcpp::getContext()->getIPFilter()->remFromRules(token, etaDROP);
+            dcCtx_.getIPFilter()->remFromRules(token, etaDROP);
         else
-            dcpp::getContext()->getIPFilter()->remFromRules(token, etaACPT);
+            dcCtx_.getIPFilter()->remFromRules(token, etaACPT);
     }
 }
 
 void ServerThread::ipFilterAddRules(const string& rules) {
-    if (!dcpp::getContext()->getIPFilter())
+    if (!dcCtx_.getIPFilter())
         return;
     StringTokenizer<string> add( rules, ";" );
     for(const auto &token : add.getTokens())
@@ -1533,34 +1534,34 @@ void ServerThread::ipFilterAddRules(const string& rules) {
         if (addsub.getTokens().size() == 0)
             return;
         if (addsub.getTokens().at(1) == "in")
-            dcpp::getContext()->getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_IN);
+            dcCtx_.getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_IN);
         else if (addsub.getTokens().at(1) == "out")
-            dcpp::getContext()->getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_OUT);
+            dcCtx_.getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_OUT);
         else
-            dcpp::getContext()->getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_BOTH);
+            dcCtx_.getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_BOTH);
     }
 }
 
 void ServerThread::ipFilterUpDownRule(bool up, const string& rule) {
     if (up){
-        if (!dcpp::getContext()->getIPFilter())
+        if (!dcCtx_.getIPFilter())
             return;
         uint32_t ip,mask; eTableAction act;
-        if (dcpp::getContext()->getIPFilter()->ParseString(rule, ip, mask, act))
-            dcpp::getContext()->getIPFilter()->moveRuleUp(ip, act);
+        if (dcCtx_.getIPFilter()->ParseString(rule, ip, mask, act))
+            dcCtx_.getIPFilter()->moveRuleUp(ip, act);
     } else {
-        if (!dcpp::getContext()->getIPFilter())
+        if (!dcCtx_.getIPFilter())
             return;
         uint32_t ip,mask; eTableAction act;
-        if (dcpp::getContext()->getIPFilter()->ParseString(rule, ip, mask, act))
-            dcpp::getContext()->getIPFilter()->moveRuleDown(ip, act);
+        if (dcCtx_.getIPFilter()->ParseString(rule, ip, mask, act))
+            dcCtx_.getIPFilter()->moveRuleDown(ip, act);
     }
 }
 
 bool ServerThread::configReload()
 {
-    if (dcpp::getContext()->getSettingsManager()) {
-        dcpp::getContext()->getSettingsManager()->load();
+    if (dcCtx_.getSettingsManager()) {
+        dcCtx_.getSettingsManager()->load();
         return true;
     } else 
         return false;

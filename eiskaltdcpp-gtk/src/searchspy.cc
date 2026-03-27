@@ -32,11 +32,12 @@
 using namespace std;
 using namespace dcpp;
 
-SearchSpy::SearchSpy()
+SearchSpy::SearchSpy(dcpp::DCContext& dcCtx)
     : BookEntry(Entry::SEARCH_SPY, _("Search Spy"), "searchspy.ui")
     , FrameSize((SearchType)WGETI("search-spy-frame"))
     , Waiting((guint)WGETI("search-spy-waiting"))
-    , Top((guint)WGETI("search-spy-top"))
+    , Top((guint)WGETI("search-spy-top")),
+    dcCtx_(dcCtx)
 {
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR(getWidget("statusbar")),false);
@@ -116,14 +117,14 @@ SearchSpy::~SearchSpy()
     gtk_widget_destroy(getWidget("TopSearchDialog"));
     g_object_unref(getWidget("menu"));
 
-    dcpp::getContext()->getTimerManager()->removeListener(this);
-    dcpp::getContext()->getClientManager()->removeListener(this);
+    dcCtx_.getTimerManager()->removeListener(this);
+    dcCtx_.getClientManager()->removeListener(this);
 }
 
 void SearchSpy::show()
 {
-    dcpp::getContext()->getClientManager()->addListener(this);
-    dcpp::getContext()->getTimerManager()->addListener(this);
+    dcCtx_.getClientManager()->addListener(this);
+    dcCtx_.getTimerManager()->addListener(this);
 }
 
 void SearchSpy::preferences_gui()

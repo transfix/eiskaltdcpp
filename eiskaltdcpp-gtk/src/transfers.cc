@@ -40,14 +40,15 @@
 using namespace std;
 using namespace dcpp;
 
-Transfers::Transfers() :
-    Entry(Entry::TRANSFERS, "transfers.ui")
+Transfers::Transfers(dcpp::DCContext& dcCtx) :
+    Entry(Entry::TRANSFERS, "transfers.ui"),
+    dcCtx_(dcCtx)
 {
     // menu
     g_object_ref_sink(getWidget("transferMenu"));
 
     // Initialize the user command menu
-    userCommandMenu = new UserCommandMenu(getWidget("userCommandMenu"), ::UserCommand::CONTEXT_USER);
+    userCommandMenu = new UserCommandMenu(dcCtx_, getWidget("userCommandMenu"), ::UserCommand::CONTEXT_USER);
     addChild(userCommandMenu);
 
     // Initialize the preview menu
@@ -105,10 +106,10 @@ Transfers::Transfers() :
 
 Transfers::~Transfers()
 {
-    dcpp::getContext()->getQueueManager()->removeListener(this);
-    dcpp::getContext()->getDownloadManager()->removeListener(this);
-    dcpp::getContext()->getUploadManager()->removeListener(this);
-    dcpp::getContext()->getConnectionManager()->removeListener(this);
+    dcCtx_.getQueueManager()->removeListener(this);
+    dcCtx_.getDownloadManager()->removeListener(this);
+    dcCtx_.getUploadManager()->removeListener(this);
+    dcCtx_.getConnectionManager()->removeListener(this);
 
     g_object_unref(getWidget("transferMenu"));
     delete appsPreviewMenu;
@@ -116,10 +117,10 @@ Transfers::~Transfers()
 
 void Transfers::show()
 {
-    dcpp::getContext()->getQueueManager()->addListener(this);
-    dcpp::getContext()->getDownloadManager()->addListener(this);
-    dcpp::getContext()->getUploadManager()->addListener(this);
-    dcpp::getContext()->getConnectionManager()->addListener(this);
+    dcCtx_.getQueueManager()->addListener(this);
+    dcCtx_.getDownloadManager()->addListener(this);
+    dcCtx_.getUploadManager()->addListener(this);
+    dcCtx_.getConnectionManager()->addListener(this);
 }
 
 void Transfers::popupTransferMenu_gui()
@@ -148,7 +149,7 @@ void Transfers::popupTransferMenu_gui()
                 string cid = transferView.getString(&iter, "CID");
                 string hubUrl = transferView.getString(&iter, "Hub URL");
                 userCommandMenu->addUser(cid);
-                userCommandMenu->addHub(WulforUtil::getHubAddress(CID(cid), hubUrl));
+                userCommandMenu->addHub(WulforUtil::getHubAddress(dcCtx_, CID(cid), hubUrl));
             }
             while (parent && WulforUtil::getNextIter_gui(GTK_TREE_MODEL(transferStore), &iter, true, false));
         }
@@ -788,8 +789,8 @@ void Transfers::getFileList_client(string cid, string hubUrl)
     {
         if (!cid.empty() && !hubUrl.empty())
         {
-            UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(cid));
-            dcpp::getContext()->getQueueManager()->addList(HintedUser(user, hubUrl), QueueItem::FLAG_CLIENT_VIEW);
+            UserPtr user = dcCtx_.getClientManager()->getUser(CID(cid));
+            dcCtx_.getQueueManager()->addList(HintedUser(user, hubUrl), QueueItem::FLAG_CLIENT_VIEW);
         }
     }
     catch (const Exception&)
@@ -803,8 +804,8 @@ void Transfers::matchQueue_client(string cid, string hubUrl)
     {
         if (!cid.empty() && !hubUrl.empty())
         {
-            UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(cid));
-            dcpp::getContext()->getQueueManager()->addList(HintedUser(user, hubUrl), QueueItem::FLAG_MATCH_QUEUE);
+            UserPtr user = dcCtx_.getClientManager()->getUser(CID(cid));
+            dcCtx_.getQueueManager()->addList(HintedUser(user, hubUrl), QueueItem::FLAG_MATCH_QUEUE);
         }
     }
     catch (const Exception&)
@@ -816,8 +817,8 @@ void Transfers::addFavoriteUser_client(string cid)
 {
     if (!cid.empty())
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(cid));
-        dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
+        UserPtr user = dcCtx_.getClientManager()->getUser(CID(cid));
+        dcCtx_.getFavoriteManager()->addFavoriteUser(user);
     }
 }
 
@@ -825,8 +826,8 @@ void Transfers::grantExtraSlot_client(string cid, string hubUrl)
 {
     if (!cid.empty() && !hubUrl.empty())
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(cid));
-        dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
+        UserPtr user = dcCtx_.getClientManager()->getUser(CID(cid));
+        dcCtx_.getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
     }
 }
 
@@ -834,8 +835,8 @@ void Transfers::removeUserFromQueue_client(string cid)
 {
     if (!cid.empty())
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(cid));
-        dcpp::getContext()->getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+        UserPtr user = dcCtx_.getClientManager()->getUser(CID(cid));
+        dcCtx_.getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
     }
 }
 
@@ -843,8 +844,8 @@ void Transfers::forceAttempt_client(string cid)
 {
     if (!cid.empty())
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
-        dcpp::getContext()->getConnectionManager()->force(user);
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
+        dcCtx_.getConnectionManager()->force(user);
     }
 }
 
@@ -852,8 +853,8 @@ void Transfers::closeConnection_client(string cid, bool download)
 {
     if (!cid.empty())
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
-        dcpp::getContext()->getConnectionManager()->disconnect(user, download);
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
+        dcCtx_.getConnectionManager()->disconnect(user, download);
     }
 }
 
@@ -863,8 +864,8 @@ void Transfers::getParams_client(StringMap& params, ConnectionQueueItem* cqi)
     const HintedUser &user = cqi->getUser();
 
     params["CID"] = user.user->getCID().toBase32();
-    params["User"] = WulforUtil::getNicks(user);
-    params["Hub Name"] = WulforUtil::getHubNames(user);
+    params["User"] = WulforUtil::getNicks(dcCtx_, user);
+    params["Hub Name"] = WulforUtil::getHubNames(dcCtx_, user);
     params["Failed"] = "0";
     params["Hub URL"] = user.hint;
 }
@@ -882,8 +883,8 @@ void Transfers::getParams_client(StringMap& params, Transfer* tr)
         params["Filename"] = _("TTH: ") + Util::getFileName(tr->getPath());
     else
         params["Filename"] = Util::getFileName(tr->getPath());
-    params["User"] = WulforUtil::getNicks(user);
-    params["Hub Name"] = WulforUtil::getHubNames(user);
+    params["User"] = WulforUtil::getNicks(dcCtx_, user);
+    params["Hub Name"] = WulforUtil::getHubNames(dcCtx_, user);
     params["Path"] = Util::getFilePath(tr->getPath());
     params["Size"] = Util::toString(tr->getSize());
     params["Download Position"] = Util::toString(tr->getPos());
@@ -904,8 +905,8 @@ void Transfers::on(DownloadManagerListener::Requesting, Download* dl) noexcept
 
     getParams_client(params, dl);
 
-    params["File Size"] = Util::toString(dcpp::getContext()->getQueueManager()->getSize(dl->getPath()));
-    params["File Position"] = Util::toString(dcpp::getContext()->getQueueManager()->getPos(dl->getPath()));
+    params["File Size"] = Util::toString(dcCtx_.getQueueManager()->getSize(dl->getPath()));
+    params["File Position"] = Util::toString(dcCtx_.getQueueManager()->getPos(dl->getPath()));
     params["Sort Order"] = "w" + params["User"];
     params["Status"] = _("Requesting");
     params["Failed"] = "0";
@@ -975,7 +976,7 @@ void Transfers::on(DownloadManagerListener::Complete, Download* dl) noexcept
     params["Sort Order"] = "w" + params["User"];
     params["Speed"] = "-1";
 
-    int64_t pos = dcpp::getContext()->getQueueManager()->getPos(dl->getPath()) + dl->getPos();
+    int64_t pos = dcCtx_.getQueueManager()->getPos(dl->getPath()) + dl->getPos();
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, true, Sound::NONE);
@@ -1005,7 +1006,7 @@ void Transfers::onFailed(Download* dl, const string& reason) {
     params["Speed"] = "-1";
     params["Time Left"] = "-1";
 
-    int64_t pos = dcpp::getContext()->getQueueManager()->getPos(dl->getPath()) + dl->getPos();
+    int64_t pos = dcCtx_.getQueueManager()->getPos(dl->getPath()) + dl->getPos();
 
     typedef Func3<Transfers, StringMap, bool, Sound::TypeSound> F3;
     F3* f3 = new F3(this, &Transfers::updateTransfer_gui, params, true, Sound::NONE);

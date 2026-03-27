@@ -67,7 +67,7 @@ QJSValue ScriptBridge::getMagnets(const QStringList &files) {
         QFile file(f);
         if (!file.exists())
             continue;
-        const dcpp::TTHValue *tth = dcpp::getContext()->getHashManager()->getFileTTHif(_tq(f));
+        const dcpp::TTHValue *tth = qtCtx()->dcCtx().getHashManager()->getFileTTHif(_tq(f));
         if (tth)
             magnets.push_back(qtCtx()->wulforUtil()->makeMagnet(
                 f.split(QDir::separator(), Qt::SkipEmptyParts).last(),

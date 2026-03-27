@@ -187,24 +187,24 @@ bool isHubURL(const string &text)
 
 // --- dcpp ClientManager lookups ---
 
-string getNicks(const string &cid, const string &hintUrl)
+string getNicks(dcpp::DCContext &ctx, const string &cid, const string &hintUrl)
 {
     return dcpp::Util::toString(
-        dcpp::getContext()->getClientManager()->getNicks(dcpp::CID(cid), hintUrl));
+        ctx.getClientManager()->getNicks(dcpp::CID(cid), hintUrl));
 }
 
-string getHubNames(const string &cid, const string &hintUrl)
+string getHubNames(dcpp::DCContext &ctx, const string &cid, const string &hintUrl)
 {
     dcpp::StringList hubs =
-        dcpp::getContext()->getClientManager()->getHubNames(dcpp::CID(cid), hintUrl);
+        ctx.getClientManager()->getHubNames(dcpp::CID(cid), hintUrl);
     if (hubs.empty())
         return "Offline";
     return dcpp::Util::toString(hubs);
 }
 
-vector<string> getHubAddress(const string &cid, const string &hintUrl)
+vector<string> getHubAddress(dcpp::DCContext &ctx, const string &cid, const string &hintUrl)
 {
-    return dcpp::getContext()->getClientManager()->getHubs(dcpp::CID(cid), hintUrl);
+    return ctx.getClientManager()->getHubs(dcpp::CID(cid), hintUrl);
 }
 
 } // namespace gtk_util

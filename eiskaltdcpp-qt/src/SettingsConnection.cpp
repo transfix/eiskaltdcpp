@@ -71,7 +71,7 @@ bool SettingsConnection::eventFilter(QObject *obj, QEvent *e){
 void SettingsConnection::ok(){
 
     bool active = !radioButton_PASSIVE->isChecked();
-    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
+    SettingsManager *SM = qtCtx()->dcCtx().getSettingsManager();
 
     int old_mode = SETTING(INCOMING_CONNECTIONS);
     SM->set(SettingsManager::AUTO_DETECT_CONNECTION, checkBox_AUTO_DETECT_CONNECTION->isChecked());

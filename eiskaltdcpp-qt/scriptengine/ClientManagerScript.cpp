@@ -31,7 +31,7 @@ ClientManagerScript::ClientManagerScript(dcpp::DCContext& ctx, QObject *parent) 
     QtContextAware(ctx),
     QObject(parent)
 {
-    CM = dcpp::getContext()->getClientManager();
+    CM = dcCtx().getClientManager();
     CM->addListener(this);
 }
 
@@ -72,7 +72,7 @@ QStringList ClientManagerScript::getHubNames(const QString& cid) const{
 }
 
 QStringList ClientManagerScript::getHubNames(const QString& cid, const QString& hubUrl) const{
-    StringList hubs = dcpp::getContext()->getClientManager()->getHubNames(dcpp::CID(_tq(cid)), _tq(hubUrl));
+    StringList hubs = dcCtx().getClientManager()->getHubNames(dcpp::CID(_tq(cid)), _tq(hubUrl));
     
     if (hubs.empty())
         return QStringList();

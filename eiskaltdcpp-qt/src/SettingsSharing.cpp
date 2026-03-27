@@ -62,7 +62,7 @@ void SettingsSharing::showEvent(QShowEvent *e){
 }
 
 void SettingsSharing::ok(){
-    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
+    SettingsManager *SM = qtCtx()->dcCtx().getSettingsManager();
 
     SM->set(SettingsManager::FOLLOW_LINKS, checkBox_FOLLOW->isChecked());
     SM->set(SettingsManager::USE_ADL_ONLY_OWN_LIST, checkBox_USE_ADL_ONLY_OWN_LIST->isChecked());
@@ -122,7 +122,7 @@ void SettingsSharing::init(){
     listWidget_SKIPLIST->addItems(_q(SETTING(SKIPLIST_SHARE)).split('|', Qt::SkipEmptyParts));
 
     label_TOTALSHARED->setText(tr("Total shared: %1")
-                               .arg(WulforUtil::formatBytes(dcpp::getContext()->getShareManager()->getShareSize())));
+                               .arg(WulforUtil::formatBytes(qtCtx()->dcCtx().getShareManager()->getShareSize())));
 
     checkBox_SIMPLE_SHARE_MODE->setChecked(qtCtx()->settings()->getBool(WB_SIMPLE_SHARE_MODE));
     treeWidget_SIMPLE_MODE->setVisible(qtCtx()->settings()->getBool(WB_SIMPLE_SHARE_MODE));
@@ -157,23 +157,23 @@ void SettingsSharing::updateShareView(){
     if (checkBox_SIMPLE_SHARE_MODE->isChecked()){
         treeWidget_SIMPLE_MODE->clear();
 
-        StringPairList directories = dcpp::getContext()->getShareManager()->getDirectories();
+        StringPairList directories = qtCtx()->dcCtx().getShareManager()->getDirectories();
         for (const auto &pair : directories){
             QTreeWidgetItem *item = new QTreeWidgetItem(treeWidget_SIMPLE_MODE);
 
             item->setText(0, pair.second.c_str());
             item->setText(1, pair.first.c_str());
-            item->setText(2, Util::formatBytes(dcpp::getContext()->getShareManager()->getShareSize(pair.second)).c_str());
-            item->setText(3, QString().setNum(dcpp::getContext()->getShareManager()->getShareSize(pair.second)));
+            item->setText(2, Util::formatBytes(qtCtx()->dcCtx().getShareManager()->getShareSize(pair.second)).c_str());
+            item->setText(3, QString().setNum(qtCtx()->dcCtx().getShareManager()->getShareSize(pair.second)));
         }
     }
 
     label_TOTALSHARED->setText(tr("Total shared: %1")
-                               .arg(WulforUtil::formatBytes(dcpp::getContext()->getShareManager()->getShareSize())));
+                               .arg(WulforUtil::formatBytes(qtCtx()->dcCtx().getShareManager()->getShareSize())));
 }
 
 void SettingsSharing::slotRecreateShare(){
-    ShareManager *SM = dcpp::getContext()->getShareManager();
+    ShareManager *SM = qtCtx()->dcCtx().getShareManager();
 
     SM->setDirty();
     SM->refresh(true);
@@ -186,9 +186,9 @@ void SettingsSharing::slotRecreateShare(){
 }
 
 void SettingsSharing::slotShareHidden(bool share){
-    dcpp::getContext()->getSettingsManager()->set(SettingsManager::SHARE_HIDDEN, share);
-    dcpp::getContext()->getShareManager()->setDirty();
-    dcpp::getContext()->getShareManager()->refresh(true);
+    qtCtx()->dcCtx().getSettingsManager()->set(SettingsManager::SHARE_HIDDEN, share);
+    qtCtx()->dcCtx().getShareManager()->setDirty();
+    qtCtx()->dcCtx().getShareManager()->refresh(true);
 
     updateShareView();
 }
@@ -335,7 +335,7 @@ void SettingsSharing::slotContextMenu(const QPoint &){
 
         try
         {
-            dcpp::getContext()->getShareManager()->addDirectory(dir.toStdString(), dir_alias.toStdString());
+            qtCtx()->dcCtx().getShareManager()->addDirectory(dir.toStdString(), dir_alias.toStdString());
         }
         catch (const ShareException &e)
         {
@@ -358,7 +358,7 @@ void SettingsSharing::slotContextMenu(const QPoint &){
     }
     else if (res == rem){
         for (const auto &i : selected)
-            dcpp::getContext()->getShareManager()->removeDirectory(i->text(0).toStdString());
+            qtCtx()->dcCtx().getShareManager()->removeDirectory(i->text(0).toStdString());
     }
     else if (res == rename){
         QTreeWidgetItem *item = selected.at(0);
@@ -372,7 +372,7 @@ void SettingsSharing::slotContextMenu(const QPoint &){
             return;
 
         try {
-            dcpp::getContext()->getShareManager()->renameDirectory(realname.toStdString(), new_virtname.toStdString());
+            qtCtx()->dcCtx().getShareManager()->renameDirectory(realname.toStdString(), new_virtname.toStdString());
         }
         catch (const ShareException &e){
             QMessageBox msg_box(QMessageBox::Critical,
@@ -398,7 +398,7 @@ ShareDirModel::ShareDirModel(QObject *parent){
     QFileSystemModel::setFilter((QDir::AllDirs | QDir::NoDotAndDotDot));
     setRootPath(QString());  // show all filesystems
 
-    StringPairList directories = dcpp::getContext()->getShareManager()->getDirectories();
+    StringPairList directories = qtCtx()->dcCtx().getShareManager()->getDirectories();
     for (const auto &pair : directories){
         QString path = pair.second.c_str();
 
@@ -498,7 +498,7 @@ bool ShareDirModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (!path.endsWith(QDir::separator()))
                     path += QDir::separator();
 
-                dcpp::getContext()->getShareManager()->removeDirectory(path.toStdString());
+                qtCtx()->dcCtx().getShareManager()->removeDirectory(path.toStdString());
             }
             catch (const Exception&){}
 
@@ -524,7 +524,7 @@ void ShareDirModel::setAlias(const QModelIndex &index, const QString &alias){
         if (!fp.endsWith(QDir::separator()))
             fp += QDir::separator();
 
-        dcpp::getContext()->getShareManager()->addDirectory(fp.toStdString(), alias.toStdString());
+        qtCtx()->dcCtx().getShareManager()->addDirectory(fp.toStdString(), alias.toStdString());
     }
     catch (const ShareException &e)
     {

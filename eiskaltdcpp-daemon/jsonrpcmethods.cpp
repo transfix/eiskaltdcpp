@@ -284,8 +284,8 @@ bool JsonRpcMethods::RefreshShare(const Json::Value& root, Json::Value& response
     if (isDebug) std::cout << "RefreshShare (root): " << root << std::endl;
     response["jsonrpc"] = "2.0";
     response["id"] = root["id"];
-    dcpp::getContext()->getShareManager()->setDirty();
-    dcpp::getContext()->getShareManager()->refresh(true);
+    server_.dcCtx().getShareManager()->setDirty();
+    server_.dcCtx().getShareManager()->refresh(true);
     response["result"] = 0;
     if (isDebug) std::cout << "RefreshShare (response): " << response << std::endl;
     return true;

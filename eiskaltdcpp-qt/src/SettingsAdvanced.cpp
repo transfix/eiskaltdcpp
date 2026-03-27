@@ -33,7 +33,7 @@ SettingsAdvanced::~SettingsAdvanced() {
 }
 
 void SettingsAdvanced::ok() {
-    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
+    SettingsManager *SM = qtCtx()->dcCtx().getSettingsManager();
 
     SM->set(SettingsManager::MIME_HANDLER, _tq(lineEdit_MIME->text()));
 }

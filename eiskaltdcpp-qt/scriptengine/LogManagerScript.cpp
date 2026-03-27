@@ -23,11 +23,11 @@ LogManagerScript::LogManagerScript(dcpp::DCContext& ctx, QObject *parent) :
     QtContextAware(ctx),
     QObject(parent)
 {
-    dcpp::getContext()->getLogManager()->addListener(this);
+    dcCtx().getLogManager()->addListener(this);
 }
 
 LogManagerScript::~LogManagerScript(){
-    dcpp::getContext()->getLogManager()->removeListener(this);
+    dcCtx().getLogManager()->removeListener(this);
 }
 
 void LogManagerScript::on(Message, time_t t, const dcpp::string &msg) throw(){

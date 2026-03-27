@@ -43,13 +43,13 @@ FavoriteHubs::FavoriteHubs(dcpp::DCContext& ctx, QWidget *parent):
 
     init();
 
-    dcpp::getContext()->getFavoriteManager()->addListener(this);
+    dcCtx().getFavoriteManager()->addListener(this);
 }
 
 FavoriteHubs::~FavoriteHubs(){
     save();
     
-    dcpp::getContext()->getFavoriteManager()->removeListener(this);
+    dcCtx().getFavoriteManager()->removeListener(this);
 
     delete model;
 }
@@ -129,7 +129,7 @@ void FavoriteHubs::init(){
         "FakeDC++ 1.3"
     });
 
-    const FavoriteHubEntryList& fl = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
+    const FavoriteHubEntryList& fl = dcCtx().getFavoriteManager()->getFavoriteHubs();
     for (const FavoriteHubEntry* entry : fl) {
         QList<QVariant> data;
 
@@ -403,7 +403,7 @@ void FavoriteHubs::slotContexMenu(const QPoint &){
                 getParams(editor, map);
                 updateEntry(entry, map);
 
-                dcpp::getContext()->getFavoriteManager()->addFavorite(entry);
+                dcCtx().getFavoriteManager()->addFavorite(entry);
             }
         }
     }
@@ -454,7 +454,7 @@ void FavoriteHubs::slotDblClicked(){
         return;
 
     QString address = item->data(COLUMN_HUB_ADDRESS).toString();
-    FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address.toStdString());
+    FavoriteHubEntry *entry = dcCtx().getFavoriteManager()->getFavoriteHubEntry(address.toStdString());
     QString encoding = qtCtx()->wulforUtil()->dcEnc2QtEnc(_q(entry->getEncoding()));
 
     qtCtx()->mainWindow()->newHubFrame(address, encoding);
@@ -470,7 +470,7 @@ void FavoriteHubs::slotClicked(const QModelIndex &index){
 
     FavoriteHubItem *item = reinterpret_cast<FavoriteHubItem*>(index.internalPointer());
     QString address = item->data(COLUMN_HUB_ADDRESS).toString();
-    FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address.toStdString());
+    FavoriteHubEntry *entry = dcCtx().getFavoriteManager()->getFavoriteHubEntry(address.toStdString());
 
     if (entry){
         bool autoconnect = !item->data(COLUMN_HUB_AUTOCONNECT).toBool();
@@ -480,7 +480,7 @@ void FavoriteHubs::slotClicked(const QModelIndex &index){
 
         model->repaint();
 
-        dcpp::getContext()->getFavoriteManager()->save();
+        dcCtx().getFavoriteManager()->save();
     }
 }
 
@@ -538,7 +538,7 @@ void FavoriteHubs::slotAdd_newButtonClicked(){
         getParams(editor, map);
         updateEntry(entry, map);
 
-        dcpp::getContext()->getFavoriteManager()->addFavorite(entry);
+        dcCtx().getFavoriteManager()->addFavorite(entry);
     }
 }
 
@@ -549,7 +549,7 @@ void FavoriteHubs::slotChangeButtonClicked(){
         return;
 
     QString address = item->data(COLUMN_HUB_ADDRESS).toString();
-    FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address.toStdString());
+    FavoriteHubEntry *entry = dcCtx().getFavoriteManager()->getFavoriteHubEntry(address.toStdString());
 
     FavoriteHubEditor editor;
 
@@ -564,7 +564,7 @@ void FavoriteHubs::slotChangeButtonClicked(){
             updateItem(item, map);
             updateEntry(*entry, map);
 
-            dcpp::getContext()->getFavoriteManager()->save();
+            dcCtx().getFavoriteManager()->save();
         }
     }
 }
@@ -576,10 +576,10 @@ void FavoriteHubs::slotRemoveButtonClicked(){
         return;
 
     QString address = item->data(COLUMN_HUB_ADDRESS).toString();
-    FavoriteHubEntry *entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address.toStdString());
+    FavoriteHubEntry *entry = dcCtx().getFavoriteManager()->getFavoriteHubEntry(address.toStdString());
 
     if (entry)
-        dcpp::getContext()->getFavoriteManager()->removeFavorite(entry);
+        dcCtx().getFavoriteManager()->removeFavorite(entry);
 }
 
 void FavoriteHubs::slotConnectButtonClicked(){

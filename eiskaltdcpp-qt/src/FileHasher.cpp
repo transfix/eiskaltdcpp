@@ -86,7 +86,7 @@ void FileHasher::slotStart(){
         return;
 
     pushButton_RUN->setEnabled(false);
-    HashManager *HM = dcpp::getContext()->getHashManager();
+    HashManager *HM = qtCtx()->dcCtx().getHashManager();
     const TTHValue *tth_val= HM->getFileTTHif(_tq(file));
     if (tth_val) {
         lineEdit_TTH->setText(_q(tth_val->toBase32()));

@@ -94,8 +94,8 @@ void DynDNS::on(HttpConnectionListener::Complete, HttpConnection*, string const&
     }
 
     if (!internetIP.empty()) {
-        dcpp::getContext()->getSettingsManager()->set(SettingsManager::INTERNETIP, internetIP);
-        Client::List clients = dcpp::getContext()->getClientManager()->getClients();
+        ctx().getSettingsManager()->set(SettingsManager::INTERNETIP, internetIP);
+        Client::List clients = ctx().getClientManager()->getClients();
 
         for(auto c : clients) {
             if(c->isConnected()) {

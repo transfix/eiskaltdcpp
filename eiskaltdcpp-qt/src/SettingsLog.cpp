@@ -73,7 +73,7 @@ void SettingsLog::init(){
 }
 
 void SettingsLog::ok(){
-    SettingsManager *sm = dcpp::getContext()->getSettingsManager();
+    SettingsManager *sm = qtCtx()->dcCtx().getSettingsManager();
 
     QString path = lineEdit_LOGDIR->text();
     if (!path.isEmpty() && !path.endsWith(QDir::separator()))

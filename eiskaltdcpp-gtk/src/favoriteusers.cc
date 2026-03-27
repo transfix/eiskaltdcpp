@@ -30,8 +30,9 @@
 using namespace std;
 using namespace dcpp;
 
-FavoriteUsers::FavoriteUsers():
-    BookEntry(Entry::FAVORITE_USERS, _("Favorite Users"), "favoriteusers.ui")
+FavoriteUsers::FavoriteUsers(dcpp::DCContext& dcCtx):
+    BookEntry(Entry::FAVORITE_USERS, _("Favorite Users"), "favoriteusers.ui"),
+    dcCtx_(dcCtx)
 {
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR(getWidget("status")),false);
@@ -86,7 +87,7 @@ FavoriteUsers::FavoriteUsers():
 
 FavoriteUsers::~FavoriteUsers()
 {
-    dcpp::getContext()->getFavoriteManager()->removeListener(this);
+    dcCtx_.getFavoriteManager()->removeListener(this);
 
     gtk_widget_destroy(getWidget("DescriptionDialog"));
     g_object_unref(getWidget("menu"));
@@ -95,14 +96,14 @@ FavoriteUsers::~FavoriteUsers()
 void FavoriteUsers::show()
 {
     // Initialize favorite users list
-    FavoriteManager::FavoriteMap map = dcpp::getContext()->getFavoriteManager()->getFavoriteUsers();
+    FavoriteManager::FavoriteMap map = dcCtx_.getFavoriteManager()->getFavoriteUsers();
 
     for (FavoriteManager::FavoriteMap::const_iterator it = map.begin(); it != map.end(); ++it)
     {
         GtkTreeIter iter;
         const FavoriteUser &user = it->second;
         bool online = user.getUser()->isOnline();
-        string hub = online ? WulforUtil::getHubNames(user.getUser(), user.getUrl()) : user.getUrl();
+        string hub = online ? WulforUtil::getHubNames(dcCtx_, user.getUser(), user.getUrl()) : user.getUrl();
         string seen = online ? _("Online") : Util::formatTime("%Y-%m-%d %H:%M", user.getLastSeen());
         string cid = user.getUser()->getCID().toBase32();
 
@@ -120,7 +121,7 @@ void FavoriteUsers::show()
 
         userIters.insert(UserIters::value_type(cid, iter));
     }
-    dcpp::getContext()->getFavoriteManager()->addListener(this);
+    dcCtx_.getFavoriteManager()->addListener(this);
 }
 
 gboolean FavoriteUsers::onKeyReleased_gui(GtkWidget *widget, GdkEventKey *event, gpointer data)
@@ -504,15 +505,15 @@ void FavoriteUsers::getFileList_client(const string cid, const string hubUrl, bo
 {
     try
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
         if (user)
         {
             const HintedUser hintedUser(user, hubUrl);
             if (match)
-                dcpp::getContext()->getQueueManager()->addList(hintedUser, QueueItem::FLAG_MATCH_QUEUE);
+                dcCtx_.getQueueManager()->addList(hintedUser, QueueItem::FLAG_MATCH_QUEUE);
             else
-                dcpp::getContext()->getQueueManager()->addList(hintedUser, QueueItem::FLAG_CLIENT_VIEW);
+                dcCtx_.getQueueManager()->addList(hintedUser, QueueItem::FLAG_CLIENT_VIEW);
         }
     }
     catch (const Exception& e)
@@ -525,12 +526,12 @@ void FavoriteUsers::getFileList_client(const string cid, const string hubUrl, bo
 
 void FavoriteUsers::grantSlot_client(const string cid, const string hubUrl)
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
     if (user)
     {
-        dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
+        dcCtx_.getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
         typedef Func1<FavoriteUsers, string> F1;
-        F1 *func = new F1(this, &FavoriteUsers::setStatus_gui, _("Slot granted to ") + WulforUtil::getNicks(user, hubUrl));
+        F1 *func = new F1(this, &FavoriteUsers::setStatus_gui, _("Slot granted to ") + WulforUtil::getNicks(dcCtx_, user, hubUrl));
         wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
@@ -539,39 +540,39 @@ void FavoriteUsers::removeUserFromQueue_client(const string cid)
 {
     if (!cid.empty())
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
         if (user)
-            dcpp::getContext()->getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+            dcCtx_.getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
     }
 }
 
 void FavoriteUsers::setAutoGrantSlot_client(const string cid, bool grant)
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
     if (user)
     {
-        dcpp::getContext()->getFavoriteManager()->setAutoGrant(user, grant);
+        dcCtx_.getFavoriteManager()->setAutoGrant(user, grant);
     }
 }
 
 void FavoriteUsers::removeFavoriteUser_client(const string cid)
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
     if (user)
     {
-        dcpp::getContext()->getFavoriteManager()->removeFavoriteUser(user);
+        dcCtx_.getFavoriteManager()->removeFavoriteUser(user);
     }
 }
 
 void FavoriteUsers::setUserDescription_client(const string cid, const string description)
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
     if (user)
     {
-        dcpp::getContext()->getFavoriteManager()->setUserDescription(user, description);
+        dcCtx_.getFavoriteManager()->setUserDescription(user, description);
     }
 }
 
@@ -641,7 +642,7 @@ void FavoriteUsers::on(FavoriteManagerListener::UserAdded, const FavoriteUser &u
     ParamMap params;
     bool online = user.getUser()->isOnline();
     params.insert(ParamMap::value_type("Nick", user.getNick()));
-    params.insert(ParamMap::value_type("Hub", online ? WulforUtil::getHubNames(user.getUser(), user.getUrl()) : user.getUrl()));
+    params.insert(ParamMap::value_type("Hub", online ? WulforUtil::getHubNames(dcCtx_, user.getUser(), user.getUrl()) : user.getUrl()));
     params.insert(ParamMap::value_type("Time", online ? _("Online") : Util::formatTime("%Y-%m-%d %H:%M", user.getLastSeen())));
     params.insert(ParamMap::value_type("Description", user.getDescription()));
     params.insert(ParamMap::value_type("CID", user.getUser()->getCID().toBase32()));

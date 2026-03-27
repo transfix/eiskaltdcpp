@@ -75,7 +75,7 @@ UserPtr DirectoryListing::getUserFromFilename(DCContext& ctx, const string& file
     if(!cid)
         return UserPtr();
 
-    return dcpp::getContext()->getClientManager()->getUser(cid);
+    return ctx.getClientManager()->getUser(cid);
 }
 
 void DirectoryListing::loadFile(const string& path) {
@@ -300,7 +300,7 @@ string DirectoryListing::getPath(const Directory* d) const {
 
 StringList DirectoryListing::getLocalPaths(const File* f) const {
     try {
-        return dcpp::getContext()->getShareManager()->getRealPaths(Util::toAdcFile(getPath(f) + f->getName()));
+        return ctx().getShareManager()->getRealPaths(Util::toAdcFile(getPath(f) + f->getName()));
     } catch(const ShareException&) {
         return StringList();
     }
@@ -308,7 +308,7 @@ StringList DirectoryListing::getLocalPaths(const File* f) const {
 
 StringList DirectoryListing::getLocalPaths(const Directory* d) const {
     try {
-        return dcpp::getContext()->getShareManager()->getRealPaths(Util::toAdcFile(getPath(d)));
+        return ctx().getShareManager()->getRealPaths(Util::toAdcFile(getPath(d)));
     } catch(const ShareException&) {
         return StringList();
     }
@@ -343,10 +343,10 @@ void DirectoryListing::download(const string& aDir, const string& aTarget, bool 
 void DirectoryListing::download(File* aFile, const string& aTarget, bool view, bool highPrio) {
     int flags = (view ? (QueueItem::FLAG_TEXT | QueueItem::FLAG_CLIENT_VIEW) : 0);
 
-    dcpp::getContext()->getQueueManager()->add(aTarget, aFile->getSize(), aFile->getTTH(), getUser(), flags);
+    ctx().getQueueManager()->add(aTarget, aFile->getSize(), aFile->getTTH(), getUser(), flags);
 
     if(highPrio)
-        dcpp::getContext()->getQueueManager()->setPriority(aTarget, QueueItem::HIGHEST);
+        ctx().getQueueManager()->setPriority(aTarget, QueueItem::HIGHEST);
 }
 
 DirectoryListing::Directory* DirectoryListing::find(const string& aName, Directory* current) const {

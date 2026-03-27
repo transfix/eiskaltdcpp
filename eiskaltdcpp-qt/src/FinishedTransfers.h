@@ -139,7 +139,7 @@ public:
 
         loadList();
 
-        dcpp::getContext()->getFinishedManager()->addListener(this);
+        dcCtx().getFinishedManager()->addListener(this);
 
         setUnload(false);
 
@@ -171,7 +171,7 @@ public:
         QString key = (comboBox->currentIndex() == 0)? WS_FTRANSFERS_FILES_STATE : WS_FTRANSFERS_USERS_STATE;
         qtCtx()->settings()->setVar(key, treeView->header()->saveState());
 
-        dcpp::getContext()->getFinishedManager()->removeListener(this);
+        dcCtx().getFinishedManager()->removeListener(this);
 
         model->clearModel();
 
@@ -187,9 +187,9 @@ public:
     void loadList(){
         VarMap params;
 
-        auto lock = dcpp::getContext()->getFinishedManager()->lock();
-        const FinishedManager::MapByFile &list = dcpp::getContext()->getFinishedManager()->getMapByFile(isUpload);
-        const FinishedManager::MapByUser &user = dcpp::getContext()->getFinishedManager()->getMapByUser(isUpload);
+        auto lock = dcCtx().getFinishedManager()->lock();
+        const FinishedManager::MapByFile &list = dcCtx().getFinishedManager()->getMapByFile(isUpload);
+        const FinishedManager::MapByUser &user = dcCtx().getFinishedManager()->getMapByUser(isUpload);
 
         for (auto it = list.begin(); it != list.end(); ++it) {
             params.clear();
@@ -375,7 +375,7 @@ public:
         model->clearModel();
 
         try {
-            dcpp::getContext()->getFinishedManager()->removeAll(isUpload);
+            dcCtx().getFinishedManager()->removeAll(isUpload);
         }
         catch (const std::exception&){}
 
@@ -565,7 +565,7 @@ public:
 
     void on(FinishedManagerListener::UpdatedUser, bool upload, const dcpp::HintedUser &user) noexcept{
         if (isUpload == upload){
-            const FinishedManager::MapByUser &umap = dcpp::getContext()->getFinishedManager()->getMapByUser(isUpload);
+            const FinishedManager::MapByUser &umap = dcCtx().getFinishedManager()->getMapByUser(isUpload);
             auto userit = umap.find(user);
             if (userit == umap.end())
                 return;

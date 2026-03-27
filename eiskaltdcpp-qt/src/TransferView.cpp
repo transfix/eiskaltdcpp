@@ -157,17 +157,17 @@ TransferView::TransferView(dcpp::DCContext& ctx, QWidget *parent):
 
     init();
 
-    dcpp::getContext()->getQueueManager()->addListener(this);
-    dcpp::getContext()->getDownloadManager()->addListener(this);
-    dcpp::getContext()->getUploadManager()->addListener(this);
-    dcpp::getContext()->getConnectionManager()->addListener(this);
+    dcCtx().getQueueManager()->addListener(this);
+    dcCtx().getDownloadManager()->addListener(this);
+    dcCtx().getUploadManager()->addListener(this);
+    dcCtx().getConnectionManager()->addListener(this);
 }
 
 TransferView::~TransferView(){
-    dcpp::getContext()->getQueueManager()->removeListener(this);
-    dcpp::getContext()->getDownloadManager()->removeListener(this);
-    dcpp::getContext()->getUploadManager()->removeListener(this);
-    dcpp::getContext()->getConnectionManager()->removeListener(this);
+    dcCtx().getQueueManager()->removeListener(this);
+    dcCtx().getDownloadManager()->removeListener(this);
+    dcCtx().getUploadManager()->removeListener(this);
+    dcCtx().getConnectionManager()->removeListener(this);
 
     delete model;
 }
@@ -257,10 +257,10 @@ void TransferView::getFileList(const QString &cid, const QString &host){
         return;
 
     try{
-        dcpp::UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(_tq(cid)));
+        dcpp::UserPtr user = dcCtx().getClientManager()->getUser(CID(_tq(cid)));
 
         if (user)
-            dcpp::getContext()->getQueueManager()->addList(HintedUser(user, _tq(host)), QueueItem::FLAG_CLIENT_VIEW, "");
+            dcCtx().getQueueManager()->addList(HintedUser(user, _tq(host)), QueueItem::FLAG_CLIENT_VIEW, "");
     }
     catch (const Exception&){}
 }
@@ -270,10 +270,10 @@ void TransferView::matchQueue(const QString &cid, const QString &host){
         return;
 
     try{
-        dcpp::UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(_tq(cid)));
+        dcpp::UserPtr user = dcCtx().getClientManager()->getUser(CID(_tq(cid)));
 
         if (user)
-            dcpp::getContext()->getQueueManager()->addList(HintedUser(user, _tq(host)), QueueItem::FLAG_MATCH_QUEUE, "");
+            dcCtx().getQueueManager()->addList(HintedUser(user, _tq(host)), QueueItem::FLAG_MATCH_QUEUE, "");
     }
     catch (const Exception&){}
 }
@@ -283,10 +283,10 @@ void TransferView::addFavorite(const QString &cid){
         return;
 
     try{
-        dcpp::UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(_tq(cid)));
+        dcpp::UserPtr user = dcCtx().getClientManager()->getUser(CID(_tq(cid)));
 
         if (user)
-            dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
+            dcCtx().getFavoriteManager()->addFavoriteUser(user);
     }
     catch (const Exception&){}
 }
@@ -296,10 +296,10 @@ void TransferView::grantSlot(const QString &cid, const QString &host){
         return;
 
     try{
-        dcpp::UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(_tq(cid)));
+        dcpp::UserPtr user = dcCtx().getClientManager()->getUser(CID(_tq(cid)));
 
         if (user)
-            dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, _tq(host)));
+            dcCtx().getUploadManager()->reserveSlot(HintedUser(user, _tq(host)));
     }
     catch (const Exception&){}
 }
@@ -309,10 +309,10 @@ void TransferView::removeFromQueue(const QString &cid){
         return;
 
     try{
-        dcpp::UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(_tq(cid)));
+        dcpp::UserPtr user = dcCtx().getClientManager()->getUser(CID(_tq(cid)));
 
         if (user)
-            dcpp::getContext()->getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+            dcCtx().getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
     }
     catch (const Exception&){}
 }
@@ -322,10 +322,10 @@ void TransferView::forceAttempt(const QString &cid){
         return;
 
     try{
-        dcpp::UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(_tq(cid)));
+        dcpp::UserPtr user = dcCtx().getClientManager()->getUser(CID(_tq(cid)));
 
         if (user)
-            dcpp::getContext()->getConnectionManager()->force(user);
+            dcCtx().getConnectionManager()->force(user);
     }
     catch (const Exception&){}
 }
@@ -335,10 +335,10 @@ void TransferView::closeConection(const QString &cid, bool download){
         return;
 
     try{
-        dcpp::UserPtr user = dcpp::getContext()->getClientManager()->getUser(CID(_tq(cid)));
+        dcpp::UserPtr user = dcCtx().getClientManager()->getUser(CID(_tq(cid)));
 
         if (user)
-            dcpp::getContext()->getConnectionManager()->disconnect(user, download);
+            dcCtx().getConnectionManager()->disconnect(user, download);
     }
     catch (const Exception&){}
 }
@@ -361,7 +361,7 @@ QString TransferView::getTTHFromItem(const TransferViewItem *item){
     if (item->download)
         tth_str = item->tth;
     else {
-        const TTHValue *tth = dcpp::getContext()->getHashManager()->getFileTTHif(_tq(item->target));
+        const TTHValue *tth = dcCtx().getHashManager()->getFileTTHif(_tq(item->target));
 
         if (tth)
             tth_str = _q(tth->toBase32());
@@ -526,7 +526,7 @@ void TransferView::slotContextMenu(const QPoint &){
 
                 if (tth_str.isEmpty()) {
                     QString str = QDir::toNativeSeparators(fi.canonicalFilePath() ); // try to follow symlinks
-                    const TTHValue *tth = dcpp::getContext()->getHashManager()->getFileTTHif(str.toStdString());
+                    const TTHValue *tth = dcCtx().getHashManager()->getFileTTHif(str.toStdString());
 
                     if (tth)
                         tth_str = _q(tth->toBase32());
@@ -598,15 +598,15 @@ void TransferView::on(dcpp::DownloadManagerListener::Requesting, dcpp::Download*
 
     getParams(params, dl);
 
-    if (dcpp::getContext()->getIPFilter()){
-        if (!dcpp::getContext()->getIPFilter()->OK(vstr(params["IP"]).toStdString(), eDIRECTION_IN)){
+    if (dcCtx().getIPFilter()){
+        if (!dcCtx().getIPFilter()->OK(vstr(params["IP"]).toStdString(), eDIRECTION_IN)){
             closeConection(vstr(params["CID"]), true);
             return;
         }
     }
 
-    params["ESIZE"] = (qlonglong)dcpp::getContext()->getQueueManager()->getSize(dl->getPath());
-    params["FPOS"]  = (qlonglong)dcpp::getContext()->getQueueManager()->getPos(dl->getPath());
+    params["ESIZE"] = (qlonglong)dcCtx().getQueueManager()->getSize(dl->getPath());
+    params["FPOS"]  = (qlonglong)dcCtx().getQueueManager()->getPos(dl->getPath());
     params["STAT"]  = tr("Requesting");
     params["FAIL"]  = false;
 
@@ -619,7 +619,7 @@ void TransferView::on(dcpp::DownloadManagerListener::Starting, dcpp::Download* d
     getParams(params, dl);
 
     params["STAT"] = tr("Download starting...");
-    params["FPOS"]  = (qlonglong)dcpp::getContext()->getQueueManager()->getPos(dl->getPath());
+    params["FPOS"]  = (qlonglong)dcCtx().getQueueManager()->getPos(dl->getPath());
 
     emit coreDMStarting(params);
 }
@@ -631,7 +631,7 @@ void TransferView::on(dcpp::DownloadManagerListener::Tick, const dcpp::DownloadL
         QString str;
 
         getParams(params, dl);
-        params["FPOS"]  = (qlonglong)dcpp::getContext()->getQueueManager()->getPos(dl->getPath());
+        params["FPOS"]  = (qlonglong)dcCtx().getQueueManager()->getPos(dl->getPath());
 
         if (dl->getUserConnection().isSecure())
         {
@@ -667,7 +667,7 @@ void TransferView::on(dcpp::DownloadManagerListener::Complete, dcpp::Download* d
     params["STAT"]  = tr("Download complete");
     params["SPEED"] = 0;
 
-    qint64 pos = dcpp::getContext()->getQueueManager()->getPos(dl->getPath()) + dl->getPos();
+    qint64 pos = dcCtx().getQueueManager()->getPos(dl->getPath()) + dl->getPos();
 
     emit coreDMComplete(params);
     emit coreUpdateTransferPosition(params, pos);
@@ -691,7 +691,7 @@ void TransferView::onFailed(dcpp::Download* dl, const std::string& reason) {
     params["FAIL"]  = true;
     params["TLEFT"] = -1;
 
-    qint64 pos = dcpp::getContext()->getQueueManager()->getPos(dl->getPath()) + dl->getPos();
+    qint64 pos = dcCtx().getQueueManager()->getPos(dl->getPath()) + dl->getPos();
 
     emit coreDMFailed(params);
     emit coreUpdateTransferPosition(params, pos);
@@ -707,7 +707,7 @@ void TransferView::on(dcpp::ConnectionManagerListener::Added, dcpp::ConnectionQu
 
     if(cqi->getDownload()) {
         string aTarget; int64_t aSize; int aFlags = 0;
-        if(dcpp::getContext()->getQueueManager()->getQueueInfo(cqi->getUser(), aTarget, aSize, aFlags)) {
+        if(dcCtx().getQueueManager()->getQueueInfo(cqi->getUser(), aTarget, aSize, aFlags)) {
             params["TARGET"] = _q(aTarget);
             params["ESIZE"] = (qlonglong)aSize;
 
@@ -789,8 +789,8 @@ void TransferView::on(dcpp::UploadManagerListener::Starting, dcpp::Upload* ul) n
 
     getParams(params, ul);
 
-    if (dcpp::getContext()->getIPFilter()){
-        if (!dcpp::getContext()->getIPFilter()->OK(vstr(params["IP"]).toStdString(), eDIRECTION_OUT)){
+    if (dcCtx().getIPFilter()){
+        if (!dcCtx().getIPFilter()->OK(vstr(params["IP"]).toStdString(), eDIRECTION_OUT)){
             closeConection(vstr(params["CID"]), false);
             return;
         }

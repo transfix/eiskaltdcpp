@@ -179,8 +179,8 @@ ShareBrowser::Menu::Action ShareBrowser::Menu::exec(const dcpp::UserPtr &user){
 
     down_to->addAction(browse);
 
-    rest_menu->setEnabled(user == dcpp::getContext()->getClientManager()->getMe());
-    open_url->setEnabled(user == dcpp::getContext()->getClientManager()->getMe());
+    rest_menu->setEnabled(user == qtCtx()->dcCtx().getClientManager()->getMe());
+    open_url->setEnabled(user == qtCtx()->dcCtx().getClientManager()->getMe());
 
     QAction *ret = menu->exec(QCursor::pos());
 
@@ -214,7 +214,7 @@ ShareBrowser::ShareBrowser(UserPtr _user, const QString &_file, const QString &_
     nick = qtCtx()->wulforUtil()->getNicks(user->getCID());
 
     if (nick.indexOf(_q(user->getCID().toBase32())) >= 0) { // User offline
-        nick = _q(dcpp::getContext()->getClientManager()->getNicks(HintedUser(user, ""))[0]);
+        nick = _q(qtCtx()->dcCtx().getClientManager()->getNicks(HintedUser(user, ""))[0]);
 
         QFileInfo info(_file);
 
@@ -360,7 +360,7 @@ void ShareBrowser::continueInit(){
 
     load();
 
-    if (user == dcpp::getContext()->getClientManager()->getMe()){
+    if (user == qtCtx()->dcCtx().getClientManager()->getMe()){
         tree_model->loadRestrictions();
         list_model->setOwnList(true);
     }
@@ -447,7 +447,7 @@ void ShareBrowser::buildList(){
     try {
         listing.loadFile(file.toStdString());
         listing.getRoot()->setName(nick.toStdString());
-        dcpp::getContext()->getADLSearchManager()->matchListing(listing);
+        qtCtx()->dcCtx().getADLSearchManager()->matchListing(listing);
     }
     catch (const Exception &e){
         emit die(tr("Share browser error: %1").arg(_q(e.what())));
@@ -968,8 +968,8 @@ void ShareBrowser::slotCustomContextMenu(const QPoint &){
         }
         case Menu::AddToFav:
         {
-            if (user && user != dcpp::getContext()->getClientManager()->getMe())
-                dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
+            if (user && user != qtCtx()->dcCtx().getClientManager()->getMe())
+                qtCtx()->dcCtx().getFavoriteManager()->addFavoriteUser(user);
 
             break;
         }
@@ -995,7 +995,7 @@ void ShareBrowser::slotCustomContextMenu(const QPoint &){
         }
         case Menu::OpenUrl:
         {
-            ShareManager *SM = dcpp::getContext()->getShareManager();
+            ShareManager *SM = qtCtx()->dcCtx().getShareManager();
 
             for (const auto &index : list){
                 FileBrowserItem *item = reinterpret_cast<FileBrowserItem*>(index.internalPointer());
@@ -1120,6 +1120,6 @@ void ShareBrowser::slotDie(const QString &msg){
 }
 
 void ShareBrowser::slotMatchList(){
-    int matched = dcpp::getContext()->getQueueManager()->matchListing(listing);
+    int matched = qtCtx()->dcCtx().getQueueManager()->matchListing(listing);
     label_LEFT->setText(QString(tr("Matched %1 files")).arg(matched));
 }

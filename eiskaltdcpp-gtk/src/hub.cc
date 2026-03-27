@@ -166,7 +166,7 @@ Hub::Hub(dcpp::DCContext& dcCtx, const string &address, const string &encoding):
     g_object_ref_sink(getWidget("imageMenu"));
 
     // Initialize the user command menu
-    userCommandMenu = new UserCommandMenu(getWidget("usercommandMenu"), ::UserCommand::CONTEXT_USER);
+    userCommandMenu = new UserCommandMenu(dcCtx_, getWidget("usercommandMenu"), ::UserCommand::CONTEXT_USER);
     addChild(userCommandMenu);
 
     // Emoticons dialog
@@ -221,7 +221,7 @@ Hub::Hub(dcpp::DCContext& dcCtx, const string &address, const string &encoding):
     g_signal_connect(getWidget("openImageItem"), "activate", G_CALLBACK(onOpenImageClicked_gui), (gpointer)this);
 
     GtkAdjustment *adjustment = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(getWidget("chatScroll")));
-    FavoriteHubEntry* entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(address);
+    FavoriteHubEntry* entry = dcCtx_.getFavoriteManager()->getFavoriteHubEntry(address);
     if (entry && entry->getDisableChat()) {
         disableChat(true);
         gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("disableChat")), true);
@@ -296,7 +296,7 @@ Hub::Hub(dcpp::DCContext& dcCtx, const string &address, const string &encoding):
     ItalicTag = gtk_text_buffer_create_tag(chatBuffer, "TAG_STYLE", "style", PANGO_STYLE_ITALIC, NULL);
 
     // Initialize favorite users list
-    FavoriteManager::FavoriteMap map = dcpp::getContext()->getFavoriteManager()->getFavoriteUsers();
+    FavoriteManager::FavoriteMap map = dcCtx_.getFavoriteManager()->getFavoriteUsers();
 
     for (auto& it :  map)
     {
@@ -2154,7 +2154,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
         else if (command == "dcpps" && !param.empty())
         {
-            string msg = dcpp::getContext()->getSettingsManager()->parseCoreCmd (param);
+            string msg = hub->dcCtx_.getSettingsManager()->parseCoreCmd (param);
             hub->addStatusMessage_gui(msg, Msg::SYSTEM, Sound::NONE);
         }
         else if (command == "join" && !param.empty())
@@ -2217,10 +2217,10 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
 #ifdef LUA_SCRIPT
         else if (command == "lua" && !param.empty()) {
-            dcpp::getContext()->getScriptManager()->EvaluateChunk(Text::fromT(param));
+            hub->dcCtx_.getScriptManager()->EvaluateChunk(Text::fromT(param));
         }
         else if( command == "luafile" && !param.empty()) {
-            dcpp::getContext()->getScriptManager()->EvaluateFile(Text::fromT(param));
+            hub->dcCtx_.getScriptManager()->EvaluateFile(Text::fromT(param));
         }
         else if (script_ret)
             ;
@@ -2232,9 +2232,9 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
             {
                 if( sl.getTokens().at(0) == "list" )
                 {
-                    if (!dcpp::getContext()->getIPFilter())
+                    if (!hub->dcCtx_.getIPFilter())
                         return;
-                    IPList list = dcpp::getContext()->getIPFilter()->getRules();
+                    IPList list = hub->dcCtx_.getIPFilter()->getRules();
                     string tmp = "ipfilter rules list:\n";
                     for (unsigned int i = 0; i < list.size(); ++i) {
 
@@ -2260,55 +2260,55 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
                 }
                 else if( sl.getTokens().at(0) == "purge" )
                 {
-                    if (!dcpp::getContext()->getIPFilter())
+                    if (!hub->dcCtx_.getIPFilter())
                         return;
                     g_print("/ip %s\n",sl.getTokens().at(1).c_str());
                     StringTokenizer<string> purge( sl.getTokens().at(1), ";" );
                     for(auto& i : purge.getTokens()) {
                         if (!i.find("!"))
-                            dcpp::getContext()->getIPFilter()->remFromRules(i, etaDROP);
+                            hub->dcCtx_.getIPFilter()->remFromRules(i, etaDROP);
                         else
-                            dcpp::getContext()->getIPFilter()->remFromRules(i, etaACPT);
+                            hub->dcCtx_.getIPFilter()->remFromRules(i, etaACPT);
                     }
                 }
                 else if (sl.getTokens().at(0) == "on") {
-                    dcpp::getContext()->getIPFilter()->load();
-                    dcpp::getContext()->getSettingsManager()->set(SettingsManager::IPFILTER, 1);
+                    hub->dcCtx_.getIPFilter()->load();
+                    hub->dcCtx_.getSettingsManager()->set(SettingsManager::IPFILTER, 1);
                     hub->addStatusMessage_gui(_("Ipfilter is enable"), Msg::SYSTEM, Sound::NONE);
                 }
                 else if (sl.getTokens().at(0) == "off") {
-                    dcpp::getContext()->getIPFilter()->shutdown();
-                    dcpp::getContext()->getSettingsManager()->set(SettingsManager::IPFILTER, 0);
+                    hub->dcCtx_.getIPFilter()->shutdown();
+                    hub->dcCtx_.getSettingsManager()->set(SettingsManager::IPFILTER, 0);
                     hub->addStatusMessage_gui(_("Ipfilter is disable"), Msg::SYSTEM, Sound::NONE);
                 }
                 else if (sl.getTokens().at(0) == "up"){
-                    if (!dcpp::getContext()->getIPFilter())
+                    if (!hub->dcCtx_.getIPFilter())
                         return;
                     uint32_t ip,mask; eTableAction act;
-                    if (dcpp::getContext()->getIPFilter()->ParseString(sl.getTokens().at(1), ip, mask, act))
-                        dcpp::getContext()->getIPFilter()->moveRuleUp(ip, act);
+                    if (hub->dcCtx_.getIPFilter()->ParseString(sl.getTokens().at(1), ip, mask, act))
+                        hub->dcCtx_.getIPFilter()->moveRuleUp(ip, act);
                 }
                 else if (sl.getTokens().at(0) == "down"){
-                    if (!dcpp::getContext()->getIPFilter())
+                    if (!hub->dcCtx_.getIPFilter())
                         return;
                     uint32_t ip,mask; eTableAction act;
-                    if (dcpp::getContext()->getIPFilter()->ParseString(sl.getTokens().at(1), ip, mask, act))
-                        dcpp::getContext()->getIPFilter()->moveRuleDown(ip, act);
+                    if (hub->dcCtx_.getIPFilter()->ParseString(sl.getTokens().at(1), ip, mask, act))
+                        hub->dcCtx_.getIPFilter()->moveRuleDown(ip, act);
                 }
                 else
                 {
-                    if (!dcpp::getContext()->getIPFilter())
+                    if (!hub->dcCtx_.getIPFilter())
                         return;
                     StringTokenizer<string> add( param, ";" );
                     for(auto& i : add.getTokens())
                     {
                         StringTokenizer<string> addsub( i, "::" );
                         if (addsub.getTokens().at(1) == "in")
-                            dcpp::getContext()->getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_IN);
+                            hub->dcCtx_.getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_IN);
                         else if (addsub.getTokens().at(1) == "out")
-                            dcpp::getContext()->getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_OUT);
+                            hub->dcCtx_.getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_OUT);
                         else
-                            dcpp::getContext()->getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_BOTH);
+                            hub->dcCtx_.getIPFilter()->addToRules(addsub.getTokens().at(0), eDIRECTION_BOTH);
 
                         hub->addStatusMessage_gui(string( "Add rule in ipfilter: " + i ), Msg::SYSTEM, Sound::NONE);
                     }
@@ -2921,21 +2921,21 @@ void Hub::addPrivateMessage_gui(Msg::TypeMsg typemsg, string CID, string cid, st
 
 void Hub::addFavoriteUser_client(const string cid)
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
     if (user)
     {
-        dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
+        dcCtx_.getFavoriteManager()->addFavoriteUser(user);
     }
 }
 
 void Hub::removeFavoriteUser_client(const string cid)
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
     if (user)
     {
-        dcpp::getContext()->getFavoriteManager()->removeFavoriteUser(user);
+        dcCtx_.getFavoriteManager()->removeFavoriteUser(user);
     }
 }
 
@@ -2956,23 +2956,23 @@ void Hub::connectClient_client(string address, string encoding)
     if (i != string::npos)
         encoding = encoding.substr(0, i);
 
-    client = dcpp::getContext()->getClientManager()->getClient(address);
+    client = dcCtx_.getClientManager()->getClient(address);
     client->setEncoding(encoding);
     client->addListener(this);
     client->connect();
-    dcpp::getContext()->getFavoriteManager()->addListener(this);
-    dcpp::getContext()->getQueueManager()->addListener(this);
+    dcCtx_.getFavoriteManager()->addListener(this);
+    dcCtx_.getQueueManager()->addListener(this);
 }
 
 void Hub::disconnect_client()
 {
     if (client)
     {
-        dcpp::getContext()->getFavoriteManager()->removeListener(this);
-        dcpp::getContext()->getQueueManager()->removeListener(this);
+        dcCtx_.getFavoriteManager()->removeListener(this);
+        dcCtx_.getQueueManager()->removeListener(this);
         client->removeListener(this);
         client->disconnect(true);
-        dcpp::getContext()->getClientManager()->putClient(client);
+        dcCtx_.getClientManager()->putClient(client);
         client = nullptr;
     }
 }
@@ -3000,22 +3000,22 @@ void Hub::getFileList_client(string cid, bool match, bool full)
     {
         try
         {
-            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+            UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
             if (user)
             {
                 const HintedUser hintedUser(user, client->getHubUrl());
-                if (user == dcpp::getContext()->getClientManager()->getMe())
+                if (user == dcCtx_.getClientManager()->getMe())
                 {
                     // Don't download file list, open locally instead
                     wulforManagerInstance()->getMainWindow()->openOwnList_client(true);
                 }
                 else if (match)
                 {
-                    dcpp::getContext()->getQueueManager()->addList(hintedUser, QueueItem::FLAG_MATCH_QUEUE);
+                    dcCtx_.getQueueManager()->addList(hintedUser, QueueItem::FLAG_MATCH_QUEUE);
                 }
                 else
                 {
-                    dcpp::getContext()->getQueueManager()->addList(hintedUser, full ? QueueItem::FLAG_CLIENT_VIEW : QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_PARTIAL_LIST);
+                    dcCtx_.getQueueManager()->addList(hintedUser, full ? QueueItem::FLAG_CLIENT_VIEW : QueueItem::FLAG_CLIENT_VIEW | QueueItem::FLAG_PARTIAL_LIST);
                 }
             }
             else
@@ -3026,7 +3026,7 @@ void Hub::getFileList_client(string cid, bool match, bool full)
         catch (const Exception &e)
         {
             message = e.getError();
-            dcpp::getContext()->getLogManager()->message(message);
+            dcCtx_.getLogManager()->message(message);
         }
     }
 
@@ -3044,12 +3044,12 @@ void Hub::grantSlot_client(string cid)
 
     if (!cid.empty())
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
         if (user)
         {
             const string hubUrl = client->getHubUrl();
-            dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
-            message = _("Slot granted to ") + WulforUtil::getNicks(user, hubUrl);
+            dcCtx_.getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
+            message = _("Slot granted to ") + WulforUtil::getNicks(dcCtx_, user, hubUrl);
         }
     }
 
@@ -3062,9 +3062,9 @@ void Hub::removeUserFromQueue_client(string cid)
 {
     if (!cid.empty())
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
         if (user)
-            dcpp::getContext()->getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+            dcCtx_.getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
     }
 }
 
@@ -3072,7 +3072,7 @@ void Hub::redirect_client(string address, bool follow)
 {
     if (!address.empty())
     {
-        if (dcpp::getContext()->getClientManager()->isConnected(address))
+        if (dcCtx_.getClientManager()->isConnected(address))
         {
             string error = _("Unable to connect: already connected to the requested hub");
             typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
@@ -3096,15 +3096,15 @@ void Hub::redirect_client(string address, bool follow)
 
 void Hub::rebuildHashData_client()
 {
-    dcpp::getContext()->getHashManager()->rebuild();
+    dcCtx_.getHashManager()->rebuild();
 }
 
 void Hub::refreshFileList_client()
 {
     try
     {
-        dcpp::getContext()->getShareManager()->setDirty();
-        dcpp::getContext()->getShareManager()->refresh(true);
+        dcCtx_.getShareManager()->setDirty();
+        dcCtx_.getShareManager()->refresh(true);
     }
     catch (const ShareException& e)
     {
@@ -3116,7 +3116,7 @@ void Hub::addAsFavorite_client()
     typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
     F3 *func;
 
-    FavoriteHubEntry *existingHub = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(client->getHubUrl());
+    FavoriteHubEntry *existingHub = dcCtx_.getFavoriteManager()->getFavoriteHubEntry(client->getHubUrl());
 
     if (!existingHub)
     {
@@ -3127,7 +3127,7 @@ void Hub::addAsFavorite_client()
         aEntry.setConnect(false);
         aEntry.setNick(client->getMyNick());
         aEntry.setEncoding(encoding);
-        dcpp::getContext()->getFavoriteManager()->addFavorite(aEntry);
+        dcCtx_.getFavoriteManager()->addFavorite(aEntry);
         func = new F3(this, &Hub::addStatusMessage_gui, _("Favorite hub added"), Msg::STATUS, Sound::NONE);
         wulforManagerInstance()->dispatchGuiFunc(func);
     }
@@ -3193,12 +3193,12 @@ void Hub::download_client(string target, int64_t size, string tth, string cid)
 
     try
     {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
         if (!user)
             return;
 
         string hubUrl = client->getHubUrl();
-        dcpp::getContext()->getQueueManager()->add(target, size, TTHValue(tth));
+        dcCtx_.getQueueManager()->add(target, size, TTHValue(tth));
     }
     catch (const Exception&)
     {
@@ -3212,8 +3212,8 @@ string Hub::realFile_client(string tth)
 {
     try
     {
-        string virt = dcpp::getContext()->getShareManager()->toVirtual(TTHValue(tth));
-        string real = dcpp::getContext()->getShareManager()->toReal(virt);
+        string virt = dcCtx_.getShareManager()->toVirtual(TTHValue(tth));
+        string real = dcCtx_.getShareManager()->toReal(virt);
 
         return real;
     }
@@ -3510,7 +3510,7 @@ void Hub::on(FavoriteManagerListener::UserAdded, const FavoriteUser &user) noexc
     ParamMap params;
     params.insert(ParamMap::value_type("Nick", user.getNick()));
     params.insert(ParamMap::value_type("CID", user.getUser()->getCID().toBase32()));
-    params.insert(ParamMap::value_type("Order", dcpp::getContext()->getClientManager()->isOp(user.getUser(), user.getUrl()) ? "o" : "u"));
+    params.insert(ParamMap::value_type("Order", dcCtx_.getClientManager()->isOp(user.getUser(), user.getUrl()) ? "o" : "u"));
 
     Func1<Hub, ParamMap> *func = new Func1<Hub, ParamMap>(this, &Hub::addFavoriteUser_gui, params);
     wulforManagerInstance()->dispatchGuiFunc(func);
@@ -3649,7 +3649,7 @@ void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexc
         //private message
 
         string error;
-        const OnlineUser *user = (message.replyTo->getUser() == dcpp::getContext()->getClientManager()->getMe())?
+        const OnlineUser *user = (message.replyTo->getUser() == dcCtx_.getClientManager()->getMe())?
                     message.to : message.replyTo;
 
         if (message.from->getIdentity().isOp()) typemsg = Msg::OPERATOR;

@@ -70,7 +70,7 @@ FileBrowserModel::~FileBrowserModel()
 
             f.close();
 
-            dcpp::getContext()->getUploadManager()->reloadRestrictions();
+            qtCtx()->dcCtx().getUploadManager()->reloadRestrictions();
         }
     }
 }
@@ -135,7 +135,7 @@ QVariant FileBrowserModel::data(const QModelIndex &index, int role) const
 
             TTHValue t(_tq(item->data(COLUMN_FILEBROWSER_TTH).toString()));
 
-            if (dcpp::getContext()->getShareManager()->isTTHShared(t)){
+            if (qtCtx()->dcCtx().getShareManager()->isTTHShared(t)){
                 static QColor c;
 
                 c.setNamedColor(qtCtx()->settings()->getStr(WS_APP_SHARED_FILES_COLOR));
@@ -204,7 +204,7 @@ QVariant FileBrowserModel::data(const QModelIndex &index, int role) const
             }
 
             TTHValue t(_tq(item->data(COLUMN_FILEBROWSER_TTH).toString()));
-            ShareManager *SM = dcpp::getContext()->getShareManager();
+            ShareManager *SM = qtCtx()->dcCtx().getShareManager();
 
             if (!ownList){
                 try{

@@ -45,7 +45,7 @@ Settings::Settings(): is_dirty(false)
 Settings::~Settings(){
     if (is_dirty){
         qtCtx()->settings()->save();
-        dcpp::getContext()->getSettingsManager()->save();
+        qtCtx()->dcCtx().getSettingsManager()->save();
     }
 }
 

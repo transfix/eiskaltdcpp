@@ -447,7 +447,7 @@ void PMWindow::addUserData(const QString &nick){
 }
 
 void PMWindow::sendMessage(QString msg, const bool thirdPerson, const bool stripNewLines){
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid.toStdString()));
+    UserPtr user = qtCtx()->dcCtx().getClientManager()->findUser(CID(cid.toStdString()));
 
     if (user && user->isOnline()){
 
@@ -457,7 +457,7 @@ void PMWindow::sendMessage(QString msg, const bool thirdPerson, const bool strip
         if (msg.isEmpty() || msg == "\n")
             return;
 
-        dcpp::getContext()->getClientManager()->privateMessage(HintedUser(user, _tq(hubUrl)), _tq(msg), thirdPerson);
+        qtCtx()->dcCtx().getClientManager()->privateMessage(HintedUser(user, _tq(hubUrl)), _tq(msg), thirdPerson);
     }
     else {
         addStatusMessage(tr("User went offline"));
@@ -548,13 +548,13 @@ void PMWindow::slotShare(){
 
     if (!cid.empty()){
         try{
-            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+            UserPtr user = qtCtx()->dcCtx().getClientManager()->findUser(CID(cid));
 
             if (user){
-                if (user == dcpp::getContext()->getClientManager()->getMe())
+                if (user == qtCtx()->dcCtx().getClientManager()->getMe())
                     qtCtx()->mainWindow()->browseOwnFiles();
                 else
-                    dcpp::getContext()->getQueueManager()->addList(HintedUser(user, _tq(hubUrl)), QueueItem::FLAG_CLIENT_VIEW, "");
+                    qtCtx()->dcCtx().getQueueManager()->addList(HintedUser(user, _tq(hubUrl)), QueueItem::FLAG_CLIENT_VIEW, "");
             }
         }
         catch (const Exception &e){}

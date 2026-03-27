@@ -318,7 +318,7 @@ QPixmap *WulforUtil::getUserIcon(const UserPtr &id, bool isAway, bool isOp, cons
     if (id->isSet(User::TLS))
         y += 2;
 
-    Identity iid = dcpp::getContext()->getClientManager()->getOnlineUserIdentity(id);
+    Identity iid = dcCtx().getClientManager()->getOnlineUserIdentity(id);
 
     if( (iid.supports(AdcHub::ADCS_FEATURE) && iid.supports(AdcHub::SEGA_FEATURE)) &&
         ((iid.supports(AdcHub::TCP4_FEATURE) && iid.supports(AdcHub::UDP4_FEATURE)) || iid.supports(AdcHub::NAT0_FEATURE)))
@@ -489,12 +489,12 @@ QString WulforUtil::getNicks(const QString &cid, const QString &hintUrl){
 }
 
 QString WulforUtil::getNickViaOnlineUser(const QString &cid, const QString &hintUrl) {
-    OnlineUser* user = dcpp::getContext()->getClientManager()->findOnlineUser(CID(_tq(cid)), _tq(hintUrl), true);
+    OnlineUser* user = dcCtx().getClientManager()->findOnlineUser(CID(_tq(cid)), _tq(hintUrl), true);
     return user ? _q(user->getIdentity().getNick()) : QString();
 }
 
 QString WulforUtil::getNicks(const CID &cid, const QString &hintUrl){
-    return _q(dcpp::Util::toString(dcpp::getContext()->getClientManager()->getNicks(cid, _tq(hintUrl))));
+    return _q(dcpp::Util::toString(dcCtx().getClientManager()->getNicks(cid, _tq(hintUrl))));
 }
 
 void WulforUtil::textToHtml(QString &str, bool print){
@@ -1063,7 +1063,7 @@ Qt::SortOrder WulforUtil::intToSortOrder(int i){
 }
 
 QString WulforUtil::getHubNames(const dcpp::CID &cid){
-    StringList hubs = dcpp::getContext()->getClientManager()->getHubNames(cid, "");
+    StringList hubs = dcCtx().getClientManager()->getHubNames(cid, "");
 
     if (hubs.empty())
         return tr("Offline");
@@ -1164,7 +1164,7 @@ QMenu *WulforUtil::buildUserCmdMenu(const std::string& hub_url, int ctx, QWidget
 }
 
 QMenu *WulforUtil::buildUserCmdMenu(const StringList& hub_list, int ctx, QWidget* parent) {
-    UserCommand::List userCommands = dcpp::getContext()->getFavoriteManager()->getUserCommands(ctx, hub_list);
+    UserCommand::List userCommands = dcCtx().getFavoriteManager()->getUserCommands(ctx, hub_list);
 
     if (userCommands.empty())
         return nullptr;

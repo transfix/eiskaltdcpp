@@ -30,6 +30,8 @@
 #include "dcpp/Thread.h"
 #include "dcpp/DCPlusPlus.h"
 
+namespace dcpp { class DCContext; }
+
 class ServerThread :
         private TimerManagerListener,
         private QueueManagerListener,
@@ -40,8 +42,10 @@ class ServerThread :
 {
 
 public:
-    ServerThread();
+    ServerThread(dcpp::DCContext& dcCtx);
     ~ServerThread();
+
+    dcpp::DCContext& dcCtx() { return dcCtx_; }
 
     ServerThread(const ServerThread&) = delete;
     ServerThread& operator=(const ServerThread&) = delete;
@@ -158,6 +162,7 @@ private:
 
     int64_t lastUp;
     int64_t lastDown;
+    dcpp::DCContext& dcCtx_;
     uint64_t lastUpdate;
 
     dcpp::Socket sock;

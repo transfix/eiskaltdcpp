@@ -154,7 +154,7 @@ MainWindow::MainWindow(dcpp::DCContext& dcCtx):
 
     GtkWidget *menu = gtk_menu_new();
     gtk_menu_tool_button_set_menu(GTK_MENU_TOOL_BUTTON(getWidget("favHubs")), menu);
-    const FavoriteHubEntryList &fh = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
+    const FavoriteHubEntryList &fh = dcCtx_.getFavoriteManager()->getFavoriteHubs();
     gtk_container_foreach(GTK_CONTAINER(menu), (GtkCallback)gtk_widget_destroy, NULL);
 
     for (auto it = fh.begin(); it != fh.end(); ++it)
@@ -443,11 +443,11 @@ MainWindow::MainWindow(dcpp::DCContext& dcCtx):
         gtk_widget_hide(transfers->getContainer());
 
 #ifdef LUA_SCRIPT
-    dcpp::getContext()->getScriptManager()->load();
+    dcCtx_.getScriptManager()->load();
     if (BOOLSETTING(USE_LUA)){
         // Start as late as possible, as we might (formatting.lua) need to examine settings
         string defaultluascript="startup.lua";
-        dcpp::getContext()->getScriptManager()->EvaluateFile(defaultluascript);
+        dcCtx_.getScriptManager()->EvaluateFile(defaultluascript);
     }
 #endif
     gtk_widget_hide(getWidget("progressbarHashProgress"));
@@ -455,9 +455,9 @@ MainWindow::MainWindow(dcpp::DCContext& dcCtx):
 
 MainWindow::~MainWindow()
 {
-    dcpp::getContext()->getQueueManager()->removeListener(this);
-    dcpp::getContext()->getTimerManager()->removeListener(this);
-    dcpp::getContext()->getLogManager()->removeListener(this);
+    dcCtx_.getQueueManager()->removeListener(this);
+    dcCtx_.getTimerManager()->removeListener(this);
+    dcCtx_.getLogManager()->removeListener(this);
 
     GList *list = (GList *)g_object_get_data(G_OBJECT(getWidget("book")), "page-rotation-list");
     g_list_free(list);
@@ -503,9 +503,9 @@ GtkWidget *MainWindow::getContainer()
 
 void MainWindow::show()
 {
-    dcpp::getContext()->getQueueManager()->addListener(this);
-    dcpp::getContext()->getTimerManager()->addListener(this);
-    dcpp::getContext()->getLogManager()->addListener(this);
+    dcCtx_.getQueueManager()->addListener(this);
+    dcCtx_.getTimerManager()->addListener(this);
+    dcCtx_.getLogManager()->addListener(this);
 
     typedef Func1<MainWindow, bool> F1;
     typedef Func0<MainWindow> F0;
@@ -553,7 +553,7 @@ void MainWindow::showTransfersPane_gui()
 {
     dcassert(transfers == NULL);
 
-    transfers = new Transfers();
+    transfers = new Transfers(dcCtx_);
     gtk_paned_pack2(GTK_PANED(getWidget("pane")), transfers->getContainer(), true, true);
     addChild(transfers);
     transfers->show();
@@ -814,7 +814,7 @@ void MainWindow::showDownloadQueue_gui()
 
     if (!entry)
     {
-        entry = new DownloadQueue();
+        entry = new DownloadQueue(dcCtx_);
         addBookEntry_gui(entry);
     }
 
@@ -827,7 +827,7 @@ void MainWindow::showFavoriteHubs_gui()
 
     if (!entry)
     {
-        entry = new FavoriteHubs();
+        entry = new FavoriteHubs(dcCtx_);
         addBookEntry_gui(entry);
     }
 
@@ -840,7 +840,7 @@ void MainWindow::showFavoriteUsers_gui()
 
     if (!entry)
     {
-        entry = new FavoriteUsers();
+        entry = new FavoriteUsers(dcCtx_);
         addBookEntry_gui(entry);
     }
 
@@ -853,7 +853,7 @@ void MainWindow::showFinishedDownloads_gui()
 
     if (!entry)
     {
-        entry = FinishedTransfers::createFinishedDownloads();
+        entry = FinishedTransfers::createFinishedDownloads(dcCtx_);
         addBookEntry_gui(entry);
     }
 
@@ -866,7 +866,7 @@ void MainWindow::showFinishedUploads_gui()
 
     if (!entry)
     {
-        entry = FinishedTransfers::createFinishedUploads();
+        entry = FinishedTransfers::createFinishedUploads(dcCtx_);
         addBookEntry_gui(entry);
     }
 
@@ -894,7 +894,7 @@ void MainWindow::showSearchSpy_gui()
 
     if (!entry)
     {
-        entry = new SearchSpy();
+        entry = new SearchSpy(dcCtx_);
         addBookEntry_gui(entry);
     }
 
@@ -907,7 +907,7 @@ void MainWindow::showSearchADL_gui()
 
     if (!entry)
     {
-        entry = new SearchADL();
+        entry = new SearchADL(dcCtx_);
         addBookEntry_gui(entry);
     }
 
@@ -920,7 +920,7 @@ void MainWindow::showCmdDebug_gui()
 
     if (!entry)
     {
-        entry = new cmddebug();
+        entry = new cmddebug(dcCtx_);
         addBookEntry_gui(entry);
 
     }
@@ -1019,7 +1019,7 @@ void MainWindow::showPublicHubs_gui()
 
     if (!entry)
     {
-        entry = new PublicHubs();
+        entry = new PublicHubs(dcCtx_);
         addBookEntry_gui(entry);
     }
 
@@ -1033,7 +1033,7 @@ void MainWindow::showShareBrowser_gui(UserPtr user, string filename, string dir,
 
     if (!entry)
     {
-        entry = new ShareBrowser(user, filename, dir, true);
+        entry = new ShareBrowser(dcCtx_, user, filename, dir, true);
         addBookEntry_gui(entry);
     }
 
@@ -1043,7 +1043,7 @@ void MainWindow::showShareBrowser_gui(UserPtr user, string filename, string dir,
 
 Search *MainWindow::addSearch_gui()
 {
-    Search *entry = new Search();
+    Search *entry = new Search(dcCtx_);
     addBookEntry_gui(entry);
     raisePage_gui(entry->getContainer());
     size_t t = entry->getID().find(":") + 1;
@@ -1509,11 +1509,11 @@ void MainWindow::addFileDownloadQueue_client(string name, int64_t size, string t
     {
         if (!tth.empty())
         {
-            dcpp::getContext()->getQueueManager()->add(name, size, TTHValue(tth));
+            dcCtx_.getQueueManager()->add(name, size, TTHValue(tth));
 
             // automatically search for alternative download locations
             if (BOOLSETTING(AUTO_SEARCH))
-                dcpp::getContext()->getSearchManager()->search(tth, 0, SearchManager::TYPE_TTH, SearchManager::SIZE_DONTCARE,
+                dcCtx_.getSearchManager()->search(tth, 0, SearchManager::TYPE_TTH, SearchManager::SIZE_DONTCARE,
                                                      Util::emptyString);
         }
     }
@@ -2106,7 +2106,7 @@ void MainWindow::onOpenFileListClicked_gui(GtkWidget *widget, gpointer data)
         {
             string spath = Text::toUtf8(cptemp);
 
-            UserPtr user = DirectoryListing::getUserFromFilename(spath);
+            UserPtr user = DirectoryListing::getUserFromFilename(mw->dcCtx_, spath);
             if (user)
                 mw->showShareBrowser_gui(user, spath, "", false);
             else
@@ -2322,7 +2322,7 @@ void MainWindow::onDebugCMD(GtkWidget *widget, gpointer data)
 
 void MainWindow::autoConnect_client()
 {
-    FavoriteHubEntryList &l = dcpp::getContext()->getFavoriteManager()->getFavoriteHubs();
+    FavoriteHubEntryList &l = dcCtx_.getFavoriteManager()->getFavoriteHubs();
     typedef Func2<MainWindow, string, string> F2;
     F2 *func;
 
@@ -2356,13 +2356,13 @@ void MainWindow::autoConnect_client()
 
 void MainWindow::startSocket_client(bool changed){
     if (changed)
-        dcpp::getContext()->getConnectivityManager()->updateLast();
+        dcCtx_.getConnectivityManager()->updateLast();
     try {
-        dcpp::getContext()->getConnectivityManager()->setup(true);
+        dcCtx_.getConnectivityManager()->setup(true);
     } catch (const Exception& e) {
         showPortsError(e.getError());
     }
-    dcpp::getContext()->getClientManager()->infoUpdated();
+    dcCtx_.getClientManager()->infoUpdated();
 }
 void MainWindow::showPortsError(const string& port) {
     string msg = str(dcpp_fmt(dgettext("eiskaltdcpp-gtk", "Unable to open %1% port. Searching or file transfers will not work correctly until you change settings or turn off any application that might be using that port.")) % port);
@@ -2374,8 +2374,8 @@ void MainWindow::refreshFileList_client()
 {
     try
     {
-        dcpp::getContext()->getShareManager()->setDirty();
-        dcpp::getContext()->getShareManager()->refresh(true, true, false);
+        dcCtx_.getShareManager()->setDirty();
+        dcCtx_.getShareManager()->refresh(true, true, false);
     }
     catch (const ShareException&)
     {
@@ -2384,8 +2384,8 @@ void MainWindow::refreshFileList_client()
 
 void MainWindow::openOwnList_client(bool useSetting)
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->getMe();
-    string path = dcpp::getContext()->getShareManager()->getOwnListFile();
+    UserPtr user = dcCtx_.getClientManager()->getMe();
+    string path = dcCtx_.getShareManager()->getOwnListFile();
 
     typedef Func4<MainWindow, UserPtr, string, string, bool> F4;
     F4 *func = new F4(this, &MainWindow::showShareBrowser_gui, user, path, "", useSetting);
@@ -2394,7 +2394,7 @@ void MainWindow::openOwnList_client(bool useSetting)
 
 void MainWindow::matchAllList_client()
 {
-    dcpp::getContext()->getQueueManager()->matchAllListings();
+    dcCtx_.getQueueManager()->matchAllListings();
 }
 
 void MainWindow::on(LogManagerListener::Message, time_t t, const string &message) noexcept
@@ -2414,7 +2414,7 @@ void MainWindow::on(QueueManagerListener::Finished, QueueItem *item, const strin
         const HintedUser user = item->getDownloads()[0]->getHintedUser();
         string listName = item->getListName();
 
-        F3 *f3 = new F3(this, &MainWindow::showNotification_gui, _("file list from "), WulforUtil::getNicks(user),
+        F3 *f3 = new F3(this, &MainWindow::showNotification_gui, _("file list from "), WulforUtil::getNicks(dcCtx_, user),
                         Notify::DOWNLOAD_FINISHED_USER_LIST);
         wulforManagerInstance()->dispatchGuiFunc(f3);
 
@@ -2453,7 +2453,7 @@ void MainWindow::on(TimerManagerListener::Second, uint64_t ticks) noexcept
     string uploadSpeed = Util::formatBytes(upBytes) + "/" + _("s");
     string uploaded = Util::formatBytes(Socket::getTotalUp());
 
-    SettingsManager *sm = dcpp::getContext()->getSettingsManager();
+    SettingsManager *sm = dcCtx_.getSettingsManager();
     sm->set(SettingsManager::TOTAL_UPLOAD,   SETTING(TOTAL_UPLOAD)   + upDiff);
     sm->set(SettingsManager::TOTAL_DOWNLOAD, SETTING(TOTAL_DOWNLOAD) + downDiff);
 
@@ -2528,7 +2528,7 @@ void MainWindow::onTTHFileButton_gui(GtkWidget *widget , gpointer data)
         g_autofree gchar *cptemp = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser));
         string TTH;
         File f(Text::fromT(string(cptemp)),File::READ, File::OPEN);
-        HashManager  *HM = dcpp::getContext()->getHashManager();
+        HashManager  *HM = mw->dcCtx_.getHashManager();
         const TTHValue *tth= HM->getFileTTHif(string(cptemp));
         if (tth) {
             TTH = tth->toBase32();
@@ -2645,7 +2645,7 @@ void MainWindow::showUploadQueue_gui()
 
     if(!entry)
     {
-        entry = new UploadQueue();
+        entry = new UploadQueue(dcCtx_);
         addBookEntry_gui(entry);
     }
     raisePage_gui(entry->getContainer());
@@ -2662,9 +2662,9 @@ void MainWindow::parsePartial_gui(HintedUser user, string txt)
 {
     bool raise = !WGETB("popunder-filelist");
     BookEntry *entry = findBookEntry(Entry::SHARE_BROWSER, user.user->getCID().toBase32());
-    StringList nicks = dcpp::getContext()->getClientManager()->getNicks(user);
+    StringList nicks = dcCtx_.getClientManager()->getNicks(user);
     string nick = nicks.empty() ? Util::emptyString : Util::cleanPathChars(nicks[0]) + ".";
-    //string path = dcpp::getContext()->getQueueManager()->getListPath(aUser) + ".xml.bz2";
+    //string path = dcCtx_.getQueueManager()->getListPath(aUser) + ".xml.bz2";
     string path = Util::getListPath() + nick + user.user->getCID().toBase32() + ".xml.bz2";
 
     if (entry)
@@ -2675,7 +2675,7 @@ void MainWindow::parsePartial_gui(HintedUser user, string txt)
     {
         if (!entry && !path.empty())
         {
-            entry = new ShareBrowser(user.user, path, "", false);
+            entry = new ShareBrowser(dcCtx_, user.user, path, "", false);
             addBookEntry_gui(entry);
             dynamic_cast<ShareBrowser*>(entry)->loadXML(txt);
         }

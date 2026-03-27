@@ -373,7 +373,7 @@ SearchFrame::SearchFrame(QWidget *parent): QWidget(parent), d_ptr(new SearchFram
 
     init();
 
-    ClientManager* clientMgr = dcpp::getContext()->getClientManager();
+    ClientManager* clientMgr = qtCtx()->dcCtx().getClientManager();
 
     auto lock = clientMgr->lock();
     clientMgr->addListener(this);
@@ -401,7 +401,7 @@ SearchFrame::SearchFrame(QWidget *parent): QWidget(parent), d_ptr(new SearchFram
     for (int i = 0; i < d->str_model->rowCount(); i++)
        d-> str_model->setData(d->str_model->index(i, 0), Qt::Checked, Qt::CheckStateRole);
 
-    dcpp::getContext()->getSearchManager()->addListener(this);
+    qtCtx()->dcCtx().getSearchManager()->addListener(this);
 }
 
 SearchFrame::~SearchFrame(){
@@ -425,8 +425,8 @@ SearchFrame::~SearchFrame(){
 }
 
 void SearchFrame::closeEvent(QCloseEvent *e){
-    dcpp::getContext()->getSearchManager()->removeListener(this);
-    dcpp::getContext()->getClientManager()->removeListener(this);
+    qtCtx()->dcCtx().getSearchManager()->removeListener(this);
+    qtCtx()->dcCtx().getClientManager()->removeListener(this);
 
     Q_D(SearchFrame);
 
@@ -484,7 +484,7 @@ void SearchFrame::init(){
     d->arena_menu = new QMenu(this->windowTitle());
     QAction *close_wnd = new QAction(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFILECLOSE), tr("Close"), d->arena_menu);
     d->arena_menu->addAction(close_wnd);
-    const SettingsManager::SearchTypes &searchTypes = dcpp::getContext()->getSettingsManager()->getSearchTypes();
+    const SettingsManager::SearchTypes &searchTypes = qtCtx()->dcCtx().getSettingsManager()->getSearchTypes();
     QStringList filetypes;
     // Predefined
     for (int i = SearchManager::TYPE_ANY; i < SearchManager::TYPE_LAST; i++)
@@ -656,17 +656,17 @@ void SearchFrame::download(const SearchFrame::VarMap &params){
     size        = (int64_t)params["ESIZE"].toLongLong();
 
     try{
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = qtCtx()->dcCtx().getClientManager()->findUser(CID(cid));
 
         if (!user)
             return;
         // Only files have a TTH
         if (!params["TTH"].toString().isEmpty()){
             string subdir = params["FNAME"].toString().split("\\", Qt::SkipEmptyParts).last().toStdString();
-            dcpp::getContext()->getQueueManager()->add(target + subdir, size, TTHValue(params["TTH"].toString().toStdString()), HintedUser(user, hubUrl));
+            qtCtx()->dcCtx().getQueueManager()->add(target + subdir, size, TTHValue(params["TTH"].toString().toStdString()), HintedUser(user, hubUrl));
         }
         else{
-            dcpp::getContext()->getQueueManager()->addDirectory(filename, HintedUser(user, hubUrl), target);
+            qtCtx()->dcCtx().getQueueManager()->addDirectory(filename, HintedUser(user, hubUrl), target);
         }
     }
     catch (const Exception&){}
@@ -681,12 +681,12 @@ void SearchFrame::getFileList(const VarMap &params, bool match){
         return;
 
     try {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = qtCtx()->dcCtx().getClientManager()->findUser(CID(cid));
 
         if (user){
             QueueItem::FileFlags flag = match? QueueItem::FLAG_MATCH_QUEUE : QueueItem::FLAG_CLIENT_VIEW;
 
-            dcpp::getContext()->getQueueManager()->addList(HintedUser(user, host), flag, dir);
+            qtCtx()->dcCtx().getQueueManager()->addList(HintedUser(user, host), flag, dir);
         }
     }
     catch (const Exception&){}
@@ -696,10 +696,10 @@ void SearchFrame::getFileList(const VarMap &params, bool match){
 void SearchFrame::addToFav(const QString &cid){
     if (!cid.isEmpty()){
         try {
-            UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid.toStdString()));
+            UserPtr user = qtCtx()->dcCtx().getClientManager()->findUser(CID(cid.toStdString()));
 
             if (user)
-                dcpp::getContext()->getFavoriteManager()->addFavoriteUser(user);
+                qtCtx()->dcCtx().getFavoriteManager()->addFavoriteUser(user);
         }
         catch (const Exception&){}
     }
@@ -713,10 +713,10 @@ void SearchFrame::grant(const VarMap &params){
         return;
 
     try {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = qtCtx()->dcCtx().getClientManager()->findUser(CID(cid));
 
         if (user)
-            dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, host));
+            qtCtx()->dcCtx().getUploadManager()->reserveSlot(HintedUser(user, host));
     }
     catch (const Exception&){}
 }
@@ -728,10 +728,10 @@ void SearchFrame::removeSource(const VarMap &params){
         return;
 
     try {
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = qtCtx()->dcCtx().getClientManager()->findUser(CID(cid));
 
         if (user)
-            dcpp::getContext()->getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
+            qtCtx()->dcCtx().getQueueManager()->removeSource(user, QueueItem::Source::FLAG_REMOVED);
     }
     catch (const Exception&){}
 
@@ -748,7 +748,7 @@ void SearchFrame::onHubAdded(const QString &info){
         return;
 
     d->hubs.push_back(info);
-    d->client_list.push_back(dcpp::getContext()->getClientManager()->getClient(_tq(info)));
+    d->client_list.push_back(qtCtx()->dcCtx().getClientManager()->getClient(_tq(info)));
 
     d->str_model->setStringList(d->hubs);
 }
@@ -759,7 +759,7 @@ void SearchFrame::onHubChanged(const QString &info){
     if (!d->hubs.contains(info) || info.isEmpty())
         return;
 
-    Client *cl = dcpp::getContext()->getClientManager()->getClient(_tq(info));
+    Client *cl = qtCtx()->dcCtx().getClientManager()->getClient(_tq(info));
     if (!cl || d->client_list.indexOf(cl) < 0)
         return;
 
@@ -1042,7 +1042,7 @@ void SearchFrame::slotStartSearch(){
 
     string ftypeStr;
     if (ftype > SearchManager::TYPE_ANY && ftype < SearchManager::TYPE_LAST)
-        ftypeStr = dcpp::getContext()->getSearchManager()->getTypeStr(ftype);
+        ftypeStr = qtCtx()->dcCtx().getSearchManager()->getTypeStr(ftype);
     else
     {
         ftypeStr = _tq(lineEdit_SEARCHSTR->text());
@@ -1053,11 +1053,11 @@ void SearchFrame::slotStartSearch(){
     try{
         if (ftype == SearchManager::TYPE_ANY){
             // Custom searchtype
-            exts = dcpp::getContext()->getSettingsManager()->getExtensions(ftypeStr);
+            exts = qtCtx()->dcCtx().getSettingsManager()->getExtensions(ftypeStr);
         }
         else if ((ftype > SearchManager::TYPE_ANY && ftype < SearchManager::TYPE_DIRECTORY) || ftype == SearchManager::TYPE_CD_IMAGE){
             // Predefined searchtype
-            exts = dcpp::getContext()->getSettingsManager()->getExtensions(string(1, '0' + ftype));
+            exts = qtCtx()->dcCtx().getSettingsManager()->getExtensions(string(1, '0' + ftype));
         }
     }
     catch (const SearchTypeException&){
@@ -1067,7 +1067,7 @@ void SearchFrame::slotStartSearch(){
     d->target = s;
     d->searchStartTime = qtCtx()->globalTimer()->getTicks()*1000;
 
-    uint64_t maxDelayBeforeSearch = dcpp::getContext()->getSearchManager()->search(clients, s.toStdString(), llsize, SearchManager::TypeModes(ftype), searchMode, d->token.toStdString(), exts, (void*)this);
+    uint64_t maxDelayBeforeSearch = qtCtx()->dcCtx().getSearchManager()->search(clients, s.toStdString(), llsize, SearchManager::TypeModes(ftype), searchMode, d->token.toStdString(), exts, (void*)this);
     uint64_t waitingResultsTime = 20000; // just assumption that user receives most of results in 20 seconds
 
     d->searchEndTime = d->searchStartTime + maxDelayBeforeSearch + waitingResultsTime;
@@ -1476,13 +1476,13 @@ void SearchFrame::slotContextMenu(const QPoint &){
                 int id = menu_->getCommandId();
 
                 UserCommand uc;
-                if (id == -1 || !dcpp::getContext()->getFavoriteManager()->getUserCommand(id, uc))
+                if (id == -1 || !qtCtx()->dcCtx().getFavoriteManager()->getUserCommand(id, uc))
                     break;
 
                 StringMap params;
 
                 if (qtCtx()->wulforUtil()->getUserCommandParams(uc, params)){
-                    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(item->cid.toStdString()));
+                    UserPtr user = qtCtx()->dcCtx().getClientManager()->findUser(CID(item->cid.toStdString()));
 
                     if (user && user->isOnline()){
                         params["fileFN"]     = _tq(item->data(COLUMN_SF_PATH).toString() + item->data(COLUMN_SF_FILENAME).toString());
@@ -1500,7 +1500,7 @@ void SearchFrame::slotContextMenu(const QPoint &){
 
                         string hubUrl = _tq(i.data(COLUMN_SF_HOST).toString());
 
-                        dcpp::getContext()->getClientManager()->userCommand(HintedUser(user, hubUrl), uc, params, true);
+                        qtCtx()->dcCtx().getClientManager()->userCommand(HintedUser(user, hubUrl), uc, params, true);
                     }
 
                 }
@@ -1699,7 +1699,7 @@ void SearchFrame::on(SearchManagerListener::SR, const dcpp::SearchResultPtr& aRe
     if (d->filterShared == Filter && aResult->getType() == SearchResult::TYPE_FILE){
         const TTHValue& t = aResult->getTTH();
 
-        if (dcpp::getContext()->getShareManager()->isTTHShared(t)) {
+        if (qtCtx()->dcCtx().getShareManager()->isTTHShared(t)) {
             d->dropped++;
 
             return;

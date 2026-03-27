@@ -50,7 +50,7 @@ SpyFrame::SpyFrame(dcpp::DCContext& ctx, QWidget *parent)
 SpyFrame::~SpyFrame(){
     qtCtx()->settings()->setVar("spyframe-header-state", treeView->header()->saveState());
     
-    dcpp::getContext()->getClientManager()->removeListener(this);
+    dcCtx().getClientManager()->removeListener(this);
 }
 
 void SpyFrame::closeEvent(QCloseEvent *e){
@@ -82,12 +82,12 @@ void SpyFrame::slotStartStop(){
     if (!started){
         pushButton->setText(tr("Stop"));
 
-        dcpp::getContext()->getClientManager()->addListener(this);
+        dcCtx().getClientManager()->addListener(this);
     }
     else {
         pushButton->setText(tr("Start"));
 
-        dcpp::getContext()->getClientManager()->removeListener(this);
+        dcCtx().getClientManager()->removeListener(this);
     }
 
     started = !started;

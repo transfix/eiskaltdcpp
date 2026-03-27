@@ -31,23 +31,24 @@
 using namespace std;
 using namespace dcpp;
 
-FinishedTransfers* FinishedTransfers::createFinishedDownloads()
+FinishedTransfers* FinishedTransfers::createFinishedDownloads(dcpp::DCContext& dcCtx)
 {
-    return new FinishedTransfers(Entry::FINISHED_DOWNLOADS, _("Finished Downloads"), false);
+    return new FinishedTransfers(dcCtx, Entry::FINISHED_DOWNLOADS, _("Finished Downloads"), false);
 }
 
-FinishedTransfers* FinishedTransfers::createFinishedUploads()
+FinishedTransfers* FinishedTransfers::createFinishedUploads(dcpp::DCContext& dcCtx)
 {
-    return new FinishedTransfers(Entry::FINISHED_UPLOADS, _("Finished Uploads"), true);
+    return new FinishedTransfers(dcCtx, Entry::FINISHED_UPLOADS, _("Finished Uploads"), true);
 }
 
-FinishedTransfers::FinishedTransfers(const EntryType type, const string &title, bool isUpload):
+FinishedTransfers::FinishedTransfers(dcpp::DCContext& dcCtx, const EntryType type, const string &title, bool isUpload):
     BookEntry(type, title, "finishedtransfers.ui"),
     isUpload(isUpload),
     totalFiles(0),
     totalUsers(0),
     totalBytes(0),
-    totalTime(0)
+    totalTime(0),
+    dcCtx_(dcCtx)
 {
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR(getWidget("averageSpeed")),false);
@@ -124,11 +125,11 @@ FinishedTransfers::FinishedTransfers(const EntryType type, const string &title, 
 
 FinishedTransfers::~FinishedTransfers()
 {
-    dcpp::getContext()->getFinishedManager()->removeListener(this);
+    dcCtx_.getFinishedManager()->removeListener(this);
     g_object_unref(getWidget("menu"));
     delete appsPreviewMenu;
     int active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(getWidget("showOnlyFullFilesCheckButton")));
-    dcpp::getContext()->getSettingsManager()->set(SettingsManager::FINISHED_DL_ONLY_FULL, active);
+    dcCtx_.getSettingsManager()->set(SettingsManager::FINISHED_DL_ONLY_FULL, active);
 }
 
 void FinishedTransfers::show()
@@ -136,7 +137,7 @@ void FinishedTransfers::show()
     initializeList_client();
     //Func0<FinishedTransfers> *func = new Func0<FinishedTransfers>(this, &FinishedTransfers::initializeList_client);
     //wulforManagerInstance()->dispatchClientFunc(func);
-    dcpp::getContext()->getFinishedManager()->addListener(this);
+    dcCtx_.getFinishedManager()->addListener(this);
 }
 
 bool FinishedTransfers::findUser_gui(GtkTreeIter* iter, const string& cid)
@@ -458,9 +459,9 @@ void FinishedTransfers::onShowOnlyFullFilesToggled_gui(GtkWidget *widget, gpoint
     StringMap params;
     gtk_list_store_clear(ft->fileStore);
 
-    auto lock = dcpp::getContext()->getFinishedManager()->lock();
+    auto lock = ft->dcCtx_.getFinishedManager()->lock();
 
-    const FinishedManager::MapByFile &list = dcpp::getContext()->getFinishedManager()->getMapByFile(ft->isUpload);
+    const FinishedManager::MapByFile &list = ft->dcCtx_.getFinishedManager()->getMapByFile(ft->isUpload);
 
     for (auto it = list.begin(); it != list.end(); ++it)
     {
@@ -645,9 +646,9 @@ void FinishedTransfers::onRemoveAll_gui(GtkMenuItem *item, gpointer data)
 void FinishedTransfers::initializeList_client()
 {
     StringMap params;
-    auto lock = dcpp::getContext()->getFinishedManager()->lock();
-    const FinishedManager::MapByFile &list = dcpp::getContext()->getFinishedManager()->getMapByFile(isUpload);
-    const FinishedManager::MapByUser &user = dcpp::getContext()->getFinishedManager()->getMapByUser(isUpload);
+    auto lock = dcCtx_.getFinishedManager()->lock();
+    const FinishedManager::MapByFile &list = dcCtx_.getFinishedManager()->getMapByFile(isUpload);
+    const FinishedManager::MapByUser &user = dcCtx_.getFinishedManager()->getMapByUser(isUpload);
 
     for (auto it = list.begin(); it != list.end(); ++it)
     {
@@ -674,7 +675,7 @@ void FinishedTransfers::getFinishedParams_client(const FinishedFileItemPtr& item
     params["Path"] = Util::getFilePath(file);
     for (auto &user : item->getUsers())
     {
-        nicks += WulforUtil::getNicks(user.user->getCID(), user.hint) + ", ";
+        nicks += WulforUtil::getNicks(dcCtx_, user.user->getCID(), user.hint) + ", ";
     }
     params["Nicks"] = nicks.substr(0, nicks.length() - 2);
     // item->getFileSize() seems to return crap. I guess there's no way to get
@@ -696,8 +697,8 @@ void FinishedTransfers::getFinishedParams_client(const FinishedUserItemPtr &item
 {
     string files;
     params["Time"] = Util::formatTime("%Y-%m-%d %H:%M:%S", item->getTime());
-    params["Nick"] = WulforUtil::getNicks(user);
-    params["Hub"] = WulforUtil::getHubNames(user);
+    params["Nick"] = WulforUtil::getNicks(dcCtx_, user);
+    params["Hub"] = WulforUtil::getHubNames(dcCtx_, user);
     for (auto &file : item->getFiles())
     {
         files += file + ", ";
@@ -711,11 +712,11 @@ void FinishedTransfers::getFinishedParams_client(const FinishedUserItemPtr &item
 
 void FinishedTransfers::removeUser_client(string cid)
 {
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
     if (user)
         // ignore the hint url user...
-        dcpp::getContext()->getFinishedManager()->remove(isUpload, HintedUser(user, ""));
+        dcCtx_.getFinishedManager()->remove(isUpload, HintedUser(user, ""));
 
 }
 
@@ -723,13 +724,13 @@ void FinishedTransfers::removeFile_client(string target)
 {
 
     if (!target.empty())
-        dcpp::getContext()->getFinishedManager()->remove(isUpload, target);
+        dcCtx_.getFinishedManager()->remove(isUpload, target);
 
 }
 
 void FinishedTransfers::removeAll_client()
 {
-    dcpp::getContext()->getFinishedManager()->removeAll(isUpload);
+    dcCtx_.getFinishedManager()->removeAll(isUpload);
 }
 
 void FinishedTransfers::on(FinishedManagerListener::AddedFile, bool upload, const string& file, const FinishedFileItemPtr& item) noexcept
@@ -776,7 +777,7 @@ void FinishedTransfers::on(FinishedManagerListener::UpdatedUser, bool upload, co
 {
     if (isUpload == upload)
     {
-        const FinishedManager::MapByUser &umap = dcpp::getContext()->getFinishedManager()->getMapByUser(isUpload);
+        const FinishedManager::MapByUser &umap = dcCtx_.getFinishedManager()->getMapByUser(isUpload);
         auto userit = umap.find(user);
         if (userit == umap.end())
             return;

@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 
+namespace dcpp { class DCContext; }
+
 /**
  * Pure utility functions extracted from WulforUtil.
  * No GTK dependency — only standard C++ and dcpp.
@@ -75,13 +77,13 @@ bool isHubURL(const std::string &text);
 
 /// Get comma-separated nicks for a user identified by CID + hint URL.
 /// Falls back to CID string when user is not connected.
-std::string getNicks(const std::string &cid, const std::string &hintUrl = std::string());
+std::string getNicks(dcpp::DCContext &ctx, const std::string &cid, const std::string &hintUrl = std::string());
 
 /// Get comma-separated hub names for a user identified by CID + hint URL.
 /// Returns "Offline" when user is not connected to any hub.
-std::string getHubNames(const std::string &cid, const std::string &hintUrl = std::string());
+std::string getHubNames(dcpp::DCContext &ctx, const std::string &cid, const std::string &hintUrl = std::string());
 
 /// Get the list of hub addresses for a user identified by CID + hint URL.
-std::vector<std::string> getHubAddress(const std::string &cid, const std::string &hintUrl = std::string());
+std::vector<std::string> getHubAddress(dcpp::DCContext &ctx, const std::string &cid, const std::string &hintUrl = std::string());
 
 } // namespace gtk_util

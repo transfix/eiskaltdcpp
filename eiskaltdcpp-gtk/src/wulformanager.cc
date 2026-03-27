@@ -448,7 +448,7 @@ gint WulforManager::openHashDialog_gui()
 {
     DialogEntry *hash = getHashDialog_gui();
     if (!hash)
-        hash = new Hash();
+        hash = new Hash(dcCtx_);
 
     gint response = hash->run();
 
@@ -457,7 +457,7 @@ gint WulforManager::openHashDialog_gui()
 
 gint WulforManager::openSettingsDialog_gui()
 {
-    Settings *s = new Settings();
+    Settings *s = new Settings(dcCtx_);
     gint response = s->run();
 
     return response;

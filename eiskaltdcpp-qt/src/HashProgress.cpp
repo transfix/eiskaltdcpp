@@ -11,6 +11,7 @@
  */
 
 #include "HashProgress.h"
+#include "QtContext.h"
 #include "WulforUtil.h"
 
 #include <QDir>
@@ -24,10 +25,10 @@
 using namespace dcpp;
 
 unsigned HashProgress::getHashStatus() {
-    auto* ctx = dcpp::getContext();
-    if (!ctx || !ctx->isRunning()) return IDLE;
-    ShareManager *SM = ctx->getShareManager();
-    HashManager  *HM = ctx->getHashManager();
+    auto& ctx = qtCtx()->dcCtx();
+    if (!ctx.isRunning()) return IDLE;
+    ShareManager *SM = ctx.getShareManager();
+    HashManager  *HM = ctx.getHashManager();
     if (!SM || !HM) return IDLE;
     if( SM->isRefreshing() )
         return LISTUPDATE;
@@ -66,7 +67,7 @@ HashProgress::HashProgress(QWidget *parent):
     progress->setFormat(QString());
 #endif
 
-    dcpp::getContext()->getHashManager()->setPriority(Thread::NORMAL);
+    qtCtx()->dcCtx().getHashManager()->setPriority(Thread::NORMAL);
 
     timer = new QTimer();
     timer->setInterval(250);
@@ -89,9 +90,9 @@ HashProgress::~HashProgress(){
 
     delete timer;
 
-    auto* ctx = dcpp::getContext();
-    if (ctx && ctx->isRunning() && ctx->getHashManager())
-        ctx->getHashManager()->setPriority(Thread::LOW);
+    auto& ctx = qtCtx()->dcCtx();
+    if (ctx.isRunning() && ctx.getHashManager())
+        ctx.getHashManager()->setPriority(Thread::LOW);
 }
 
 float HashProgress::getProgress() {
@@ -99,10 +100,10 @@ float HashProgress::getProgress() {
 }
 
 void HashProgress::timerTick(){
-    auto* ctx = dcpp::getContext();
-    if (!ctx || !ctx->isRunning()) return;
-    auto* HM = ctx->getHashManager();
-    auto* SM = ctx->getShareManager();
+    auto& ctx = qtCtx()->dcCtx();
+    if (!ctx.isRunning()) return;
+    auto* HM = ctx.getHashManager();
+    auto* SM = ctx.getShareManager();
     if (!HM || !SM) return;
 
     string path;
@@ -221,10 +222,10 @@ void HashProgress::timerTick(){
 }
 
 void HashProgress::slotStart(){
-    auto* ctx = dcpp::getContext();
-    if (!ctx || !ctx->isRunning()) return;
-    ShareManager *SM = ctx->getShareManager();
-    HashManager  *HM = ctx->getHashManager();
+    auto& ctx = qtCtx()->dcCtx();
+    if (!ctx.isRunning()) return;
+    ShareManager *SM = ctx.getShareManager();
+    HashManager  *HM = ctx.getHashManager();
     if (!SM || !HM) return;
     switch( getHashStatus() ) {
     case IDLE:

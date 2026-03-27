@@ -282,7 +282,7 @@ void Magnet::download(const QString &name, const qulonglong &size, const QString
     if (tth.isEmpty())
         return;
     try {
-        dcpp::getContext()->getQueueManager()->add(_tq(name), size, TTHValue(_tq(tth)));
+        qtCtx()->dcCtx().getQueueManager()->add(_tq(name), size, TTHValue(_tq(tth)));
     }
     catch (const std::exception& e){
         QMessageBox::critical(this, tr("Error"), tr("Some error ocurred when starting download:\n %1").arg(e.what()));

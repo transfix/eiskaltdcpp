@@ -51,7 +51,7 @@ void QuickConnect::slotAccept() {
         encoding = "UTF-8";
     if (!hub.isEmpty()) {
         if (encoding.isEmpty()){//Has favorite entry for hub?
-            FavoriteHubEntry* entry = dcpp::getContext()->getFavoriteManager()->getFavoriteHubEntry(_tq(hub));
+            FavoriteHubEntry* entry = qtCtx()->dcCtx().getFavoriteManager()->getFavoriteHubEntry(_tq(hub));
 
             if (entry)
                 encoding = qtCtx()->wulforUtil()->dcEnc2QtEnc(_q(entry->getEncoding()));

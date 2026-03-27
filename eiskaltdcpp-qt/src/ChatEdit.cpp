@@ -267,10 +267,10 @@ void ChatEdit::dropEvent(QDropEvent *e)
                 QString str = QDir::toNativeSeparators( fi.absoluteFilePath() );
 
                 if ( fi.exists() && fi.isFile() && !str.isEmpty() ) {
-                    const TTHValue *tth = dcpp::getContext()->getHashManager()->getFileTTHif(str.toStdString());
+                    const TTHValue *tth = qtCtx()->dcCtx().getHashManager()->getFileTTHif(str.toStdString());
                     if ( !tth ) {
                         str = QDir::toNativeSeparators( fi.canonicalFilePath() ); // try to follow symlinks
-                        tth = dcpp::getContext()->getHashManager()->getFileTTHif(str.toStdString());
+                        tth = qtCtx()->dcCtx().getHashManager()->getFileTTHif(str.toStdString());
                     }
                     if (tth)
                         urlStr = qtCtx()->wulforUtil()->makeMagnet(fi.fileName(), fi.size(), _q(tth->toBase32()));

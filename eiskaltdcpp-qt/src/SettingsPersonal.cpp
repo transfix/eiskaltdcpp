@@ -38,7 +38,7 @@ SettingsPersonal::~SettingsPersonal(){
 }
 
 void SettingsPersonal::ok(){
-    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
+    SettingsManager *SM = qtCtx()->dcCtx().getSettingsManager();
 
     SM->set(SettingsManager::NICK, lineEdit_NICK->text().toStdString());
     SM->set(SettingsManager::EMAIL, lineEdit_EMAIL->text().toStdString());

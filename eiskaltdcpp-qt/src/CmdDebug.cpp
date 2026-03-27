@@ -51,7 +51,7 @@ CmdDebug::CmdDebug(dcpp::DCContext& ctx, QWidget *parent)
     connect(toolButton_HIDE, &QToolButton::clicked, this, &CmdDebug::slotHideSearchBar);
     connect(lineEdit_FIND, &QLineEdit::textEdited, this, &CmdDebug::slotFindTextEdited);
     connect(toolButton_ALL, &QToolButton::clicked, this, &CmdDebug::slotFindAll);
-    dcpp::getContext()->getDebugManager()->addListener(this);
+    dcCtx().getDebugManager()->addListener(this);
 
     connect(qtCtx()->settings(), &WulforSettings::strValueChanged, this, &CmdDebug::slotSettingsChanged);
 
@@ -62,7 +62,7 @@ CmdDebug::~CmdDebug()
 {
     Q_D(CmdDebug);
 
-    dcpp::getContext()->getDebugManager()->removeListener(this);
+    dcCtx().getDebugManager()->removeListener(this);
     delete d;
 }
 

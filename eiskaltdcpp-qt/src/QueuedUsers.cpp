@@ -40,13 +40,13 @@ QueuedUsers::QueuedUsers(dcpp::DCContext& ctx) : QtContextAware(ctx) {
     connect(this, &QueuedUsers::coreWaitingRemoved, this, &QueuedUsers::slotWaitingRemoved, Qt::QueuedConnection);
     connect(treeView_USERS, &QWidget::customContextMenuRequested, this, &QueuedUsers::slotContextMenu);
 
-    dcpp::getContext()->getUploadManager()->addListener(this);
+    dcCtx().getUploadManager()->addListener(this);
     
     ArenaWidget::setState( ArenaWidget::Flags(ArenaWidget::state() | ArenaWidget::Singleton | ArenaWidget::Hidden) );
 }
 
 QueuedUsers::~QueuedUsers(){
-    dcpp::getContext()->getUploadManager()->removeListener(this);
+    dcCtx().getUploadManager()->removeListener(this);
 }
 
 void QueuedUsers::closeEvent(QCloseEvent *e){
@@ -87,10 +87,10 @@ void QueuedUsers::slotContextMenu(){
             QString id = item->cid;
 
             if (!id.isEmpty()){
-                UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(id.toStdString()));
+                UserPtr user = dcCtx().getClientManager()->findUser(CID(id.toStdString()));
 
                 if (user){
-                    try { dcpp::getContext()->getUploadManager()->reserveSlot(HintedUser(user, _tq(item->hub))); }
+                    try { dcCtx().getUploadManager()->reserveSlot(HintedUser(user, _tq(item->hub))); }
                     catch ( ... ) {}
                 }
             }

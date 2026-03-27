@@ -30,10 +30,11 @@
 using namespace std;
 using namespace dcpp;
 
-UserCommandMenu::UserCommandMenu(GtkWidget *userCommandMenu, int ctx):
+UserCommandMenu::UserCommandMenu(dcpp::DCContext& dcCtx, GtkWidget *userCommandMenu, int ctx):
     Entry(Entry::USER_COMMAND_MENU, "", generateID(this)),
     userCommandMenu(userCommandMenu),
-    ctx(ctx)
+    ctx(ctx),
+    dcCtx_(dcCtx)
 {
 }
 
@@ -80,7 +81,7 @@ void UserCommandMenu::cleanMenu_gui()
 
 void UserCommandMenu::buildMenu_gui()
 {
-    UserCommand::List userCommandList = dcpp::getContext()->getFavoriteManager()->getUserCommands(ctx, hubs);
+    UserCommand::List userCommandList = dcCtx_.getFavoriteManager()->getUserCommands(ctx, hubs);
 
     GtkWidget *menuItem;
     GtkWidget *menu = userCommandMenu;
@@ -192,14 +193,14 @@ void UserCommandMenu::sendUserCommand_client(string cid, string commandName, str
 {
     if (!cid.empty() && !commandName.empty())
     {
-        int id = dcpp::getContext()->getFavoriteManager()->findUserCommand(commandName, hub);
+        int id = dcCtx_.getFavoriteManager()->findUserCommand(commandName, hub);
         UserCommand uc;
 
-        if (id == -1 || !dcpp::getContext()->getFavoriteManager()->getUserCommand(id, uc))
+        if (id == -1 || !dcCtx_.getFavoriteManager()->getUserCommand(id, uc))
             return;
 
-        UserPtr user = dcpp::getContext()->getClientManager()->findUser(CID(cid));
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
         if (user)
-            dcpp::getContext()->getClientManager()->userCommand(HintedUser(user, hub), uc, params, true);
+            dcCtx_.getClientManager()->userCommand(HintedUser(user, hub), uc, params, true);
     }
 }

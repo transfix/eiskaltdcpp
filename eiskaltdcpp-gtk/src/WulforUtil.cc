@@ -133,48 +133,48 @@ vector<string> WulforUtil::getLocalIPs()
 }
 
 
-string WulforUtil::getNicks(const string &cid, const string& hintUrl)
+string WulforUtil::getNicks(dcpp::DCContext& ctx, const string &cid, const string& hintUrl)
 {
-    return getNicks(CID(cid), hintUrl);
+    return getNicks(ctx, CID(cid), hintUrl);
 }
 
-string WulforUtil::getNicks(const CID& cid, const string& hintUrl)
+string WulforUtil::getNicks(dcpp::DCContext& ctx, const CID& cid, const string& hintUrl)
 {
-    return Util::toString(dcpp::getContext()->getClientManager()->getNicks(cid, hintUrl));
+    return Util::toString(ctx.getClientManager()->getNicks(cid, hintUrl));
 }
 
-string WulforUtil::getNicks(const UserPtr& user, const string& hintUrl)
+string WulforUtil::getNicks(dcpp::DCContext& ctx, const UserPtr& user, const string& hintUrl)
 {
-    return getNicks(user->getCID(), hintUrl);
+    return getNicks(ctx, user->getCID(), hintUrl);
 }
 
-string WulforUtil::getHubNames(const string &cid, const string& hintUrl)
+string WulforUtil::getHubNames(dcpp::DCContext& ctx, const string &cid, const string& hintUrl)
 {
-    return getHubNames(CID(cid), hintUrl);
+    return getHubNames(ctx, CID(cid), hintUrl);
 }
 
-string WulforUtil::getHubNames(const CID& cid, const string& hintUrl)
+string WulforUtil::getHubNames(dcpp::DCContext& ctx, const CID& cid, const string& hintUrl)
 {
-    StringList hubs = dcpp::getContext()->getClientManager()->getHubNames(cid, hintUrl);
+    StringList hubs = ctx.getClientManager()->getHubNames(cid, hintUrl);
     if (hubs.empty())
         return _("Offline");
     else
         return Util::toString(hubs);
 }
 
-string WulforUtil::getHubNames(const UserPtr& user, const string& hintUrl)
+string WulforUtil::getHubNames(dcpp::DCContext& ctx, const UserPtr& user, const string& hintUrl)
 {
-    return getHubNames(user->getCID(), hintUrl);
+    return getHubNames(ctx, user->getCID(), hintUrl);
 }
 
-StringList WulforUtil::getHubAddress(const CID& cid, const string& hintUrl)
+StringList WulforUtil::getHubAddress(dcpp::DCContext& ctx, const CID& cid, const string& hintUrl)
 {
-    return dcpp::getContext()->getClientManager()->getHubs(cid, hintUrl);
+    return ctx.getClientManager()->getHubs(cid, hintUrl);
 }
 
-StringList WulforUtil::getHubAddress(const UserPtr& user, const string& hintUrl)
+StringList WulforUtil::getHubAddress(dcpp::DCContext& ctx, const UserPtr& user, const string& hintUrl)
 {
-    return getHubAddress(user->getCID(), hintUrl);
+    return getHubAddress(ctx, user->getCID(), hintUrl);
 }
 
 string WulforUtil::getTextFromMenu(GtkMenuItem *item)

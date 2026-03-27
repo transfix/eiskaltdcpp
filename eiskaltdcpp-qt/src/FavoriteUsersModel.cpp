@@ -62,7 +62,7 @@ QVariant FavoriteUsersModel::data(const QModelIndex &index, int role) const
         case Qt::DecorationRole: // icon
         {
             if (!index.column()){
-                FavoriteManager::FavoriteMap ul = dcpp::getContext()->getFavoriteManager()->getFavoriteUsers();
+                FavoriteManager::FavoriteMap ul = qtCtx()->dcCtx().getFavoriteManager()->getFavoriteUsers();
 
                 for (const auto &i : ul) {
                     const dcpp::FavoriteUser &u = i.second;

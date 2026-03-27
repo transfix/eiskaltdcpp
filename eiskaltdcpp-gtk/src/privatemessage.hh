@@ -25,6 +25,8 @@
 #include "bookentry.hh"
 #include "message.hh"
 
+namespace dcpp { class DCContext; }
+
 class WulforSettingsManager;
 class EmoticonsDialog;
 

@@ -342,7 +342,7 @@ void SettingsGUI::init(){
 }
 
 void SettingsGUI::ok(){
-    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
+    SettingsManager *SM = qtCtx()->dcCtx().getSettingsManager();
     {//Basic tab
         if (custom_style && comboBox_THEMES->currentIndex() > 0)
             qtCtx()->settings()->setStr(WS_APP_THEME, comboBox_THEMES->currentText());

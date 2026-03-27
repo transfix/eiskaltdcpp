@@ -54,7 +54,7 @@ SettingsDownloads::~SettingsDownloads(){
 }
 
 void SettingsDownloads::ok(){
-    SettingsManager *SM = dcpp::getContext()->getSettingsManager();
+    SettingsManager *SM = qtCtx()->dcCtx().getSettingsManager();
 
     QString dl_dir = lineEdit_DLDIR->text(), udl_dir = lineEdit_UNF_DL_DIR->text();
 
@@ -151,7 +151,7 @@ void SettingsDownloads::init(){
         spinBox_MINFSZ->setValue(SETTING(AUTODROP_FILESIZE));
 
         for (auto it = other_settings.constBegin(); it != other_settings.constEnd(); ++it) {
-            listWidget->item(it.value())->setCheckState(((bool)dcpp::getContext()->getSettingsManager()->get(it.key()))? Qt::Checked : Qt::Unchecked);
+            listWidget->item(it.value())->setCheckState(((bool)qtCtx()->dcCtx().getSettingsManager()->get(it.key()))? Qt::Checked : Qt::Unchecked);
         }
     }
     {

@@ -35,19 +35,20 @@
 using namespace std;
 using namespace dcpp;
 
-ShareBrowser::ShareBrowser(UserPtr _user, const string &_file, const string &_initialDirectory, const bool _full):
-    BookEntry(Entry::SHARE_BROWSER, _("List: ") + WulforUtil::getNicks(_user, ""), "sharebrowser.ui", _user->getCID().toBase32()),
+ShareBrowser::ShareBrowser(dcpp::DCContext& dcCtx, UserPtr _user, const string &_file, const string &_initialDirectory, const bool _full):
+    BookEntry(Entry::SHARE_BROWSER, _("List: ") + WulforUtil::getNicks(dcCtx_, _user, ""), "sharebrowser.ui", _user->getCID().toBase32()),
     user(_user),
     file(_file),
     initialDirectory(_initialDirectory),
-    listing(HintedUser(_user, "")),
+    listing(dcCtx_, HintedUser(_user, "")),
     shareSize(0),
     currentSize(0),
     shareItems(0),
     currentItems(0),
     updateFileView(true),
     skipHits(0),
-    full(_full)
+    full(_full),
+    dcCtx_(dcCtx)
 {
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR(getWidget("mainStatus")),false);
@@ -58,7 +59,7 @@ ShareBrowser::ShareBrowser(UserPtr _user, const string &_file, const string &_in
 #endif
 
     // Use the nick from the file name in case the user is offline and core only returns CID
-    nick = WulforUtil::getNicks(user, "");
+    nick = WulforUtil::getNicks(dcCtx_, user, "");
     if (nick.find(user->getCID().toBase32(), 1) != string::npos)
     {
         string name = Util::getFileName(file);
@@ -125,9 +126,9 @@ ShareBrowser::ShareBrowser(UserPtr _user, const string &_file, const string &_in
     gtk_tree_view_set_enable_tree_lines(dirView.get(), true);
 
     // Initialize the user command menus
-    fileUserCommandMenu = new UserCommandMenu(getWidget("fileUserCommandMenu"), ::UserCommand::CONTEXT_FILELIST);
+    fileUserCommandMenu = new UserCommandMenu(dcCtx_, getWidget("fileUserCommandMenu"), ::UserCommand::CONTEXT_FILELIST);
     addChild(fileUserCommandMenu);
-    dirUserCommandMenu = new UserCommandMenu(getWidget("dirUserCommandMenu"), ::UserCommand::CONTEXT_FILELIST);
+    dirUserCommandMenu = new UserCommandMenu(dcCtx_, getWidget("dirUserCommandMenu"), ::UserCommand::CONTEXT_FILELIST);
     addChild(dirUserCommandMenu);
 
     // Connect the signals to their callback functions.
@@ -203,7 +204,7 @@ bool ShareBrowser::buildList_gui()
             listing.loadFile(file);
 
             // Search ADL
-            dcpp::getContext()->getADLSearchManager()->matchListing(listing);
+            dcCtx_.getADLSearchManager()->matchListing(listing);
         }
         // Add entries to dir tree view starting with the root entry.
         buildDirs_gui(listing.getRoot(), NULL);
@@ -516,7 +517,7 @@ void ShareBrowser::popupFileMenu_gui()
     fileUserCommandMenu->cleanMenu_gui();
 
     // Build file download menu
-    StringPairList spl = dcpp::getContext()->getFavoriteManager()->getFavoriteDirs();
+    StringPairList spl = dcCtx_.getFavoriteManager()->getFavoriteDirs();
     if (!spl.empty())
     {
         for (StringPairIter i = spl.begin(); i != spl.end(); ++i)
@@ -535,7 +536,7 @@ void ShareBrowser::popupFileMenu_gui()
     gtk_menu_shell_append(GTK_MENU_SHELL(getWidget("fileDownloadMenu")), menuItem);
 
     // Build user command menu
-    StringList hubs = WulforUtil::getHubAddress(listing.getUser().user->getCID(), "");
+    StringList hubs = WulforUtil::getHubAddress(dcCtx_, listing.getUser().user->getCID(), "");
     fileUserCommandMenu->addHub(hubs);
     GtkTreeIter iter;
     GList *list = gtk_tree_selection_get_selected_rows(fileSelection, NULL);
@@ -588,7 +589,7 @@ void ShareBrowser::popupDirMenu_gui()
     gtk_container_foreach(GTK_CONTAINER(getWidget("dirDownloadMenu")), (GtkCallback)gtk_widget_destroy, NULL);
     dirUserCommandMenu->cleanMenu_gui();
 
-    StringPairList spl = dcpp::getContext()->getFavoriteManager()->getFavoriteDirs();
+    StringPairList spl = dcCtx_.getFavoriteManager()->getFavoriteDirs();
     if (!spl.empty())
     {
         for (StringPairIter i = spl.begin(); i != spl.end(); ++i)
@@ -613,7 +614,7 @@ void ShareBrowser::popupDirMenu_gui()
         string filename;
         string filepath;
         string cid = listing.getUser().user->getCID().toBase32();
-        StringList hubs = WulforUtil::getHubAddress(listing.getUser().user->getCID(), "");
+        StringList hubs = WulforUtil::getHubAddress(dcCtx_, listing.getUser().user->getCID(), "");
         DirectoryListing::Directory *dir = dirView.getValue<DirectoryListing::Directory *>(&iter, "DL Dir");
 
         if (dir != listing.getRoot())
@@ -1138,7 +1139,7 @@ void ShareBrowser::downloadDir_client(DirectoryListing::Directory *dir, string t
 
 void ShareBrowser::matchQueue_client()
 {
-    int matched = dcpp::getContext()->getQueueManager()->matchListing(listing);
+    int matched = dcCtx_.getQueueManager()->matchListing(listing);
     string message = _("Matched ") + Util::toString(matched) + _(" files");
 
     typedef Func2<ShareBrowser, string, string> F2;
@@ -1231,7 +1232,7 @@ void ShareBrowser::load(string xml)
         path2 = dirList->getName();
         treepath = gtk_tree_path_copy(gtk_tree_model_get_path (GTK_TREE_MODEL(dirStore), gtk_tree_iter_copy(&iter)));
 
-        //path = dcpp::getContext()->getQueueManager()->getListPath(listing.getUser()) + ".xml";
+        //path = dcCtx_.getQueueManager()->getListPath(listing.getUser()) + ".xml";
         path = Util::getListPath() + nick + user->getCID().toBase32() + ".xml.bz2";
         if(File::getSize(path) != -1) {
             // load the cached list.
@@ -1239,7 +1240,7 @@ void ShareBrowser::load(string xml)
         }
         auto base = listing.updateXML(xml);
         //listing.save(path);
-        dcpp::getContext()->getADLSearchManager()->matchListing(listing);
+        dcCtx_.getADLSearchManager()->matchListing(listing);
         gtk_tree_store_clear(dirStore);
         gtk_list_store_clear(fileStore);
         buildDirs_gui(listing.getRoot(),NULL);
@@ -1269,7 +1270,7 @@ void ShareBrowser::downloadChangedDir(DirectoryListing::Directory* d) {
         dcdebug("Directory %s incomplete, downloading...\n", d->getName().c_str());
         if(listing.getUser().user->isOnline()) {
             try {
-                dcpp::getContext()->getQueueManager()->addList(listing.getUser(), QueueItem::FLAG_PARTIAL_LIST, listing.getPath(d));
+                dcCtx_.getQueueManager()->addList(listing.getUser(), QueueItem::FLAG_PARTIAL_LIST, listing.getPath(d));
             } catch(const QueueException& e) { }
         } else {
             setStatus_gui("mainStatus","User went offline");
