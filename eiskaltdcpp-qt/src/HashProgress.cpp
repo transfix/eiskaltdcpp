@@ -34,7 +34,7 @@ unsigned HashProgress::getHashStatus() {
         return LISTUPDATE;
 
     if( HM->isHashingPaused() ) {
-        return (Util::getUpTime() < SETTING(HASHING_START_DELAY)) ? DELAYED : PAUSED;
+        return (Util::getUpTime() < qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HASHING_START_DELAY, true)) ? DELAYED : PAUSED;
     }
 
     string path;

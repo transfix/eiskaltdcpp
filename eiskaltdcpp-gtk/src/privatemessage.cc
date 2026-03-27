@@ -203,7 +203,7 @@ void PrivateMessage::addMessage_gui(string message, Msg::TypeMsg typemsg)
 {
     addLine_gui(typemsg, message);
 
-    if (BOOLSETTING(LOG_PRIVATE_CHAT))
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::LOG_PRIVATE_CHAT, true))
     {
         StringMap params;
         params["message"] = message;
@@ -212,7 +212,7 @@ void PrivateMessage::addMessage_gui(string message, Msg::TypeMsg typemsg)
         params["userCID"] = cid;
         params["userNI"] = dcCtx_.getClientManager()->getNicks(CID(cid), hubUrl)[0];
         params["myCID"] = dcCtx_.getClientManager()->getMe()->getCID().toBase32();
-        LOG(LogManager::PM, params);
+        dcCtx_.getLogManager()->log(LogManager::PM, params);
     }
 
     if (WGETB("bold-pm"))
@@ -223,7 +223,7 @@ void PrivateMessage::addMessage_gui(string message, Msg::TypeMsg typemsg)
     {
         sentAwayMessage = false;
     }
-    else if (!sentAwayMessage && !(BOOLSETTING(NO_AWAYMSG_TO_BOTS) && isBot))
+    else if (!sentAwayMessage && !(dcCtx_.getSettingsManager()->getBool(SettingsManager::NO_AWAYMSG_TO_BOTS, true) && isBot))
     {
         sentAwayMessage = true;
         typedef Func1<PrivateMessage, string> F1;
@@ -310,7 +310,7 @@ void PrivateMessage::addLine_gui(Msg::TypeMsg typemsg, const string &message)
     GtkTextIter iter;
     string line = "";
 
-    if (BOOLSETTING(TIME_STAMPS))
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::TIME_STAMPS, true))
         line += "[" + Util::getShortTimeString() + "] ";
 
     line += message + "\n";
@@ -382,7 +382,7 @@ void PrivateMessage::applyTags_gui(const string &line)
     string::size_type begin = 0;
 
     // apply timestamp tag
-    if (BOOLSETTING(TIME_STAMPS))
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::TIME_STAMPS, true))
     {
         string ts = Util::getShortTimeString();
         gtk_text_iter_backward_chars(&start_iter, g_utf8_strlen(line.c_str(), -1) - g_utf8_strlen(ts.c_str(), -1) - 2);
@@ -993,8 +993,8 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         else if (command == "ratio")
         {
             double ratio;
-            double up   = static_cast<double>(SETTING(TOTAL_UPLOAD));
-            double down = static_cast<double>(SETTING(TOTAL_DOWNLOAD));
+            double up   = static_cast<double>(pm->dcCtx_.getSettingsManager()->get(SettingsManager::TOTAL_UPLOAD, true));
+            double down = static_cast<double>(pm->dcCtx_.getSettingsManager()->get(SettingsManager::TOTAL_DOWNLOAD, true));
 
             if (down > 0)
                 ratio = up / down;
@@ -1301,7 +1301,7 @@ void PrivateMessage::onOpenLinkClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
 
-    WulforUtil::openURI(pm->selectedTagStr);
+    WulforUtil::openURI(pm->dcCtx_, pm->selectedTagStr);
 }
 
 void PrivateMessage::onOpenHubClicked_gui(GtkMenuItem*, gpointer data)
@@ -1321,7 +1321,7 @@ void PrivateMessage::onSearchMagnetClicked_gui(GtkMenuItem*, gpointer data)
 void PrivateMessage::onDownloadClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
-    wulforManagerInstance()->getMainWindow()->fileToDownload_gui(pm->selectedTagStr, SETTING(DOWNLOAD_DIRECTORY));
+    wulforManagerInstance()->getMainWindow()->fileToDownload_gui(pm->selectedTagStr, pm->dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
 }
 
 void PrivateMessage::onDownloadToClicked_gui(GtkMenuItem*, gpointer data)

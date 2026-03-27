@@ -561,7 +561,7 @@ string Util::getShortTimeString(time_t t) {
     if(_tm == NULL) {
         strcpy(buf, "xx:xx");
     } else {
-        strftime(buf, 254, SETTING(TIME_STAMPS_FORMAT).c_str(), _tm);
+        strftime(buf, 254, getContext()->getSettingsManager()->get(SettingsManager::TIME_STAMPS_FORMAT, true).c_str(), _tm);
     }
     return Text::toUtf8(buf);
 }
@@ -732,7 +732,7 @@ map<string, string> Util::decodeQuery(const string& query) {
 }
 
 string Util::getAwayMessage() {
-    return (formatTime(awayMsg.empty() ? SETTING(DEFAULT_AWAY_MESSAGE) : awayMsg, awayTime)) + " <" APPNAME " v" VERSIONSTRING ">";
+    return (formatTime(awayMsg.empty() ? getContext()->getSettingsManager()->get(SettingsManager::DEFAULT_AWAY_MESSAGE, true) : awayMsg, awayTime)) + " <" APPNAME " v" VERSIONSTRING ">";
 }
 
 string Util::formatBytes(int64_t aBytes, uint8_t base) {
@@ -758,7 +758,7 @@ string Util::formatBytes(int64_t aBytes, uint8_t base) {
 }
 
 string Util::formatBytes(int64_t aBytes) {
-    return formatBytes(aBytes, SETTING(APP_UNIT_BASE));
+    return formatBytes(aBytes, getContext()->getSettingsManager()->get(SettingsManager::APP_UNIT_BASE, true));
 }
 
 string Util::formatExactSize(int64_t aBytes) {
@@ -1267,7 +1267,7 @@ uint32_t Util::rand() {
     more info: https://dev.maxmind.com/geoip/legacy/csv/
 */
 string Util::getIpCountry (string IP) {
-    if (BOOLSETTING(GET_USER_COUNTRY)) {
+    if (getContext()->getSettingsManager()->getBool(SettingsManager::GET_USER_COUNTRY)) {
         dcassert(count(IP.begin(), IP.end(), '.') == 3);
 
         //e.g IP 23.24.25.26 : w=23, x=24, y=25, z=26
@@ -1415,8 +1415,8 @@ string Util::formatAdditionalInfo(const string& aIp, bool sIp, bool sCC) {
 
     if(!aIp.empty()) {
         string cc = Util::getIpCountry(aIp);
-        bool showIp = BOOLSETTING(USE_IP) || sIp;
-        bool showCc = (BOOLSETTING(GET_USER_COUNTRY) || sCC) && !cc.empty();
+        bool showIp = getContext()->getSettingsManager()->getBool(SettingsManager::USE_IP) || sIp;
+        bool showCc = (getContext()->getSettingsManager()->getBool(SettingsManager::GET_USER_COUNTRY) || sCC) && !cc.empty();
 
         if(showIp) {
             int ll = 15 - aIp.size();

@@ -30,6 +30,8 @@
 #include "dcpp/Thread.h"
 #include "dcpp/DCPlusPlus.h"
 
+class ServerManager;
+struct DaemonConfig;
 namespace dcpp { class DCContext; }
 
 class ServerThread :
@@ -42,10 +44,12 @@ class ServerThread :
 {
 
 public:
-    ServerThread(dcpp::DCContext& dcCtx);
+    ServerThread(ServerManager& mgr);
     ~ServerThread();
 
+    ServerManager& mgr() { return mgr_; }
     dcpp::DCContext& dcCtx() { return dcCtx_; }
+    const DaemonConfig& config() const;
 
     ServerThread(const ServerThread&) = delete;
     ServerThread& operator=(const ServerThread&) = delete;
@@ -162,6 +166,7 @@ private:
 
     int64_t lastUp;
     int64_t lastDown;
+    ServerManager& mgr_;
     dcpp::DCContext& dcCtx_;
     uint64_t lastUpdate;
 

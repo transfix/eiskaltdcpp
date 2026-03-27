@@ -549,7 +549,7 @@ void ShareBrowser::slotRightPaneClicked(const QModelIndex &index){
         return;
 
     if (item->file){
-        download(item->file, _q(SETTING(DOWNLOAD_DIRECTORY)));
+        download(item->file, _q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true)));
 
         return;
     }
@@ -820,7 +820,7 @@ void ShareBrowser::slotCustomContextMenu(const QPoint &){
         menu_ = std::make_unique<Menu>();
 
     Menu::Action act = menu_->exec(view == treeView_LPANE? user : dcpp::UserPtr(nullptr));
-    QString target = _q(SETTING(DOWNLOAD_DIRECTORY));
+    QString target = _q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
 
     switch (act){
         case Menu::None:

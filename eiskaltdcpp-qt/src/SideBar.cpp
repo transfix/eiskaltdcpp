@@ -672,7 +672,7 @@ void SideBarView::slotSideBarDblClicked(const QModelIndex &index){
     }
     case ArenaWidget::PrivateMessage:
     {
-        QString f = QFileDialog::getOpenFileName(this, tr("Open log file"),_q(SETTING(LOG_DIRECTORY)), tr("Log files (*.log);;All files (*.*)"));
+        QString f = QFileDialog::getOpenFileName(this, tr("Open log file"),_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::LOG_DIRECTORY, true)), tr("Log files (*.log);;All files (*.*)"));
 
         if ( !f.isEmpty() ) {
             f = QDir::toNativeSeparators ( f );

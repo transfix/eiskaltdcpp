@@ -153,7 +153,7 @@ private:
             }
 
             bool operator==(const File& rhs) const {
-                if (BOOLSETTING(CASESENSITIVE_FILELIST))
+                if (ShareManager::caseSensitiveFilelist_)
                     return getParent() == rhs.getParent() && (strcmp(getName().c_str(), rhs.getName().c_str()) == 0);
                 else
                     return getParent() == rhs.getParent() && (Util::stricmp(getName(), rhs.getName()) == 0);
@@ -162,7 +162,7 @@ private:
             struct StringComp {
                 StringComp(const string& s) : a(s) { }
                 bool operator()(const File& b) const {
-                    if (BOOLSETTING(CASESENSITIVE_FILELIST))
+                    if (ShareManager::caseSensitiveFilelist_)
                         return strcmp(a.c_str(), b.getName().c_str()) == 0;
                     else
                         return Util::stricmp(a, b.getName()) == 0;
@@ -176,7 +176,7 @@ private:
 
             struct FileLess {
                 bool operator()(const File& a, const File& b) const {
-                    if (BOOLSETTING(CASESENSITIVE_FILELIST))
+                    if (ShareManager::caseSensitiveFilelist_)
                         return (strcmp(a.getName().c_str(), b.getName().c_str()) < 0);
                     else
                         return (Util::stricmp(a.getName(), b.getName()) < 0);
@@ -212,8 +212,8 @@ private:
 
         int64_t getSize() const noexcept;
 
-        void search(SearchResultList& aResults, StringSearch::List& aStrings, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults) const noexcept;
-        void search(SearchResultList& aResults, AdcSearch& aStrings, StringList::size_type maxResults) const noexcept;
+        void search(SearchResultList& aResults, StringSearch::List& aStrings, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults, ShareManager& sm) const noexcept;
+        void search(SearchResultList& aResults, AdcSearch& aStrings, StringList::size_type maxResults, ShareManager& sm) const noexcept;
 
         void toXml(OutputStream& xmlFile, string& indent, string& tmp2, bool fullList) const;
         void filesToXml(OutputStream& xmlFile, string& indent, string& tmp2) const;
@@ -237,6 +237,11 @@ private:
 
     friend class Directory;
     friend struct ShareLoader;
+
+    /** Cached from CASESENSITIVE_FILELIST setting so inner structs can access
+     *  it without needing a DCContext reference. Updated in constructor and
+     *  on SettingsManagerListener::Load. */
+    static bool caseSensitiveFilelist_;
 
 
 public:

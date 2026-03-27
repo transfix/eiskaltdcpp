@@ -66,15 +66,15 @@ Search::Search(dcpp::DCContext& dcCtx):
     gtk_widget_grab_focus(getWidget("comboboxentrySearch"));
 
     // Configure the dialog
-    File::ensureDirectory(SETTING(DOWNLOAD_DIRECTORY));
-    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)).c_str());
+    File::ensureDirectory(dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::fromUtf8(dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true)).c_str());
     gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
     // menu
     g_object_ref_sink(getWidget("mainMenu"));
 
     // Initialize check button options.
-    onlyFree = BOOLSETTING(SEARCH_ONLY_FREE_SLOTS);
+    onlyFree = dcCtx_.getSettingsManager()->getBool(SettingsManager::SEARCH_ONLY_FREE_SLOTS, true);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("checkbuttonSlots")), onlyFree);
     gtk_widget_set_sensitive(GTK_WIDGET(getWidget("checkbuttonSlots")), false);
     gtk_widget_set_sensitive(GTK_WIDGET(getWidget("checkbuttonShared")), false);
@@ -551,7 +551,7 @@ void Search::search_gui()
 
     // Add new searches to the dropdown list
     GtkListStore *store = GTK_LIST_STORE(searchEntriesModel);
-    size_t max = std::max(SETTING(SEARCH_HISTORY) - 1, 0);
+    size_t max = std::max(dcCtx_.getSettingsManager()->get(SettingsManager::SEARCH_HISTORY, true) - 1, 0);
     size_t count = 0;
     gchar *entry;
     valid = gtk_tree_model_get_iter_first(searchEntriesModel, &iter);
@@ -1116,7 +1116,7 @@ void Search::onSlotsButtonToggled_gui(GtkToggleButton *button, gpointer data)
     if (!s) return;
 
     s->onlyFree = gtk_toggle_button_get_active(button);
-    if (s->onlyFree != BOOLSETTING(SEARCH_ONLY_FREE_SLOTS))
+    if (s->onlyFree != s->dcCtx_.getSettingsManager()->getBool(SettingsManager::SEARCH_ONLY_FREE_SLOTS, true))
         s->dcCtx_.getSettingsManager()->set(SettingsManager::SEARCH_ONLY_FREE_SLOTS, s->onlyFree);
 
     // Refilter current view only if "Search within local results" is enabled
@@ -1159,7 +1159,7 @@ void Search::onDownloadClicked_gui(GtkMenuItem *item, gpointer data)
     Search *s = (Search *)data;
     if (!s) return;
 
-    string target = SETTING(DOWNLOAD_DIRECTORY);
+    string target = s->dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true);
     s->download_gui(target);
 }
 
@@ -1253,7 +1253,7 @@ void Search::onDownloadDirClicked_gui(GtkMenuItem*, gpointer data)
         GtkTreeIter iter;
         GtkTreePath *path;
         GList *list = gtk_tree_selection_get_selected_rows(s->selection, NULL);
-        string target = SETTING(DOWNLOAD_DIRECTORY);
+        string target = s->dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true);
         typedef Func4<Search, string, string, string, string> F4;
 
         for (GList *i = list; i; i = i->next)

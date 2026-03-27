@@ -19,7 +19,7 @@ TEST_CASE("FavoriteHubParams: paramsFromEntry basic", "[gtk][favhubparams]")
 {
     TestContext ctx;
 
-    FavoriteHubEntry entry;
+    FavoriteHubEntry entry(*ctx.ownedCtx);
     entry.setName("TestHub");
     entry.setServer("dchub://hub.example.com");
     entry.setHubDescription("A test hub");
@@ -51,7 +51,7 @@ TEST_CASE("FavoriteHubParams: paramsFromEntry defaults", "[gtk][favhubparams]")
 {
     TestContext ctx;
 
-    FavoriteHubEntry entry;
+    FavoriteHubEntry entry(*ctx.ownedCtx);
 
     auto p = paramsFromEntry(entry);
 
@@ -73,7 +73,7 @@ TEST_CASE("FavoriteHubParams: paramsFromEntry nick with default suppressed", "[g
 {
     TestContext ctx;
 
-    FavoriteHubEntry entry;
+    FavoriteHubEntry entry(*ctx.ownedCtx);
     // Don't set nick → getNick(false) should return empty
 
     auto p = paramsFromEntry(entry);

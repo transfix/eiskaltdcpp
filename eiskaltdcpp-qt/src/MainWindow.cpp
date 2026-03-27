@@ -475,7 +475,7 @@ void MainWindow::showEvent(QShowEvent *e){
     d->findInWidget->setEnabled(widgetWithFilter);
     d->chatDisable->setEnabled(role == ArenaWidget::Hub);
 
-    if (_q(SETTING(NICK)).isEmpty()){
+    if (_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::NICK, true)).isEmpty()){
         activateWindow();
         raise();
 
@@ -610,7 +610,7 @@ void MainWindow::init(){
 
 #ifdef LUA_SCRIPT
     dcCtx().getScriptManager()->load();
-    if (BOOLSETTING(USE_LUA)){
+    if (qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::USE_LUA, true)){
         // Start as late as possible, as we might (formatting.lua) need to examine settings
         string defaultluascript="startup.lua";
         dcCtx().getScriptManager()->EvaluateFile(defaultluascript);
@@ -880,7 +880,7 @@ void MainWindow::initActions(){
         d->toolsIPFilter->setObjectName("toolsIPFilter");
         d->toolsIPFilter->setIcon(WU->getPixmap(WulforUtil::eiFILTER));
         d->toolsIPFilter->setCheckable(true);
-        d->toolsIPFilter->setChecked(BOOLSETTING(SettingsManager::IPFILTER));
+        d->toolsIPFilter->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::IPFILTER));
         connect(d->toolsIPFilter, &QAction::triggered, this, &MainWindow::slotToolsIPFilter);
 
         d->toolsAwayOn = new QAction("", this);
@@ -958,9 +958,9 @@ void MainWindow::initActions(){
         d->toolsSwitchSpeedLimit = new QAction("", this);
         d->toolsSwitchSpeedLimit->setObjectName("toolsSwitchSpeedLimit");
         SM->registerShortcut(d->toolsSwitchSpeedLimit, QString("Ctrl+K"));
-        d->toolsSwitchSpeedLimit->setIcon(BOOLSETTING(THROTTLE_ENABLE)? WU->getPixmap(WulforUtil::eiSPEED_LIMIT_ON) : WU->getPixmap(WulforUtil::eiSPEED_LIMIT_OFF));
+        d->toolsSwitchSpeedLimit->setIcon(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::THROTTLE_ENABLE, true)? WU->getPixmap(WulforUtil::eiSPEED_LIMIT_ON) : WU->getPixmap(WulforUtil::eiSPEED_LIMIT_OFF));
         d->toolsSwitchSpeedLimit->setCheckable(true);
-        d->toolsSwitchSpeedLimit->setChecked(BOOLSETTING(THROTTLE_ENABLE));
+        d->toolsSwitchSpeedLimit->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::THROTTLE_ENABLE, true));
         connect(d->toolsSwitchSpeedLimit, &QAction::triggered, this, &MainWindow::slotToolsSwitchSpeedLimit);
 
         d->chatClear = new QAction("", this);
@@ -1783,7 +1783,7 @@ void MainWindow::updateStatus(const QMap<QString, QString> &map){
 
     if (qtCtx()->settings()->getBool(WB_SHOW_FREE_SPACE)) {
 #ifdef FREE_SPACE_BAR_C
-        std::string s = SETTING(DOWNLOAD_DIRECTORY);
+        std::string s = qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true);
         unsigned long long available = 0;
         unsigned long long total = 0;
         if (!s.empty()) {
@@ -1854,9 +1854,9 @@ void MainWindow::updateHashProgressStatus() {
         d->fileRefreshShareHashProgress->setIcon(WU->getPixmap(WulforUtil::eiHASHING));
         d->fileRefreshShareHashProgress->setText(tr("Hash progress"));
         {
-            if (SETTING(HASHING_START_DELAY) >= 0){
-                int left = SETTING(HASHING_START_DELAY) - Util::getUpTime();
-                d->progressHashing->setValue( 100 * left / SETTING(HASHING_START_DELAY) );
+            if (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HASHING_START_DELAY, true) >= 0){
+                int left = qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HASHING_START_DELAY, true) - Util::getUpTime();
+                d->progressHashing->setValue( 100 * left / qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HASHING_START_DELAY, true) );
                 d->progressHashing->setFormat(tr("Delayed"));
                 d->progressHashing->show();
             }
@@ -1870,7 +1870,7 @@ void MainWindow::updateHashProgressStatus() {
         d->fileRefreshShareHashProgress->setIcon(WU->getPixmap(WulforUtil::eiHASHING));
         d->fileRefreshShareHashProgress->setText(tr("Hash progress"));
         {
-            if (SETTING(HASHING_START_DELAY) >= 0){
+            if (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HASHING_START_DELAY, true) >= 0){
                 d->progressHashing->setValue( 100 );
                 d->progressHashing->setFormat(tr("Paused"));
                 d->progressHashing->show();
@@ -1932,7 +1932,7 @@ void MainWindow::autoconnect(){
         FavoriteHubEntry* entry = i;
 
         if (entry->getConnect()) {
-            if (entry->getNick().empty() && SETTING(NICK).empty())
+            if (entry->getNick().empty() && qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::NICK, true).empty())
                 continue;
 
             QString encoding = qtCtx()->wulforUtil()->dcEnc2QtEnc(QString::fromStdString(entry->getEncoding()));
@@ -2223,11 +2223,11 @@ void MainWindow::reloadSomeSettings(){
             fr->reloadSomeSettings();
     }
 
-    d->toolsSwitchSpeedLimit->setChecked(BOOLSETTING(THROTTLE_ENABLE));
+    d->toolsSwitchSpeedLimit->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::THROTTLE_ENABLE, true));
 }
 
 void MainWindow::slotFileOpenLogFile(){
-    QString f = QFileDialog::getOpenFileName(this, tr("Open log file"),_q(SETTING(LOG_DIRECTORY)), tr("Log files (*.log);;All files (*.*)"));
+    QString f = QFileDialog::getOpenFileName(this, tr("Open log file"),_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::LOG_DIRECTORY, true)), tr("Log files (*.log);;All files (*.*)"));
 
     if (!f.isEmpty()){
         f = QDir::toNativeSeparators(f);
@@ -2242,7 +2242,7 @@ void MainWindow::slotFileOpenLogFile(){
 }
 
 void MainWindow::slotFileOpenDownloadDirectory(){
-    QString directory = QString::fromStdString(SETTING(DOWNLOAD_DIRECTORY));
+    QString directory = QString::fromStdString(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
 
     directory.prepend( directory.startsWith("/")? ("file://") : ("file:///"));
 
@@ -2398,7 +2398,7 @@ void MainWindow::slotToolsIPFilter(){
 
     Q_D(MainWindow);
 
-    d->toolsIPFilter->setChecked(BOOLSETTING(SettingsManager::IPFILTER));
+    d->toolsIPFilter->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::IPFILTER));
 }
 
 void MainWindow::slotToolsAutoAway(){
@@ -2540,7 +2540,7 @@ void MainWindow::slotToolsSwitchSpeedLimit(){
     Q_D(MainWindow);
 
     dcCtx().getSettingsManager()->set(SettingsManager::THROTTLE_ENABLE, d->toolsSwitchSpeedLimit->isChecked());
-    d->toolsSwitchSpeedLimit->setIcon(BOOLSETTING(THROTTLE_ENABLE)? WU->getPixmap(WulforUtil::eiSPEED_LIMIT_ON) : WU->getPixmap(WulforUtil::eiSPEED_LIMIT_OFF));
+    d->toolsSwitchSpeedLimit->setIcon(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::THROTTLE_ENABLE, true)? WU->getPixmap(WulforUtil::eiSPEED_LIMIT_ON) : WU->getPixmap(WulforUtil::eiSPEED_LIMIT_OFF));
 }
 
 void MainWindow::slotPanelMenuActionClicked(){
@@ -2776,8 +2776,8 @@ void MainWindow::slotAboutClient() {
     About a(this);
 
     double ratio;
-    double down = static_cast<double>(SETTING(TOTAL_DOWNLOAD));
-    double up   = static_cast<double>(SETTING(TOTAL_UPLOAD));
+    double down = static_cast<double>(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TOTAL_DOWNLOAD, true));
+    double up   = static_cast<double>(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TOTAL_UPLOAD, true));
 
     if (down > 0)
         ratio = up / down;
@@ -3165,8 +3165,8 @@ void MainWindow::on(dcpp::TimerManagerListener::Second, uint64_t ticks) noexcept
     lastDown   = Socket::getTotalDown();
 
     SettingsManager *SM = dcCtx().getSettingsManager();
-    SM->set(SettingsManager::TOTAL_UPLOAD,   SETTING(TOTAL_UPLOAD)   + upDiff);
-    SM->set(SettingsManager::TOTAL_DOWNLOAD, SETTING(TOTAL_DOWNLOAD) + downDiff);
+    SM->set(SettingsManager::TOTAL_UPLOAD,   qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TOTAL_UPLOAD, true)   + upDiff);
+    SM->set(SettingsManager::TOTAL_DOWNLOAD, qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TOTAL_DOWNLOAD, true) + downDiff);
 
     emit coreUpdateStats(map);
 }

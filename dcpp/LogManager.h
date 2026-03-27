@@ -62,7 +62,6 @@ private:
     int options[LAST][2];
 };
 
-#define LOG(area, msg) dcpp::getContext()->getLogManager()->log(area, msg)
 #define CTX_LOG(area, msg) this->ctx().getLogManager()->log(area, msg)
 
 } // namespace dcpp

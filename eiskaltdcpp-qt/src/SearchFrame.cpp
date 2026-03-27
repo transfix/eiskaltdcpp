@@ -836,7 +836,7 @@ bool SearchFrame::getDownloadParams(SearchFrame::VarMap &params, SearchItem *ite
     params["ESIZE"] = item->data(COLUMN_SF_ESIZE);
     params["TTH"]   = item->data(COLUMN_SF_TTH);
     params["HOST"]  = item->data(COLUMN_SF_HOST);
-    params["TARGET"]= _q(SETTING(DOWNLOAD_DIRECTORY));
+    params["TARGET"]= _q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
 
     return true;
 }
@@ -857,7 +857,7 @@ bool SearchFrame::getWholeDirParams(SearchFrame::VarMap &params, SearchItem *ite
     params["ESIZE"] = 0;
     params["TTH"]   = "";
     params["HOST"]  = item->data(COLUMN_SF_HOST);
-    params["TARGET"]= _q(SETTING(DOWNLOAD_DIRECTORY));
+    params["TARGET"]= _q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
 
     return true;
 }
@@ -1117,7 +1117,7 @@ void SearchFrame::slotResultDoubleClicked(const QModelIndex &index){
     if (getDownloadParams(params, item)){
         download(params);
 
-        if (item->childCount() > 0 && !SETTING(DONT_DL_ALREADY_QUEUED)){//download all child items
+        if (item->childCount() > 0 && !qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DONT_DL_ALREADY_QUEUED, true)){//download all child items
             QString fname = params["FNAME"].toString();
 
             for (const auto &i : item->childItems){
@@ -1171,7 +1171,7 @@ void SearchFrame::slotContextMenu(const QPoint &){
                 if (getDownloadParams(params, item)){
                     download(params);
 
-                    if (item->childCount() > 0 && !SETTING(DONT_DL_ALREADY_QUEUED)){//download all child items
+                    if (item->childCount() > 0 && !qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DONT_DL_ALREADY_QUEUED, true)){//download all child items
                         QString fname = params["FNAME"].toString();
 
                         for (const auto &i : item->childItems){
@@ -1216,7 +1216,7 @@ void SearchFrame::slotContextMenu(const QPoint &){
                     params["TARGET"] = target;
                     download(params);
 
-                    if (item->childCount() > 0 && !SETTING(DONT_DL_ALREADY_QUEUED)){//download all child items
+                    if (item->childCount() > 0 && !qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DONT_DL_ALREADY_QUEUED, true)){//download all child items
                         QString fname = params["FNAME"].toString();
 
                         for (const auto  &i : item->childItems){

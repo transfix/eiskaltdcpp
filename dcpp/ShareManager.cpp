@@ -57,10 +57,13 @@ namespace dcpp {
 
 using std::numeric_limits;
 
+bool ShareManager::caseSensitiveFilelist_ = false;
+
 ShareManager::ShareManager(DCContext& ctx) : ContextAware(ctx), hits(0), xmlListLen(0), bzXmlListLen(0),
     xmlDirty(true), forceXmlRefresh(false), refreshDirs(false), update(false), initial(true), listN(0), refreshing(false),
     lastXmlUpdate(0), lastFullUpdate(GET_TICK()), bloom(1<<20)
 {
+    caseSensitiveFilelist_ = ctx.getSettingsManager()->getBool(SettingsManager::CASESENSITIVE_FILELIST);
     this->ctx().getSettingsManager()->addListener(this);
     this->ctx().getTimerManager()->addListener(this);
     this->ctx().getQueueManager()->addListener(this);
@@ -327,6 +330,8 @@ bool ShareManager::hasVirtual(const string& virtualName) const noexcept {
 
 void ShareManager::load(SimpleXML& aXml) {
     Lock l(cs);
+
+    caseSensitiveFilelist_ = ctx().getSettingsManager()->getBool(SettingsManager::CASESENSITIVE_FILELIST);
 
     aXml.resetCurrentChild();
     if(aXml.findChild("Share")) {
@@ -1193,7 +1198,7 @@ SearchManager::TypeModes ShareManager::getType(const string& aFileName) const no
  * has been matched in the directory name. This new stringlist should also be used in all descendants,
  * but not the parents...
  */
-void ShareManager::Directory::search(SearchResultList& aResults, StringSearch::List& aStrings, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults) const noexcept {
+void ShareManager::Directory::search(SearchResultList& aResults, StringSearch::List& aStrings, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults, ShareManager& sm) const noexcept {
     // Skip everything if there's nothing to find here (doh! =)
     if(!hasType(aFileType))
         return;
@@ -1219,9 +1224,9 @@ void ShareManager::Directory::search(SearchResultList& aResults, StringSearch::L
     if( (cur->empty()) &&
             (((aFileType == SearchManager::TYPE_ANY) && sizeOk) || (aFileType == SearchManager::TYPE_DIRECTORY)) ) {
         // We satisfied all the search words! Add the directory...(NMDC searches don't support directory size)
-        SearchResultPtr sr(new SearchResult(SearchResult::TYPE_DIRECTORY, 0, getFullName(), TTHValue()));
+        SearchResultPtr sr(new SearchResult(sm.ctx(), SearchResult::TYPE_DIRECTORY, 0, getFullName(), TTHValue()));
         aResults.push_back(sr);
-        dcpp::getContext()->getShareManager()->setHits(dcpp::getContext()->getShareManager()->getHits()+1);
+        sm.setHits(sm.getHits()+1);
     }
 
     if(aFileType != SearchManager::TYPE_DIRECTORY) {
@@ -1241,9 +1246,9 @@ void ShareManager::Directory::search(SearchResultList& aResults, StringSearch::L
 
             // Check file type...
             if(checkType(i.getName(), aFileType)) {
-                SearchResultPtr sr(new SearchResult(SearchResult::TYPE_FILE, i.getSize(), getFullName() + i.getName(), i.getTTH()));
+                SearchResultPtr sr(new SearchResult(sm.ctx(), SearchResult::TYPE_FILE, i.getSize(), getFullName() + i.getName(), i.getTTH()));
                 aResults.push_back(sr);
-                dcpp::getContext()->getShareManager()->setHits(dcpp::getContext()->getShareManager()->getHits()+1);
+                sm.setHits(sm.getHits()+1);
                 if(aResults.size() >= maxResults) {
                     break;
                 }
@@ -1252,7 +1257,7 @@ void ShareManager::Directory::search(SearchResultList& aResults, StringSearch::L
     }
 
     for(auto l = directories.begin(); (l != directories.end()) && (aResults.size() < maxResults); ++l) {
-        l->second->search(aResults, *cur, aSearchType, aSize, aFileType, aClient, maxResults);
+        l->second->search(aResults, *cur, aSearchType, aSize, aFileType, aClient, maxResults, sm);
     }
 }
 
@@ -1263,7 +1268,7 @@ void ShareManager::search(SearchResultList& results, const string& aString, int 
             TTHValue tth(aString.substr(4));
             auto i = tthIndex.find(tth);
             if(i != tthIndex.end()) {
-                SearchResultPtr sr(new SearchResult(SearchResult::TYPE_FILE, i->second->getSize(),
+                SearchResultPtr sr(new SearchResult(ctx(), SearchResult::TYPE_FILE, i->second->getSize(),
                                                     i->second->getParent()->getFullName() + i->second->getName(), i->second->getTTH()));
 
                 results.push_back(sr);
@@ -1287,7 +1292,7 @@ void ShareManager::search(SearchResultList& results, const string& aString, int 
         return;
 
     for(auto j = directories.begin(); (j != directories.end()) && (results.size() < maxResults); ++j) {
-        (*j)->search(results, ssl, aSearchType, aSize, aFileType, aClient, maxResults);
+        (*j)->search(results, ssl, aSearchType, aSize, aFileType, aClient, maxResults, *this);
     }
 }
 
@@ -1356,7 +1361,7 @@ bool ShareManager::AdcSearch::hasExt(const string& name) {
     return false;
 }
 
-void ShareManager::Directory::search(SearchResultList& aResults, AdcSearch& aStrings, StringList::size_type maxResults) const noexcept {
+void ShareManager::Directory::search(SearchResultList& aResults, AdcSearch& aStrings, StringList::size_type maxResults, ShareManager& sm) const noexcept {
     StringSearch::List* cur = aStrings.include;
     StringSearch::List* old = aStrings.include;
 
@@ -1379,9 +1384,9 @@ void ShareManager::Directory::search(SearchResultList& aResults, AdcSearch& aStr
     bool sizeOk = (aStrings.gt == 0);
     if( cur->empty() && aStrings.ext.empty() && sizeOk ) {
         // We satisfied all the search words! Add the directory...
-        SearchResultPtr sr(new SearchResult(SearchResult::TYPE_DIRECTORY, getSize(), getFullName(), TTHValue()));
+        SearchResultPtr sr(new SearchResult(sm.ctx(), SearchResult::TYPE_DIRECTORY, getSize(), getFullName(), TTHValue()));
         aResults.push_back(sr);
-        dcpp::getContext()->getShareManager()->setHits(dcpp::getContext()->getShareManager()->getHits()+1);
+        sm.setHits(sm.getHits()+1);
     }
 
     if(!aStrings.isDirectory) {
@@ -1406,10 +1411,10 @@ void ShareManager::Directory::search(SearchResultList& aResults, AdcSearch& aStr
             // Check file type...
             if(aStrings.hasExt(i.getName())) {
 
-                SearchResultPtr sr(new SearchResult(SearchResult::TYPE_FILE,
+                SearchResultPtr sr(new SearchResult(sm.ctx(), SearchResult::TYPE_FILE,
                                                     i.getSize(), getFullName() + i.getName(), i.getTTH()));
                 aResults.push_back(sr);
-                dcpp::getContext()->getShareManager()->addHits(1);
+                sm.addHits(1);
                 if(aResults.size() >= maxResults) {
                     return;
                 }
@@ -1418,7 +1423,7 @@ void ShareManager::Directory::search(SearchResultList& aResults, AdcSearch& aStr
     }
 
     for(auto l = directories.begin(); (l != directories.end()) && (aResults.size() < maxResults); ++l) {
-        l->second->search(aResults, aStrings, maxResults);
+        l->second->search(aResults, aStrings, maxResults, sm);
     }
     aStrings.include = old;
 }
@@ -1431,7 +1436,7 @@ void ShareManager::search(SearchResultList& results, const StringList& params, S
     if(srch.hasRoot) {
         auto i = tthIndex.find(srch.root);
         if(i != tthIndex.end()) {
-            SearchResultPtr sr(new SearchResult(SearchResult::TYPE_FILE,
+            SearchResultPtr sr(new SearchResult(ctx(), SearchResult::TYPE_FILE,
                                                 i->second->getSize(), i->second->getParent()->getFullName() + i->second->getName(),
                                                 i->second->getTTH()));
             results.push_back(sr);
@@ -1446,7 +1451,7 @@ void ShareManager::search(SearchResultList& results, const StringList& params, S
     }
 
     for(auto j = directories.begin(); (j != directories.end()) && (results.size() < maxResults); ++j) {
-        (*j)->search(results, srch, maxResults);
+        (*j)->search(results, srch, maxResults, *this);
     }
 }
 

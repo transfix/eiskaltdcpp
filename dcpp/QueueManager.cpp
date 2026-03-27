@@ -86,7 +86,7 @@ QueueItem* QueueManager::FileQueue::add(const string& aTarget, int64_t aSize,
         }
     }
 
-    QueueItem* qi = new QueueItem(aTarget, aSize, p, aFlags, aAdded, root);
+    QueueItem* qi = new QueueItem(ctx(), aTarget, aSize, p, aFlags, aAdded, root);
 
     if(qi->isSet(QueueItem::FLAG_USER_LIST)) {
         qi->setPriority(QueueItem::HIGHEST);
@@ -2200,7 +2200,7 @@ void QueueManager::logFinishedDownload(QueueItem* qi, Download*, bool crcChecked
         }
     }
 
-    LOG(LogManager::FINISHED_DOWNLOAD, params);
+    CTX_LOG(LogManager::FINISHED_DOWNLOAD, params);
 }
 
 class ListMatcher : public dcpp::Thread

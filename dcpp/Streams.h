@@ -175,7 +175,7 @@ class BufferedOutputStream : public OutputStream {
 public:
     using OutputStream::write;
 
-    BufferedOutputStream(OutputStream* aStream, size_t aBufSize = SETTING(BUFFER_SIZE) * 1024) : s(aStream), pos(0), buf(aBufSize) { }
+    BufferedOutputStream(OutputStream* aStream, size_t aBufSize = 64 * 1024) : s(aStream), pos(0), buf(aBufSize) { }
     virtual ~BufferedOutputStream() {
         try {
             // We must do this in order not to lose bytes when a download

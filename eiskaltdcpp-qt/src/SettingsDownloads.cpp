@@ -97,15 +97,15 @@ void SettingsDownloads::ok(){
 
 void SettingsDownloads::init(){
     {//Downloads
-        lineEdit_DLDIR->setText(_q(SETTING(DOWNLOAD_DIRECTORY)));
-        lineEdit_UNF_DL_DIR->setText(_q(SETTING(TEMP_DOWNLOAD_DIRECTORY)));
-        lineEdit_PROXY->setText(_q(SETTING(HTTP_PROXY)));
+        lineEdit_DLDIR->setText(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true)));
+        lineEdit_UNF_DL_DIR->setText(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TEMP_DOWNLOAD_DIRECTORY, true)));
+        lineEdit_PROXY->setText(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HTTP_PROXY, true)));
 
-        checkBox_NO_USE_TEMP_DIR->setChecked(!SETTING(NO_USE_TEMP_DIR));
-        spinBox_AUTO_SEARCH_TIME->setValue(SETTING(AUTO_SEARCH_TIME));
-        spinBox_SEGMENT_SIZE->setValue(SETTING(SEGMENT_SIZE));
-        spinBox_MAXDL->setValue(SETTING(DOWNLOAD_SLOTS));
-        spinBox_NONEWDL->setValue(SETTING(MAX_DOWNLOAD_SPEED));
+        checkBox_NO_USE_TEMP_DIR->setChecked(!qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::NO_USE_TEMP_DIR, true));
+        spinBox_AUTO_SEARCH_TIME->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::AUTO_SEARCH_TIME, true));
+        spinBox_SEGMENT_SIZE->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::SEGMENT_SIZE, true));
+        spinBox_MAXDL->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DOWNLOAD_SLOTS, true));
+        spinBox_NONEWDL->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MAX_DOWNLOAD_SPEED, true));
 
         toolButton_BROWSE->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE));
         toolButton_BROWSE1->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE));
@@ -137,26 +137,26 @@ void SettingsDownloads::init(){
     }
     {//Queue
         //Auto-priority
-        spinBox_HTPMAX->setValue(SETTING(PRIO_HIGHEST_SIZE));
-        spinBox_HPMAX->setValue(SETTING(PRIO_HIGH_SIZE));
-        spinBox_NPMAX->setValue(SETTING(PRIO_NORMAL_SIZE));
-        spinBox_LPMAX->setValue(SETTING(PRIO_LOW_SIZE));
+        spinBox_HTPMAX->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::PRIO_HIGHEST_SIZE, true));
+        spinBox_HPMAX->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::PRIO_HIGH_SIZE, true));
+        spinBox_NPMAX->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::PRIO_NORMAL_SIZE, true));
+        spinBox_LPMAX->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::PRIO_LOW_SIZE, true));
 
         //Auto-drop
-        spinBox_DROPSB->setValue(SETTING(AUTODROP_SPEED));
-        spinBox_MINELAPSED->setValue(SETTING(AUTODROP_ELAPSED));
-        spinBox_MINSRCONLINE->setValue(SETTING(AUTODROP_MINSOURCES));
-        spinBox_CHECKEVERY->setValue(SETTING(AUTODROP_INTERVAL));
-        spinBox_MAXINACT->setValue(SETTING(AUTODROP_INACTIVITY));
-        spinBox_MINFSZ->setValue(SETTING(AUTODROP_FILESIZE));
+        spinBox_DROPSB->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::AUTODROP_SPEED, true));
+        spinBox_MINELAPSED->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::AUTODROP_ELAPSED, true));
+        spinBox_MINSRCONLINE->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::AUTODROP_MINSOURCES, true));
+        spinBox_CHECKEVERY->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::AUTODROP_INTERVAL, true));
+        spinBox_MAXINACT->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::AUTODROP_INACTIVITY, true));
+        spinBox_MINFSZ->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::AUTODROP_FILESIZE, true));
 
         for (auto it = other_settings.constBegin(); it != other_settings.constEnd(); ++it) {
             listWidget->item(it.value())->setCheckState(((bool)qtCtx()->dcCtx().getSettingsManager()->get(it.key()))? Qt::Checked : Qt::Unchecked);
         }
     }
     {
-        checkBox_ALLOW_SIM_UPLOADS->setCheckState(SETTING(ALLOW_SIM_UPLOADS)? Qt::Checked : Qt::Unchecked);
-        checkBox_ALLOW_UPLOAD_MULTI_HUB->setCheckState(SETTING(ALLOW_UPLOAD_MULTI_HUB)? Qt::Checked : Qt::Unchecked);
+        checkBox_ALLOW_SIM_UPLOADS->setCheckState(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::ALLOW_SIM_UPLOADS, true)? Qt::Checked : Qt::Unchecked);
+        checkBox_ALLOW_UPLOAD_MULTI_HUB->setCheckState(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::ALLOW_UPLOAD_MULTI_HUB, true)? Qt::Checked : Qt::Unchecked);
     }
 }
 

@@ -106,7 +106,7 @@ TEST_CASE("HubEntry: GETSET accessors", "[HubEntry]") {
 TEST_CASE("FavoriteHubEntry: default constructor", "[FavoriteHubEntry]") {
     test::TestContext tc;
 
-    FavoriteHubEntry fhe;
+    FavoriteHubEntry fhe(*tc.ownedCtx);
 
     REQUIRE(fhe.getName().empty());
     REQUIRE(fhe.getServer().empty());
@@ -121,7 +121,7 @@ TEST_CASE("FavoriteHubEntry: construct from HubEntry", "[FavoriteHubEntry]") {
     test::TestContext tc;
 
     HubEntry he("TestHub", "adc://test.com", "desc", "100");
-    FavoriteHubEntry fhe(he);
+    FavoriteHubEntry fhe(*tc.ownedCtx, he);
 
     REQUIRE(fhe.getName() == "TestHub");
     REQUIRE(fhe.getServer() == "adc://test.com");
@@ -132,7 +132,7 @@ TEST_CASE("FavoriteHubEntry: construct from HubEntry", "[FavoriteHubEntry]") {
 TEST_CASE("FavoriteHubEntry: copy constructor", "[FavoriteHubEntry]") {
     test::TestContext tc;
 
-    FavoriteHubEntry orig;
+    FavoriteHubEntry orig(*tc.ownedCtx);
     orig.setName("MyHub");
     orig.setServer("dchub://my.hub");
     orig.setPassword("secret");
@@ -151,7 +151,7 @@ TEST_CASE("FavoriteHubEntry: copy constructor", "[FavoriteHubEntry]") {
 TEST_CASE("FavoriteHubEntry: getNick with default", "[FavoriteHubEntry]") {
     test::TestContext tc;
 
-    FavoriteHubEntry fhe;
+    FavoriteHubEntry fhe(*tc.ownedCtx);
 
     // No nick set — should fall back to SETTING(NICK) when useDefault=true
     std::string defaultNick = fhe.getNick(true);
@@ -168,7 +168,7 @@ TEST_CASE("FavoriteHubEntry: getNick with default", "[FavoriteHubEntry]") {
 TEST_CASE("FavoriteHubEntry: GETSET accessors", "[FavoriteHubEntry]") {
     test::TestContext tc;
 
-    FavoriteHubEntry fhe;
+    FavoriteHubEntry fhe(*tc.ownedCtx);
 
     fhe.setUserDescription("My description");
     fhe.setPassword("p@ss");

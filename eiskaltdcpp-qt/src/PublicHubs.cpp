@@ -193,7 +193,8 @@ void PublicHubs::slotContextMenu(){
 
             if (item && item->entry){
                 try{
-                    dcCtx().getFavoriteManager()->addFavorite(*item->entry);
+                    FavoriteHubEntry fhe(dcCtx(), *item->entry);
+                    dcCtx().getFavoriteManager()->addFavorite(fhe);
                 }
                 catch (const std::exception&){}
             }

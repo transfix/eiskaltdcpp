@@ -53,9 +53,9 @@ public:
      * @return Running average download speed in Bytes/s
      */
     int64_t getRunningAverage();
-    uint8_t getSlots() const { return (uint8_t) (SETTING(SLOTS)* Client::getTotalCounts());}
+    uint8_t getSlots() const { return (uint8_t) (CTX_SETTING(SLOTS)* Client::getTotalCounts());}
     /** @return Number of free slots. */
-    int getFreeSlots() { return max((SETTING(SLOTS) - running), 0); }
+    int getFreeSlots() { return max((CTX_SETTING(SLOTS) - running), 0); }
 
     /** @internal */
     int getFreeExtraSlots() { return max(3 - getExtra(), 0); }

@@ -24,7 +24,7 @@
 #include "User.h"
 #include "ClientManager.h"
 #include "Client.h"
-#include "DCPlusPlus.h"
+#include "DCContext.h"
 
 namespace dcpp {
 
@@ -35,9 +35,9 @@ SearchResult::SearchResult(const UserPtr& aUser, Types aType, int aSlots, int aF
     size(aSize), type(aType), aslots(aSlots), freeSlots(aFreeSlots), IP(ip),
     tth(aTTH), token(aToken) { }
 
-SearchResult::SearchResult(Types aType, int64_t aSize, const string& aFile, const TTHValue& aTTH) :
-    file(aFile), user(dcpp::getContext()->getClientManager()->getMe()), size(aSize), type(aType), aslots(SETTING(SLOTS)),
-    freeSlots(dcpp::getContext()->getUploadManager()->getFreeSlots()),
+SearchResult::SearchResult(DCContext& ctx, Types aType, int64_t aSize, const string& aFile, const TTHValue& aTTH) :
+    file(aFile), user(ctx.getClientManager()->getMe()), size(aSize), type(aType), aslots(ctx.getSettingsManager()->get(SettingsManager::SLOTS, true)),
+    freeSlots(ctx.getUploadManager()->getFreeSlots()),
     tth(aTTH) { }
 
 string SearchResult::toSR(const Client& c) const {

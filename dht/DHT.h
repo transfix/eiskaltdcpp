@@ -59,7 +59,7 @@ namespace dht
         void start();
         void stop(bool exiting = false);
 
-        const string& getPort() const { return BOOLSETTING(USE_DHT) ? socket.getPort() : Util::emptyString; }
+        const string& getPort() const { return CTX_BOOLSETTING(USE_DHT) ? socket.getPort() : Util::emptyString; }
 
         /** Process incoming command */
         void dispatch(const string& aLine, const string& ip, const string &port, bool isUdpKeyValid);

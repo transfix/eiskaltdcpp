@@ -92,7 +92,7 @@ void Client::reloadSettings(bool updateNick) {
         if(!fav->getUserDescription().empty()) {
             setCurrentDescription(fav->getUserDescription());
         } else {
-            setCurrentDescription(SETTING(DESCRIPTION));
+            setCurrentDescription(CTX_SETTING(DESCRIPTION));
         }
 
         if(!fav->getPassword().empty())
@@ -104,17 +104,17 @@ void Client::reloadSettings(bool updateNick) {
         if (!fav->getEncoding().empty()){
             setEncoding(fav->getEncoding());
         }
-        if (fav->getUseInternetIP() && !SETTING(INTERNETIP).empty()){
-            externalIP = SETTING(INTERNETIP);
+        if (fav->getUseInternetIP() && !CTX_SETTING(INTERNETIP).empty()){
+            externalIP = CTX_SETTING(INTERNETIP);
         }
 
         setSearchInterval(fav->getSearchInterval());
     } else {
         if(updateNick) {
-            setCurrentNick(checkNick(SETTING(NICK)));
+            setCurrentNick(checkNick(CTX_SETTING(NICK)));
         }
-        setCurrentDescription(SETTING(DESCRIPTION));
-        setSearchInterval(SETTING(MINIMUM_SEARCH_INTERVAL));
+        setCurrentDescription(CTX_SETTING(DESCRIPTION));
+        setSearchInterval(CTX_SETTING(MINIMUM_SEARCH_INTERVAL));
     }
     setClientId(ClientId);
 }
@@ -130,7 +130,7 @@ void Client::connect() {
     }
 
     setAutoReconnect(true);
-    setReconnDelay(SETTING(RECONNECT_DELAY));
+    setReconnDelay(CTX_SETTING(RECONNECT_DELAY));
     reloadSettings(true);
     setRegistered(false);
     setMyIdentity(Identity(ctx().getClientManager()->getMe(), 0));
@@ -248,12 +248,12 @@ string Client::getLocalIp() const {
         return Socket::resolve(externalIP);
 
     // Best case - the server detected it
-    if((!BOOLSETTING(NO_IP_OVERRIDE) || SETTING(EXTERNAL_IP).empty()) && !getMyIdentity().getIp().empty()) {
+    if((!CTX_BOOLSETTING(NO_IP_OVERRIDE) || CTX_SETTING(EXTERNAL_IP).empty()) && !getMyIdentity().getIp().empty()) {
         return getMyIdentity().getIp();
     }
 
-    if(!SETTING(EXTERNAL_IP).empty()) {
-        return Socket::resolve(SETTING(EXTERNAL_IP));
+    if(!CTX_SETTING(EXTERNAL_IP).empty()) {
+        return Socket::resolve(CTX_SETTING(EXTERNAL_IP));
     }
 
     if(localIp.empty()) {

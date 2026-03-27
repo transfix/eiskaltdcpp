@@ -26,7 +26,7 @@ TEST_CASE("SettingsManager: string defaults exist", "[settingsmanager]") {
     ensureContext();
 
     // SLOTS should have a sensible default (typically 1-5)
-    int slots = SETTING(SLOTS);
+    int slots = dcpp::getContext()->getSettingsManager()->get(SettingsManager::SLOTS, true);
     REQUIRE(slots >= 0);
     REQUIRE(slots <= 100);
 }
@@ -34,7 +34,7 @@ TEST_CASE("SettingsManager: string defaults exist", "[settingsmanager]") {
 TEST_CASE("SettingsManager: APP_UNIT_BASE default is 0 or 1", "[settingsmanager]") {
     ensureContext();
 
-    int base = SETTING(APP_UNIT_BASE);
+    int base = dcpp::getContext()->getSettingsManager()->get(SettingsManager::APP_UNIT_BASE, true);
     // 0 = binary (KiB/MiB/GiB), 1+ = decimal (KB/MB/GB)
     REQUIRE(base >= 0);
     REQUIRE(base <= 2);
@@ -65,11 +65,11 @@ TEST_CASE("SettingsManager: get/set string round-trip", "[settingsmanager]") {
     sm->set(SettingsManager::NICK, orig);
 }
 
-TEST_CASE("SettingsManager: BOOLSETTING macro works", "[settingsmanager]") {
+TEST_CASE("SettingsManager: BOOLSETTING equivalent works", "[settingsmanager]") {
     ensureContext();
 
-    // Just verify the macro doesn't crash — the actual default value varies
-    bool val = BOOLSETTING(SEGMENTED_DL);
+    // Just verify the call doesn't crash — the actual default value varies
+    bool val = dcpp::getContext()->getSettingsManager()->getBool(SettingsManager::SEGMENTED_DL);
     (void)val; // suppress unused warning
     REQUIRE(true); // if we get here, the macro works
 }

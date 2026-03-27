@@ -12,6 +12,7 @@
 #include "TigerHash.h"
 #include "MerkleTree.h"
 #include "Util.h"
+#include "TestContext.h"
 
 using namespace dcpp;
 
@@ -117,10 +118,12 @@ TEST_CASE("Segment: equality and ordering", "[segment]") {
 // ===== QueueItem tests =====
 
 TEST_CASE("QueueItem: construction and basic getters", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("test-file");
     std::string target = std::string(1, PATH_SEPARATOR) + "downloads" +
                          std::string(1, PATH_SEPARATOR) + "test.txt";
-    QueueItem qi(target, 1024, QueueItem::NORMAL, QueueItem::FLAG_NORMAL,
+    QueueItem qi(ctx, target, 1024, QueueItem::NORMAL, QueueItem::FLAG_NORMAL,
                  time(nullptr), tth);
 
     REQUIRE(qi.getTarget() == target);
@@ -131,8 +134,10 @@ TEST_CASE("QueueItem: construction and basic getters", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: priority levels", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("p");
-    QueueItem qi("/f", 100, QueueItem::PAUSED, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 100, QueueItem::PAUSED, 0, 0, tth);
     REQUIRE(qi.getPriority() == QueueItem::PAUSED);
 
     qi.setPriority(QueueItem::HIGHEST);
@@ -147,8 +152,10 @@ TEST_CASE("QueueItem: priority levels", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: flags", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("f");
-    QueueItem qi("/f", 100, QueueItem::NORMAL,
+    QueueItem qi(ctx, "/f", 100, QueueItem::NORMAL,
                  QueueItem::FLAG_USER_LIST | QueueItem::FLAG_XML_BZLIST, 0, tth);
 
     REQUIRE(qi.isSet(QueueItem::FLAG_USER_LIST));
@@ -157,24 +164,28 @@ TEST_CASE("QueueItem: flags", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: getTargetFileName extracts filename", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("fn");
 
     SECTION("with path separator") {
         std::string target = std::string(1, PATH_SEPARATOR) + "path" +
                              std::string(1, PATH_SEPARATOR) + "to" +
                              std::string(1, PATH_SEPARATOR) + "movie.avi";
-        QueueItem qi(target, 0, QueueItem::NORMAL, 0, 0, tth);
+        QueueItem qi(ctx, target, 0, QueueItem::NORMAL, 0, 0, tth);
         REQUIRE(qi.getTargetFileName() == "movie.avi");
     }
     SECTION("no path separator") {
-        QueueItem qi("just_a_file.txt", 0, QueueItem::NORMAL, 0, 0, tth);
+        QueueItem qi(ctx, "just_a_file.txt", 0, QueueItem::NORMAL, 0, 0, tth);
         REQUIRE(qi.getTargetFileName() == "just_a_file.txt");
     }
 }
 
 TEST_CASE("QueueItem: addSegment and getDownloadedBytes", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("seg");
-    QueueItem qi("/f", 1000, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 1000, QueueItem::NORMAL, 0, 0, tth);
 
     REQUIRE(qi.getDownloadedBytes() == 0);
 
@@ -189,8 +200,10 @@ TEST_CASE("QueueItem: addSegment and getDownloadedBytes", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: addSegment consolidates overlapping", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("con");
-    QueueItem qi("/f", 1000, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 1000, QueueItem::NORMAL, 0, 0, tth);
 
     qi.addSegment(Segment(0, 100));    // [0, 100)
     qi.addSegment(Segment(50, 100));   // [50, 150) — overlaps with first
@@ -200,8 +213,10 @@ TEST_CASE("QueueItem: addSegment consolidates overlapping", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: addSegment consolidates adjacent", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("adj");
-    QueueItem qi("/f", 1000, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 1000, QueueItem::NORMAL, 0, 0, tth);
 
     qi.addSegment(Segment(0, 100));    // [0, 100)
     qi.addSegment(Segment(100, 100));  // [100, 200) — adjacent
@@ -211,8 +226,10 @@ TEST_CASE("QueueItem: addSegment consolidates adjacent", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: isFinished", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("fin");
-    QueueItem qi("/f", 500, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 500, QueueItem::NORMAL, 0, 0, tth);
 
     REQUIRE(qi.isFinished() == false);
 
@@ -221,8 +238,10 @@ TEST_CASE("QueueItem: isFinished", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: isFinished after consolidation", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("finc");
-    QueueItem qi("/f", 300, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 300, QueueItem::NORMAL, 0, 0, tth);
 
     qi.addSegment(Segment(0, 100));
     qi.addSegment(Segment(100, 100));
@@ -232,8 +251,10 @@ TEST_CASE("QueueItem: isFinished after consolidation", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: getDownloadedFraction", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("frac");
-    QueueItem qi("/f", 1000, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 1000, QueueItem::NORMAL, 0, 0, tth);
 
     qi.addSegment(Segment(0, 500));
     REQUIRE(qi.getDownloadedFraction() == Catch::Approx(0.5));
@@ -243,8 +264,10 @@ TEST_CASE("QueueItem: getDownloadedFraction", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: isChunkDownloaded", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("chunk");
-    QueueItem qi("/f", 1000, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 1000, QueueItem::NORMAL, 0, 0, tth);
 
     qi.addSegment(Segment(100, 200)); // [100, 300)
 
@@ -266,8 +289,10 @@ TEST_CASE("QueueItem: isChunkDownloaded", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: isChunkDownloaded with zero/negative len", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("z");
-    QueueItem qi("/f", 1000, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 1000, QueueItem::NORMAL, 0, 0, tth);
     qi.addSegment(Segment(0, 500));
 
     int64_t len = 0;
@@ -278,8 +303,10 @@ TEST_CASE("QueueItem: isChunkDownloaded with zero/negative len", "[queueitem]") 
 }
 
 TEST_CASE("QueueItem: resetDownloaded", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("reset");
-    QueueItem qi("/f", 1000, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 1000, QueueItem::NORMAL, 0, 0, tth);
 
     qi.addSegment(Segment(0, 500));
     REQUIRE(qi.getDownloadedBytes() == 500);
@@ -290,8 +317,10 @@ TEST_CASE("QueueItem: resetDownloaded", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: copy constructor", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("copy");
-    QueueItem qi("/f", 1000, QueueItem::NORMAL, QueueItem::FLAG_TEXT, 12345, tth);
+    QueueItem qi(ctx, "/f", 1000, QueueItem::NORMAL, QueueItem::FLAG_TEXT, 12345, tth);
     qi.addSegment(Segment(0, 300));
 
     QueueItem copy(qi);
@@ -304,8 +333,10 @@ TEST_CASE("QueueItem: copy constructor", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: getPartialInfo", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("partial");
-    QueueItem qi("/f", 10000, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 10000, QueueItem::NORMAL, 0, 0, tth);
 
     qi.addSegment(Segment(0, 1024));       // [0, 1024)
     qi.addSegment(Segment(2048, 1024));    // [2048, 3072)
@@ -323,8 +354,10 @@ TEST_CASE("QueueItem: getPartialInfo", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: isWaiting and isRunning", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("wait");
-    QueueItem qi("/f", 1000, QueueItem::NORMAL, 0, 0, tth);
+    QueueItem qi(ctx, "/f", 1000, QueueItem::NORMAL, 0, 0, tth);
 
     // No downloads → waiting
     REQUIRE(qi.isWaiting() == true);
@@ -332,15 +365,17 @@ TEST_CASE("QueueItem: isWaiting and isRunning", "[queueitem]") {
 }
 
 TEST_CASE("QueueItem: getListName", "[queueitem]") {
+    test::TestContext tc;
+    auto& ctx = *tc.ownedCtx;
     TTHValue tth = makeTTH("list");
 
     SECTION("XML BZ list") {
-        QueueItem qi("/user123", 0, QueueItem::NORMAL,
+        QueueItem qi(ctx, "/user123", 0, QueueItem::NORMAL,
                      QueueItem::FLAG_USER_LIST | QueueItem::FLAG_XML_BZLIST, 0, tth);
         REQUIRE(qi.getListName() == "/user123.xml.bz2");
     }
     SECTION("plain XML list") {
-        QueueItem qi("/user456", 0, QueueItem::NORMAL,
+        QueueItem qi(ctx, "/user456", 0, QueueItem::NORMAL,
                      QueueItem::FLAG_USER_LIST, 0, tth);
         REQUIRE(qi.getListName() == "/user456.xml");
     }

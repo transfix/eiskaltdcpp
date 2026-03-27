@@ -1,9 +1,9 @@
 /*
- * TestContext — shared fixture for Phase 2+ tests that need SETTING() etc.
+ * TestContext — shared fixture for tests that need a DCContext.
  *
  * Creates a minimal DCContext with ResourceManager, SettingsManager, and
  * LogManager.  No network, no hashing, no file I/O beyond a temp directory.
- * The process-wide getContext() is wired so SETTING()/BOOLSETTING() macros work.
+ * The process-wide getContext() is wired so settings access works.
  *
  * Usage (Catch2):
  *   #include "TestContext.h"

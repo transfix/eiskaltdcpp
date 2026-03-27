@@ -41,12 +41,12 @@ class DebugManager : public Speaker<DebugManagerListener>, public ContextAware {
 public:
     void SendCommandMessage(const string& mess, int typeDir, const string& ip) {
         fire(DebugManagerListener::DebugCommand(), mess, typeDir, ip);
-        if (BOOLSETTING(LOG_CMD_DEBUG)) {
+        if (CTX_BOOLSETTING(LOG_CMD_DEBUG)) {
             dcpp::StringMap params;
             params["cmd"] = mess;
             params["ip"] = ip;
             params["type"] = typeDirToString(typeDir);
-            LOG(LogManager::CMD_DEBUG, params);
+            CTX_LOG(LogManager::CMD_DEBUG, params);
         }
     }
     void SendDetectionMessage(const string& mess) {
@@ -66,9 +66,6 @@ public:
 private:
     static string typeDirToString(int typeDir);
 };
-#define COMMAND_DEBUG(a,b,c) if (dcpp::getContext()->getDebugManager()) dcpp::getContext()->getDebugManager()->SendCommandMessage(a,b,c);
-#define DETECTION_DEBUG(m) if (dcpp::getContext()->getDebugManager()) dcpp::getContext()->getDebugManager()->SendDetectionMessage(m);
-
 // Context-aware versions — for use inside ContextAware member functions
 #define CTX_COMMAND_DEBUG(a,b,c) if (this->ctx().getDebugManager()) this->ctx().getDebugManager()->SendCommandMessage(a,b,c);
 #define CTX_DETECTION_DEBUG(m) if (this->ctx().getDebugManager()) this->ctx().getDebugManager()->SendDetectionMessage(m);

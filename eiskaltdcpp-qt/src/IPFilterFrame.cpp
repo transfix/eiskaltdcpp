@@ -44,7 +44,7 @@ IPFilterFrame::~IPFilterFrame() {
 }
 
 void IPFilterFrame::InitDocument() {
-    checkBox_ENABLE->setChecked(BOOLSETTING(SettingsManager::IPFILTER));
+    checkBox_ENABLE->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::IPFILTER, true));
 
     if (!model)
         model = new IPFilterModel(this);

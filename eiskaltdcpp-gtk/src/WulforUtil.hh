@@ -51,7 +51,7 @@ public:
 
     static std::string getTextFromMenu(GtkMenuItem *item);
     static std::vector<std::string>& getCharsets();
-    static void openURI(const std::string &uri);
+    static void openURI(dcpp::DCContext& ctx, const std::string &uri);
     static void openURItoApp(const std::string &cmd);
 
 #if GTK_CHECK_VERSION (3,0,0)

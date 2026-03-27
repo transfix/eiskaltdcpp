@@ -48,11 +48,11 @@ void DynDNS::stop()
 }
 
 void DynDNS::Request() {
-    if (BOOLSETTING(DYNDNS_ENABLE)) {
-        string tmps = SETTING(DYNDNS_SERVER);
-        if (!SETTING(DYNDNS_SERVER).compare(0,7,"http://") &&
-                !SETTING(DYNDNS_SERVER).compare(0,8,"https://")) {
-            tmps = "http://" + SETTING(DYNDNS_SERVER);
+    if (CTX_BOOLSETTING(DYNDNS_ENABLE)) {
+        string tmps = CTX_SETTING(DYNDNS_SERVER);
+        if (!CTX_SETTING(DYNDNS_SERVER).compare(0,7,"http://") &&
+                !CTX_SETTING(DYNDNS_SERVER).compare(0,8,"https://")) {
+            tmps = "http://" + CTX_SETTING(DYNDNS_SERVER);
         }
         httpConnection.downloadFile(tmps);
     }

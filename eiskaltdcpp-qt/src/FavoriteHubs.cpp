@@ -186,7 +186,7 @@ void FavoriteHubs::init(){
 void FavoriteHubs::initHubEditor(FavoriteHubEditor &editor){
     editor.comboBox_ENC->addItem(tr("System default"));
     editor.comboBox_ENC->addItems(qtCtx()->wulforUtil()->encodings());
-    editor.spinBox_MINSEARCH_INTERVAL->setValue(SETTING(MINIMUM_SEARCH_INTERVAL));
+    editor.spinBox_MINSEARCH_INTERVAL->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MINIMUM_SEARCH_INTERVAL, true));
     connect(editor.checkBox_CID, &QCheckBox::clicked, this, &FavoriteHubs::slotUpdateComboBox_CID);
     connect(editor.lineEdit_ADDRESS, &QLineEdit::textChanged, this, &FavoriteHubs::slotUpdateComboBox_CID);
 }
@@ -211,7 +211,7 @@ void FavoriteHubs::initHubEditor(FavoriteHubEditor &editor, StrMap &map){
     initHubEditor(editor);
 
     editor.checkBox_AUTOCONNECT->setChecked(map["AUTO"].toBool());
-    editor.checkBox_NICK->setChecked(map["NICK"].toString() != "" && map["NICK"].toString() != _q(SETTING(NICK)));
+    editor.checkBox_NICK->setChecked(map["NICK"].toString() != "" && map["NICK"].toString() != _q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::NICK, true)));
     editor.checkBox_USERDESC->setChecked(map["UDESC"].toString() != "");
 
     if (map["ENC"].toString() == tr("System default"))
@@ -398,7 +398,7 @@ void FavoriteHubs::slotContexMenu(const QPoint &){
 
             if (editor.exec() == QDialog::Accepted){
                 StrMap map;
-                FavoriteHubEntry entry;
+                FavoriteHubEntry entry(dcCtx());
 
                 getParams(editor, map);
                 updateEntry(entry, map);
@@ -533,7 +533,7 @@ void FavoriteHubs::slotAdd_newButtonClicked(){
 
     if (editor.exec() == QDialog::Accepted){
         StrMap map;
-        FavoriteHubEntry entry;
+        FavoriteHubEntry entry(dcCtx());
 
         getParams(editor, map);
         updateEntry(entry, map);

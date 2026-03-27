@@ -116,7 +116,7 @@ int MappingManager::run() {
         log(str(F_("Successfully created port mappings (TCP: %1%, UDP: %2%, TLS: %3%), mapped using the %4% interface") % conn_port % search_port % secure_port % impl.getName()));
 #endif
 
-        if(!BOOLSETTING(NO_IP_OVERRIDE)) {
+        if(!CTX_BOOLSETTING(NO_IP_OVERRIDE)) {
             // now lets configure the external IP (connect to me) address
             string ExternalIP = impl.getExternalIP();
             if(!ExternalIP.empty()) {
@@ -155,7 +155,7 @@ void MappingManager::log(const string& message) {
 
 #ifdef USE_MINIUPNP
 void MappingManager::runMiniUPnP() {
-    addImplementation(new UPnPc());
+    addImplementation(new UPnPc(ctx()));
 }
 #endif
 } // namespace dcpp

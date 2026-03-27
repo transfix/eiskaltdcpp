@@ -41,6 +41,8 @@ const int INVALID_SOCKET = -1;
 
 namespace dcpp {
 
+class DCContext;
+
 class SocketException : public Exception {
 public:
 #ifdef _DEBUG
@@ -77,9 +79,12 @@ public:
         PROTO_ADC = 2
     };
 
-    Socket() : sock(INVALID_SOCKET), type(TYPE_TCP), connected(false), proto(PROTO_DEFAULT) { }
-    Socket(const string& aIp, const string& aPort) : sock(INVALID_SOCKET), type(TYPE_TCP), connected(false), proto(PROTO_DEFAULT) { connect(aIp, aPort); }
+    Socket() : sock(INVALID_SOCKET), type(TYPE_TCP), connected(false), proto(PROTO_DEFAULT), ctx_(nullptr) { }
+    Socket(const string& aIp, const string& aPort) : sock(INVALID_SOCKET), type(TYPE_TCP), connected(false), proto(PROTO_DEFAULT), ctx_(nullptr) { connect(aIp, aPort); }
     virtual ~Socket() { disconnect(); }
+
+    void setContext(DCContext* ctx) noexcept { ctx_ = ctx; }
+    DCContext& ctx() const { return *ctx_; }
 
     /**
      * Connects a socket to an address/ip, closing any other connections made with
@@ -168,7 +173,7 @@ public:
     virtual ByteVector getKeyprint() const noexcept { return ByteVector(); }
 
     /** When socks settings are updated, this has to be called... */
-    static void socksUpdated();
+    static void socksUpdated(DCContext& ctx);
     string getIfaceI4 (const string &iface);
 
     GETSET(string, ip, Ip);
@@ -193,6 +198,8 @@ protected:
 private:
     Socket(const Socket&);
     Socket& operator=(const Socket&);
+
+    DCContext* ctx_;
 
     void socksAuth(uint32_t timeout);
 

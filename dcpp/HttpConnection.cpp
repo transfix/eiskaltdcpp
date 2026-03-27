@@ -111,12 +111,12 @@ void HttpConnection::prepareRequest(RequestType type) {
     }
 
     string proto, query, fragment;
-    if(SETTING(HTTP_PROXY).empty()) {
+    if(CTX_SETTING(HTTP_PROXY).empty()) {
         Util::decodeUrl(url, proto, server, port, file, query, fragment);
         if(file.empty())
             file = "/";
     } else {
-        Util::decodeUrl(SETTING(HTTP_PROXY), proto, server, port, file, query, fragment);
+        Util::decodeUrl(CTX_SETTING(HTTP_PROXY), proto, server, port, file, query, fragment);
         file = url;
     }
 
@@ -171,7 +171,7 @@ void HttpConnection::on(BufferedSocketListener::Connected) noexcept {
     socket->write(method + " " + file + " HTTP/1.1\r\n");
 
     string sRemoteServer = server;
-    if(!SETTING(HTTP_PROXY).empty())
+    if(!CTX_SETTING(HTTP_PROXY).empty())
     {
         string tfile, tport, proto, query, fragment;
         Util::decodeUrl(file, proto, sRemoteServer, tport, tfile, query, fragment);

@@ -27,12 +27,12 @@
 #include "dcpp/LogManager.h"
 #include "dcpp/SettingsManager.h"
 #include "dcpp/DebugManager.h"
+#include "dcpp/DCContext.h"
 #include <zlib.h>
 #ifdef _WIN32
 #include <mswsock.h>
 #endif
 #include <openssl/rc4.h>
-#include "dcpp/DCPlusPlus.h"
 
 namespace dht
 {
@@ -89,8 +89,9 @@ namespace dht
             socket.reset(new Socket);
             socket->create(Socket::TYPE_UDP);
             socket->setSocketOpt(SO_REUSEADDR, 1);
-            socket->setSocketOpt(SO_RCVBUF, SETTING(SOCKET_IN_BUFFER));
-            port = socket->bind(Util::toString(SETTING(DHT_PORT)), SETTING(BIND_IFACE)? socket->getIfaceI4(SETTING(BIND_IFACE_NAME)).c_str() : SETTING(BIND_ADDRESS));
+            socket->setSocketOpt(SO_RCVBUF, dht_->ctx().getSettingsManager()->get(SettingsManager::SOCKET_IN_BUFFER, true));
+            auto* sm = dht_->ctx().getSettingsManager();
+            port = socket->bind(Util::toString(sm->get(SettingsManager::DHT_PORT, true)), sm->getBool(SettingsManager::BIND_IFACE, true) ? socket->getIfaceI4(sm->get(SettingsManager::BIND_IFACE_NAME, true)).c_str() : sm->get(SettingsManager::BIND_ADDRESS, true));
 
             start();
         }
@@ -142,7 +143,7 @@ namespace dht
                 {
                     string ip = inet_ntoa(remoteAddr.sin_addr);
                     string port = Util::toString(ntohs(remoteAddr.sin_port));
-                    COMMAND_DEBUG(s.substr(0, s.length() - 1), DebugManager::DHT_IN,  ip + ":" + port);
+                    if (dht_->ctx().getDebugManager()) dht_->ctx().getDebugManager()->SendCommandMessage(s.substr(0, s.length() - 1), DebugManager::DHT_IN,  ip + ":" + port);
                     dht_->dispatch(s.substr(0, s.length() - 1), ip, port, isUdpKeyValid);
                 }
 
@@ -241,9 +242,9 @@ namespace dht
                     {
                         socket->disconnect();
                         socket->create(Socket::TYPE_UDP);
-                        socket->setSocketOpt(SO_RCVBUF, SETTING(SOCKET_IN_BUFFER));
+                        socket->setSocketOpt(SO_RCVBUF, dht_->ctx().getSettingsManager()->get(SettingsManager::SOCKET_IN_BUFFER, true));
                         socket->setSocketOpt(SO_REUSEADDR, 1);
-                        socket->bind(port, SETTING(BIND_ADDRESS));
+                        socket->bind(port, dht_->ctx().getSettingsManager()->get(SettingsManager::BIND_ADDRESS, true));
                         if(failed)
                         {
                             dht_->ctx().getLogManager()->message(_("DHT enabled again"));
@@ -283,9 +284,9 @@ namespace dht
         Utils::trackOutgoingPacket(ip, cmd);
 
         // pack data
-        cmd.addParam("UK", Utils::getUdpKey(ip).toBase32()); // add our key for the IP address
+        cmd.addParam("UK", Utils::getUdpKey(dht_->ctx(), ip).toBase32()); // add our key for the IP address
         string command = cmd.toString(dht_->ctx().getClientManager()->getMe()->getCID());
-        COMMAND_DEBUG(command, DebugManager::DHT_OUT, ip + ":" + port);
+        if (dht_->ctx().getDebugManager()) dht_->ctx().getDebugManager()->SendCommandMessage(command, DebugManager::DHT_OUT, ip + ":" + port);
 
         Packet* p = new Packet(ip, port, command, targetCID, udpKey);
 
@@ -372,7 +373,7 @@ namespace dht
             // generate key
             TigerHash th;
             if(tries == 1)
-                th.update(Utils::getUdpKey(remoteIp).data(), sizeof(CID));
+                th.update(Utils::getUdpKey(dht_->ctx(), remoteIp).data(), sizeof(CID));
             th.update(dht_->ctx().getClientManager()->getMe()->getCID().data(), sizeof(CID));
 
             RC4_KEY recvKey;

@@ -450,7 +450,7 @@ void FavoriteManager::load(SimpleXML& aXml) {
 
         aXml.resetCurrentChild();
         while(aXml.findChild("Hub")) {
-            FavoriteHubEntry* e = new FavoriteHubEntry();
+            FavoriteHubEntry* e = new FavoriteHubEntry(ctx());
             e->setName(aXml.getChildAttrib("Name"));
             e->setConnect(aXml.getBoolChildAttrib("Connect"));
             e->setHubDescription(aXml.getChildAttrib("Description"));

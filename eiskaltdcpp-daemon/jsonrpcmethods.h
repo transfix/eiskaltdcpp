@@ -72,5 +72,6 @@ class JsonRpcMethods
     bool IpFilterUpDownRule(const Json::Value &root, Json::Value &response);
 private:
     ServerThread& server_;
+    bool debug() const;
     void FailedValidateRequest(Json::Value &error);
 };

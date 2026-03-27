@@ -572,7 +572,7 @@ void Hub::popupNickMenu_gui()
 
 void Hub::getPassword_gui()
 {
-    if(!BOOLSETTING(PROMPT_PASSWORD))
+    if(!dcCtx_.getSettingsManager()->getBool(SettingsManager::PROMPT_PASSWORD, true))
     {
         addStatusMessage_gui(_("Waiting for input password (don't remove /password before your password)"), Msg::STATUS, Sound::NONE);
 
@@ -690,7 +690,7 @@ void Hub::addMessage_gui(string cid, string message, Msg::TypeMsg typemsg)
     GtkTextIter iter;
     string line = "";
 
-    if (BOOLSETTING(TIME_STAMPS))
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::TIME_STAMPS, true))
         line += "[" + Util::getShortTimeString() + "] ";
 
     line += message + "\n";
@@ -740,7 +740,7 @@ void Hub::applyTags_gui(const string cid, const string &line)
     gtk_text_buffer_get_end_iter(chatBuffer, &start_iter);
 
     // apply timestamp tag
-    if (BOOLSETTING(TIME_STAMPS))
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::TIME_STAMPS, true))
     {
         gtk_text_iter_backward_chars(&start_iter,
                                      g_utf8_strlen(line.c_str(), -1) - g_utf8_strlen(Util::getShortTimeString().c_str(), -1) - 2);
@@ -2076,8 +2076,8 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
         else if (command == "ratio")
         {
             double ratio;
-            double up   = static_cast<double>(SETTING(TOTAL_UPLOAD));
-            double down = static_cast<double>(SETTING(TOTAL_DOWNLOAD));
+            double up   = static_cast<double>(hub->dcCtx_.getSettingsManager()->get(SettingsManager::TOTAL_UPLOAD, true));
+            double down = static_cast<double>(hub->dcCtx_.getSettingsManager()->get(SettingsManager::TOTAL_DOWNLOAD, true));
 
             if (down > 0)
                 ratio = up / down;
@@ -2428,7 +2428,7 @@ void Hub::onSendMessage_gui(GtkEntry *entry, gpointer data)
             wulforManagerInstance()->dispatchClientFunc(func);
             hub->WaitingPassword = false;
         }
-        else if (BOOLSETTING(SEND_UNKNOWN_COMMANDS))
+        else if (hub->dcCtx_.getSettingsManager()->getBool(SettingsManager::SEND_UNKNOWN_COMMANDS, true))
         {
             func2 = new F2(hub, &Hub::sendMessage_client, text, false);
             wulforManagerInstance()->dispatchClientFunc(func2);
@@ -2664,7 +2664,7 @@ void Hub::onOpenLinkClicked_gui(GtkMenuItem *item, gpointer data)
     (void)item;
     Hub *hub = (Hub *)data;
 
-    WulforUtil::openURI(hub->selectedTagStr);
+    WulforUtil::openURI(hub->dcCtx_, hub->selectedTagStr);
 }
 
 void Hub::onOpenHubClicked_gui(GtkMenuItem *item, gpointer data)
@@ -2687,7 +2687,7 @@ void Hub::onDownloadClicked_gui(GtkMenuItem *item, gpointer data)
 {
     (void)item;
     Hub *hub = (Hub *)data;
-    wulforManagerInstance()->getMainWindow()->fileToDownload_gui(hub->selectedTagStr, SETTING(DOWNLOAD_DIRECTORY));
+    wulforManagerInstance()->getMainWindow()->fileToDownload_gui(hub->selectedTagStr, hub->dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
 }
 
 gboolean Hub::onChatCommandButtonRelease_gui(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -3120,7 +3120,7 @@ void Hub::addAsFavorite_client()
 
     if (!existingHub)
     {
-        FavoriteHubEntry aEntry;
+        FavoriteHubEntry aEntry(dcCtx_);
         aEntry.setServer(client->getHubUrl());
         aEntry.setName(client->getHubName());
         aEntry.setHubDescription(client->getHubDescription());
@@ -3421,7 +3421,7 @@ void Hub::openImage_gui(string target)
 {
     if (!File::isAbsolute(target))
         target = Util::getPath(Util::PATH_USER_LOCAL) + "Images" + PATH_SEPARATOR_STR + target;
-    WulforUtil::openURI(target);
+    WulforUtil::openURI(dcCtx_, target);
 }
 #if !GTK_CHECK_VERSION(3, 0, 0)
 gboolean Hub::expose(GtkWidget *widget, GdkEventExpose *event, gpointer data)
@@ -3585,7 +3585,7 @@ void Hub::on(ClientListener::Redirect, Client *, const string &address) noexcept
 {
     // redirect_client() crashes unless I put it into the dispatcher (why?)
     typedef Func2<Hub, string, bool> F2;
-    F2 *func = new F2(this, &Hub::redirect_client, address, BOOLSETTING(AUTO_FOLLOW));
+    F2 *func = new F2(this, &Hub::redirect_client, address, dcCtx_.getSettingsManager()->getBool(SettingsManager::AUTO_FOLLOW, true));
     wulforManagerInstance()->dispatchClientFunc(func);
 }
 
@@ -3636,7 +3636,7 @@ void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexc
     string cid = message.from->getIdentity().getUser()->getCID().toBase32();
     string line;
 
-    string info=Util::formatAdditionalInfo(message.from->getIdentity().getIp(),BOOLSETTING(USE_IP),BOOLSETTING(GET_USER_COUNTRY));
+    string info=Util::formatAdditionalInfo(message.from->getIdentity().getIp(),dcCtx_.getSettingsManager()->getBool(SettingsManager::USE_IP, true),dcCtx_.getSettingsManager()->getBool(SettingsManager::GET_USER_COUNTRY, true));
     line+=info;
 
     if (message.thirdPerson)
@@ -3656,14 +3656,14 @@ void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexc
         else if (message.from->getUser() == client->getMyIdentity().getUser()) typemsg = Msg::MYOWN;
         else typemsg = Msg::PRIVATE;
 
-        if (user->getIdentity().isHub() && BOOLSETTING(IGNORE_HUB_PMS))
+        if (user->getIdentity().isHub() && dcCtx_.getSettingsManager()->getBool(SettingsManager::IGNORE_HUB_PMS, true))
         {
             error = _("Ignored private message from hub");
             typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
             F3 *func = new F3(this, &Hub::addStatusMessage_gui, error, Msg::STATUS, Sound::NONE);
             wulforManagerInstance()->dispatchGuiFunc(func);
         }
-        else if (user->getIdentity().isBot() && BOOLSETTING(IGNORE_BOT_PMS))
+        else if (user->getIdentity().isBot() && dcCtx_.getSettingsManager()->getBool(SettingsManager::IGNORE_BOT_PMS, true))
         {
             error = _("Ignored private message from bot ") + user->getIdentity().getNick();
             typedef Func3<Hub, string, Msg::TypeMsg, Sound::TypeSound> F3;
@@ -3686,7 +3686,7 @@ void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexc
         else if (message.from->getUser() == client->getMyIdentity().getUser()) typemsg = Msg::MYOWN;
         else typemsg = Msg::GENERAL;
 
-        if (BOOLSETTING(FILTER_MESSAGES))
+        if (dcCtx_.getSettingsManager()->getBool(SettingsManager::FILTER_MESSAGES, true))
         {
             if ((message.text.find("Hub-Security") != string::npos &&
                  message.text.find("was kicked by") != string::npos) ||
@@ -3700,14 +3700,14 @@ void Hub::on(ClientListener::Message, Client*, const ChatMessage& message) noexc
             }
         }
 
-        if (BOOLSETTING(LOG_MAIN_CHAT))
+        if (dcCtx_.getSettingsManager()->getBool(SettingsManager::LOG_MAIN_CHAT, true))
         {
             StringMap params;
             params["message"] = line;
             client->getHubIdentity().getParams(params, "hub", false);
             params["hubURL"] = client->getHubUrl();
             client->getMyIdentity().getParams(params, "my", true);
-            LOG(LogManager::CHAT, params);
+            dcCtx_.getLogManager()->log(LogManager::CHAT, params);
         }
 
         typedef Func3<Hub, string, string, Msg::TypeMsg> F3;
@@ -3731,7 +3731,7 @@ void Hub::on(ClientListener::StatusMessage, Client *, const string &message, int
 {
     if (!message.empty())
     {
-        if (BOOLSETTING(FILTER_MESSAGES))
+        if (dcCtx_.getSettingsManager()->getBool(SettingsManager::FILTER_MESSAGES, true))
         {
             if ((message.find("Hub-Security") != string::npos && message.find("was kicked by") != string::npos) ||
                     (message.find("is kicking") != string::npos && message.find("because:") != string::npos))
@@ -3743,14 +3743,14 @@ void Hub::on(ClientListener::StatusMessage, Client *, const string &message, int
             }
         }
 
-        if (BOOLSETTING(LOG_STATUS_MESSAGES))
+        if (dcCtx_.getSettingsManager()->getBool(SettingsManager::LOG_STATUS_MESSAGES, true))
         {
             StringMap params;
             client->getHubIdentity().getParams(params, "hub", false);
             params["hubURL"] = client->getHubUrl();
             client->getMyIdentity().getParams(params, "my", true);
             params["message"] = message;
-            LOG(LogManager::STATUS, params);
+            dcCtx_.getLogManager()->log(LogManager::STATUS, params);
         }
 
         typedef Func3<Hub, string, string, Msg::TypeMsg> F3;

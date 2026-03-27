@@ -195,8 +195,8 @@ void SettingsGUI::init(){
         checkBox_CHATJOINS->setChecked(qtCtx()->settings()->getBool(WB_CHAT_SHOW_JOINS));
         checkBox_JOINSFAV->setChecked(qtCtx()->settings()->getBool(WB_CHAT_SHOW_JOINS_FAV));
         checkBox_CHATHIDDEN->setChecked(qtCtx()->settings()->getBool(WB_SHOW_HIDDEN_USERS));
-        checkBox_IGNOREPMHUB->setChecked(BOOLSETTING(IGNORE_HUB_PMS));
-        checkBox_IGNOREPMBOT->setChecked(BOOLSETTING(IGNORE_BOT_PMS));
+        checkBox_IGNOREPMHUB->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::IGNORE_HUB_PMS, true));
+        checkBox_IGNOREPMBOT->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::IGNORE_BOT_PMS, true));
         checkBox_REDIRECTPMBOT->setChecked(qtCtx()->settings()->getBool(WB_CHAT_REDIRECT_BOT_PMS));
         checkBox_REDIRECT_UNREAD->setChecked(qtCtx()->settings()->getBool("hubframe/redirect-pm-to-main-chat", false));
         checkBox_KEEPFOCUS->setChecked(qtCtx()->settings()->getBool(WB_CHAT_KEEPFOCUS));
@@ -212,10 +212,10 @@ void SettingsGUI::init(){
         comboBox_DBL_CLICK->setCurrentIndex(qtCtx()->settings()->getInt(WI_CHAT_DBLCLICK_ACT));
         comboBox_MDL_CLICK->setCurrentIndex(qtCtx()->settings()->getInt(WI_CHAT_MDLCLICK_ACT));
         comboBox_DEF_MAGNET_ACTION->setCurrentIndex(qtCtx()->settings()->getInt(WI_DEF_MAGNET_ACTION));
-        comboBox_APP_UNIT_BASE->setCurrentIndex(SETTING(APP_UNIT_BASE));
+        comboBox_APP_UNIT_BASE->setCurrentIndex(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::APP_UNIT_BASE, true));
         checkBox_HIGHLIGHTFAVS->setChecked(qtCtx()->settings()->getBool(WB_CHAT_HIGHLIGHT_FAVS));
-        checkBox_CHAT_SHOW_IP->setChecked(BOOLSETTING(USE_IP));
-        checkBox_CHAT_SHOW_CC->setChecked(BOOLSETTING(GET_USER_COUNTRY));
+        checkBox_CHAT_SHOW_IP->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::USE_IP, true));
+        checkBox_CHAT_SHOW_CC->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::GET_USER_COUNTRY, true));
         checkBox_BB_CODE->setChecked(qtCtx()->settings()->getBool("hubframe/use-bb-code", true));
         lineEdit_TIMESTAMP->setText(qtCtx()->settings()->getStr(WS_CHAT_TIMESTAMP));
 

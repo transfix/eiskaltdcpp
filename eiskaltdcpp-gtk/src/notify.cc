@@ -283,7 +283,7 @@ void Notify::onAction(NotifyNotification *notify, const char*, gpointer data)
     const string target = (gchar*)data;
 
     if (!target.empty())
-        WulforUtil::openURI(target);
+        WulforUtil::openURI(*dcpp::getContext(), target);
 
 #ifdef USE_LIBNOTIFY
     notify_notification_close(notify, NULL);

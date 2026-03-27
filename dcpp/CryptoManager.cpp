@@ -159,15 +159,15 @@ CryptoManager::~CryptoManager() {
 }
 
 bool CryptoManager::TLSOk() const noexcept {
-    return BOOLSETTING(USE_TLS) && certsLoaded && !keyprint.empty();
+    return CTX_BOOLSETTING(USE_TLS) && certsLoaded && !keyprint.empty();
 }
 
 void CryptoManager::generateCertificate() {
     // Generate certificate using OpenSSL
-    if(SETTING(TLS_PRIVATE_KEY_FILE).empty()) {
+    if(CTX_SETTING(TLS_PRIVATE_KEY_FILE).empty()) {
         throw CryptoException(_("No private key file chosen"));
     }
-    if(SETTING(TLS_CERTIFICATE_FILE).empty()) {
+    if(CTX_SETTING(TLS_CERTIFICATE_FILE).empty()) {
         throw CryptoException(_("No certificate file chosen"));
     }
 
@@ -212,8 +212,8 @@ void CryptoManager::generateCertificate() {
         #undef CHECK
             // Write the key and cert
     {
-        File::ensureDirectory(SETTING(TLS_PRIVATE_KEY_FILE));
-        FILE* f = fopen(SETTING(TLS_PRIVATE_KEY_FILE).c_str(), "w");
+        File::ensureDirectory(CTX_SETTING(TLS_PRIVATE_KEY_FILE));
+        FILE* f = fopen(CTX_SETTING(TLS_PRIVATE_KEY_FILE).c_str(), "w");
         if(!f) {
             return;
         }
@@ -221,10 +221,10 @@ void CryptoManager::generateCertificate() {
         fclose(f);
     }
     {
-        File::ensureDirectory(SETTING(TLS_CERTIFICATE_FILE));
-        FILE* f = fopen(SETTING(TLS_CERTIFICATE_FILE).c_str(), "w");
+        File::ensureDirectory(CTX_SETTING(TLS_CERTIFICATE_FILE));
+        FILE* f = fopen(CTX_SETTING(TLS_CERTIFICATE_FILE).c_str(), "w");
         if(!f) {
-            File::deleteFile(SETTING(TLS_PRIVATE_KEY_FILE));
+            File::deleteFile(CTX_SETTING(TLS_PRIVATE_KEY_FILE));
             return;
         }
         PEM_write_X509(f, x509ss);
@@ -233,14 +233,14 @@ void CryptoManager::generateCertificate() {
 }
 
 void CryptoManager::loadCertificates() noexcept {
-    if(!BOOLSETTING(USE_TLS) || !clientContext || !clientVerContext || !serverContext || !serverVerContext)
+    if(!CTX_BOOLSETTING(USE_TLS) || !clientContext || !clientVerContext || !serverContext || !serverVerContext)
         return;
 
     keyprint.clear();
     certsLoaded = false;
 
-    const string& cert = SETTING(TLS_CERTIFICATE_FILE);
-    const string& key = SETTING(TLS_PRIVATE_KEY_FILE);
+    const string& cert = CTX_SETTING(TLS_CERTIFICATE_FILE);
+    const string& key = CTX_SETTING(TLS_PRIVATE_KEY_FILE);
 
     if(cert.empty() || key.empty()) {
         ctx().getLogManager()->message(_("TLS disabled, no certificate file set"));
@@ -293,8 +293,8 @@ void CryptoManager::loadCertificates() noexcept {
         return;
     }
 
-    StringList certs = File::findFiles(SETTING(TLS_TRUSTED_CERTIFICATES_PATH), "*.pem");
-    StringList certs2 = File::findFiles(SETTING(TLS_TRUSTED_CERTIFICATES_PATH), "*.crt");
+    StringList certs = File::findFiles(CTX_SETTING(TLS_TRUSTED_CERTIFICATES_PATH), "*.pem");
+    StringList certs2 = File::findFiles(CTX_SETTING(TLS_TRUSTED_CERTIFICATES_PATH), "*.crt");
     certs.insert(certs.end(), certs2.begin(), certs2.end());
 
     for(auto& i: certs) {
@@ -314,7 +314,7 @@ void CryptoManager::loadCertificates() noexcept {
 }
 
 bool CryptoManager::checkCertificate() noexcept {
-    FILE* f = fopen(SETTING(TLS_CERTIFICATE_FILE).c_str(), "r");
+    FILE* f = fopen(CTX_SETTING(TLS_CERTIFICATE_FILE).c_str(), "r");
     if(!f) {
         return false;
     }
@@ -375,7 +375,7 @@ const ByteVector &CryptoManager::getKeyprint() const noexcept {
 void CryptoManager::loadKeyprint(const string& file) noexcept {
     (void)file;
 
-    FILE* f = fopen(SETTING(TLS_CERTIFICATE_FILE).c_str(), "r");
+    FILE* f = fopen(CTX_SETTING(TLS_CERTIFICATE_FILE).c_str(), "r");
     if(!f) {
         return;
     }

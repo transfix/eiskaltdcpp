@@ -676,7 +676,7 @@ void Transfers::initTransfer_gui(StringMap params)
     // We could use && BOOLSETTING(SEGMENTED_DL) here to group only when segmented is enabled,
     // but then the transfer should be worked out to display the whole size of the file. As
     // it currently only shows the size of a transfer (and always starts from 0)
-    needParent = (params["Filename"] != string(_("File list"))) && BOOLSETTING(SEGMENTED_DL);
+    needParent = (params["Filename"] != string(_("File list"))) && dcCtx_.getSettingsManager()->getBool(SettingsManager::SEGMENTED_DL, true);
 
     if (!findTransfer_gui(params["CID"], true, &iter))
     {

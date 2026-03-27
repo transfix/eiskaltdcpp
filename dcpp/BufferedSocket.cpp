@@ -78,6 +78,7 @@ void BufferedSocket::setMode (Modes aMode, size_t aRollback) {
 
 void BufferedSocket::setSocket(std::unique_ptr<Socket> s) {
     dcassert(!sock.get());
+    s->setContext(&ctx());
     if(ctx().getSettingsManager()->get(SettingsManager::SOCKET_IN_BUFFER) > 0)
         s->setSocketOpt(SO_RCVBUF, ctx().getSettingsManager()->get(SettingsManager::SOCKET_IN_BUFFER));
     if(ctx().getSettingsManager()->get(SettingsManager::SOCKET_OUT_BUFFER) > 0)

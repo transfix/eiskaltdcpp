@@ -330,7 +330,7 @@ QPixmap *WulforUtil::getUserIcon(const UserPtr &id, bool isAway, bool isOp, cons
     if (id->isSet(User::PASSIVE)){
         y += 16;
 
-        if (SETTING(INCOMING_CONNECTIONS) == SettingsManager::INCOMING_FIREWALL_PASSIVE)
+        if (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::INCOMING_CONNECTIONS, true) == SettingsManager::INCOMING_FIREWALL_PASSIVE)
             x = 7;
     }
 
@@ -772,8 +772,8 @@ QStringList WulforUtil::encodings(){
 
 bool WulforUtil::openUrl(const QString &url){
     if (url.startsWith("http://") || url.startsWith("www.") || url.startsWith(("ftp://")) || url.startsWith("https://")){
-        if (!SETTING(MIME_HANDLER).empty())
-            QProcess::startDetached(_q(SETTING(MIME_HANDLER)), QStringList(url));
+        if (!qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MIME_HANDLER, true).empty())
+            QProcess::startDetached(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MIME_HANDLER, true)), QStringList(url));
         else
             QDesktopServices::openUrl(QUrl::fromEncoded(url.toUtf8()));
     }
@@ -826,8 +826,8 @@ bool WulforUtil::openUrl(const QString &url){
             sfr->fastSearch(keywords, false);
         }
         else {
-            if (!SETTING(MIME_HANDLER).empty())
-                QProcess::startDetached(_q(SETTING(MIME_HANDLER)), QStringList(url));
+            if (!qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MIME_HANDLER, true).empty())
+                QProcess::startDetached(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MIME_HANDLER, true)), QStringList(url));
             else
                 QDesktopServices::openUrl(QUrl::fromEncoded(url.toUtf8()));
         }

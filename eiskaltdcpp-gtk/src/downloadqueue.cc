@@ -47,8 +47,8 @@ DownloadQueue::DownloadQueue(dcpp::DCContext& dcCtx):
 #endif
 
     // Configure the dialogs
-    File::ensureDirectory(SETTING(DOWNLOAD_DIRECTORY));
-    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)).c_str());
+    File::ensureDirectory(dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::fromUtf8(dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true)).c_str());
     gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
     // menu

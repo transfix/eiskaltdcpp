@@ -229,12 +229,13 @@ vector<string>& WulforUtil::getCharsets()
     return charsets;
 }
 
-void WulforUtil::openURI(const string &uri)
+void WulforUtil::openURI(dcpp::DCContext& ctx, const string &uri)
 {
     GError* error = NULL;
     gchar *argv[3];
-    if (!SETTING(MIME_HANDLER).empty())
-        argv[0] = (gchar *)(SETTING(MIME_HANDLER)).c_str();
+    auto* sm = ctx.getSettingsManager();
+    if (!sm->get(SettingsManager::MIME_HANDLER, true).empty())
+        argv[0] = (gchar *)(sm->get(SettingsManager::MIME_HANDLER, true)).c_str();
     else
 #if defined(__APPLE__) && defined(__MACH__)
         argv[0] = (gchar *)"open";

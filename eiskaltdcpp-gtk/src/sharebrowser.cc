@@ -69,9 +69,9 @@ ShareBrowser::ShareBrowser(dcpp::DCContext& dcCtx, UserPtr _user, const string &
     }
 
     // Configure the dialogs
-    File::ensureDirectory(SETTING(DOWNLOAD_DIRECTORY));
+    File::ensureDirectory(dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
     gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("findDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)).c_str());
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(getWidget("dirChooserDialog")), Text::fromUtf8(dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true)).c_str());
     gtk_dialog_set_alternative_button_order(GTK_DIALOG(getWidget("dirChooserDialog")), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
     // menu
@@ -443,7 +443,7 @@ void ShareBrowser::fileViewSelected_gui()
             }
         }
         else
-            downloadSelectedFiles_gui(Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)));
+            downloadSelectedFiles_gui(Text::fromUtf8(dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true)));
     }
 
     gtk_tree_path_free(path);
@@ -924,7 +924,7 @@ void ShareBrowser::onDownloadClicked_gui(GtkMenuItem *item, gpointer data)
     (void)item;
 
     ShareBrowser *sb = (ShareBrowser *)data;
-    sb->downloadSelectedFiles_gui(Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)));
+    sb->downloadSelectedFiles_gui(Text::fromUtf8(sb->dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true)));
 }
 
 void ShareBrowser::onDownloadToClicked_gui(GtkMenuItem *item, gpointer data)
@@ -967,7 +967,7 @@ void ShareBrowser::onDownloadDirClicked_gui(GtkMenuItem *item, gpointer data)
     (void)item;
 
     ShareBrowser *sb = (ShareBrowser *)data;
-    sb->downloadSelectedDirs_gui(Text::fromUtf8(SETTING(DOWNLOAD_DIRECTORY)));
+    sb->downloadSelectedDirs_gui(Text::fromUtf8(sb->dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true)));
 }
 
 void ShareBrowser::onDownloadDirToClicked_gui(GtkMenuItem *item, gpointer data)

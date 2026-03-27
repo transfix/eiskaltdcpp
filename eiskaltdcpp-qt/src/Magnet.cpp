@@ -57,7 +57,7 @@ Magnet::Magnet(QWidget *parent) :
     connect(toolButton_BROWSE, &QToolButton::clicked, this, &Magnet::slotBrowse);
     connect(this, &QDialog::finished, this, &Magnet::saveWindowSize);
 
-    if (!SETTING(AUTO_SEARCH)){
+    if (!qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::AUTO_SEARCH, true)){
         pushButton_DOWNLOAD->setToolTip(tr("Run search alternatives manually."));
     }
     else {
@@ -92,7 +92,7 @@ void Magnet::showUI(const QString &name, const qulonglong &size, const QString &
     if (tth.isEmpty())
         pushButton_DOWNLOAD->setEnabled(false);
 
-    lineEdit_FPATH->setText(_q(SETTING(DOWNLOAD_DIRECTORY)));
+    lineEdit_FPATH->setText(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true)));
 
     if (!qtCtx()->mainWindow()->isVisible()){
         qtCtx()->mainWindow()->show();
@@ -124,7 +124,7 @@ void Magnet::setLink(const QString &link, MagnetAction action){
             else
                 target = name;
 
-            QString path=_q(SETTING(DOWNLOAD_DIRECTORY));
+            QString path=_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
             target = path + (path.endsWith(QDir::separator())?
                                  QString("") :
                                  QDir::separator()) + target.split(QDir::separator(), Qt::SkipEmptyParts).last();

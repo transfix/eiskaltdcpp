@@ -444,7 +444,7 @@ MainWindow::MainWindow(dcpp::DCContext& dcCtx):
 
 #ifdef LUA_SCRIPT
     dcCtx_.getScriptManager()->load();
-    if (BOOLSETTING(USE_LUA)){
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::USE_LUA, true)){
         // Start as late as possible, as we might (formatting.lua) need to examine settings
         string defaultluascript="startup.lua";
         dcCtx_.getScriptManager()->EvaluateFile(defaultluascript);
@@ -1107,7 +1107,7 @@ void MainWindow::actionMagnet_gui(string magnet)
         name = WGETS("magnet-choose-dir") + name;
 
         if (!File::isAbsolute(name))
-            name = SETTING(DOWNLOAD_DIRECTORY) + name;
+            name = dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true) + name;
 
         typedef Func3<MainWindow, string, int64_t, string> F3;
         F3 *func = new F3(this, &MainWindow::addFileDownloadQueue_client, name, size, tth);
@@ -1438,7 +1438,7 @@ void MainWindow::onResponseMagnetDialog_gui(GtkWidget *dialog, gint response, gp
                     g_free(temp);
                 }
                 if (!File::isAbsolute(path))
-                    path = SETTING(DOWNLOAD_DIRECTORY);
+                    path = mw->dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true);
 
                 WSET("magnet-choose-dir", path);
                 WSET("magnet-action", 1);
@@ -1471,7 +1471,7 @@ void MainWindow::onResponseMagnetDialog_gui(GtkWidget *dialog, gint response, gp
             }
 
             if (!File::isAbsolute(path))
-                path = SETTING(DOWNLOAD_DIRECTORY);
+                path = mw->dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true);
 
             if (set)
             {
@@ -1512,7 +1512,7 @@ void MainWindow::addFileDownloadQueue_client(string name, int64_t size, string t
             dcCtx_.getQueueManager()->add(name, size, TTHValue(tth));
 
             // automatically search for alternative download locations
-            if (BOOLSETTING(AUTO_SEARCH))
+            if (dcCtx_.getSettingsManager()->getBool(SettingsManager::AUTO_SEARCH, true))
                 dcCtx_.getSearchManager()->search(tth, 0, SearchManager::TYPE_TTH, SearchManager::SIZE_DONTCARE,
                                                      Util::emptyString);
         }
@@ -1560,13 +1560,13 @@ gboolean MainWindow::onWindowState_gui(GtkWidget*, GdkEventWindowState *event, g
     if (mw->minimized  || (event->new_window_state & (GDK_WINDOW_STATE_ICONIFIED | GDK_WINDOW_STATE_WITHDRAWN)))
     {
         mw->minimized = true;
-        if (BOOLSETTING(SettingsManager::AUTO_AWAY) && !Util::getAway())
+        if (mw->dcCtx_.getSettingsManager()->getBool(SettingsManager::AUTO_AWAY) && !Util::getAway())
             Util::setAway(mw->dcCtx_, true);
     }
     else if (!mw->minimized || (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED ) != 0)
     {
         mw->minimized = false;
-        if (BOOLSETTING(SettingsManager::AUTO_AWAY) && !Util::getManualAway())
+        if (mw->dcCtx_.getSettingsManager()->getBool(SettingsManager::AUTO_AWAY) && !Util::getManualAway())
             Util::setAway(mw->dcCtx_, false);
     }
 
@@ -2310,7 +2310,7 @@ void MainWindow::onLinkClicked_gui(GtkWidget *widget, gpointer data)
 {
     (void)data;
     string slink = (gchar*) g_object_get_data(G_OBJECT(widget), "link");
-    WulforUtil::openURI(slink);
+    WulforUtil::openURI(*dcpp::getContext(), slink);
 }
 
 void MainWindow::onDebugCMD(GtkWidget *widget, gpointer data)
@@ -2454,8 +2454,8 @@ void MainWindow::on(TimerManagerListener::Second, uint64_t ticks) noexcept
     string uploaded = Util::formatBytes(Socket::getTotalUp());
 
     SettingsManager *sm = dcCtx_.getSettingsManager();
-    sm->set(SettingsManager::TOTAL_UPLOAD,   SETTING(TOTAL_UPLOAD)   + upDiff);
-    sm->set(SettingsManager::TOTAL_DOWNLOAD, SETTING(TOTAL_DOWNLOAD) + downDiff);
+    sm->set(SettingsManager::TOTAL_UPLOAD,   dcCtx_.getSettingsManager()->get(SettingsManager::TOTAL_UPLOAD, true)   + upDiff);
+    sm->set(SettingsManager::TOTAL_DOWNLOAD, dcCtx_.getSettingsManager()->get(SettingsManager::TOTAL_DOWNLOAD, true) + downDiff);
 
     lastUpdate = ticks;
     lastUp = Socket::getTotalUp();
@@ -2473,7 +2473,7 @@ void MainWindow::on(TimerManagerListener::Second, uint64_t ticks) noexcept
     }
     if (WGETB("show-free-space-bar")) {
 #ifdef FREE_SPACE_BAR_C
-        std::string s = SETTING(DOWNLOAD_DIRECTORY);
+        std::string s = dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true);
         unsigned long long available = 0;
         unsigned long long total = 0;
         if (!s.empty()) {

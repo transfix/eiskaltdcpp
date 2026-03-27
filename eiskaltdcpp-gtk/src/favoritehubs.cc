@@ -360,7 +360,7 @@ bool FavoriteHubs::showFavoriteHubDialog_gui(StringMap &params, FavoriteHubs *fh
     gboolean disableChat = params["Disable Chat"] == "1" ? true : false;
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(fh->getWidget("checkDisableChat")), disableChat);
 
-    gboolean externalIP = !(params["External IP"].empty() || params["External IP"] == SETTING(EXTERNAL_IP));
+    gboolean externalIP = !(params["External IP"].empty() || params["External IP"] == fh->dcCtx_.getSettingsManager()->get(SettingsManager::EXTERNAL_IP, true));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(fh->getWidget("checkExternalIP")), externalIP);
 
     gboolean internetIP = params["Internet IP"] == "1" ? true : false;
@@ -372,11 +372,11 @@ bool FavoriteHubs::showFavoriteHubDialog_gui(StringMap &params, FavoriteHubs *fh
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(fh->getWidget("checkbuttonEncoding")), overrideEncoding);
 
     // Set the override default nick checkbox
-    gboolean overrideNick = !(params["Nick"].empty() || params["Nick"] == SETTING(NICK));
+    gboolean overrideNick = !(params["Nick"].empty() || params["Nick"] == fh->dcCtx_.getSettingsManager()->get(SettingsManager::NICK, true));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(fh->getWidget("checkbuttonNick")), overrideNick);
 
     // Set the override default user description checkbox
-    gboolean overrideUserDescription = !(params["User Description"].empty() || params["User Description"] == SETTING(DESCRIPTION));
+    gboolean overrideUserDescription = !(params["User Description"].empty() || params["User Description"] == fh->dcCtx_.getSettingsManager()->get(SettingsManager::DESCRIPTION, true));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(fh->getWidget("checkbuttonUserDescription")), overrideUserDescription);
 
     // Show the dialog
@@ -560,7 +560,7 @@ void FavoriteHubs::getFavHubParams_client(const FavoriteHubEntry *entry, StringM
 
 void FavoriteHubs::addEntry_client(StringMap params)
 {
-    FavoriteHubEntry entry;
+    FavoriteHubEntry entry(dcCtx_);
     entry.setConnect(Util::toInt(params["Auto Connect"]));
     entry.setName(params["Name"]);
     entry.setServer(params["Address"]);

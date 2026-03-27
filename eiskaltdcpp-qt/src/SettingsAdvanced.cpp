@@ -39,7 +39,7 @@ void SettingsAdvanced::ok() {
 }
 
 void SettingsAdvanced::init() {
-    lineEdit_MIME->setText(_q(SETTING(MIME_HANDLER)));
+    lineEdit_MIME->setText(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MIME_HANDLER, true)));
     toolButton_BROWSE->setIcon(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiFOLDER_BLUE));
 
     connect(toolButton_BROWSE, &QToolButton::clicked, this, &SettingsAdvanced::slotBrowse);

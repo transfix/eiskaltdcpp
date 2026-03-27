@@ -18,6 +18,7 @@
 #include "stdafx.h"
 #include "utility.h"
 #include "ServerThread.h"
+#include "ServerManager.h"
 
 #include "dcpp/AdcHub.h"
 #include "dcpp/ADLSearch.h"
@@ -47,12 +48,6 @@
 #include "jsonrpcmethods.h"
 #endif
 
-unsigned short int lport = 3121;
-string lip = "127.0.0.1";
-bool isVerbose = false;
-bool isDebug = false;
-string xmlrpcLog = "/tmp/eiskaltdcpp-daemon.xmlrpc.log";
-string xmlrpcUriPath = "/eiskaltdcpp";
 
 struct ServerThread::SearchFilter {
     string token;
@@ -66,16 +61,19 @@ ServerThread::SearchFilter ServerThread::searchFilter;
 Json::Rpc::HTTPServer * jsonserver;
 #endif
 
-ServerThread::ServerThread(dcpp::DCContext& dcCtx)
+ServerThread::ServerThread(ServerManager& mgr)
     : lastUp(0)
     , lastDown(0)
     , lastUpdate(GET_TICK())
-    , dcCtx_(dcCtx) {
+    , mgr_(mgr)
+    , dcCtx_(mgr.dcCtx()) {
 }
 
 ServerThread::~ServerThread() {
     join();
 }
+
+const DaemonConfig& ServerThread::config() const { return mgr_.config(); }
 
 void ServerThread::Resume() {
     start();
@@ -89,14 +87,14 @@ int ServerThread::run() {
     dcCtx_.getSearchManager()->addListener(this);
 
     try {
-        File::ensureDirectory(SETTING(LOG_DIRECTORY));
+        File::ensureDirectory(dcCtx_.getSettingsManager()->get(SettingsManager::LOG_DIRECTORY, true));
     } catch (const FileException&) { }
 
     startSocket(false);
     autoConnect();
 #ifdef LUA_SCRIPT
     dcCtx_.getScriptManager()->load();
-    if (BOOLSETTING(USE_LUA)) {
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::USE_LUA, true)) {
         // Start as late as possible, as we might (formatting.lua) need to examine settings
         string defaultluascript = "startup.lua";
         dcCtx_.getScriptManager()->EvaluateFile(defaultluascript);
@@ -170,19 +168,19 @@ int ServerThread::run() {
     xmlrpcRegistry.setShutdown(new systemShutdownMethod);
     sock.create();
     sock.setSocketOpt(SO_REUSEADDR, 1);
-    sock.bind(lport, lip);
+    sock.bind(config().port, config().ip);
     server = new xmlrpc_c::serverAbyss(xmlrpc_c::serverAbyss::constrOpt()
                                       .registryP(&xmlrpcRegistry)
                                       .socketFd(sock.sock)
-                                      .logFileName(xmlrpcLog)
+                                      .logFileName(config().xmlrpcLog)
                                       .serverOwnsSignals(false)
-                                      .uriPath(xmlrpcUriPath)
+                                      .uriPath(config().xmlrpcUriPath)
                                       );
     server->run();
 #endif
 
 #ifdef JSONRPC_DAEMON
-    jsonserver = new Json::Rpc::HTTPServer(lip, lport);
+    jsonserver = new Json::Rpc::HTTPServer(config().ip, config().port);
     JsonRpcMethods a(*this);
     jsonserver->AddMethod(new Json::Rpc::RpcMethod<JsonRpcMethods>(a, &JsonRpcMethods::MagnetAdd, std::string("magnet.add")));
     jsonserver->AddMethod(new Json::Rpc::RpcMethod<JsonRpcMethods>(a, &JsonRpcMethods::StopDaemon, std::string("daemon.stop")));
@@ -349,8 +347,8 @@ void ServerThread::on(TimerManagerListener::Second, uint64_t aTick) noexcept {
     int64_t downDiff = Socket::getTotalDown() - lastDown;
 
     SettingsManager *SM = dcCtx_.getSettingsManager();
-    SM->set(SettingsManager::TOTAL_UPLOAD,   SETTING(TOTAL_UPLOAD)   + upDiff);
-    SM->set(SettingsManager::TOTAL_DOWNLOAD, SETTING(TOTAL_DOWNLOAD) + downDiff);
+    SM->set(SettingsManager::TOTAL_UPLOAD,   SM->get(SettingsManager::TOTAL_UPLOAD, true)   + upDiff);
+    SM->set(SettingsManager::TOTAL_DOWNLOAD, SM->get(SettingsManager::TOTAL_DOWNLOAD, true) + downDiff);
 
     lastUpdate = aTick;
     lastUp   = Socket::getTotalUp();
@@ -358,7 +356,7 @@ void ServerThread::on(TimerManagerListener::Second, uint64_t aTick) noexcept {
 }
 
 void ServerThread::on(Connecting, Client* cur) noexcept {
-    if (isVerbose)
+    if (config().verbose)
         cout << "Connecting to " <<  cur->getHubUrl() << "..."<< "\n";
 
     ClientIter i = clientsMap.find(cur->getHubUrl());
@@ -371,7 +369,7 @@ void ServerThread::on(Connecting, Client* cur) noexcept {
 }
 
 void ServerThread::on(Connected, Client* cur) noexcept {
-    if (isVerbose)
+    if (config().verbose)
         cout << "Connected to " << cur->getHubUrl() << "..." << endl;
 }
 
@@ -382,7 +380,7 @@ void ServerThread::on(UserUpdated, Client* cur, const OnlineUser& user) noexcept
     {
         StringMap params;
         getParamsUser(params, id);
-        if (isDebug) {printf ("HUB: %s == UserUpdated %s\n", cur->getHubUrl().c_str(), params["Nick"].c_str()); fflush (stdout);}
+        if (config().debug) {printf ("HUB: %s == UserUpdated %s\n", cur->getHubUrl().c_str(), params["Nick"].c_str()); fflush (stdout);}
         updateUser(params, cur);
     }
 }
@@ -396,7 +394,7 @@ void ServerThread::on(UsersUpdated, Client* cur, const OnlineUserList& list) noe
         {
             StringMap params;
             getParamsUser(params, id);
-            if (isDebug) {printf ("HUB: %s == UsersUpdated %s\n", cur->getHubUrl().c_str(), params["Nick"].c_str()); fflush (stdout);}
+            if (config().debug) {printf ("HUB: %s == UsersUpdated %s\n", cur->getHubUrl().c_str(), params["Nick"].c_str()); fflush (stdout);}
             updateUser(params, cur);
         }
     }
@@ -410,12 +408,12 @@ void ServerThread::on(UserRemoved, Client* cur, const OnlineUser& user) noexcept
 void ServerThread::on(Redirect, Client* cur, const string& line) noexcept {
     (void)cur;
 
-    if (isVerbose)
+    if (config().verbose)
         cout << "Redirected to " << line << endl;
 }
 
 void ServerThread::on(Failed, Client* cur, const string& line) noexcept {
-    if (isVerbose)
+    if (config().verbose)
         cout <<  "Connection failed [ " << cur->getHubUrl() << " ]: " << line << endl;
 }
 
@@ -438,7 +436,7 @@ void ServerThread::on(ClientListener::Message, Client *cl, const ChatMessage& me
     bool privatemsg = message.to && message.replyTo;
     string priv = privatemsg ? " Private from " + message.from->getIdentity().getNick() : " Public";
     if (privatemsg) {
-        if (BOOLSETTING(LOG_PRIVATE_CHAT)) {
+        if (dcCtx_.getSettingsManager()->getBool(SettingsManager::LOG_PRIVATE_CHAT, true)) {
             const string& hint = cl->getHubUrl();
             const CID& cid = message.replyTo->getUser()->getCID();
             bool priv = dcCtx_.getFavoriteManager()->isPrivate(hint);
@@ -448,7 +446,7 @@ void ServerThread::on(ClientListener::Message, Client *cl, const ChatMessage& me
             params["userCID"] = cid.toBase32();
             params["userNI"] = dcCtx_.getClientManager()->getNicks(cid, hint, priv)[0];
             params["myCID"] = dcCtx_.getClientManager()->getMe()->getCID().toBase32();
-            LOG(LogManager::PM, params);
+            dcCtx_.getLogManager()->log(LogManager::PM, params);
         }
     } else {
         ClientIter it = clientsMap.find(cl->getHubUrl());
@@ -458,16 +456,16 @@ void ServerThread::on(ClientListener::Message, Client *cl, const ChatMessage& me
             string tmp = "[" + Util::getTimeString() + "] " + msg;
             clientsMap[cl->getHubUrl()].curchat.push_back(tmp);
         }
-        if (BOOLSETTING(LOG_MAIN_CHAT)) {
+        if (dcCtx_.getSettingsManager()->getBool(SettingsManager::LOG_MAIN_CHAT, true)) {
             params["message"] = Text::fromUtf8(msg);
             cl->getHubIdentity().getParams(params, "hub", false);
             params["hubURL"] = cl->getHubUrl();
             cl->getMyIdentity().getParams(params, "my", true);
-            LOG(LogManager::CHAT, params);
+            dcCtx_.getLogManager()->log(LogManager::CHAT, params);
         }
     }
 
-    if (isVerbose)
+    if (config().verbose)
         cout << cl->getHubUrl() << priv << ": [" << Util::getTimeString() << "] " << msg << endl;
 }
 
@@ -476,16 +474,16 @@ void ServerThread::on(StatusMessage, Client *cl, const string& line, int statusF
 
     string msg = line;
 
-    if (BOOLSETTING(LOG_STATUS_MESSAGES)) {
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::LOG_STATUS_MESSAGES, true)) {
         StringMap params;
         cl->getHubIdentity().getParams(params, "hub", false);
         params["hubURL"] = cl->getHubUrl();
         cl->getMyIdentity().getParams(params, "my", true);
         params["message"] = Text::fromUtf8(msg);
-        LOG(LogManager::STATUS, params);
+        dcCtx_.getLogManager()->log(LogManager::STATUS, params);
     }
 
-    if (isVerbose)
+    if (config().verbose)
         cout << cl->getHubUrl() << " [" << Util::getTimeString() << "] *" << msg << endl;
 }
 
@@ -831,13 +829,13 @@ bool ServerThread::addInQueue(const string& sddir, const string& name, const int
     try
     {
         if (sddir.empty())
-            dcCtx_.getQueueManager()->add(SETTING(DOWNLOAD_DIRECTORY) + PATH_SEPARATOR_STR + name, size, TTHValue(tth));
+            dcCtx_.getQueueManager()->add(dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true) + PATH_SEPARATOR_STR + name, size, TTHValue(tth));
         else
             dcCtx_.getQueueManager()->add(sddir + PATH_SEPARATOR_STR + name, size, TTHValue(tth));
     }
     catch (const Exception& e)
     {
-        if (isDebug) std::cout << "ServerThread::addInQueue->(" << e.getError() << ")"<< std::endl;
+        if (config().debug) std::cout << "ServerThread::addInQueue->(" << e.getError() << ")"<< std::endl;
         return false;
     }
 
@@ -1199,16 +1197,16 @@ void ServerThread::updateUser(const StringMap& params, Client* cl)
     StringMap & userlist = clientsMap[cl->getHubUrl()].curuserlist;
     if (userlist.empty()) {
         userlist.insert(StringMap::value_type(Nick, cid));
-        if (isDebug) {printf ("updateUser HUB: %s == Add user: %s\n", cl->getHubUrl().c_str(), Nick.c_str()); fflush (stdout);}
+        if (config().debug) {printf ("updateUser HUB: %s == Add user: %s\n", cl->getHubUrl().c_str(), Nick.c_str()); fflush (stdout);}
     } else {
         auto it = userlist.find(Nick);
         if (it == userlist.end()) {
-            if (isDebug) {printf ("updateUser HUB: %s == Add user: %s\n", cl->getHubUrl().c_str(), Nick.c_str()); fflush (stdout);}
+            if (config().debug) {printf ("updateUser HUB: %s == Add user: %s\n", cl->getHubUrl().c_str(), Nick.c_str()); fflush (stdout);}
             userlist.insert(StringMap::value_type(Nick, cid));
             return;
         } else if ((*it).second == cid && (*it).first != Nick) {
             // User has changed nick, update userMap and remove the old Nick tag
-            if (isDebug) {printf ("updateUser HUB: %s == Update user: %s\n", cl->getHubUrl().c_str(), Nick.c_str()); fflush (stdout);}
+            if (config().debug) {printf ("updateUser HUB: %s == Update user: %s\n", cl->getHubUrl().c_str(), Nick.c_str()); fflush (stdout);}
             userlist.erase(it);
             userlist.insert(StringMap::value_type(Nick, cid));
         }
@@ -1220,7 +1218,7 @@ void ServerThread::removeUser(const string& cid, Client* cl)
     StringMap & userlist = clientsMap[cl->getHubUrl()].curuserlist;
     for (const auto& user : userlist) {
         if (user.second == cid) {
-            if (isDebug) {printf ("HUB: %s == Remove user: %s\n", cl->getHubUrl().c_str(), (user.first).c_str()); fflush (stdout);}
+            if (config().debug) {printf ("HUB: %s == Remove user: %s\n", cl->getHubUrl().c_str(), (user.first).c_str()); fflush (stdout);}
             userlist.erase(user.first);
             break;
         }
@@ -1400,7 +1398,7 @@ bool ServerThread::downloadDirFromList(const string& directory, const string& do
         }
         if (!dir)
             return false;
-        string dtdir = downloadto.empty() ? SETTING(DOWNLOAD_DIRECTORY) : downloadto;
+        string dtdir = downloadto.empty() ? dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true) : downloadto;
         if (downloadDirFromList(dir, it->second, dtdir))
             return true;
         else
@@ -1416,7 +1414,7 @@ bool ServerThread::downloadDirFromList(DirectoryListing::Directory *dir, Directo
         list->download(dir, downloadto, false);
     }
     catch (const Exception& e) {
-        if (isDebug) std::cout << "ServerThread::downloadDirFromList->(" << e.getError() << ")"<< std::endl;
+        if (config().debug) std::cout << "ServerThread::downloadDirFromList->(" << e.getError() << ")"<< std::endl;
         return false;
     }
     return true;
@@ -1444,7 +1442,7 @@ bool ServerThread::downloadFileFromList(const string& target_file, const string&
         }
         if (!filePtr)
             return false;
-        string dtdir = downloadto.empty() ? SETTING(DOWNLOAD_DIRECTORY) : downloadto;
+        string dtdir = downloadto.empty() ? dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true) : downloadto;
         dtdir += PATH_SEPARATOR + fname;
         if (downloadFileFromList(filePtr, it->second, dtdir))
             return true;
@@ -1461,7 +1459,7 @@ bool ServerThread::downloadFileFromList(DirectoryListing::File *file, DirectoryL
         list->download(file, downloadto, false, false);
     }
     catch (const Exception& e) {
-        if (isDebug) std::cout << "ServerThread::downloadFileFromList->(" << e.getError() << ")"<< std::endl;
+        if (config().debug) std::cout << "ServerThread::downloadFileFromList->(" << e.getError() << ")"<< std::endl;
         return false;
     }
     return true;

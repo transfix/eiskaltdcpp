@@ -104,7 +104,7 @@ void PreviewMenu::onPreviewAppClicked_gui(GtkMenuItem *menuItem, gpointer data)
     string application = (gchar *) g_object_get_data(G_OBJECT(menuItem), "application");
     string target = (gchar *) g_object_get_data(G_OBJECT(menuItem), "target");
 
-    if(command == "default") WulforUtil::openURI(target);
+    if(command == "default") WulforUtil::openURI(*dcpp::getContext(), target);
     else
     {
         string cmd = application + " \"" + target + "\"";

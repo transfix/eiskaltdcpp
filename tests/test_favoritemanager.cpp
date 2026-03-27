@@ -46,7 +46,7 @@ static void ensureContext() {
 TEST_CASE("FavoriteManager: addFavorite hub", "[favoritemanager]") {
     ensureContext();
 
-    FavoriteHubEntry entry;
+    FavoriteHubEntry entry(*getContext());
     entry.setServer("adc://test-hub.example.com");
     entry.setName("Test Hub");
     entry.setHubDescription("A test hub");
@@ -64,7 +64,7 @@ TEST_CASE("FavoriteManager: isFavoriteHub false for unknown", "[favoritemanager]
 TEST_CASE("FavoriteManager: addFavorite no duplicate", "[favoritemanager]") {
     ensureContext();
 
-    FavoriteHubEntry entry;
+    FavoriteHubEntry entry(*getContext());
     entry.setServer("adc://dup-hub.example.com");
     entry.setName("Dup Hub");
     g_fm->addFavorite(entry);
@@ -79,7 +79,7 @@ TEST_CASE("FavoriteManager: addFavorite no duplicate", "[favoritemanager]") {
 TEST_CASE("FavoriteManager: removeFavorite hub", "[favoritemanager]") {
     ensureContext();
 
-    FavoriteHubEntry entry;
+    FavoriteHubEntry entry(*getContext());
     entry.setServer("adc://remove-me.example.com");
     entry.setName("Remove Me");
     g_fm->addFavorite(entry);
@@ -97,7 +97,7 @@ TEST_CASE("FavoriteManager: removeFavorite hub", "[favoritemanager]") {
 TEST_CASE("FavoriteManager: getFavoriteHubEntry", "[favoritemanager]") {
     ensureContext();
 
-    FavoriteHubEntry entry;
+    FavoriteHubEntry entry(*getContext());
     entry.setServer("adc://entry-test.example.com");
     entry.setName("Entry Test");
     entry.setNick("myNick");
@@ -271,7 +271,7 @@ TEST_CASE("FavoriteManager: updateUserCommand", "[favoritemanager]") {
 TEST_CASE("FavoriteManager: save writes file", "[favoritemanager]") {
     ensureContext();
 
-    FavoriteHubEntry entry;
+    FavoriteHubEntry entry(*getContext());
     entry.setServer("adc://save-test.example.com");
     entry.setName("Save Test Hub");
     g_fm->addFavorite(entry);

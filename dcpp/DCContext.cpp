@@ -142,14 +142,14 @@ void DCContext::startup(ProgressFn progress) {
     // ── Load persistent state ───────────────────────────────────────────
     settingsManager_->load();
 
-    Util::setLang(*this, SETTING(LANGUAGE));
+    Util::setLang(*this, getSettingsManager()->get(SettingsManager::LANGUAGE, true));
 #ifdef USE_MINIUPNP
     mappingManager_->runMiniUPnP();
 #endif
 
     dynDNS_->load();
 
-    if (BOOLSETTING(IPFILTER)) {
+    if (getSettingsManager()->getBool(SettingsManager::IPFILTER, true)) {
         ipFilter_->load();
     }
 

@@ -53,7 +53,7 @@ WulforSettingsManager::WulforSettingsManager():
     // Populate all defaults via the widget-independent function.
     // Pass GTK-specific values for the few defaults that depend on them.
     gtk_settings::populateDefaults(model_,
-                                    SETTING(DOWNLOAD_DIRECTORY),
+                                    dcpp::getContext()->getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true),
                                     WulforUtil::ENCODING_LOCALE);
 
     // Override notification titles with translated strings

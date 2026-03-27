@@ -67,15 +67,15 @@ void SettingsPersonal::ok(){
 }
 
 void SettingsPersonal::init(){
-    lineEdit_NICK->setText(SETTING(NICK).c_str());
-    lineEdit_EMAIL->setText(SETTING(EMAIL).c_str());
-    lineEdit_DESC->setText(SETTING(DESCRIPTION).c_str());
-    lineEdit_AWAYMSG->setText(SETTING(DEFAULT_AWAY_MESSAGE).c_str());
+    lineEdit_NICK->setText(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::NICK, true).c_str());
+    lineEdit_EMAIL->setText(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::EMAIL, true).c_str());
+    lineEdit_DESC->setText(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DESCRIPTION, true).c_str());
+    lineEdit_AWAYMSG->setText(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DEFAULT_AWAY_MESSAGE, true).c_str());
 
     for (auto i = SettingsManager::connectionSpeeds.begin(); i != SettingsManager::connectionSpeeds.end(); ++i){
         comboBox_SPEED->addItem((*i).c_str());
 
-        if (SETTING(UPLOAD_SPEED) == *i)
+        if (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::UPLOAD_SPEED, true) == *i)
             comboBox_SPEED->setCurrentIndex(i - SettingsManager::connectionSpeeds.begin());
     }
 

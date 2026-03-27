@@ -76,7 +76,7 @@ namespace dht
      */
     void DHT::start()
     {
-        if(!BOOLSETTING(USE_DHT))
+        if(!CTX_BOOLSETTING(USE_DHT))
             return;
 
         // start with global firewalled status
@@ -85,7 +85,7 @@ namespace dht
 
         if(!bucket)
         {
-            if(!BOOLSETTING(NO_IP_OVERRIDE))
+            if(!CTX_BOOLSETTING(NO_IP_OVERRIDE))
                 ctx_.getSettingsManager()->set(SettingsManager::EXTERNAL_IP, Util::emptyString);
 
             bucket = new KBucket(*this);
@@ -110,7 +110,7 @@ namespace dht
 
         socket.disconnect();
 
-        if(!BOOLSETTING(USE_DHT) || exiting)
+        if(!CTX_BOOLSETTING(USE_DHT) || exiting)
         {
             saveData();
 
@@ -312,14 +312,14 @@ namespace dht
 
         cmd.addParam("TY", Util::toString(type));
         cmd.addParam("VE", fullADCVersionString);
-        cmd.addParam("NI", SETTING(NICK));
+        cmd.addParam("NI", CTX_SETTING(NICK));
         cmd.addParam("SL", Util::toString(ctx_.getUploadManager()->getSlots()));
 
         int limit = ctx_.getThrottleManager()->getUpLimit();
-        if (SETTING(THROTTLE_ENABLE) && limit > 0) {
+        if (CTX_SETTING(THROTTLE_ENABLE) && limit > 0) {
             cmd.addParam("US", Util::toString(limit*1024));
         } else {
-            cmd.addParam("US", Util::toString((long)(Util::toDouble(SETTING(UPLOAD_SPEED))*1024*1024/8)));
+            cmd.addParam("US", Util::toString((long)(Util::toDouble(CTX_SETTING(UPLOAD_SPEED))*1024*1024/8)));
         }
 
         string su;
@@ -602,7 +602,7 @@ namespace dht
                         firewalled = false;
                     }
 
-                    if(!BOOLSETTING(NO_IP_OVERRIDE))
+                    if(!CTX_BOOLSETTING(NO_IP_OVERRIDE))
                         ctx_.getSettingsManager()->set(SettingsManager::EXTERNAL_IP, externalIP);
 
                     firewalledChecks.clear();

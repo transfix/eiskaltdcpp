@@ -302,7 +302,7 @@ void PublicHubs::onAddFav_gui(GtkMenuItem*, gpointer data)
 
     if (gtk_tree_selection_get_selected(ph->hubSelection, NULL, &iter))
     {
-        FavoriteHubEntry entry;
+        FavoriteHubEntry entry(ph->dcCtx_);
         string name = ph->hubView.getString(&iter, _("Name"));
         string description = ph->hubView.getString(&iter, _("Description"));
         string address = ph->hubView.getString(&iter, _("Address"));
@@ -310,9 +310,9 @@ void PublicHubs::onAddFav_gui(GtkMenuItem*, gpointer data)
         entry.setName(name);
         entry.setServer(address);
         entry.setHubDescription(description);
-        entry.setNick(SETTING(NICK));
+        entry.setNick(ph->dcCtx_.getSettingsManager()->get(SettingsManager::NICK, true));
         entry.setPassword("");
-        entry.setUserDescription(SETTING(DESCRIPTION));
+        entry.setUserDescription(ph->dcCtx_.getSettingsManager()->get(SettingsManager::DESCRIPTION, true));
 
         typedef Func1<PublicHubs, FavoriteHubEntry> F1;
         F1 *func = new F1(ph, &PublicHubs::addFav_client, entry);

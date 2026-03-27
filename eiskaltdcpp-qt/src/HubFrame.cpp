@@ -1716,8 +1716,8 @@ bool HubFrame::parseForCmd(QString line, QWidget *wg){
     }
     else if (cmd == "/ratio"){
         double ratio;
-        double up   = static_cast<double>(SETTING(TOTAL_UPLOAD));
-        double down = static_cast<double>(SETTING(TOTAL_DOWNLOAD));
+        double up   = static_cast<double>(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TOTAL_UPLOAD, true));
+        double down = static_cast<double>(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TOTAL_DOWNLOAD, true));
 
 
         if (down > 0)
@@ -2333,7 +2333,7 @@ void HubFrame::addAsFavorite(){
     FavoriteHubEntry *existingHub = qtCtx()->dcCtx().getFavoriteManager()->getFavoriteHubEntry(d->client->getHubUrl());
 
     if (!existingHub){
-        FavoriteHubEntry aEntry;
+        FavoriteHubEntry aEntry(qtCtx()->dcCtx());
 
         aEntry.setServer(d->client->getHubUrl());
         aEntry.setName(d->client->getHubName());
@@ -2409,7 +2409,7 @@ void HubFrame::newMsg(const VarMap &map){
     message = "<font color=\"" + qtCtx()->settings()->getStr(msg_color) + "\">" + message + "</font>";
 
     output  += time;
-    string info= Util::formatAdditionalInfo(map["I4"].toString().toStdString(),BOOLSETTING(USE_IP),BOOLSETTING(GET_USER_COUNTRY));
+    string info= Util::formatAdditionalInfo(map["I4"].toString().toStdString(),qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::USE_IP, true),qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::GET_USER_COUNTRY, true));
 
     if (!info.empty())
         output  += " <font color=\"" + qtCtx()->settings()->getStr(WS_CHAT_TIME_COLOR)+ "\">" + _q(info) + "</font>";
@@ -2526,7 +2526,7 @@ void HubFrame::newPm(const VarMap &map){
 
     message       = "<font color=\"" + qtCtx()->settings()->getStr(WS_CHAT_MSG_COLOR) + "\">" + message + "</font>";
     full_message  += time;
-    string info= Util::formatAdditionalInfo(map["I4"].toString().toStdString(),BOOLSETTING(USE_IP),BOOLSETTING(GET_USER_COUNTRY));
+    string info= Util::formatAdditionalInfo(map["I4"].toString().toStdString(),qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::USE_IP, true),qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::GET_USER_COUNTRY, true));
 
     if (!info.empty())
         full_message += " <font color=\"" + qtCtx()->settings()->getStr(WS_CHAT_TIME_COLOR)+ "\">" + _q(info) + "</font>";
@@ -3782,7 +3782,7 @@ void HubFrame::on(ClientListener::Redirect, Client*, const string &link) noexcep
         return;
     }
 
-    if(BOOLSETTING(AUTO_FOLLOW))
+    if(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::AUTO_FOLLOW, true))
         emit coreFollow(_q(link));
 }
 
@@ -3832,9 +3832,9 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
         bool isHub = user->getIdentity().isHub();
         bool isOp  = user->getIdentity().isOp();
 
-        if (isHub && BOOLSETTING(IGNORE_HUB_PMS))
+        if (isHub && qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::IGNORE_HUB_PMS, true))
             return;
-        else if (isBot && BOOLSETTING(IGNORE_BOT_PMS))
+        else if (isBot && qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::IGNORE_BOT_PMS, true))
             return;
 
         CID id           = user->getUser()->getCID();
@@ -3895,8 +3895,8 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
         if (!(isBot || isHub) && (message.from->getUser() != qtCtx()->dcCtx().getClientManager()->getMe()) && Util::getAway() && !hasPMWindow)
             qtCtx()->dcCtx().getClientManager()->privateMessage(HintedUser(user->getUser(), d->client->getHubUrl()), Util::getAwayMessage(), false);
 
-        if (BOOLSETTING(LOG_PRIVATE_CHAT)){
-            string info = Util::formatAdditionalInfo(map["I4"].toString().toStdString(),BOOLSETTING(USE_IP),BOOLSETTING(GET_USER_COUNTRY));
+        if (qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::LOG_PRIVATE_CHAT, true)){
+            string info = Util::formatAdditionalInfo(map["I4"].toString().toStdString(),qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::USE_IP, true),qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::GET_USER_COUNTRY, true));
             QString qinfo = !info.empty() ? _q(info) : "";
 
             StringMap params;
@@ -3907,7 +3907,7 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
             params["userNI"] = user->getIdentity().getNick();
             params["myCID"] = qtCtx()->dcCtx().getClientManager()->getMe()->getCID().toBase32();
             params["userI4"] = message.from->getIdentity().getIp();
-            LOG(LogManager::PM, params);
+            qtCtx()->dcCtx().getLogManager()->log(LogManager::PM, params);
         }
     }
     else
@@ -3945,8 +3945,8 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
 
         emit coreMessage(map);
 
-        if (BOOLSETTING(LOG_MAIN_CHAT)){
-            string info = Util::formatAdditionalInfo(map["I4"].toString().toStdString(),BOOLSETTING(USE_IP),BOOLSETTING(GET_USER_COUNTRY));
+        if (qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::LOG_MAIN_CHAT, true)){
+            string info = Util::formatAdditionalInfo(map["I4"].toString().toStdString(),qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::USE_IP, true),qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::GET_USER_COUNTRY, true));
             QString qinfo = !info.empty() ? _q(info) : "";
             QString nick  =  _q(user->getIdentity().getNick());
 
@@ -3957,7 +3957,7 @@ void HubFrame::on(ClientListener::Message, Client*, const ChatMessage &message) 
             params["userNI"] = _tq(nick);
             params["userI4"] = user->getIdentity().getIp();
             d->client->getMyIdentity().getParams(params, "my", true);
-            LOG(LogManager::CHAT, params);
+            qtCtx()->dcCtx().getLogManager()->log(LogManager::CHAT, params);
         }
     }
 }
@@ -3969,13 +3969,13 @@ void HubFrame::on(ClientListener::StatusMessage, Client*, const string &msg, int
 
     Q_D(HubFrame);
 
-    if (BOOLSETTING(LOG_STATUS_MESSAGES)){
+    if (qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::LOG_STATUS_MESSAGES, true)){
         StringMap params;
         d->client->getHubIdentity().getParams(params, "hub", false);
         params["hubURL"] = d->client->getHubUrl();
         d->client->getMyIdentity().getParams(params, "my", true);
         params["message"] = msg;
-        LOG(LogManager::STATUS, params);
+        qtCtx()->dcCtx().getLogManager()->log(LogManager::STATUS, params);
     }
 }
 

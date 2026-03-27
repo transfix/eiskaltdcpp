@@ -64,7 +64,7 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) noexc
             fire(UserConnectionListener::ProtocolError(), this, _("Non-UTF-8 data in an ADC connection"));
             return;
         }
-        COMMAND_DEBUG(aLine, DebugManager::CLIENT_IN, getRemoteIp());
+        CTX_COMMAND_DEBUG(aLine, DebugManager::CLIENT_IN, getRemoteIp());
         dispatch(aLine);
         return;
     } else if(aLine[0] == '$') {
@@ -73,7 +73,7 @@ void UserConnection::on(BufferedSocketListener::Line, const string& aLine) noexc
         fire(UserConnectionListener::ProtocolError(), this, _("Invalid data"));
         return;
     }
-    COMMAND_DEBUG((Util::stricmp(getEncoding(), Text::utf8) != 0 ? Text::toUtf8(aLine, getEncoding()) : aLine), DebugManager::CLIENT_IN, getRemoteIp());
+    CTX_COMMAND_DEBUG((Util::stricmp(getEncoding(), Text::utf8) != 0 ? Text::toUtf8(aLine, getEncoding()) : aLine), DebugManager::CLIENT_IN, getRemoteIp());
     string cmd;
     string param;
 
@@ -298,7 +298,7 @@ void UserConnection::updateChunkSize(int64_t leafSize, int64_t lastChunk, uint64
 
 void UserConnection::send(const string &aString) {
     lastActivity = GET_TICK();
-    COMMAND_DEBUG((Util::stricmp(getEncoding(), Text::utf8) != 0 ? Text::toUtf8(aString, getEncoding()) : aString), DebugManager::CLIENT_OUT, getRemoteIp());
+    CTX_COMMAND_DEBUG((Util::stricmp(getEncoding(), Text::utf8) != 0 ? Text::toUtf8(aString, getEncoding()) : aString), DebugManager::CLIENT_OUT, getRemoteIp());
 #ifdef LUA_SCRIPT
     if(onUserConnectionMessageOut(this, aString)) {
         disconnect(true);

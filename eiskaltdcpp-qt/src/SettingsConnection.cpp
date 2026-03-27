@@ -73,7 +73,7 @@ void SettingsConnection::ok(){
     bool active = !radioButton_PASSIVE->isChecked();
     SettingsManager *SM = qtCtx()->dcCtx().getSettingsManager();
 
-    int old_mode = SETTING(INCOMING_CONNECTIONS);
+    int old_mode = qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::INCOMING_CONNECTIONS, true);
     SM->set(SettingsManager::AUTO_DETECT_CONNECTION, checkBox_AUTO_DETECT_CONNECTION->isChecked());
     if (active){
         if (radioButton_ACTIVE->isChecked())
@@ -87,7 +87,7 @@ void SettingsConnection::ok(){
         SM->set(SettingsManager::TCP_PORT, spinBox_TCP->value());
         SM->set(SettingsManager::UDP_PORT, spinBox_UDP->value());
 
-        if (spinBox_TLS->value() != SETTING(TCP_PORT))
+        if (spinBox_TLS->value() != qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TCP_PORT, true))
             SM->set(SettingsManager::TLS_PORT, spinBox_TLS->value());
         else
             SM->set(SettingsManager::TLS_PORT, spinBox_TLS->value()+1);
@@ -103,7 +103,7 @@ void SettingsConnection::ok(){
     }
 
     bool use_socks = !radioButton_DC->isChecked();
-    int type = SETTING(OUTGOING_CONNECTIONS);
+    int type = qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::OUTGOING_CONNECTIONS, true);
 
     SM->set(SettingsManager::BIND_IFACE, radioButton_BIND_IFACE->isChecked());
     SM->set(SettingsManager::BIND_IFACE_NAME, _tq(comboBox_IFACES->currentText()));
@@ -132,8 +132,8 @@ void SettingsConnection::ok(){
         SM->set(SettingsManager::OUTGOING_CONNECTIONS, SettingsManager::OUTGOING_DIRECT);
     }
 
-    if (SETTING(OUTGOING_CONNECTIONS) != type)
-        Socket::socksUpdated();
+    if (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::OUTGOING_CONNECTIONS, true) != type)
+        Socket::socksUpdated(qtCtx()->dcCtx());
 
     SM->set(SettingsManager::THROTTLE_ENABLE, checkBox_THROTTLE_ENABLE->isChecked());
     SM->set(SettingsManager::TIME_DEPENDENT_THROTTLE, checkBox_TIME_DEPENDENT_THROTTLE->isChecked());
@@ -151,12 +151,12 @@ void SettingsConnection::ok(){
 
 #ifdef WITH_DHT
     SM->set(SettingsManager::USE_DHT, groupBox_DHT->isChecked());
-    if (spinBox_DHT->value() != SETTING(UDP_PORT))
+    if (spinBox_DHT->value() != qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::UDP_PORT, true))
         SM->set(SettingsManager::DHT_PORT, spinBox_DHT->value());
     else
         SM->set(SettingsManager::DHT_PORT, spinBox_DHT->value()+1);
 
-    if (!(old_dht < 1024) && (SETTING(DHT_PORT) < 1024))
+    if (!(old_dht < 1024) && (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DHT_PORT, true) < 1024))
         showMsg(tr("Program need root privileges to open ports less than 1024"), nullptr);
 #endif
     SM->set(SettingsManager::ALLOW_UNTRUSTED_CLIENTS, checkBox_UNTRUSTED_CLIENTS->isChecked());
@@ -165,11 +165,11 @@ void SettingsConnection::ok(){
     SM->set(SettingsManager::USE_TLS, (comboBox_TLS->currentIndex() == 1) || (comboBox_TLS->currentIndex() == 2));
     SM->set(SettingsManager::REQUIRE_TLS, (comboBox_TLS->currentIndex() == 2));
 
-    if (old_mode != SETTING(INCOMING_CONNECTIONS) || old_tcp != (SETTING(TCP_PORT))
-        || old_udp != (SETTING(UDP_PORT)) || old_tls != (SETTING(TLS_PORT)))
+    if (old_mode != qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::INCOMING_CONNECTIONS, true) || old_tcp != (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TCP_PORT, true))
+        || old_udp != (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::UDP_PORT, true)) || old_tls != (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TLS_PORT, true)))
     {
         if (!(old_tcp < 1024 || old_tls < 1024 || old_udp < 1024) &&
-            (SETTING(TCP_PORT) < 1024 || SETTING(UDP_PORT) < 1024 || SETTING(TLS_PORT) < 1024))
+            (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TCP_PORT, true) < 1024 || qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::UDP_PORT, true) < 1024 || qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TLS_PORT, true) < 1024))
             showMsg(tr("Program need root privileges to open ports less than 1024"), nullptr);
 
         qtCtx()->mainWindow()->startSocket(true);
@@ -177,42 +177,42 @@ void SettingsConnection::ok(){
 }
 
 void SettingsConnection::init(){
-    lineEdit_WANIP->setText(QString::fromStdString(SETTING(EXTERNAL_IP)));
-    lineEdit_BIND_ADDRESS->setText(QString::fromStdString(SETTING(BIND_ADDRESS)));
+    lineEdit_WANIP->setText(QString::fromStdString(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::EXTERNAL_IP, true)));
+    lineEdit_BIND_ADDRESS->setText(QString::fromStdString(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::BIND_ADDRESS, true)));
 
-    spinBox_TCP->setValue(old_tcp = SETTING(TCP_PORT));
-    spinBox_UDP->setValue(old_udp = SETTING(UDP_PORT));
-    spinBox_TLS->setValue(old_tls = SETTING(TLS_PORT));
-    checkBox_AUTO_DETECT_CONNECTION->setChecked(BOOLSETTING(AUTO_DETECT_CONNECTION));
-    checkBox_THROTTLE_ENABLE->setChecked(BOOLSETTING(THROTTLE_ENABLE));
-    checkBox_TIME_DEPENDENT_THROTTLE->setChecked(BOOLSETTING(TIME_DEPENDENT_THROTTLE));
-    spinBox_DOWN_LIMIT_NORMAL->setValue(SETTING(MAX_DOWNLOAD_SPEED_MAIN));
-    spinBox_UP_LIMIT_NORMAL->setValue(SETTING(MAX_UPLOAD_SPEED_MAIN));
-    spinBox_DOWN_LIMIT_TIME->setValue(SETTING(MAX_DOWNLOAD_SPEED_ALTERNATE));
-    spinBox_UP_LIMIT_TIME->setValue(SETTING(MAX_UPLOAD_SPEED_ALTERNATE));
-    spinBox_BANDWIDTH_LIMIT_START->setValue(SETTING(BANDWIDTH_LIMIT_START));
-    spinBox_BANDWIDTH_LIMIT_END->setValue(SETTING(BANDWIDTH_LIMIT_END));
-    spinBox_ALTERNATE_SLOTS->setValue(SETTING(SLOTS_ALTERNATE_LIMITING));
-    spinBox_RECONNECT_DELAY->setValue(SETTING(RECONNECT_DELAY));
-    checkBox_DONTOVERRIDE->setCheckState( SETTING(NO_IP_OVERRIDE)? Qt::Checked : Qt::Unchecked );
-    checkBox_DYNDNS->setCheckState( BOOLSETTING(DYNDNS_ENABLE) ? Qt::Checked : Qt::Unchecked );
-    lineEdit_DYNDNS_SERVER->setText(QString::fromStdString(SETTING(DYNDNS_SERVER)));
+    spinBox_TCP->setValue(old_tcp = qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TCP_PORT, true));
+    spinBox_UDP->setValue(old_udp = qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::UDP_PORT, true));
+    spinBox_TLS->setValue(old_tls = qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::TLS_PORT, true));
+    checkBox_AUTO_DETECT_CONNECTION->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::AUTO_DETECT_CONNECTION, true));
+    checkBox_THROTTLE_ENABLE->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::THROTTLE_ENABLE, true));
+    checkBox_TIME_DEPENDENT_THROTTLE->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::TIME_DEPENDENT_THROTTLE, true));
+    spinBox_DOWN_LIMIT_NORMAL->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MAX_DOWNLOAD_SPEED_MAIN, true));
+    spinBox_UP_LIMIT_NORMAL->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MAX_UPLOAD_SPEED_MAIN, true));
+    spinBox_DOWN_LIMIT_TIME->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MAX_DOWNLOAD_SPEED_ALTERNATE, true));
+    spinBox_UP_LIMIT_TIME->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MAX_UPLOAD_SPEED_ALTERNATE, true));
+    spinBox_BANDWIDTH_LIMIT_START->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::BANDWIDTH_LIMIT_START, true));
+    spinBox_BANDWIDTH_LIMIT_END->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::BANDWIDTH_LIMIT_END, true));
+    spinBox_ALTERNATE_SLOTS->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::SLOTS_ALTERNATE_LIMITING, true));
+    spinBox_RECONNECT_DELAY->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::RECONNECT_DELAY, true));
+    checkBox_DONTOVERRIDE->setCheckState( qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::NO_IP_OVERRIDE, true)? Qt::Checked : Qt::Unchecked );
+    checkBox_DYNDNS->setCheckState( qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::DYNDNS_ENABLE, true) ? Qt::Checked : Qt::Unchecked );
+    lineEdit_DYNDNS_SERVER->setText(QString::fromStdString(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DYNDNS_SERVER, true)));
 
 #ifdef WITH_DHT
-    groupBox_DHT->setChecked(BOOLSETTING(USE_DHT));
-    spinBox_DHT->setValue(old_dht = SETTING(DHT_PORT));
+    groupBox_DHT->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::USE_DHT, true));
+    spinBox_DHT->setValue(old_dht = qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::DHT_PORT, true));
 #else
     groupBox_DHT->hide();
 #endif
 
-    checkBox_UNTRUSTED_CLIENTS->setChecked(SETTING(ALLOW_UNTRUSTED_CLIENTS));
-    checkBox_UNTRUSTED_HUBS->setChecked(SETTING(ALLOW_UNTRUSTED_HUBS));
+    checkBox_UNTRUSTED_CLIENTS->setChecked(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::ALLOW_UNTRUSTED_CLIENTS, true));
+    checkBox_UNTRUSTED_HUBS->setChecked(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::ALLOW_UNTRUSTED_HUBS, true));
 
     comboBox_TLS->setCurrentIndex(0);
-    if (SETTING(USE_TLS)) {
+    if (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::USE_TLS, true)) {
         comboBox_TLS->setCurrentIndex(1);
     }
-    if (SETTING(REQUIRE_TLS)) {
+    if (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::REQUIRE_TLS, true)) {
         comboBox_TLS->setCurrentIndex(2);
     }
 
@@ -223,18 +223,18 @@ void SettingsConnection::init(){
 
     comboBox_IFACES->addItem("");
 
-    if (SETTING(BIND_IFACE)){
+    if (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::BIND_IFACE, true)){
         radioButton_BIND_IFACE->toggle();
 
-        if (ifaces.contains(_q(SETTING(BIND_IFACE_NAME))))
-            comboBox_IFACES->setCurrentIndex(ifaces.indexOf(_q(SETTING(BIND_IFACE_NAME))));
+        if (ifaces.contains(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::BIND_IFACE_NAME, true))))
+            comboBox_IFACES->setCurrentIndex(ifaces.indexOf(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::BIND_IFACE_NAME, true))));
         else
             comboBox_IFACES->setCurrentIndex(comboBox_IFACES->count()-1);
     }
     else
         radioButton_BIND_ADDR->toggle();
 
-    switch (SETTING(INCOMING_CONNECTIONS)){
+    switch (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::INCOMING_CONNECTIONS, true)){
     case SettingsManager::INCOMING_DIRECT:
         {
             radioButton_ACTIVE->setChecked(true);
@@ -266,14 +266,14 @@ void SettingsConnection::init(){
     radioButton_UPNP->setEnabled(false);
 #endif
 
-    lineEdit_SIP->setText(QString::fromStdString(SETTING(SOCKS_SERVER)));
-    lineEdit_SUSR->setText(QString::fromStdString(SETTING(SOCKS_USER)));
-    lineEdit_SPORT->setText(QString().setNum(SETTING(SOCKS_PORT)));
-    lineEdit_SPSWD->setText(QString::fromStdString(SETTING(SOCKS_PASSWORD)));
+    lineEdit_SIP->setText(QString::fromStdString(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::SOCKS_SERVER, true)));
+    lineEdit_SUSR->setText(QString::fromStdString(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::SOCKS_USER, true)));
+    lineEdit_SPORT->setText(QString().setNum(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::SOCKS_PORT, true)));
+    lineEdit_SPSWD->setText(QString::fromStdString(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::SOCKS_PASSWORD, true)));
 
-    checkBox_RESOLVE->setCheckState( SETTING(SOCKS_RESOLVE)? Qt::Checked : Qt::Unchecked );
+    checkBox_RESOLVE->setCheckState( qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::SOCKS_RESOLVE, true)? Qt::Checked : Qt::Unchecked );
 
-    switch (SETTING(OUTGOING_CONNECTIONS)){
+    switch (qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::OUTGOING_CONNECTIONS, true)){
     case SettingsManager::OUTGOING_DIRECT:
         {
             radioButton_DC->toggle();
@@ -295,7 +295,7 @@ void SettingsConnection::init(){
     comboBox_TOS->setItemData(4, IPTOS_MINCOST);
 
     for (int i = 0; i < comboBox_TOS->count(); i++){
-        if (comboBox_TOS->itemData(i).toInt() == SETTING(IP_TOS_VALUE)){
+        if (comboBox_TOS->itemData(i).toInt() == qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::IP_TOS_VALUE, true)){
             comboBox_TOS->setCurrentIndex(i);
 
             break;

@@ -115,7 +115,7 @@ FinishedTransfers::FinishedTransfers(dcpp::DCContext& dcCtx, const EntryType typ
     g_signal_connect(userView.get(), "key-release-event", G_CALLBACK(onKeyReleased_gui), (gpointer)this);
     g_signal_connect_after(getWidget("finishedbook"), "switch-page", G_CALLBACK(onPageSwitched_gui), (gpointer)this);
 
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("showOnlyFullFilesCheckButton")), BOOLSETTING(FINISHED_DL_ONLY_FULL));
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(getWidget("showOnlyFullFilesCheckButton")), dcCtx_.getSettingsManager()->getBool(SettingsManager::FINISHED_DL_ONLY_FULL, true));
 
     if (type == Entry::FINISHED_DOWNLOADS)
         g_signal_connect(getWidget("showOnlyFullFilesCheckButton"), "toggled", G_CALLBACK(onShowOnlyFullFilesToggled_gui), (gpointer)this);
@@ -490,7 +490,7 @@ void FinishedTransfers::onOpen_gui(GtkMenuItem *item, gpointer data)
         {
             string target = ft->fileView.getString(&iter, "Target");
             if (!target.empty())
-                WulforUtil::openURI(target);
+                WulforUtil::openURI(ft->dcCtx_, target);
         }
         gtk_tree_path_free(path);
     }
@@ -523,7 +523,7 @@ void FinishedTransfers::onOpenFolder_gui(GtkMenuItem *item, gpointer data)
         {
             string target = ft->fileView.getString(&iter, _("Path"));
             if (!target.empty())
-                WulforUtil::openURI(target);
+                WulforUtil::openURI(ft->dcCtx_, target);
         }
         gtk_tree_path_free(path);
     }

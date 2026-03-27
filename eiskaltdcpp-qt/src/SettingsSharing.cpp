@@ -105,21 +105,21 @@ void SettingsSharing::init(){
 
     toolButton_RECREATE->setIcon(WU->getPixmap(WulforUtil::eiRELOAD));
 
-    checkBox_SHAREHIDDEN->setChecked(BOOLSETTING(SHARE_HIDDEN));
-    checkBox_SHARE_TEMP_FILES->setChecked(BOOLSETTING(SHARE_TEMP_FILES));
-    checkBox_FOLLOW->setChecked(BOOLSETTING(FOLLOW_LINKS));
-    checkBox_USE_ADL_ONLY_OWN_LIST->setChecked(BOOLSETTING(USE_ADL_ONLY_OWN_LIST));
-    spinBox_UPLOAD->setValue(SETTING(SLOTS_PRIMARY));
-    spinBox_MAXHASHSPEED->setValue(SETTING(MAX_HASH_SPEED));
-    spinBox_EXTRA->setValue(SETTING(MIN_UPLOAD_SPEED));
-    spinBox_REFRESH_TIME->setValue(SETTING(AUTO_REFRESH_TIME));
-    spinBox_HASHING_START_DELAY->setValue(SETTING(HASHING_START_DELAY));
+    checkBox_SHAREHIDDEN->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::SHARE_HIDDEN, true));
+    checkBox_SHARE_TEMP_FILES->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::SHARE_TEMP_FILES, true));
+    checkBox_FOLLOW->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::FOLLOW_LINKS, true));
+    checkBox_USE_ADL_ONLY_OWN_LIST->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::USE_ADL_ONLY_OWN_LIST, true));
+    spinBox_UPLOAD->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::SLOTS_PRIMARY, true));
+    spinBox_MAXHASHSPEED->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MAX_HASH_SPEED, true));
+    spinBox_EXTRA->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::MIN_UPLOAD_SPEED, true));
+    spinBox_REFRESH_TIME->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::AUTO_REFRESH_TIME, true));
+    spinBox_HASHING_START_DELAY->setValue(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HASHING_START_DELAY, true));
     checkBox_AUTOREMOVE->setChecked(qtCtx()->settings()->getBool(WB_APP_REMOVE_NOT_EX_DIRS));
-    checkBox_SHARE_SKIP_ZERO_BYTE->setChecked(BOOLSETTING(SHARE_SKIP_ZERO_BYTE));
-    checkBox_FASTHASH->setChecked(BOOLSETTING(FAST_HASH));
-    groupBox_FASTHASH->setEnabled(BOOLSETTING(FAST_HASH));
+    checkBox_SHARE_SKIP_ZERO_BYTE->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::SHARE_SKIP_ZERO_BYTE, true));
+    checkBox_FASTHASH->setChecked(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::FAST_HASH, true));
+    groupBox_FASTHASH->setEnabled(qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::FAST_HASH, true));
 
-    listWidget_SKIPLIST->addItems(_q(SETTING(SKIPLIST_SHARE)).split('|', Qt::SkipEmptyParts));
+    listWidget_SKIPLIST->addItems(_q(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::SKIPLIST_SHARE, true)).split('|', Qt::SkipEmptyParts));
 
     label_TOTALSHARED->setText(tr("Total shared: %1")
                                .arg(WulforUtil::formatBytes(qtCtx()->dcCtx().getShareManager()->getShareSize())));
@@ -129,11 +129,11 @@ void SettingsSharing::init(){
     treeWidget_SIMPLE_MODE->setContextMenuPolicy(Qt::CustomContextMenu);
     treeView->setHidden(qtCtx()->settings()->getBool(WB_SIMPLE_SHARE_MODE));
 
-    checkBox_MAPNORESERVE->setChecked(SETTING(HASH_BUFFER_NORESERVE));
-    checkBox_MAPPOPULATE->setChecked(SETTING(HASH_BUFFER_POPULATE));
-    checkBox_MAPPRIVATE->setChecked(SETTING(HASH_BUFFER_PRIVATE));
+    checkBox_MAPNORESERVE->setChecked(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HASH_BUFFER_NORESERVE, true));
+    checkBox_MAPPOPULATE->setChecked(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HASH_BUFFER_POPULATE, true));
+    checkBox_MAPPRIVATE->setChecked(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HASH_BUFFER_PRIVATE, true));
 
-    int ind = comboBox_BUFSIZE->findText(QString().setNum(SETTING(HASH_BUFFER_SIZE_MB)));
+    int ind = comboBox_BUFSIZE->findText(QString().setNum(qtCtx()->dcCtx().getSettingsManager()->get(SettingsManager::HASH_BUFFER_SIZE_MB, true)));
     if (ind >= 0)
         comboBox_BUFSIZE->setCurrentIndex(ind);
 
