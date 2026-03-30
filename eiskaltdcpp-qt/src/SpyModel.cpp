@@ -257,7 +257,7 @@ void SpyModel::addResult(const QString &file, bool isTTH)
 
     static const auto _zero_up = [](const uint &i) { return (i? i : (uint)1); };
 
-    if (qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::LOG_SPY, true)){
+    if (qtCtx() && qtCtx()->dcCtx().getSettingsManager()->getBool(SettingsManager::LOG_SPY, true)){
         dcpp::StringMap params;
         params["message"] = _tq(item->data(1).toString());
         params["count"] = _tq(QString::number(_zero_up(parent->data(0).toUInt())));
