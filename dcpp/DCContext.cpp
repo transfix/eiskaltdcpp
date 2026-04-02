@@ -107,18 +107,23 @@ void DCContext::startup(ProgressFn progress) {
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 
+    fprintf(stderr, "[DCContext::startup] Util::initialize ...\n"); fflush(stderr);
     Util::initialize();
 
+    fprintf(stderr, "[DCContext::startup] bindtextdomain ...\n"); fflush(stderr);
     bindtextdomain(PACKAGE, LOCALEDIR);
     bind_textdomain_codeset(PACKAGE, "UTF-8");
 
     // ── Create managers in dependency order ──────────────────────────────
+    fprintf(stderr, "[DCContext::startup] Creating managers ...\n"); fflush(stderr);
     resourceManager_     = makeManager<ResourceManager>(*this);
     settingsManager_     = makeManager<SettingsManager>(*this);
     logManager_          = makeManager<LogManager>(*this);
     timerManager_        = makeManager<TimerManager>(*this);
     hashManager_         = makeManager<HashManager>(*this);
+    fprintf(stderr, "[DCContext::startup] CryptoManager ...\n"); fflush(stderr);
     cryptoManager_       = makeManager<CryptoManager>(*this);
+    fprintf(stderr, "[DCContext::startup] remaining managers ...\n"); fflush(stderr);
     searchManager_       = makeManager<SearchManager>(*this);
     clientManager_       = makeManager<ClientManager>(*this);
     connectionManager_   = makeManager<ConnectionManager>(*this);
@@ -140,13 +145,17 @@ void DCContext::startup(ProgressFn progress) {
 #endif
 
     // ── Load persistent state ───────────────────────────────────────────
+    fprintf(stderr, "[DCContext::startup] settingsManager_->load() ...\n"); fflush(stderr);
     settingsManager_->load();
 
+    fprintf(stderr, "[DCContext::startup] setLang ...\n"); fflush(stderr);
     Util::setLang(*this, getSettingsManager()->get(SettingsManager::LANGUAGE, true));
 #ifdef USE_MINIUPNP
+    fprintf(stderr, "[DCContext::startup] miniupnp ...\n"); fflush(stderr);
     mappingManager_->runMiniUPnP();
 #endif
 
+    fprintf(stderr, "[DCContext::startup] dynDNS/ipFilter/favorites/crypto ...\n"); fflush(stderr);
     dynDNS_->load();
 
     if (getSettingsManager()->getBool(SettingsManager::IPFILTER, true)) {
@@ -160,9 +169,11 @@ void DCContext::startup(ProgressFn progress) {
     dht_ = std::make_unique<dht::DHT>(*this);
 #endif
 
+    fprintf(stderr, "[DCContext::startup] hashManager->startup() ...\n"); fflush(stderr);
     report(_("Hash database"));
     hashManager_->startup();
 
+    fprintf(stderr, "[DCContext::startup] shareManager->refresh() ...\n"); fflush(stderr);
     report(_("Shared Files"));
     const auto xmlListFileName =
         Util::getPath(Util::PATH_USER_CONFIG) + "files.xml.bz2";
@@ -173,12 +184,14 @@ void DCContext::startup(ProgressFn progress) {
     }
     shareManager_->refresh(true, false, true);
 
+    fprintf(stderr, "[DCContext::startup] queueManager/clientManager ...\n"); fflush(stderr);
     report(_("Download Queue"));
     queueManager_->loadQueue();
 
     report(_("Users"));
     clientManager_->loadUsers();
 
+    fprintf(stderr, "[DCContext::startup] done.\n"); fflush(stderr);
     running_ = true;
 }
 
