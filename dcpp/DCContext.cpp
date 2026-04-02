@@ -169,7 +169,9 @@ void DCContext::startup(ProgressFn progress) {
     cryptoManager_->loadCertificates();
 
 #ifdef WITH_DHT
+    fprintf(stderr, "[DCContext::startup] DHT construction ...\n"); fflush(stderr);
     dht_ = std::make_unique<dht::DHT>(*this);
+    fprintf(stderr, "[DCContext::startup] DHT done.\n"); fflush(stderr);
 #endif
 
     fprintf(stderr, "[DCContext::startup] hashManager->startup() ...\n"); fflush(stderr);
