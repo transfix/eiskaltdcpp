@@ -155,14 +155,17 @@ void DCContext::startup(ProgressFn progress) {
     mappingManager_->runMiniUPnP();
 #endif
 
-    fprintf(stderr, "[DCContext::startup] dynDNS/ipFilter/favorites/crypto ...\n"); fflush(stderr);
+    fprintf(stderr, "[DCContext::startup] dynDNS->load() ...\n"); fflush(stderr);
     dynDNS_->load();
 
     if (getSettingsManager()->getBool(SettingsManager::IPFILTER, true)) {
+        fprintf(stderr, "[DCContext::startup] ipFilter->load() ...\n"); fflush(stderr);
         ipFilter_->load();
     }
 
+    fprintf(stderr, "[DCContext::startup] favoriteManager->load() ...\n"); fflush(stderr);
     favoriteManager_->load();
+    fprintf(stderr, "[DCContext::startup] cryptoManager->loadCertificates() ...\n"); fflush(stderr);
     cryptoManager_->loadCertificates();
 
 #ifdef WITH_DHT
@@ -262,7 +265,13 @@ void DCContext::shutdown() {
     Util::uninitialize();
 
 #ifdef _WIN32
-    ::WSACleanup();
+    // Only call WSACleanup if startup() called WSAStartup.
+    // startupMinimal() does NOT call WSAStartup, so an unmatched
+    // WSACleanup would decrement the process-wide Winsock refcount
+    // to zero and break all subsequent socket operations (including
+    // Python's asyncio event loops).
+    if (!minimalMode_)
+        ::WSACleanup();
 #endif
 }
 
