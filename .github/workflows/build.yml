@@ -29,7 +29,7 @@ jobs:
     - name: Compute version and artifact prefix
       id: info
       run: |
-        version=$(sed -n 's/^set (APP_VERSION "\(.*\)")/\1/p' CMakeLists.txt)
+        version=$(sed -n 's/^set (APP_VERSION "\([^"]*\)").*/\1/p' CMakeLists.txt)
         short_sha="${GITHUB_SHA::7}"
         if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
           dev_suffix=""
