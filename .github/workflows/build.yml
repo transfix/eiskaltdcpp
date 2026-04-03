@@ -380,7 +380,18 @@ jobs:
       if: matrix.build_type == 'Release'
       shell: pwsh
       run: |
-        choco install nsis -y --no-progress
+        $maxRetries = 3
+        for ($i = 1; $i -le $maxRetries; $i++) {
+          Write-Host "Attempting to install NSIS (attempt $i/$maxRetries)..."
+          choco install nsis -y --no-progress
+          if ($LASTEXITCODE -eq 0) { break }
+          if ($i -lt $maxRetries) {
+            Write-Host "Chocolatey install failed (exit $LASTEXITCODE), retrying in 30s..."
+            Start-Sleep -Seconds 30
+          } else {
+            throw "Failed to install NSIS after $maxRetries attempts"
+          }
+        }
         $nsisDir = "C:\Program Files (x86)\NSIS"
         echo "$nsisDir" >> $env:GITHUB_PATH
         Write-Host "NSIS installed: $(& "$nsisDir\makensis.exe" /VERSION 2>&1)"
