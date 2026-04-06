@@ -1046,6 +1046,7 @@ void NmdcHub::on(Connected) {
 }
 
 void NmdcHub::on(Line, const string& aLine) {
+    try {
 #ifdef LUA_SCRIPT
     if (onClientMessage(this, validateMessage(aLine, true)))
         return;
@@ -1054,6 +1055,23 @@ void NmdcHub::on(Line, const string& aLine) {
         fire(ClientListener::StatusMessage(), this, "<NMDC>" + aLine + "</NMDC>");
     Client::on(Line(), aLine);
     onLine(aLine);
+    } catch(const std::bad_alloc&) {
+        string cmd;
+        auto sp = aLine.find(' ');
+        if(sp != string::npos) cmd = aLine.substr(0, sp);
+        else if(aLine.size() <= 80) cmd = aLine;
+        else cmd = aLine.substr(0, 80);
+        fprintf(stderr, "[NmdcHub::on(Line)] std::bad_alloc processing %s (line size=%zu)\n",
+                cmd.c_str(), aLine.size());
+    } catch(const std::exception& e) {
+        string cmd;
+        auto sp = aLine.find(' ');
+        if(sp != string::npos) cmd = aLine.substr(0, sp);
+        else if(aLine.size() <= 80) cmd = aLine;
+        else cmd = aLine.substr(0, 80);
+        fprintf(stderr, "[NmdcHub::on(Line)] %s processing %s (line size=%zu)\n",
+                e.what(), cmd.c_str(), aLine.size());
+    }
 }
 
 void NmdcHub::on(Failed, const string& aLine) {
