@@ -42,10 +42,8 @@ include_directories (${PROJECT_BINARY_DIR}
                      ${OPENSSL_INCLUDE_DIR}
                      ${GETTEXT_INCLUDE_DIR}
                      ${ICONV_INCLUDE_DIR})
-if (WITH_NMDCPB)
-    include_directories (${Protobuf_INCLUDE_DIRS}
-                         ${NMDCPB_PROTO_OUTDIR}/..)
-endif (WITH_NMDCPB)
+# Protobuf include dirs are added via target_include_directories(dcpp PUBLIC ...)
+# after add_library(), so they propagate to targets that link against dcpp.
 if (LUA_SCRIPT)
     include_directories (${LUA_INCLUDE_DIR})
 endif ()
@@ -91,6 +89,8 @@ add_library (dcpp ${LINK} ${dcpp_srcs})
 
 if (WITH_NMDCPB)
     target_compile_definitions(dcpp PUBLIC WITH_NMDCPB)
+    target_include_directories(dcpp PUBLIC ${Protobuf_INCLUDE_DIRS}
+                                           ${NMDCPB_PROTO_OUTDIR}/..)
 endif (WITH_NMDCPB)
 
 if (WITH_DHT)
