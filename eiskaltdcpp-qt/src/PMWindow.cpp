@@ -526,11 +526,11 @@ void PMWindow::setE2EPMStatus(bool encrypted, const QString &fingerprint, bool k
         labelE2EPMText->setVisible(true);
 
         if (keyChanged) {
-            labelE2EPMIcon->setPixmap(WICON(WulforUtil::eiE2EPM_WARN));
+            labelE2EPMIcon->setPixmap(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiE2EPM_WARN));
             labelE2EPMText->setText(tr("⚠ Key changed! Verify fingerprint: %1").arg(fingerprint));
             labelE2EPMText->setStyleSheet("font-size: 11px; color: #e65100; font-weight: bold;");
         } else {
-            labelE2EPMIcon->setPixmap(WICON(WulforUtil::eiE2EPM_LOCK));
+            labelE2EPMIcon->setPixmap(qtCtx()->wulforUtil()->getPixmap(WulforUtil::eiE2EPM_LOCK));
             labelE2EPMText->setText(tr("🔒 Encrypted — %1").arg(fingerprint));
             labelE2EPMText->setStyleSheet("font-size: 11px; color: #4caf50;");
         }
@@ -543,7 +543,7 @@ void PMWindow::setE2EPMStatus(bool encrypted, const QString &fingerprint, bool k
         labelE2EPMText->setVisible(false);
     }
 
-    MainWindow::getInstance()->redrawToolPanel();
+    qtCtx()->mainWindow()->redrawToolPanel();
 }
 
 void PMWindow::nextMsg(){

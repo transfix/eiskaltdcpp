@@ -1659,14 +1659,13 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
     decoded = Encoder::fromBase64(base64data);
     if(decoded.empty()) return;
 
-    // Parse PbEnvelope — use arena allocation to avoid heap fragmentation
-    // and reduce allocation overhead on the hot path
-    google::protobuf::Arena arena;
-    auto* env = google::protobuf::Arena::CreateMessage<nmdcpb::PbEnvelope>(&arena);
-    if(!env->ParseFromString(decoded)) {
+    // Parse PbEnvelope
+    nmdcpb::PbEnvelope envMsg;
+    if(!envMsg.ParseFromString(decoded)) {
         dcdebug("NmdcHub::handlePbCommand: failed to parse PbEnvelope\n");
         return;
     }
+    auto* env = &envMsg;
 
     // Dispatch by payload type
     if(env->has_pm_key_exchange()) {

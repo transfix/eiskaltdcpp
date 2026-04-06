@@ -28,6 +28,7 @@
 
 #include "NmdcPbCrypto.h"
 #include "E2EPMManager.h"
+#include "DCContext.h"
 #include "RelayConnection.h"
 #include "Encoder.h"
 #include "proto/nmdcpb.pb.h"
@@ -286,7 +287,8 @@ TEST_CASE("Nonce counter produces unique nonces", "[security][chacha]") {
 // =========================================================================
 
 TEST_CASE("E2EPM replay detection: nonce reuse rejected", "[security][e2epm]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://test.hub:411";
 
     // Set up a session between Alice and Bob
@@ -308,7 +310,8 @@ TEST_CASE("E2EPM replay detection: nonce reuse rejected", "[security][e2epm]") {
 }
 
 TEST_CASE("E2EPM handleKeyExchange re-key: creates new session", "[security][e2epm]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://rekey.hub:411";
 
     // Establish initial session
@@ -334,7 +337,8 @@ TEST_CASE("E2EPM handleKeyExchange re-key: creates new session", "[security][e2e
 }
 
 TEST_CASE("E2EPM initiateKeyExchange re-key: resets established session", "[security][e2epm]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://rekey2.hub:411";
 
     // Establish initial session
@@ -359,7 +363,8 @@ TEST_CASE("E2EPM initiateKeyExchange re-key: resets established session", "[secu
 }
 
 TEST_CASE("E2EPM re-key resets nonce counters", "[security][e2epm]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://nonce-reset.hub:411";
 
     // Establish and encrypt some messages
@@ -384,14 +389,16 @@ TEST_CASE("E2EPM re-key resets nonce counters", "[security][e2epm]") {
 }
 
 TEST_CASE("E2EPM encrypt without session returns empty", "[security][e2epm]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     auto epm = mgr.encryptPM("nmdc://x:411", "nobody", "hello");
     REQUIRE(epm.ciphertext.empty());
     REQUIRE(epm.nonce == 0);
 }
 
 TEST_CASE("E2EPM decrypt without session throws", "[security][e2epm]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::vector<uint8_t> fakeCt(32, 0x42);
     uint8_t hint[8] = {};
     REQUIRE_THROWS_AS(
@@ -401,7 +408,8 @@ TEST_CASE("E2EPM decrypt without session throws", "[security][e2epm]") {
 }
 
 TEST_CASE("E2EPM TOFU detects key change", "[security][e2epm]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://tofu.hub:411";
 
     auto kp1 = generateX25519KeyPair();
@@ -421,7 +429,8 @@ TEST_CASE("E2EPM TOFU detects key change", "[security][e2epm]") {
 }
 
 TEST_CASE("E2EPM pending messages are drained correctly", "[security][e2epm]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://pending.hub:411";
 
     mgr.initiateKeyExchange(hub, "Peer");
@@ -441,7 +450,8 @@ TEST_CASE("E2EPM pending messages are drained correctly", "[security][e2epm]") {
 }
 
 TEST_CASE("E2EPM close session clears state", "[security][e2epm]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://close.hub:411";
 
     mgr.initiateKeyExchange(hub, "Peer");
@@ -452,7 +462,8 @@ TEST_CASE("E2EPM close session clears state", "[security][e2epm]") {
 }
 
 TEST_CASE("E2EPM closeAllSessions removes hub-specific only", "[security][e2epm]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
 
     mgr.initiateKeyExchange("nmdc://hub1:411", "Alice");
     mgr.initiateKeyExchange("nmdc://hub1:411", "Bob");
@@ -616,7 +627,8 @@ TEST_CASE("Base64url decode single character", "[security][base64]") {
 // =========================================================================
 
 TEST_CASE("E2EPM concurrent key exchange does not crash", "[security][concurrency]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::atomic<bool> failed{false};
 
     auto worker = [&](int id) {
@@ -727,7 +739,8 @@ TEST_CASE("Emoji fingerprint is deterministic and symmetric", "[security][crypto
 // =========================================================================
 
 TEST_CASE("E2EPM needsRotation: false for new session", "[security][rotation]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://rot.hub:411";
 
     auto pub = mgr.initiateKeyExchange(hub, "Peer");
@@ -740,7 +753,8 @@ TEST_CASE("E2EPM needsRotation: false for new session", "[security][rotation]") 
 }
 
 TEST_CASE("E2EPM needsRotation: true after message threshold", "[security][rotation]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://rot2.hub:411";
 
     auto pub = mgr.initiateKeyExchange(hub, "Peer");
@@ -758,7 +772,8 @@ TEST_CASE("E2EPM needsRotation: true after message threshold", "[security][rotat
 }
 
 TEST_CASE("E2EPM getRotationStats tracks messages", "[security][rotation]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://rot3.hub:411";
 
     auto pub = mgr.initiateKeyExchange(hub, "Peer");
@@ -781,7 +796,8 @@ TEST_CASE("E2EPM getRotationStats tracks messages", "[security][rotation]") {
 }
 
 TEST_CASE("E2EPM getSessionsNeedingRotation returns correct list", "[security][rotation]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
 
     // Create session 1 (will exceed message threshold)
     auto pub1 = mgr.initiateKeyExchange("nmdc://hub:411", "Alice");
@@ -804,12 +820,14 @@ TEST_CASE("E2EPM getSessionsNeedingRotation returns correct list", "[security][r
 }
 
 TEST_CASE("E2EPM needsRotation: false for nonexistent session", "[security][rotation]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     REQUIRE_FALSE(mgr.needsRotation("nmdc://x:411", "nobody"));
 }
 
 TEST_CASE("E2EPM rotation resets counters after re-key", "[security][rotation]") {
-    E2EPMManager mgr;
+    DCContext ctx;
+    E2EPMManager mgr(ctx);
     std::string hub = "nmdc://rot-reset.hub:411";
 
     auto pub = mgr.initiateKeyExchange(hub, "Peer");

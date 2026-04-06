@@ -27,6 +27,7 @@
 
 #include "NmdcPbCrypto.h"
 #include "E2EPMManager.h"
+#include "DCContext.h"
 #include "RelayConnection.h"
 #include "Encoder.h"
 #include "proto/nmdcpb.pb.h"
@@ -161,7 +162,8 @@ TEST_CASE("Emoji fingerprint is deterministic and symmetric", "[crypto]") {
 // =========================================================================
 
 TEST_CASE("E2EPM session lifecycle: key exchange and establish", "[e2epm]") {
-    E2EPMManager mgrObj;
+    DCContext ctx;
+    E2EPMManager mgrObj(ctx);
     auto* mgr = &mgrObj;
 
     std::string hub = "nmdc://test-hub:411";
@@ -197,7 +199,8 @@ TEST_CASE("E2EPM encrypt/decrypt roundtrip", "[e2epm]") {
     // Set up two managers simulating Alice and Bob
     // Since singleton, we'll simulate by doing both sides in same manager
     // with different peer names
-    E2EPMManager mgrObj;
+    DCContext ctx;
+    E2EPMManager mgrObj(ctx);
     auto* mgr = &mgrObj;
     std::string hub = "nmdc://roundtrip-hub:411";
     mgr->closeAllSessions(hub);
@@ -224,7 +227,8 @@ TEST_CASE("E2EPM encrypt/decrypt roundtrip", "[e2epm]") {
 }
 
 TEST_CASE("E2EPM TOFU key change detection", "[e2epm]") {
-    E2EPMManager mgrObj;
+    DCContext ctx;
+    E2EPMManager mgrObj(ctx);
     auto* mgr = &mgrObj;
     std::string hub = "nmdc://tofu-hub:411";
 
@@ -243,7 +247,8 @@ TEST_CASE("E2EPM TOFU key change detection", "[e2epm]") {
 }
 
 TEST_CASE("E2EPM pending message queue", "[e2epm]") {
-    E2EPMManager mgrObj;
+    DCContext ctx;
+    E2EPMManager mgrObj(ctx);
     auto* mgr = &mgrObj;
     std::string hub = "nmdc://pending-hub:411";
     mgr->closeAllSessions(hub);
