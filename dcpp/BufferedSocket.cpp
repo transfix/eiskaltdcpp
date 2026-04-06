@@ -389,7 +389,7 @@ void BufferedSocket::threadSendFile(InputStream* file) {
     }
 }
 
-void BufferedSocket::write(const char* aBuf, size_t aLen) noexcept {
+void BufferedSocket::write(const char* aBuf, size_t aLen) {
     if(!sock.get())
         return;
     Lock l(cs);

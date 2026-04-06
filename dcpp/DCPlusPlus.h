@@ -37,10 +37,10 @@ using std::string;
 /// convenience pointer — the DCContext is owned by whoever called startup()
 /// or by the test harness that called setContext().  Returns nullptr before
 /// startup / after the owner resets.
-[[nodiscard]] extern DCContext* getContext() noexcept;
+[[nodiscard]] extern DCContext* getContext();
 
 /// Set the process-wide DCContext pointer (non-owning).
 /// Intended for test harnesses that create their own DCContext.
-extern void setContext(DCContext* ctx) noexcept;
+extern void setContext(DCContext* ctx);
 
 } // namespace dcpp

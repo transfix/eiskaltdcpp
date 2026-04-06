@@ -488,7 +488,7 @@ void ScriptManager::on(Second, uint64_t /* ticks */) {
 void ScriptInstance::LuaPush(int i) { lua_pushnumber(L, i); }
 void ScriptInstance::LuaPush(const string& s) { lua_pushlstring(L, s.data(), s.size()); }
 
-bool ScriptInstance::MakeCallRaw(const string& table, const string& method, int args, int ret) noexcept {
+bool ScriptInstance::MakeCallRaw(const string& table, const string& method, int args, int ret) {
     lua_getglobal(L, table.c_str());        // args + 1
     lua_pushstring(L, method.c_str());      // args + 2
     if (lua_istable(L, -2)) {

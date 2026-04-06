@@ -182,12 +182,12 @@ private:
 template<class T>
 class CommandHandler {
 public:
-    inline void dispatch(const string& aLine) noexcept {
+    inline void dispatch(const string& aLine) {
         dispatch(aLine, false);
     }
 
     template<typename... ArgT>
-    void dispatch(const string& aLine, bool nmdc, ArgT&&... args) noexcept {
+    void dispatch(const string& aLine, bool nmdc, ArgT&&... args) {
         try {
             AdcCommand c(aLine, nmdc);
 

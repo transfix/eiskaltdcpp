@@ -138,7 +138,7 @@ void AdcHub::clearUsers() {
     }
 }
 
-void AdcHub::handle(AdcCommand::INF, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::INF, AdcCommand& c) {
     if(c.getParameters().empty())
         return;
 
@@ -209,7 +209,7 @@ void AdcHub::handle(AdcCommand::INF, AdcCommand& c) noexcept {
     }
 }
 
-void AdcHub::handle(AdcCommand::SUP, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::SUP, AdcCommand& c) {
     if(state != STATE_PROTOCOL) /** @todo SUP changes */
         return;
     bool baseOk = false;
@@ -236,7 +236,7 @@ void AdcHub::handle(AdcCommand::SUP, AdcCommand& c) noexcept {
     }
 }
 
-void AdcHub::handle(AdcCommand::SID, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::SID, AdcCommand& c) {
     if(state != STATE_PROTOCOL) {
         dcdebug("Invalid state for SID\n");
         return;
@@ -251,7 +251,7 @@ void AdcHub::handle(AdcCommand::SID, AdcCommand& c) noexcept {
     info(true);
 }
 
-void AdcHub::handle(AdcCommand::MSG, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::MSG, AdcCommand& c) {
     if(c.getParameters().empty())
         return;
 
@@ -279,7 +279,7 @@ void AdcHub::handle(AdcCommand::MSG, AdcCommand& c) noexcept {
     fire(ClientListener::Message(), this, message);
 }
 
-void AdcHub::handle(AdcCommand::GPA, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::GPA, AdcCommand& c) {
     if(c.getParameters().empty())
         return;
     salt = c.getParam(0);
@@ -288,7 +288,7 @@ void AdcHub::handle(AdcCommand::GPA, AdcCommand& c) noexcept {
     fire(ClientListener::GetPassword(), this);
 }
 
-void AdcHub::handle(AdcCommand::QUI, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::QUI, AdcCommand& c) {
     uint32_t s = AdcCommand::toSID(c.getParam(0));
 
     OnlineUser* victim = findUser(s);
@@ -335,7 +335,7 @@ void AdcHub::handle(AdcCommand::QUI, AdcCommand& c) noexcept {
     }
 }
 
-void AdcHub::handle(AdcCommand::CTM, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::CTM, AdcCommand& c) {
     if(c.getParameters().size() < 3)
         return;
 
@@ -365,7 +365,7 @@ void AdcHub::handle(AdcCommand::CTM, AdcCommand& c) noexcept {
     ctx().getConnectionManager()->adcConnect(*u, port, token, secure);
 }
 
-void AdcHub::handle(AdcCommand::RCM, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::RCM, AdcCommand& c) {
     if(c.getParameters().size() < 2) {
         return;
     }
@@ -403,7 +403,7 @@ void AdcHub::handle(AdcCommand::RCM, AdcCommand& c) noexcept {
     return;
 }
 
-void AdcHub::handle(AdcCommand::CMD, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::CMD, AdcCommand& c) {
     if(c.getParameters().empty())
         return;
     const string& name = c.getParam(0);
@@ -430,7 +430,7 @@ void AdcHub::handle(AdcCommand::CMD, AdcCommand& c) noexcept {
     fire(ClientListener::HubUserCommand(), this, (int)(once ? UserCommand::TYPE_RAW_ONCE : UserCommand::TYPE_RAW), ctx, name, txt);
 }
 
-void AdcHub::sendUDP(const AdcCommand& cmd) noexcept {
+void AdcHub::sendUDP(const AdcCommand& cmd) {
     string command;
     string ip;
     string port;
@@ -457,7 +457,7 @@ void AdcHub::sendUDP(const AdcCommand& cmd) noexcept {
     }
 }
 
-void AdcHub::handle(AdcCommand::STA, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::STA, AdcCommand& c) {
     if(c.getParameters().size() < 2)
         return;
 
@@ -510,7 +510,7 @@ void AdcHub::handle(AdcCommand::STA, AdcCommand& c) noexcept {
     fire(ClientListener::Message(), this, message);
 }
 
-void AdcHub::handle(AdcCommand::SCH, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::SCH, AdcCommand& c) {
     OnlineUser* ou = findUser(c.getFrom());
     if(!ou) {
         dcdebug("Invalid user in AdcHub::onSCH\n");
@@ -520,7 +520,7 @@ void AdcHub::handle(AdcCommand::SCH, AdcCommand& c) noexcept {
     fire(ClientListener::AdcSearch(), this, c, ou->getUser()->getCID());
 }
 
-void AdcHub::handle(AdcCommand::RES, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::RES, AdcCommand& c) {
     OnlineUser* ou = findUser(c.getFrom());
     if(!ou) {
         dcdebug("Invalid user in AdcHub::onRES\n");
@@ -529,7 +529,7 @@ void AdcHub::handle(AdcCommand::RES, AdcCommand& c) noexcept {
     ctx().getSearchManager()->onRES(c, ou->getUser());
 }
 
-void AdcHub::handle(AdcCommand::PSR, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::PSR, AdcCommand& c) {
     OnlineUser* ou = findUser(c.getFrom());
     if(!ou) {
         dcdebug("Invalid user in AdcHub::onPSR\n");
@@ -538,7 +538,7 @@ void AdcHub::handle(AdcCommand::PSR, AdcCommand& c) noexcept {
     ctx().getSearchManager()->onPSR(c, ou->getUser());
 }
 
-void AdcHub::handle(AdcCommand::GET, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::GET, AdcCommand& c) {
     if(c.getParameters().size() < 5) {
         if(c.getParameters().size() > 0) {
             if(c.getParam(0) == "blom") {
@@ -595,7 +595,7 @@ void AdcHub::handle(AdcCommand::GET, AdcCommand& c) noexcept {
         }
     }
 }
-void AdcHub::handle(AdcCommand::NAT, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::NAT, AdcCommand& c) {
     if (c.getParameters().size() < 3)
         return;
 
@@ -630,7 +630,7 @@ void AdcHub::handle(AdcCommand::NAT, AdcCommand& c) noexcept {
          addParam(sock->getLocalPort()).addParam(token));
 }
 
-void AdcHub::handle(AdcCommand::RNT, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::RNT, AdcCommand& c) {
     if(c.getParameters().size() < 3)
         return;
 
@@ -661,7 +661,7 @@ void AdcHub::handle(AdcCommand::RNT, AdcCommand& c) noexcept {
     dcdebug("triggering connecting attempt in RNT: remote port = %s, local IP = %s, local port = %s\n", port.c_str(), sock->getLocalIp().c_str(), sock->getLocalPort().c_str());
     ctx().getConnectionManager()->adcConnect(*u, port, sock->getLocalPort(), BufferedSocket::NAT_SERVER, token, secure);
 }
-void AdcHub::handle(AdcCommand::ZON, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::ZON, AdcCommand& c) {
     if(c.getType() == AdcCommand::TYPE_INFO) {
         try {
             sock->setMode(BufferedSocket::MODE_ZPIPE);
@@ -671,7 +671,7 @@ void AdcHub::handle(AdcCommand::ZON, AdcCommand& c) noexcept {
     }
 }
 
-void AdcHub::handle(AdcCommand::ZOF, AdcCommand& c) noexcept {
+void AdcHub::handle(AdcCommand::ZOF, AdcCommand& c) {
     if(c.getType() == AdcCommand::TYPE_INFO) {
         try {
             sock->setMode(BufferedSocket::MODE_LINE);

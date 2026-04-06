@@ -180,7 +180,7 @@ void NmdcHub::updateFromTag(Identity& id, const string& tag) {
     id.set("TA", '<' + tag + '>');
 }
 
-void NmdcHub::onLine(const string& aLine) noexcept {
+void NmdcHub::onLine(const string& aLine) {
     if(aLine.length() == 0)
         return;
 

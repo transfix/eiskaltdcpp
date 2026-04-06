@@ -38,7 +38,7 @@ public:
     enum Types {
         DEBUG_MESSAGE
     };
-    virtual void onAction(Types, const string&) noexcept = 0;
+    virtual void onAction(Types, const string&) = 0;
 };
 
 struct LuaManager  {
@@ -75,21 +75,21 @@ struct LuaManager  {
 };
 
 class ScriptInstance {
-    bool MakeCallRaw(const string& table, const string& method , int args, int ret) noexcept;
+    bool MakeCallRaw(const string& table, const string& method , int args, int ret);
 protected:
     virtual ~ScriptInstance() { }
     static lua_State* L;
     static CriticalSection cs;
 
     template <typename T> bool MakeCall(const string& table, const string& method,
-                                        int ret, const T& t) noexcept {
+                                        int ret, const T& t) {
         Lock l(cs);
         dcassert(lua_gettop(L) == 0);
         LuaPush(t);
         return MakeCallRaw(table, method, 1 , ret);
     }
     template <typename T, typename T2> bool MakeCall(const string& table, const string& method,
-                                                     int ret, const T& t, const T2& t2) noexcept {
+                                                     int ret, const T& t, const T2& t2) {
         Lock l(cs);
         dcassert(lua_gettop(L) == 0);
         LuaPush(t);
@@ -113,7 +113,7 @@ class ScriptManager: public ScriptInstance, public Speaker<ScriptManagerListener
 
 public:
     explicit ScriptManager(DCContext& ctx);
-    virtual ~ScriptManager() noexcept { if (L) lua_close(L); if(timerEnabled) ctx().getTimerManager()->removeListener(this); }
+    virtual ~ScriptManager() { if (L) lua_close(L); if(timerEnabled) ctx().getTimerManager()->removeListener(this); }
 
     void load();
     void  SendDebugMessage(const string& s);

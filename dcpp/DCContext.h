@@ -65,10 +65,10 @@ class DCContext;  // forward for ContextAware
  */
 class ContextAware {
 public:
-    [[nodiscard]] DCContext& ctx() const noexcept { return ctx_; }
+    [[nodiscard]] DCContext& ctx() const { return ctx_; }
 
 protected:
-    explicit ContextAware(DCContext& ctx) noexcept : ctx_(ctx) {}
+    explicit ContextAware(DCContext& ctx) : ctx_(ctx) {}
     ~ContextAware() = default;
 
 private:
@@ -119,36 +119,36 @@ public:
     /// Flush state, stop threads, tear down in reverse order.
     void shutdown();
 
-    [[nodiscard]] bool isRunning() const noexcept { return running_; }
+    [[nodiscard]] bool isRunning() const { return running_; }
 
     // ── Typed accessors (non-owning raw pointers) ──────────────────────
-    [[nodiscard]] ResourceManager*     getResourceManager()     const noexcept { return resourceManager_.get(); }
-    [[nodiscard]] SettingsManager*     getSettingsManager()     const noexcept { return settingsManager_.get(); }
-    [[nodiscard]] LogManager*          getLogManager()          const noexcept { return logManager_.get(); }
-    [[nodiscard]] TimerManager*        getTimerManager()        const noexcept { return timerManager_.get(); }
-    [[nodiscard]] HashManager*         getHashManager()         const noexcept { return hashManager_.get(); }
-    [[nodiscard]] CryptoManager*       getCryptoManager()       const noexcept { return cryptoManager_.get(); }
-    [[nodiscard]] SearchManager*       getSearchManager()       const noexcept { return searchManager_.get(); }
-    [[nodiscard]] ClientManager*       getClientManager()       const noexcept { return clientManager_.get(); }
-    [[nodiscard]] ConnectionManager*   getConnectionManager()   const noexcept { return connectionManager_.get(); }
-    [[nodiscard]] DownloadManager*     getDownloadManager()     const noexcept { return downloadManager_.get(); }
-    [[nodiscard]] UploadManager*       getUploadManager()       const noexcept { return uploadManager_.get(); }
-    [[nodiscard]] ThrottleManager*     getThrottleManager()     const noexcept { return throttleManager_.get(); }
-    [[nodiscard]] QueueManager*        getQueueManager()        const noexcept { return queueManager_.get(); }
-    [[nodiscard]] ShareManager*        getShareManager()        const noexcept { return shareManager_.get(); }
-    [[nodiscard]] FavoriteManager*     getFavoriteManager()     const noexcept { return favoriteManager_.get(); }
-    [[nodiscard]] FinishedManager*     getFinishedManager()     const noexcept { return finishedManager_.get(); }
-    [[nodiscard]] ADLSearchManager*    getADLSearchManager()    const noexcept { return adlSearchManager_.get(); }
-    [[nodiscard]] ConnectivityManager* getConnectivityManager() const noexcept { return connectivityManager_.get(); }
-    [[nodiscard]] MappingManager*      getMappingManager()      const noexcept { return mappingManager_.get(); }
-    [[nodiscard]] DebugManager*        getDebugManager()        const noexcept { return debugManager_.get(); }
-    [[nodiscard]] DynDNS*               getDynDNS()              const noexcept { return dynDNS_.get(); }
-    [[nodiscard]] ::IPFilter*            getIPFilter()            const noexcept { return ipFilter_.get(); }
+    [[nodiscard]] ResourceManager*     getResourceManager()     const { return resourceManager_.get(); }
+    [[nodiscard]] SettingsManager*     getSettingsManager()     const { return settingsManager_.get(); }
+    [[nodiscard]] LogManager*          getLogManager()          const { return logManager_.get(); }
+    [[nodiscard]] TimerManager*        getTimerManager()        const { return timerManager_.get(); }
+    [[nodiscard]] HashManager*         getHashManager()         const { return hashManager_.get(); }
+    [[nodiscard]] CryptoManager*       getCryptoManager()       const { return cryptoManager_.get(); }
+    [[nodiscard]] SearchManager*       getSearchManager()       const { return searchManager_.get(); }
+    [[nodiscard]] ClientManager*       getClientManager()       const { return clientManager_.get(); }
+    [[nodiscard]] ConnectionManager*   getConnectionManager()   const { return connectionManager_.get(); }
+    [[nodiscard]] DownloadManager*     getDownloadManager()     const { return downloadManager_.get(); }
+    [[nodiscard]] UploadManager*       getUploadManager()       const { return uploadManager_.get(); }
+    [[nodiscard]] ThrottleManager*     getThrottleManager()     const { return throttleManager_.get(); }
+    [[nodiscard]] QueueManager*        getQueueManager()        const { return queueManager_.get(); }
+    [[nodiscard]] ShareManager*        getShareManager()        const { return shareManager_.get(); }
+    [[nodiscard]] FavoriteManager*     getFavoriteManager()     const { return favoriteManager_.get(); }
+    [[nodiscard]] FinishedManager*     getFinishedManager()     const { return finishedManager_.get(); }
+    [[nodiscard]] ADLSearchManager*    getADLSearchManager()    const { return adlSearchManager_.get(); }
+    [[nodiscard]] ConnectivityManager* getConnectivityManager() const { return connectivityManager_.get(); }
+    [[nodiscard]] MappingManager*      getMappingManager()      const { return mappingManager_.get(); }
+    [[nodiscard]] DebugManager*        getDebugManager()        const { return debugManager_.get(); }
+    [[nodiscard]] DynDNS*               getDynDNS()              const { return dynDNS_.get(); }
+    [[nodiscard]] ::IPFilter*            getIPFilter()            const { return ipFilter_.get(); }
 #ifdef WITH_DHT
-    [[nodiscard]] ::dht::DHT*             getDHT()                 const noexcept { return dht_.get(); }
+    [[nodiscard]] ::dht::DHT*             getDHT()                 const { return dht_.get(); }
 #endif
 #ifdef LUA_SCRIPT
-    [[nodiscard]] ScriptManager*        getScriptManager()       const noexcept { return scriptManager_.get(); }
+    [[nodiscard]] ScriptManager*        getScriptManager()       const { return scriptManager_.get(); }
 #endif
 
 private:

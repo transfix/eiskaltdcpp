@@ -100,7 +100,7 @@ void SearchManager::listen() {
     }
 }
 
-void SearchManager::disconnect() noexcept {
+void SearchManager::disconnect() {
     if(socket.get()) {
         stop = true;
         queue.shutdown();

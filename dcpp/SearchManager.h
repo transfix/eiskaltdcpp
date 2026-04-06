@@ -81,7 +81,7 @@ public:
     }
 
     void listen();
-    void disconnect() noexcept;
+    void disconnect();
     void onSearchResult(const string& aLine) {
         onData((const uint8_t*)aLine.data(), aLine.length(), Util::emptyString);
     }
@@ -94,9 +94,9 @@ private:
     class UdpQueue: public Thread {
     public:
         explicit UdpQueue(DCContext& ctx) : stop(false), ctx_(ctx) {}
-        ~UdpQueue() noexcept { shutdown(); }
+        ~UdpQueue() { shutdown(); }
 
-        [[nodiscard]] DCContext& ctx() const noexcept { return ctx_; }
+        [[nodiscard]] DCContext& ctx() const { return ctx_; }
 
         int run();
         void shutdown() {

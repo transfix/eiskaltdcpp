@@ -46,11 +46,11 @@ std::unique_ptr<DCContext> startup(void (*f)(void*, const string&), void* p) {
     return ctx;  // caller owns
 }
 
-DCContext* getContext() noexcept {
+DCContext* getContext() {
     return g_activeContext;
 }
 
-void setContext(DCContext* ctx) noexcept {
+void setContext(DCContext* ctx) {
     g_activeContext = ctx;
 }
 

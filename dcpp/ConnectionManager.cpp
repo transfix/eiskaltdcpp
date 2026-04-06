@@ -388,7 +388,7 @@ void ConnectionManager::adcConnect(const OnlineUser& aUser, const string &aPort,
     }
 }
 
-void ConnectionManager::disconnect() noexcept {
+void ConnectionManager::disconnect() {
     delete server;
     delete secureServer;
     server = nullptr;

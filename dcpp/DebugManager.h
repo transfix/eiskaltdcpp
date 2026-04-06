@@ -60,8 +60,8 @@ public:
     };
 
 public:
-    explicit DebugManager(DCContext& ctx) noexcept : ContextAware(ctx) { };
-    virtual ~DebugManager() noexcept { };
+    explicit DebugManager(DCContext& ctx) : ContextAware(ctx) { };
+    virtual ~DebugManager() { };
 
 private:
     static string typeDirToString(int typeDir);

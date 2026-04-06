@@ -47,12 +47,12 @@ public:
     SSLSocket* getClientSocket(bool allowUntrusted, Socket::Protocol proto);
     SSLSocket* getServerSocket(bool allowUntrusted);
 
-    void loadCertificates() noexcept;
+    void loadCertificates();
     void generateCertificate();
-    bool checkCertificate() noexcept;
-    const ByteVector& getKeyprint() const noexcept;
+    bool checkCertificate();
+    const ByteVector& getKeyprint() const;
 
-    bool TLSOk() const noexcept;
+    bool TLSOk() const;
 public:
     explicit CryptoManager(DCContext& ctx);
     virtual ~CryptoManager();
@@ -76,7 +76,7 @@ private:
     bool isExtra(uint8_t b) {
         return (b == 0 || b==5 || b==124 || b==96 || b==126 || b==36);
     }
-    void loadKeyprint(const string& file) noexcept;
+    void loadKeyprint(const string& file);
 };
 
 } // namespace dcpp

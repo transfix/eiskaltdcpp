@@ -62,7 +62,7 @@ void initialize() {
 #endif
 }
 
-bool isAscii(const char* str) noexcept {
+bool isAscii(const char* str) {
     for(const uint8_t* p = (const uint8_t*)str; *p; ++p) {
         if(*p & 0x80)
             return false;
@@ -132,12 +132,12 @@ void wcToUtf8(wchar_t c, string& str) {
     }
 }
 
-const string& acpToUtf8(const string& str, string& tmp) noexcept {
+const string& acpToUtf8(const string& str, string& tmp) {
     wstring wtmp;
     return wideToUtf8(acpToWide(str, wtmp), tmp);
 }
 
-const wstring& acpToWide(const string& str, wstring& tmp) noexcept {
+const wstring& acpToWide(const string& str, wstring& tmp) {
     if(str.empty())
         return Util::emptyStringW;
 #ifdef _WIN32
@@ -179,7 +179,7 @@ const wstring& acpToWide(const string& str, wstring& tmp) noexcept {
 #endif
 }
 
-const string& wideToUtf8(const wstring& str, string& tgt) noexcept {
+const string& wideToUtf8(const wstring& str, string& tgt) {
     if(str.empty()) {
         return Util::emptyString;
     }
@@ -192,7 +192,7 @@ const string& wideToUtf8(const wstring& str, string& tgt) noexcept {
     return tgt;
 }
 
-const string& wideToAcp(const wstring& str, string& tmp) noexcept {
+const string& wideToAcp(const wstring& str, string& tmp) {
     if(str.empty())
         return Util::emptyString;
 #ifdef _WIN32
@@ -226,7 +226,7 @@ const string& wideToAcp(const wstring& str, string& tmp) noexcept {
 #endif
 }
 
-bool validateUtf8(const string& str) noexcept {
+bool validateUtf8(const string& str) {
     string::size_type i = 0;
     while(i < str.length()) {
         wchar_t dummy = 0;
@@ -238,12 +238,12 @@ bool validateUtf8(const string& str) noexcept {
     return true;
 }
 
-const string& utf8ToAcp(const string& str, string& tmp) noexcept {
+const string& utf8ToAcp(const string& str, string& tmp) {
     wstring wtmp;
     return wideToAcp(utf8ToWide(str, wtmp), tmp);
 }
 
-const wstring& utf8ToWide(const string& str, wstring& tgt) noexcept {
+const wstring& utf8ToWide(const string& str, wstring& tgt) {
     tgt.reserve(str.length());
     string::size_type n = str.length();
     for(string::size_type i = 0; i < n; ) {
@@ -260,7 +260,7 @@ const wstring& utf8ToWide(const string& str, wstring& tgt) noexcept {
     return tgt;
 }
 
-wchar_t toLower(wchar_t c) noexcept {
+wchar_t toLower(wchar_t c) {
 #ifdef _WIN32
     return static_cast<wchar_t>(reinterpret_cast<ptrdiff_t>(CharLowerW((LPWSTR)c)));
 #else
@@ -268,7 +268,7 @@ wchar_t toLower(wchar_t c) noexcept {
 #endif
 }
 
-const wstring& toLower(const wstring& str, wstring& tmp) noexcept {
+const wstring& toLower(const wstring& str, wstring& tmp) {
     if(str.empty())
         return Util::emptyStringW;
     tmp.clear();
@@ -279,7 +279,7 @@ const wstring& toLower(const wstring& str, wstring& tmp) noexcept {
     return tmp;
 }
 
-const string& toLower(const string& str, string& tmp) noexcept {
+const string& toLower(const string& str, string& tmp) {
     if(str.empty())
         return Util::emptyString;
     tmp.reserve(str.length());
@@ -298,7 +298,7 @@ const string& toLower(const string& str, string& tmp) noexcept {
     return tmp;
 }
 
-const string& toUtf8(const string& str, const string& fromCharset, string& tmp) noexcept {
+const string& toUtf8(const string& str, const string& fromCharset, string& tmp) {
     if(str.empty()) {
         return str;
     }
@@ -310,7 +310,7 @@ const string& toUtf8(const string& str, const string& fromCharset, string& tmp) 
     return convert(str, tmp, fromCharset, utf8);
 }
 
-const string& fromUtf8(const string& str, const string& toCharset, string& tmp) noexcept {
+const string& fromUtf8(const string& str, const string& toCharset, string& tmp) {
     if(str.empty()) {
         return str;
     }
@@ -322,7 +322,7 @@ const string& fromUtf8(const string& str, const string& toCharset, string& tmp) 
     return convert(str, tmp, utf8, toCharset);
 }
 
-const string& convert(const string& str, string& tmp, const string& fromCharset, const string& toCharset) noexcept {
+const string& convert(const string& str, string& tmp, const string& fromCharset, const string& toCharset) {
     if(str.empty())
         return str;
 

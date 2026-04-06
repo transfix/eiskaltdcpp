@@ -262,7 +262,7 @@ string ClientManager::findHubEncoding(const string& aUrl) const {
     return Text::hubDefaultCharset;
 }
 
-UserPtr ClientManager::findLegacyUser(const string& aNick) const noexcept {
+UserPtr ClientManager::findLegacyUser(const string& aNick) const {
     if (aNick.empty())
         return UserPtr();
     Lock l(cs);
@@ -275,7 +275,7 @@ UserPtr ClientManager::findLegacyUser(const string& aNick) const noexcept {
     return UserPtr();
 }
 
-UserPtr ClientManager::getUser(const string& aNick, const string& aHubUrl) noexcept {
+UserPtr ClientManager::getUser(const string& aNick, const string& aHubUrl) {
     CID cid = makeCid(aNick, aHubUrl);
     Lock l(cs);
 
@@ -292,7 +292,7 @@ UserPtr ClientManager::getUser(const string& aNick, const string& aHubUrl) noexc
     return p;
 }
 
-UserPtr ClientManager::getUser(const CID& cid) noexcept {
+UserPtr ClientManager::getUser(const CID& cid) {
     Lock l(cs);
     auto ui = users.find(cid);
     if(ui != users.end()) {
@@ -308,7 +308,7 @@ UserPtr ClientManager::getUser(const CID& cid) noexcept {
     return p;
 }
 
-UserPtr ClientManager::findUser(const CID& cid) const noexcept {
+UserPtr ClientManager::findUser(const CID& cid) const {
     Lock l(cs);
     auto ui = users.find(cid);
     return ui == users.end() ? nullptr : ui->second;
@@ -325,7 +325,7 @@ bool ClientManager::isOp(const UserPtr& user, const string& aHubUrl) const {
     return false;
 }
 
-CID ClientManager::makeCid(const string& aNick, const string& aHubUrl) const noexcept {
+CID ClientManager::makeCid(const string& aNick, const string& aHubUrl) const {
     string n = Text::toLower(aNick);
     TigerHash th;
     th.update(n.c_str(), n.length());
@@ -335,7 +335,7 @@ CID ClientManager::makeCid(const string& aNick, const string& aHubUrl) const noe
     return CID(th.finalize());
 }
 
-void ClientManager::putOnline(OnlineUser* ou) noexcept {
+void ClientManager::putOnline(OnlineUser* ou) {
     {
         Lock l(cs);
         onlineUsers.emplace(ou->getUser()->getCID(), ou);
@@ -347,7 +347,7 @@ void ClientManager::putOnline(OnlineUser* ou) noexcept {
     }
 }
 
-void ClientManager::putOffline(OnlineUser* ou, bool disconnect) noexcept {
+void ClientManager::putOffline(OnlineUser* ou, bool disconnect) {
     OnlineIter::difference_type diff = 0;
     {
         Lock l(cs);
@@ -491,7 +491,7 @@ void ClientManager::infoUpdated() {
 }
 
 void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int aSearchType, int64_t aSize,
-                       int aFileType, const string& aString) noexcept
+                       int aFileType, const string& aString)
 {
     Speaker<ClientManagerListener>::fire(ClientManagerListener::IncomingSearch(), aString);
 
@@ -671,7 +671,7 @@ CID ClientManager::getMyCID() {
     return CID(tiger.finalize());
 }
 
-void ClientManager::updateUser(const OnlineUser& user) noexcept {
+void ClientManager::updateUser(const OnlineUser& user) {
     if(!user.getIdentity().getNick().empty()) {
         Lock l(cs);
         auto i = nicks.find(user.getUser()->getCID());
@@ -832,7 +832,7 @@ OnlineUserPtr ClientManager::findDHTNode(const CID& cid) const {
 #endif
 
 #ifdef LUA_SCRIPT
-bool ClientManager::ucExecuteLua(const string& ucCommand, StringMap& params) noexcept {
+bool ClientManager::ucExecuteLua(const string& ucCommand, StringMap& params) {
     bool executedlua = false;
     string::size_type i, j, k;
     i = j = k = 0;

@@ -36,11 +36,11 @@ class SSLSocketException : public SocketException
 {
 public:
 #ifdef _DEBUG
-    SSLSocketException(const string& aError) noexcept : SocketException("SSLSocketException: " + aError) { }
+    SSLSocketException(const string& aError) : SocketException("SSLSocketException: " + aError) { }
 #else //_DEBUG
-    SSLSocketException(const string& aError) noexcept : SocketException(aError) { }
+    SSLSocketException(const string& aError) : SocketException(aError) { }
 #endif // _DEBUG
-    SSLSocketException(int aError) noexcept : SocketException(aError) { }
+    SSLSocketException(int aError) : SocketException(aError) { }
 
     virtual ~SSLSocketException() throw() { }
 };
@@ -57,13 +57,13 @@ public:
     virtual int read(void* aBuffer, int aBufLen);
     virtual int write(const void* aBuffer, int aLen);
     virtual int wait(uint32_t millis, int waitFor);
-    virtual void shutdown() noexcept;
-    virtual void close() noexcept;
+    virtual void shutdown();
+    virtual void close();
 
-    virtual bool isSecure() const noexcept { return true; }
-    virtual bool isTrusted() const noexcept;
-    virtual string getCipherName() const noexcept;
-    virtual ByteVector getKeyprint() const noexcept;
+    virtual bool isSecure() const { return true; }
+    virtual bool isTrusted() const;
+    virtual string getCipherName() const;
+    virtual ByteVector getKeyprint() const;
 
     virtual bool waitConnected(uint32_t millis);
     virtual bool waitAccepted(uint32_t millis);

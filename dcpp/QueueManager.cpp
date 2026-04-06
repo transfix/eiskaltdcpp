@@ -181,7 +181,7 @@ void QueueManager::FileQueue::move(QueueItem* qi, const string& aTarget) {
     add(qi);
 }
 
-bool QueueManager::getQueueInfo(const UserPtr& aUser, string& aTarget, int64_t& aSize, int& aFlags) noexcept {
+bool QueueManager::getQueueInfo(const UserPtr& aUser, string& aTarget, int64_t& aSize, int& aFlags) {
     Lock l(cs);
     QueueItem* qi = userQueue.getNext(aUser);
     if(!qi)
@@ -552,7 +552,7 @@ QueueManager::~QueueManager() {
     }
 }
 
-bool QueueManager::getTTH(const string& name, TTHValue& tth) noexcept {
+bool QueueManager::getTTH(const string& name, TTHValue& tth) {
     Lock l(cs);
     QueueItem* qi = fileQueue.find(name);
     if(qi) {
@@ -890,7 +890,7 @@ bool QueueManager::addSource(QueueItem* qi, const HintedUser& aUser, Flags::Mask
     return wantConnection;
 }
 
-void QueueManager::addDirectory(const string& aDir, const HintedUser& aUser, const string& aTarget, QueueItem::Priority p /* = QueueItem::DEFAULT */) noexcept {
+void QueueManager::addDirectory(const string& aDir, const HintedUser& aUser, const string& aTarget, QueueItem::Priority p /* = QueueItem::DEFAULT */) {
     bool needList;
     {
         Lock l(cs);
@@ -917,7 +917,7 @@ void QueueManager::addDirectory(const string& aDir, const HintedUser& aUser, con
     }
 }
 
-QueueItem::Priority QueueManager::hasDownload(const UserPtr& aUser) noexcept {
+QueueItem::Priority QueueManager::hasDownload(const UserPtr& aUser) {
     Lock l(cs);
     QueueItem* qi = userQueue.getNext(aUser, QueueItem::LOWEST);
     if(!qi) {
@@ -929,7 +929,7 @@ QueueItem::Priority QueueManager::hasDownload(const UserPtr& aUser) noexcept {
 typedef unordered_map<TTHValue, const DirectoryListing::File*> TTHMap;
 
 namespace {
-void buildMap(const DirectoryListing::Directory* dir, TTHMap& tthMap) noexcept {
+void buildMap(const DirectoryListing::Directory* dir, TTHMap& tthMap) {
     std::for_each(dir->directories.cbegin(), dir->directories.cend(), [&](DirectoryListing::Directory* d) {
         if(!d->getAdls())
             buildMap(d, tthMap);
@@ -941,7 +941,7 @@ void buildMap(const DirectoryListing::Directory* dir, TTHMap& tthMap) noexcept {
 }
 }
 
-int QueueManager::matchListing(const DirectoryListing& dl) noexcept {
+int QueueManager::matchListing(const DirectoryListing& dl) {
     int matches = 0;
 
     {
@@ -971,7 +971,7 @@ int QueueManager::matchListing(const DirectoryListing& dl) noexcept {
     return matches;
 }
 
-int64_t QueueManager::getPos(const string& target) noexcept {
+int64_t QueueManager::getPos(const string& target) {
     Lock l(cs);
     QueueItem* qi = fileQueue.find(target);
     if(qi) {
@@ -980,7 +980,7 @@ int64_t QueueManager::getPos(const string& target) noexcept {
     return -1;
 }
 
-int64_t QueueManager::getSize(const string& target) noexcept {
+int64_t QueueManager::getSize(const string& target) {
     Lock l(cs);
     QueueItem* qi = fileQueue.find(target);
     if(qi) {
@@ -989,7 +989,7 @@ int64_t QueueManager::getSize(const string& target) noexcept {
     return -1;
 }
 
-void QueueManager::getSizeInfo(int64_t& size, int64_t& pos, const string& target) noexcept {
+void QueueManager::getSizeInfo(int64_t& size, int64_t& pos, const string& target) {
     Lock l(cs);
     QueueItem* qi = fileQueue.find(target);
     if(qi) {
@@ -1000,7 +1000,7 @@ void QueueManager::getSizeInfo(int64_t& size, int64_t& pos, const string& target
     }
 }
 
-void QueueManager::move(const string& aSource, const string& aTarget) noexcept {
+void QueueManager::move(const string& aSource, const string& aTarget) {
     string target = Util::validateFileName(aTarget);
     if(aSource == target)
         return;
@@ -1055,7 +1055,7 @@ StringList QueueManager::getTargets(const TTHValue& tth) {
     return sl;
 }
 
-Download* QueueManager::getDownload(UserConnection& aSource, bool supportsTrees) noexcept {
+Download* QueueManager::getDownload(UserConnection& aSource, bool supportsTrees) {
     Lock l(cs);
 
     UserPtr& u = aSource.getUser();
@@ -1241,7 +1241,7 @@ void QueueManager::rechecked(QueueItem* qi) {
     setDirty();
 }
 
-void QueueManager::putDownload(Download* aDownload, bool finished) noexcept {
+void QueueManager::putDownload(Download* aDownload, bool finished) {
     HintedUserList getConn;
     string fl_fname;
     HintedUser fl_user(UserPtr(), Util::emptyString);
@@ -1437,7 +1437,7 @@ void QueueManager::recheck(const string& aTarget) {
     rechecker.add(aTarget);
 }
 
-void QueueManager::remove(const string& aTarget) noexcept {
+void QueueManager::remove(const string& aTarget) {
     UserList x;
 
     {
@@ -1480,7 +1480,7 @@ void QueueManager::remove(const string& aTarget) noexcept {
 
 #define MAX_SIZE_WO_TREE 20*1024*1024
 
-void QueueManager::removeSource(const string& aTarget, const UserPtr& aUser, int reason, bool removeConn /* = true */) noexcept {
+void QueueManager::removeSource(const string& aTarget, const UserPtr& aUser, int reason, bool removeConn /* = true */) {
     bool isRunning = false;
     bool removeCompletely = false;
     {
@@ -1532,7 +1532,7 @@ int64_t QueueManager::getQueued(const UserPtr& aUser) const {
     return userQueue.getQueued(aUser);
 }
 
-void QueueManager::removeSource(const UserPtr& aUser, int reason) noexcept {
+void QueueManager::removeSource(const UserPtr& aUser, int reason) {
     // @todo remove from finished items
     bool isRunning = false;
     string removeRunning;
@@ -1574,7 +1574,7 @@ void QueueManager::removeSource(const UserPtr& aUser, int reason) noexcept {
     }
 }
 
-void QueueManager::setPriority(const string& aTarget, QueueItem::Priority p) noexcept {
+void QueueManager::setPriority(const string& aTarget, QueueItem::Priority p) {
     HintedUserList getConn;
 
     {
@@ -1611,7 +1611,7 @@ int QueueManager::countOnlineSources(const string& aTarget) {
     return onlineSources;
 }
 
-void QueueManager::saveQueue(bool force) noexcept {
+void QueueManager::saveQueue(bool force) {
     if(!dirty && !force)
         return;
 
@@ -1719,7 +1719,7 @@ private:
     bool inDownloads;
 };
 
-void QueueManager::loadQueue() noexcept {
+void QueueManager::loadQueue() {
     try {
         QueueLoader l(ctx());
         Util::migrate(getQueueFile());

@@ -86,33 +86,33 @@ public:
     StringList getRealPaths(const string& virtualPath);
     TTHValue getTTH(const string& virtualFile) const;
 
-    void refresh(bool dirs = false, bool aUpdate = true, bool block = false) noexcept;
+    void refresh(bool dirs = false, bool aUpdate = true, bool block = false);
     void setDirty() { xmlDirty = true; }
 
-    void search(SearchResultList& l, const string& aString, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults) noexcept;
-    void search(SearchResultList& l, const StringList& params, StringList::size_type maxResults) noexcept;
+    void search(SearchResultList& l, const string& aString, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults);
+    void search(SearchResultList& l, const StringList& params, StringList::size_type maxResults);
 
-    StringPairList getDirectories() const noexcept;
+    StringPairList getDirectories() const;
 
     MemoryInputStream* generatePartialList(const string& dir, bool recurse) const;
     MemoryInputStream* getTree(const string& virtualFile) const;
 
     AdcCommand getFileInfo(const string& aFile);
 
-    int64_t getShareSize() const noexcept;
-    int64_t getShareSize(const string& realPath) const noexcept;
+    int64_t getShareSize() const;
+    int64_t getShareSize(const string& realPath) const;
 
-    size_t getSharedFiles() const noexcept;
+    size_t getSharedFiles() const;
 
     string getShareSizeString() const { return Util::toString(getShareSize()); }
     string getShareSizeString(const string& aDir) const { return Util::toString(getShareSize(aDir)); }
 
     void getBloom(ByteVector& v, size_t k, size_t m, size_t h) const;
 
-    SearchManager::TypeModes getType(const string& fileName) const noexcept;
+    SearchManager::TypeModes getType(const string& fileName) const;
 
-    string validateVirtual(const string& /*aVirt*/) const noexcept;
-    bool hasVirtual(const string& name) const noexcept;
+    string validateVirtual(const string& /*aVirt*/) const;
+    bool hasVirtual(const string& name) const;
 
     void addHits(uint32_t aHits) {
         hits += aHits;
@@ -201,19 +201,19 @@ private:
 
         static Ptr create(const string& aName, const Ptr& aParent = Ptr()) { return Ptr(new Directory(aName, aParent)); }
 
-        bool hasType(uint32_t type) const noexcept {
+        bool hasType(uint32_t type) const {
             return ( (type == SearchManager::TYPE_ANY) || (fileTypes & (1 << type)) );
         }
-        void addType(uint32_t type) noexcept;
+        void addType(uint32_t type);
 
-        string getADCPath() const noexcept;
-        string getFullName() const noexcept;
+        string getADCPath() const;
+        string getFullName() const;
         string getRealPath(const std::string& path) const;
 
-        int64_t getSize() const noexcept;
+        int64_t getSize() const;
 
-        void search(SearchResultList& aResults, StringSearch::List& aStrings, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults, ShareManager& sm) const noexcept;
-        void search(SearchResultList& aResults, AdcSearch& aStrings, StringList::size_type maxResults, ShareManager& sm) const noexcept;
+        void search(SearchResultList& aResults, StringSearch::List& aStrings, int aSearchType, int64_t aSize, int aFileType, Client* aClient, StringList::size_type maxResults, ShareManager& sm) const;
+        void search(SearchResultList& aResults, AdcSearch& aStrings, StringList::size_type maxResults, ShareManager& sm) const;
 
         void toXml(OutputStream& xmlFile, string& indent, string& tmp2, bool fullList) const;
         void filesToXml(OutputStream& xmlFile, string& indent, string& tmp2) const;
@@ -321,8 +321,8 @@ private:
     Directory::Ptr merge(const Directory::Ptr& directory);
 
     void generateXmlList();
-    bool loadCache() noexcept;
-    DirList::const_iterator getByVirtual(const string& virtualName) const noexcept;
+    bool loadCache();
+    DirList::const_iterator getByVirtual(const string& virtualName) const;
     pair<Directory::Ptr, string> splitVirtual(const string& virtualPath) const;
 
     string findRealRoot(const string& virtualRoot, const string& virtualLeaf) const;

@@ -45,7 +45,7 @@ namespace dcpp {
 static const string UPLOAD_AREA = "Uploads";
 
 
-UploadManager::UploadManager(DCContext& ctx) noexcept : ContextAware(ctx), extra(0), lastGrant(0), running(0), limits(NULL), lastFreeSlots(-1) {
+UploadManager::UploadManager(DCContext& ctx) : ContextAware(ctx), extra(0), lastGrant(0), running(0), limits(NULL), lastFreeSlots(-1) {
     this->ctx().getClientManager()->addListener(this);
     this->ctx().getTimerManager()->addListener(this);
 }

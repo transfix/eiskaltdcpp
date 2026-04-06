@@ -86,47 +86,47 @@ public:
     void readd(const string& target, const HintedUser& aUser);
     /** Add a directory to the queue (downloads filelist and matches the directory). */
     void addDirectory(const string& aDir, const HintedUser& aUser, const string& aTarget,
-                      QueueItem::Priority p = QueueItem::DEFAULT) noexcept;
+                      QueueItem::Priority p = QueueItem::DEFAULT);
 
-    int matchListing(const DirectoryListing& dl) noexcept;
+    int matchListing(const DirectoryListing& dl);
     void matchAllListings();
 
-    bool getTTH(const string& name, TTHValue& tth) noexcept;
+    bool getTTH(const string& name, TTHValue& tth);
 
-    int64_t getSize(const string& target) noexcept;
-    int64_t getPos(const string& target) noexcept;
-    void getSizeInfo(int64_t& size, int64_t& pos, const string& target) noexcept;
+    int64_t getSize(const string& target);
+    int64_t getPos(const string& target);
+    void getSizeInfo(int64_t& size, int64_t& pos, const string& target);
 
     /** Move the target location of a queued item. Running items are silently ignored */
-    void move(const string& aSource, const string& aTarget) noexcept;
+    void move(const string& aSource, const string& aTarget);
 
-    void remove(const string& aTarget) noexcept;
-    void removeSource(const string& aTarget, const UserPtr& aUser, int reason, bool removeConn = true) noexcept;
-    void removeSource(const UserPtr& aUser, int reason) noexcept;
+    void remove(const string& aTarget);
+    void removeSource(const string& aTarget, const UserPtr& aUser, int reason, bool removeConn = true);
+    void removeSource(const UserPtr& aUser, int reason);
 
     void recheck(const string& aTarget);
 
-    void setPriority(const string& aTarget, QueueItem::Priority p) noexcept;
+    void setPriority(const string& aTarget, QueueItem::Priority p);
 
     StringList getTargets(const TTHValue& tth);
-    QueueItem::StringMap& lockQueue() noexcept { cs.lock(); return fileQueue.getQueue(); }
-    void unlockQueue() noexcept { cs.unlock(); }
+    QueueItem::StringMap& lockQueue() { cs.lock(); return fileQueue.getQueue(); }
+    void unlockQueue() { cs.unlock(); }
 
-    Download* getDownload(UserConnection& aSource, bool supportsTrees) noexcept;
-    void putDownload(Download* aDownload, bool finished) noexcept;
+    Download* getDownload(UserConnection& aSource, bool supportsTrees);
+    void putDownload(Download* aDownload, bool finished);
     void setFile(Download* download);
 
     int64_t getQueued(const UserPtr& aUser) const;
 
     /** @return The highest priority download the user has, PAUSED may also mean no downloads */
-    QueueItem::Priority hasDownload(const UserPtr& aUser) noexcept;
+    QueueItem::Priority hasDownload(const UserPtr& aUser);
 
-    bool getQueueInfo(const UserPtr& aUser, string& aTarget, int64_t& aSize, int& aFlags) noexcept;
+    bool getQueueInfo(const UserPtr& aUser, string& aTarget, int64_t& aSize, int& aFlags);
 
     int countOnlineSources(const string& aTarget);
 
-    void loadQueue() noexcept;
-    void saveQueue(bool force = false) noexcept;
+    void loadQueue();
+    void saveQueue(bool force = false);
 
     void noDeleteFileList(const string& path);
 

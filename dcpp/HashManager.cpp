@@ -262,7 +262,7 @@ void HashManager::HashStore::addFile(const string& aFileName, uint32_t aTimeStam
     dirty = true;
 }
 
-void HashManager::HashStore::addTree(const TigerTree& tt) noexcept {
+void HashManager::HashStore::addTree(const TigerTree& tt) {
     if (treeIndex.find(tt.getRoot()) == treeIndex.end()) {
         try {
             File f(getDataFile(), File::READ | File::WRITE, File::OPEN);
@@ -619,7 +619,7 @@ void HashManager::HashStore::createDataFile(const string& name) {
     }
 }
 
-void HashManager::Hasher::hashFile(const string& fileName, int64_t size) noexcept {
+void HashManager::Hasher::hashFile(const string& fileName, int64_t size) {
     Lock l(cs);
     if(w.emplace(fileName, size).second) {
         if(paused > 0)
@@ -629,14 +629,14 @@ void HashManager::Hasher::hashFile(const string& fileName, int64_t size) noexcep
     }
 }
 
-bool HashManager::Hasher::pause() noexcept {
+bool HashManager::Hasher::pause() {
     Lock l(cs);
     paused = 1;
     //    printf("pause::paused: %d\n", paused);fflush(stdout);
     return true;
 }
 
-void HashManager::Hasher::resume() noexcept {
+void HashManager::Hasher::resume() {
     Lock l(cs);
     while(paused > 0) {
         paused = 0;
@@ -645,7 +645,7 @@ void HashManager::Hasher::resume() noexcept {
     }
 }
 
-bool HashManager::Hasher::isPaused() const noexcept {
+bool HashManager::Hasher::isPaused() const {
     Lock l(cs);
     return paused > 0;
 }
@@ -1097,17 +1097,17 @@ HashManager::HashPauser::~HashPauser() {
         ctx().getHashManager()->resumeHashing();
 }
 
-bool HashManager::pauseHashing() noexcept {
+bool HashManager::pauseHashing() {
     Lock l(cs);
     return hasher.pause();
 }
 
-void HashManager::resumeHashing() noexcept {
+void HashManager::resumeHashing() {
     Lock l(cs);
     hasher.resume();
 }
 
-bool HashManager::isHashingPaused() const noexcept {
+bool HashManager::isHashingPaused() const {
     Lock l(cs);
     return hasher.isPaused();
 }

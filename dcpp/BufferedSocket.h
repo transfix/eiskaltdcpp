@@ -98,14 +98,14 @@ public:
     vector<uint8_t> getKeyprint() const { return sock->getKeyprint(); }
 
     void write(const string& aData) { write(aData.data(), aData.length()); }
-    void write(const char* aBuf, size_t aLen) noexcept;
+    void write(const char* aBuf, size_t aLen);
     /** Send the file f over this socket. */
     void transmitFile(InputStream* f) { Lock l(cs); addTask(SEND_FILE, new SendFileInfo(f)); }
 
     /** Send an updated signal to all listeners */
     void updated() { Lock l(cs); addTask(UPDATED, 0); }
 
-    void disconnect(bool graceless = false) noexcept { Lock l(cs); if(graceless) disconnecting = true; addTask(DISCONNECT, 0); }
+    void disconnect(bool graceless = false) { Lock l(cs); if(graceless) disconnecting = true; addTask(DISCONNECT, 0); }
 
     string getLocalIp() const { return sock->getLocalIp(); }
     string getLocalPort() const { return sock->getLocalPort(); }

@@ -54,7 +54,7 @@ public:
 
 public:
     explicit MappingManager(DCContext& ctx) : ContextAware(ctx), opened(false), portMapping(false) { }
-    virtual ~MappingManager() noexcept { join(); }
+    virtual ~MappingManager() { join(); }
 
 private:
 

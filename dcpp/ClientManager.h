@@ -69,8 +69,8 @@ public:
 
     void infoUpdated();
 
-    UserPtr getUser(const string& aNick, const string& aHubUrl) noexcept;
-    UserPtr getUser(const CID& cid) noexcept;
+    UserPtr getUser(const string& aNick, const string& aHubUrl);
+    UserPtr getUser(const CID& cid);
 
     string findHub(const string& ipPort) const;
     string findHubEncoding(const string& aUrl) const;
@@ -82,9 +82,9 @@ public:
     OnlineUser* findOnlineUser(const HintedUser& user, bool priv);
     OnlineUser* findOnlineUser(const CID& cid, const string& hintUrl, bool priv);
 
-    UserPtr findUser(const string& aNick, const string& aHubUrl) const noexcept { return findUser(makeCid(aNick, aHubUrl)); }
-    UserPtr findUser(const CID& cid) const noexcept;
-    UserPtr findLegacyUser(const string& aNick) const noexcept;
+    UserPtr findUser(const string& aNick, const string& aHubUrl) const { return findUser(makeCid(aNick, aHubUrl)); }
+    UserPtr findUser(const CID& cid) const;
+    UserPtr findLegacyUser(const string& aNick) const;
 
     bool isOnline(const UserPtr& aUser) const {
         Lock l(cs);
@@ -129,10 +129,10 @@ public:
     bool isOp(const UserPtr& aUser, const string& aHubUrl) const;
 
     /** Constructs a synthetic, hopefully unique CID */
-    CID makeCid(const string& nick, const string& hubUrl) const noexcept;
+    CID makeCid(const string& nick, const string& hubUrl) const;
 
-    void putOnline(OnlineUser* ou) noexcept;
-    void putOffline(OnlineUser* ou, bool disconnect = false) noexcept;
+    void putOnline(OnlineUser* ou);
+    void putOffline(OnlineUser* ou, bool disconnect = false);
 
     UserPtr& getMe();
 
@@ -142,7 +142,7 @@ public:
     void userCommand(const HintedUser& user, const UserCommand& uc, ParamMap& params, bool compatibility);
     int getMode(const string& aHubUrl) const;
     bool isActive(const string& aHubUrl = Util::emptyString) const { return getMode(aHubUrl) != SettingsManager::INCOMING_FIREWALL_PASSIVE; }
-    bool ucExecuteLua(const string& cmd, StringMap& params) noexcept;
+    bool ucExecuteLua(const string& cmd, StringMap& params);
 
     Lock lock() { return Lock(cs); }
 
@@ -193,7 +193,7 @@ public:
 
 private:
 
-    void updateUser(const OnlineUser& user) noexcept;
+    void updateUser(const OnlineUser& user);
 
     /// @return OnlineUser* found by CID and hint; discard any user that doesn't match the hint.
     OnlineUser* findOnlineUserHint(const CID& cid, const string& hintUrl) const {
@@ -216,7 +216,7 @@ private:
     virtual void on(HubUpdated, Client* c);
     virtual void on(HubUserCommand, Client*, int, int, const string&, const string&);
     virtual void on(NmdcSearch, Client* aClient, const string& aSeeker, int aSearchType, int64_t aSize,
-                    int aFileType, const string& aString) noexcept;
+                    int aFileType, const string& aString);
     virtual void on(AdcSearch, Client*, const AdcCommand& adc, const CID& from);
     // TimerManagerListener
     virtual void on(TimerManagerListener::Minute, uint64_t aTick);

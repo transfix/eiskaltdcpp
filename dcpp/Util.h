@@ -399,8 +399,8 @@ public:
      * Case insensitive substring search.
      * @return First position found or string::npos
      */
-    static string::size_type findSubString(const string& aString, const string& aSubString, string::size_type start = 0) noexcept;
-    static wstring::size_type findSubString(const wstring& aString, const wstring& aSubString, wstring::size_type start = 0) noexcept;
+    static string::size_type findSubString(const string& aString, const string& aSubString, string::size_type start = 0);
+    static wstring::size_type findSubString(const wstring& aString, const wstring& aSubString, wstring::size_type start = 0);
 
     /* Utf-8 versions of strnicmp and stricmp, unicode char code order (!) */
     static int stricmp(const char* a, const char* b);

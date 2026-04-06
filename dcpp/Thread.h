@@ -80,7 +80,7 @@ public:
         }
     }
 
-    [[nodiscard]] bool joinable() const noexcept { return thread_.joinable(); }
+    [[nodiscard]] bool joinable() const { return thread_.joinable(); }
 
     void setThreadPriority([[maybe_unused]] Priority p) {
         // Platform-specific priority setting can be added if needed.

@@ -157,7 +157,7 @@ private:
     virtual void on(TypeBZ2, HttpConnection*);
     virtual void on(Retried, HttpConnection*, const bool);
 
-    bool onHttpFinished(bool fromHttp) noexcept;
+    bool onHttpFinished(bool fromHttp);
 
     // SettingsManagerListener
     void on(SettingsManagerListener::Load, SimpleXML& xml) {

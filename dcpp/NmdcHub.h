@@ -54,7 +54,7 @@ public:
     using Client::send;
     using Client::connect;
 
-    void onLine(const string& aLine) noexcept;
+    void onLine(const string& aLine);
     virtual void connect(const OnlineUser& aUser, const string&);
 
     virtual void hubMessage(const string& aMessage, bool /*thirdPerson*/ = false);

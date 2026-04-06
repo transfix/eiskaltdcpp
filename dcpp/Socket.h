@@ -46,16 +46,16 @@ class DCContext;
 class SocketException : public Exception {
 public:
 #ifdef _DEBUG
-    SocketException(const string& aError) noexcept : Exception("SocketException: " + aError) { }
+    SocketException(const string& aError) : Exception("SocketException: " + aError) { }
 #else //_DEBUG
-    SocketException(const string& aError) noexcept : Exception(aError) { }
+    SocketException(const string& aError) : Exception(aError) { }
 #endif // _DEBUG
 
-    SocketException(int aError) noexcept;
+    SocketException(int aError);
     virtual ~SocketException() throw() { }
 
 private:
-    static string errorToString(int aError) noexcept;
+    static string errorToString(int aError);
 };
 
 class Socket
@@ -83,7 +83,7 @@ public:
     Socket(const string& aIp, const string& aPort) : sock(INVALID_SOCKET), type(TYPE_TCP), connected(false), proto(PROTO_DEFAULT), ctx_(nullptr) { connect(aIp, aPort); }
     virtual ~Socket() { disconnect(); }
 
-    void setContext(DCContext* ctx) noexcept { ctx_ = ctx; }
+    void setContext(DCContext* ctx) { ctx_ = ctx; }
     DCContext& ctx() const { return *ctx_; }
 
     /**
@@ -110,9 +110,9 @@ public:
     int write(const string& aData) { return write(aData.data(), (int)aData.length()); }
     virtual void writeTo(const string& aIp, const std::string &aPort, const void* aBuffer, int aLen, bool proxy = true);
     void writeTo(const string& aIp, const string& aPort, const string& aData) { writeTo(aIp, aPort, aData.data(), (int)aData.length()); }
-    virtual void shutdown() noexcept;
-    virtual void close() noexcept;
-    void disconnect() noexcept;
+    virtual void shutdown();
+    virtual void close();
+    void disconnect();
 
     virtual bool waitConnected(uint32_t millis);
     virtual bool waitAccepted(uint32_t millis);
@@ -149,12 +149,12 @@ public:
     static uint64_t getTotalDown() { return stats.totalDown; }
     static uint64_t getTotalUp() { return stats.totalUp; }
 
-    void setBlocking(bool block) noexcept;
+    void setBlocking(bool block);
 
-    string getLocalIp() noexcept;
-    string getLocalPort() noexcept;
+    string getLocalIp();
+    string getLocalPort();
 
-    Protocol getNextProtocol() noexcept;
+    Protocol getNextProtocol();
 
     // Low level interface
     virtual void create(int aType = TYPE_TCP);
@@ -167,10 +167,10 @@ public:
     int getSocketOptInt(int option);
     void setSocketOpt(int option, int value);
 
-    virtual bool isSecure() const noexcept { return false; }
-    virtual bool isTrusted() const noexcept { return false; }
-    virtual string getCipherName() const noexcept { return Util::emptyString; }
-    virtual ByteVector getKeyprint() const noexcept { return ByteVector(); }
+    virtual bool isSecure() const { return false; }
+    virtual bool isTrusted() const { return false; }
+    virtual string getCipherName() const { return Util::emptyString; }
+    virtual ByteVector getKeyprint() const { return ByteVector(); }
 
     /** When socks settings are updated, this has to be called... */
     static void socksUpdated(DCContext& ctx);

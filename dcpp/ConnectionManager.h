@@ -122,7 +122,7 @@ public:
 
     /** Find a suitable port to listen on, and start doing it */
     void listen();
-    void disconnect() noexcept;
+    void disconnect();
 
     const string& getPort() const;
     const string& getSecurePort() const;
@@ -135,7 +135,7 @@ private:
         virtual ~Server() { die = true; join(); }
 
         const string& getPort() const { return port; }
-        [[nodiscard]] DCContext& ctx() const noexcept { return ctx_; }
+        [[nodiscard]] DCContext& ctx() const { return ctx_; }
 
     private:
         virtual int run();

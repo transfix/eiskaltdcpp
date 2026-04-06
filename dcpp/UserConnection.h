@@ -223,7 +223,7 @@ private:
     };
 
     // We only want ConnectionManager to create this...
-    UserConnection(bool secure_, DCContext& ctx) noexcept : encoding(Text::systemCharset), state(STATE_UNCONNECTED),
+    UserConnection(bool secure_, DCContext& ctx) : encoding(Text::systemCharset), state(STATE_UNCONNECTED),
         lastActivity(0), speed(0), chunkSize(0), socket(0), ctx_(ctx), secure(secure_), download(NULL) {
         if (secure_)
             setFlag(FLAG_SECURE);
@@ -244,7 +244,7 @@ private:
         user = aUser;
     }
 
-    void onLine(const string& aLine) noexcept;
+    void onLine(const string& aLine);
 
     void send(const string& aString);
 

@@ -37,7 +37,7 @@ public:
     enum Area { CHAT, PM, DOWNLOAD, FINISHED_DOWNLOAD, UPLOAD, SYSTEM, STATUS, SPY, CMD_DEBUG, LAST };
     enum { FILE, FORMAT };
 
-    void log(Area area, ParamMap& params) noexcept;
+    void log(Area area, ParamMap& params);
     void message(const string& msg);
 
     List getLastLogs();
@@ -48,7 +48,7 @@ public:
     void saveSetting(int area, int sel, const string& setting);
 
 private:
-    void log(const string& area, const string& msg) noexcept;
+    void log(const string& area, const string& msg);
 
 
 public:

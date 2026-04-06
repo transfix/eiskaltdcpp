@@ -49,7 +49,7 @@ public:
     public:
         typedef File* Ptr;
 
-        File(Directory* aDir, const string& aName, int64_t aSize, const TTHValue& aTTH) noexcept :
+        File(Directory* aDir, const string& aName, int64_t aSize, const TTHValue& aTTH) :
             NonCopyable(),
             name(aName), size(aSize), parent(aDir), tthRoot(aTTH), adls(false),
             ts(0), hit(0)

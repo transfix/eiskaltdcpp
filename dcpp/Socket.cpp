@@ -64,14 +64,14 @@ string Socket::udpPort;
 
 #ifdef _DEBUG
 
-SocketException::SocketException(int aError) noexcept {
+SocketException::SocketException(int aError) {
     error = "SocketException: " + errorToString(aError);
     dcdebug("Thrown: %s\n", error.c_str());
 }
 
 #else // _DEBUG
 
-SocketException::SocketException(int aError) noexcept : Exception(errorToString(aError)) { }
+SocketException::SocketException(int aError) : Exception(errorToString(aError)) { }
 
 #endif
 
@@ -79,7 +79,7 @@ Socket::Stats Socket::stats = { 0, 0 };
 
 static const uint32_t SOCKS_TIMEOUT = 30000;
 
-string SocketException::errorToString(int aError) noexcept {
+string SocketException::errorToString(int aError) {
     string msg = Util::translateError(aError);
     if(msg.empty()) {
         msg = str(F_("Unknown error: 0x%1$x") % aError);
@@ -699,12 +699,12 @@ string Socket::resolve(const string& aDns) {
 }
 
 #ifdef _WIN32
-void Socket::setBlocking(bool block) noexcept {
+void Socket::setBlocking(bool block) {
     u_long b = block ? 0 : 1;
     ioctlsocket(sock, FIONBIO, &b);
 }
 #else
-void Socket::setBlocking(bool block) noexcept {
+void Socket::setBlocking(bool block) {
     int flags = fcntl(sock, F_GETFL, 0);
     if(block) {
         fcntl(sock, F_SETFL, flags & (~O_NONBLOCK));
@@ -714,7 +714,7 @@ void Socket::setBlocking(bool block) noexcept {
 }
 #endif
 
-string Socket::getLocalIp() noexcept {
+string Socket::getLocalIp() {
     if(sock == INVALID_SOCKET)
         return Util::emptyString;
 
@@ -726,7 +726,7 @@ string Socket::getLocalIp() noexcept {
     return Util::emptyString;
 }
 
-string Socket::getLocalPort() noexcept {
+string Socket::getLocalPort() {
     if(sock == INVALID_SOCKET)
         return Util::emptyString;
 
@@ -738,7 +738,7 @@ string Socket::getLocalPort() noexcept {
     return Util::emptyString;
 }
 
-Socket::Protocol Socket::getNextProtocol() noexcept {
+Socket::Protocol Socket::getNextProtocol() {
     return proto;
 }
 
@@ -788,12 +788,12 @@ void Socket::socksUpdated(DCContext& ctx) {
     }
 }
 
-void Socket::shutdown() noexcept {
+void Socket::shutdown() {
     if(sock != INVALID_SOCKET)
         ::shutdown(sock, 2);
 }
 
-void Socket::close() noexcept {
+void Socket::close() {
     if(sock != INVALID_SOCKET) {
 #ifdef _WIN32
         ::closesocket(sock);
@@ -805,7 +805,7 @@ void Socket::close() noexcept {
     }
 }
 
-void Socket::disconnect() noexcept {
+void Socket::disconnect() {
     shutdown();
     close();
 }

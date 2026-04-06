@@ -277,7 +277,7 @@ private:
     HubEntryList& publicHubs;
 };
 
-bool FavoriteManager::onHttpFinished(bool fromHttp) noexcept {
+bool FavoriteManager::onHttpFinished(bool fromHttp) {
     MemoryInputStream mis(downloadBuf);
     bool success = true;
 

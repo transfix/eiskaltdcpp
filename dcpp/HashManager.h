@@ -114,30 +114,30 @@ public:
         explicit HashPauser(DCContext& ctx);
         ~HashPauser();
 
-        [[nodiscard]] DCContext& ctx() const noexcept { return ctx_; }
+        [[nodiscard]] DCContext& ctx() const { return ctx_; }
     private:
         DCContext& ctx_;
         bool resume;
     };
 
     /// @return whether hashing was already paused
-    bool pauseHashing() noexcept;
-    void resumeHashing() noexcept;
-    bool isHashingPaused() const noexcept;
+    bool pauseHashing();
+    void resumeHashing();
+    bool isHashingPaused() const;
 
 private:
     class Hasher : public Thread {
     public:
         explicit Hasher(DCContext& ctx) : stop(false), running(false), paused(0), rebuild(false), currentSize(0), ctx_(ctx) { }
 
-        [[nodiscard]] DCContext& ctx() const noexcept { return ctx_; }
+        [[nodiscard]] DCContext& ctx() const { return ctx_; }
 
-        void hashFile(const string& fileName, int64_t size) noexcept;
+        void hashFile(const string& fileName, int64_t size);
 
         /// @return whether hashing was already paused
-        bool pause() noexcept;
-        void resume() noexcept;
-        bool isPaused() const noexcept;
+        bool pause();
+        void resume();
+        bool isPaused() const;
 
         void stopHashing(const string& baseDir);
         virtual int run();
@@ -169,7 +169,7 @@ private:
     class HashStore {
     public:
         explicit HashStore(DCContext& ctx);
-        [[nodiscard]] DCContext& ctx() const noexcept { return ctx_; }
+        [[nodiscard]] DCContext& ctx() const { return ctx_; }
         void addFile(const string& aFileName, uint32_t aTimeStamp, const TigerTree& tth, bool aUsed);
 
         void load();
@@ -180,7 +180,7 @@ private:
         bool checkTTH(const string& aFileName, int64_t aSize, uint32_t aTimeStamp);
         const TTHValue* getTTH(const string& aFileName);
 
-        void addTree(const TigerTree& tt) noexcept;
+        void addTree(const TigerTree& tt);
         bool getTree(const TTHValue& root, TigerTree& tth);
         int64_t getBlockSize(const TTHValue& root) const;
         bool isDirty() { return dirty; }

@@ -239,7 +239,7 @@ CryptoManager::CryptoManager(DCContext& ctx)
 CryptoManager::~CryptoManager() {
 }
 
-bool CryptoManager::TLSOk() const noexcept {
+bool CryptoManager::TLSOk() const {
     return CTX_BOOLSETTING(USE_TLS) && certsLoaded && !keyprint.empty();
 }
 
@@ -334,7 +334,7 @@ void CryptoManager::generateCertificate() {
     }
 }
 
-void CryptoManager::loadCertificates() noexcept {
+void CryptoManager::loadCertificates() {
     if(!CTX_BOOLSETTING(USE_TLS) || !clientContext || !clientVerContext || !serverContext || !serverVerContext)
         return;
 
@@ -415,7 +415,7 @@ void CryptoManager::loadCertificates() noexcept {
     certsLoaded = true;
 }
 
-bool CryptoManager::checkCertificate() noexcept {
+bool CryptoManager::checkCertificate() {
     X509* tmpx509 = readX509FromFile(CTX_SETTING(TLS_CERTIFICATE_FILE));
     if(!tmpx509) {
         return false;
@@ -462,11 +462,11 @@ bool CryptoManager::checkCertificate() noexcept {
     return true;
 }
 
-const ByteVector &CryptoManager::getKeyprint() const noexcept {
+const ByteVector &CryptoManager::getKeyprint() const {
     return keyprint;
 }
 
-void CryptoManager::loadKeyprint(const string& file) noexcept {
+void CryptoManager::loadKeyprint(const string& file) {
     (void)file;
 
     X509* tmpx509 = readX509FromFile(CTX_SETTING(TLS_CERTIFICATE_FILE));
