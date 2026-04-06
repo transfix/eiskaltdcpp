@@ -98,6 +98,7 @@ const string SettingsManager::settingTags[] =
     "UseADLOnlyOnOwnList", "AllowSimUploads", "CheckTargetsPathsOnStart", "NmdcDebug",
     "ShareSkipZeroByte", "RequireTLS", "LogSpy", "AppUnitBase",
     "LogCmdDebug",
+    "NmdcGetinfoLimit",
     "SENTRY",
     // Int64
     "TotalUpload", "TotalDownload",
@@ -311,6 +312,7 @@ SettingsManager::SettingsManager(DCContext& ctx) : ContextAware(ctx)
     setDefault(SHARE_SKIP_ZERO_BYTE, false);
     setDefault(APP_UNIT_BASE, 0);
     setDefault(REQUIRE_TLS, true); // True by default: We assume TLS is commonplace enough among ADC clients.
+    setDefault(NMDC_GETINFO_LIMIT, 0); // 0 = unlimited; positive = max $GetINFO requests per $NickList
 
     setSearchTypeDefaults();
 }

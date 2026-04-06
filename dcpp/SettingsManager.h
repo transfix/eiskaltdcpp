@@ -126,6 +126,7 @@ public:
                       NMDC_DEBUG, SHARE_SKIP_ZERO_BYTE, REQUIRE_TLS, LOG_SPY,
                       APP_UNIT_BASE,
                       LOG_CMD_DEBUG,
+                      NMDC_GETINFO_LIMIT,
                       INT_LAST };
 
     enum Int64Setting { INT64_FIRST = INT_LAST + 1,

@@ -725,14 +725,22 @@ void NmdcHub::onLine(const string& aLine) {
             }
 
             if(!(supportFlags & SUPPORTS_NOGETINFO)) {
+                int getInfoLimit = CTX_SETTING(NMDC_GETINFO_LIMIT);
+                size_t count = v.size();
+                if(getInfoLimit > 0 && count > static_cast<size_t>(getInfoLimit))
+                    count = static_cast<size_t>(getInfoLimit);
                 string tmp;
                 // Let's assume 10 characters per nick...
-                tmp.reserve(v.size() * (11 + 10 + getMyNick().length()));
+                tmp.reserve(count * (11 + 10 + getMyNick().length()));
                 string n = ' ' + fromUtf8(getMyNick()) + '|';
+                size_t sent = 0;
                 for(auto& i: v) {
+                    if(getInfoLimit > 0 && sent >= static_cast<size_t>(getInfoLimit))
+                        break;
                     tmp += "$GetINFO ";
                     tmp += fromUtf8(i->getIdentity().getNick());
                     tmp += n;
+                    ++sent;
                 }
                 if(!tmp.empty()) {
                     send(tmp);
@@ -1061,8 +1069,21 @@ void NmdcHub::on(Line, const string& aLine) {
         if(sp != string::npos) cmd = aLine.substr(0, sp);
         else if(aLine.size() <= 80) cmd = aLine;
         else cmd = aLine.substr(0, 80);
+#ifdef __linux__
+        long rssKB = 0;
+        if(FILE* f = fopen("/proc/self/status", "r")) {
+            char buf[256];
+            while(fgets(buf, sizeof(buf), f)) {
+                if(strncmp(buf, "VmRSS:", 6) == 0) { rssKB = atol(buf + 6); break; }
+            }
+            fclose(f);
+        }
+        fprintf(stderr, "[NmdcHub::on(Line)] std::bad_alloc processing %s (line size=%zu, RSS=%ldKB)\n",
+                cmd.c_str(), aLine.size(), rssKB);
+#else
         fprintf(stderr, "[NmdcHub::on(Line)] std::bad_alloc processing %s (line size=%zu)\n",
                 cmd.c_str(), aLine.size());
+#endif
     } catch(const std::exception& e) {
         string cmd;
         auto sp = aLine.find(' ');
