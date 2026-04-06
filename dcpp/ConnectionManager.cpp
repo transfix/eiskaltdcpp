@@ -346,7 +346,14 @@ void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, 
     if (checkHubCCBlock(aServer, aPort, hubUrl))
         return;
 
-    UserConnection* uc = getConnection(true, secure);
+    UserConnection* uc = nullptr;
+    try {
+        uc = getConnection(true, secure);
+    } catch(const std::bad_alloc&) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] bad_alloc in getConnection (server=%s port=%s secure=%d)\n",
+                aServer.c_str(), aPort.c_str(), (int)secure);
+        return;
+    }
     uc->setToken(aNick);
     uc->setHubUrl(hubUrl);
     uc->setEncoding(encoding);
@@ -354,6 +361,11 @@ void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, 
     uc->setFlag(UserConnection::FLAG_NMDC);
     try {
         uc->connect(aServer, aPort, localPort, natRole);
+    } catch(const std::bad_alloc&) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] bad_alloc in connect (server=%s port=%s secure=%d)\n",
+                aServer.c_str(), aPort.c_str(), (int)secure);
+        putConnection(uc);
+        delete uc;
     } catch(const Exception&) {
         putConnection(uc);
         delete uc;

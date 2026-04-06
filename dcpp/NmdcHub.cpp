@@ -1070,16 +1070,21 @@ void NmdcHub::on(Line, const string& aLine) {
         else if(aLine.size() <= 80) cmd = aLine;
         else cmd = aLine.substr(0, 80);
 #ifdef __linux__
-        long rssKB = 0;
+        long rssKB = 0, vmSizeKB = 0, vmPeakKB = 0;
         if(FILE* f = fopen("/proc/self/status", "r")) {
             char buf[256];
             while(fgets(buf, sizeof(buf), f)) {
-                if(strncmp(buf, "VmRSS:", 6) == 0) { rssKB = atol(buf + 6); break; }
+                if(strncmp(buf, "VmRSS:", 6) == 0) rssKB = atol(buf + 6);
+                else if(strncmp(buf, "VmSize:", 7) == 0) vmSizeKB = atol(buf + 7);
+                else if(strncmp(buf, "VmPeak:", 7) == 0) vmPeakKB = atol(buf + 7);
             }
             fclose(f);
         }
-        fprintf(stderr, "[NmdcHub::on(Line)] std::bad_alloc processing %s (line size=%zu, RSS=%ldKB)\n",
-                cmd.c_str(), aLine.size(), rssKB);
+        // Test if the allocator actually works
+        bool testAllocOk = false;
+        try { auto* p = new char[4096]; delete[] p; testAllocOk = true; } catch(...) {}
+        fprintf(stderr, "[NmdcHub::on(Line)] std::bad_alloc processing %s (line size=%zu, RSS=%ldKB, VmSize=%ldKB, VmPeak=%ldKB, testAlloc=%s)\n",
+                cmd.c_str(), aLine.size(), rssKB, vmSizeKB, vmPeakKB, testAllocOk ? "OK" : "FAIL");
 #else
         fprintf(stderr, "[NmdcHub::on(Line)] std::bad_alloc processing %s (line size=%zu)\n",
                 cmd.c_str(), aLine.size());
