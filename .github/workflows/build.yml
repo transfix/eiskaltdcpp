@@ -847,7 +847,8 @@ jobs:
           qt6-base-dev qt6-tools-dev qt6-tools-dev-tools \
           qt6-multimedia-dev qt6-declarative-dev \
           qt6-l10n-tools libqt6svg6-dev \
-          libgl-dev libdbus-1-dev libsqlite3-dev
+          libgl-dev libdbus-1-dev libsqlite3-dev \
+          libprotobuf-dev protobuf-compiler
 
     - name: Download build tree
       uses: actions/download-artifact@v4
@@ -873,7 +874,8 @@ jobs:
           -DDBUS_NOTIFY=ON \
           -DWITH_EMOTICONS=ON \
           -DWITH_SOUNDS=ON \
-          -DBUILD_TESTS=OFF
+          -DBUILD_TESTS=OFF \
+          -DWITH_NMDCPB=ON
 
     - name: Build .deb package
       run: |
@@ -1026,7 +1028,8 @@ jobs:
           -DDBUS_NOTIFY=OFF \
           -DWITH_EMOTICONS=ON \
           -DWITH_SOUNDS=ON \
-          -DBUILD_TESTS=OFF
+          -DBUILD_TESTS=OFF \
+          -DWITH_NMDCPB=ON
 
     - name: Install and deploy Qt
       run: |

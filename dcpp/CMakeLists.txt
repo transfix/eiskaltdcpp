@@ -180,7 +180,11 @@ target_link_libraries (dcpp
                        ${PCRE}
                        ${XATTR_LIBRARIES})
 if (WITH_NMDCPB)
-    target_link_libraries(dcpp ${Protobuf_LIBRARIES})
+    if (TARGET protobuf::libprotobuf)
+        target_link_libraries(dcpp protobuf::libprotobuf)
+    else ()
+        target_link_libraries(dcpp ${Protobuf_LIBRARIES})
+    endif ()
 endif (WITH_NMDCPB)
 set_target_properties(dcpp PROPERTIES
                       VERSION ${SO_VERSION}
