@@ -61,7 +61,7 @@ NmdcHub::~NmdcHub() {
 }
 
 bool NmdcHub::isRelayOnly() const {
-    return BOOLSETTING(RELAY_ONLY_MODE) && hasHubRelaySupport() && hasNmdcPbSupport();
+    return CTX_BOOLSETTING(RELAY_ONLY_MODE) && hasHubRelaySupport() && hasNmdcPbSupport();
 }
 
 #define checkstate() if(state != STATE_NORMAL) return
@@ -1453,10 +1453,10 @@ string NmdcHub::stealthSearch(const string& query, const string& tth,
     lastStealthSearch = now;
 
     // Prune old contexts
-    ctx()->getSearchManager()->pruneStealthSearches(120);
+    ctx().getSearchManager()->pruneStealthSearches(120);
 
     // Register aggregation context in SearchManager
-    auto queryId = ctx()->getSearchManager()->registerStealthSearch(query, tth);
+    auto queryId = ctx().getSearchManager()->registerStealthSearch(query, tth);
 
     // Fire PbUserQuery with sweep = true
     sendUserQuery(queryId,
@@ -1487,7 +1487,7 @@ string NmdcHub::startSegmentedDownload(const string& fileTTH, uint64_t fileSize,
         downloadDir.empty() ? "/tmp" : downloadDir);
 
     // Try to load the TTH tree for per-segment verification
-    auto* hm = ctx()->getHashManager();
+    auto* hm = ctx().getHashManager();
     if(hm) {
         TigerTree tt;
         if(hm->getTree(TTHValue(fileTTH), tt)) {
@@ -1583,7 +1583,7 @@ void NmdcHub::sendEncryptedPM(const string& targetNick, const string& message, b
         return;
     }
 
-    auto* mgr = ctx()->getE2EPMManager();
+    auto* mgr = ctx().getE2EPMManager();
     if(!mgr) return;
     if(!mgr->isEstablished(getHubUrl(), targetNick)) {
         if(!mgr->hasSession(getHubUrl(), targetNick)) {
@@ -1673,7 +1673,7 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         auto& kex = env->pm_key_exchange();
         if(kex.public_key().size() != X25519_KEY_SIZE) return;
 
-        auto* mgr = ctx()->getE2EPMManager();
+        auto* mgr = ctx().getE2EPMManager();
         if(!mgr) return;
         const uint8_t* peerPub = reinterpret_cast<const uint8_t*>(kex.public_key().data());
 
@@ -1733,7 +1733,7 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         }
     } else if(env->has_encrypted_pm()) {
         auto& epm = env->encrypted_pm();
-        auto* mgr = ctx()->getE2EPMManager();
+        auto* mgr = ctx().getE2EPMManager();
         if(!mgr) return;
 
         const uint8_t* hint = epm.sender_pubkey_hint().size() >= 8
@@ -1810,7 +1810,7 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         auto& ps = env->private_search();
         if(ps.search_id().empty()) return;
 
-        auto* sm = ctx()->getShareManager();
+        auto* sm = ctx().getShareManager();
         if(!sm) return;
 
         uint32_t maxRes = ps.max_results();
@@ -1847,8 +1847,8 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         auto* sr = resp.mutable_private_search_result();
         sr->set_search_id(ps.search_id());
 
-        uint8_t totalSlots = ctx()->getUploadManager()->getSlots();
-        int freeSlots = ctx()->getUploadManager()->getFreeSlots();
+        uint8_t totalSlots = ctx().getUploadManager()->getSlots();
+        int freeSlots = ctx().getUploadManager()->getFreeSlots();
 
         for(auto& r : results) {
             auto* item = sr->add_results();
@@ -1898,7 +1898,7 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
                 user, type, static_cast<int>(r.total_slots()), static_cast<int>(r.free_slots()),
                 static_cast<int64_t>(r.size()), fullPath, getHubName(), getHubUrl(),
                 Util::emptyString, tth, psr.search_id()));
-            ctx()->getSearchManager()->fire(SearchManagerListener::SR(), srp);
+            ctx().getSearchManager()->fire(SearchManagerListener::SR(), srp);
 
             // Collect for stealth aggregation
             SearchManager::StealthSearchHit sh;
@@ -1922,7 +1922,7 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
                 queryId = searchId.substr(0, pos);
             else
                 queryId = searchId;
-            ctx()->getSearchManager()->onStealthSearchResult(queryId, fromNick, stealthHits);
+            ctx().getSearchManager()->onStealthSearchResult(queryId, fromNick, stealthHits);
         }
 
     // ------------------------------------------------------------------
@@ -1966,7 +1966,7 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         auto& sr = env->segment_request();
         if(sr.request_id().empty() || sr.file_tth().empty()) return;
 
-        auto* sm = ctx()->getShareManager();
+        auto* sm = ctx().getShareManager();
         if(!sm) return;
 
         // Check if we have the file
@@ -2012,7 +2012,7 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         dcdebug("NmdcHub: user_query_result: query_id=%s total=%u sweep=%d\n",
                 uqr.query_id().c_str(), uqr.total_matching(), uqr.sweep_started());
         // Feed into stealth search aggregation
-        ctx()->getSearchManager()->onStealthUserQueryResult(
+        ctx().getSearchManager()->onStealthUserQueryResult(
             uqr.query_id(), uqr.total_matching(), uqr.sweep_count(), uqr.error());
         // Event already dispatched above as pb_message
 

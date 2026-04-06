@@ -13,7 +13,7 @@
 
 namespace dcpp {
 
-E2EPMManager::E2EPMManager() = default;
+E2EPMManager::E2EPMManager(DCContext& ctx) : ContextAware(ctx) {}
 E2EPMManager::~E2EPMManager() = default;
 
 // =========================================================================

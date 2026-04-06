@@ -77,7 +77,7 @@ struct E2EPMSession {
 
 class E2EPMManager : public ContextAware {
 public:
-    E2EPMManager();
+    explicit E2EPMManager(DCContext& ctx);
     ~E2EPMManager();
     /// Key used to look up sessions: (hubUrl, peerNick)
     using SessionKey = std::pair<std::string, std::string>;

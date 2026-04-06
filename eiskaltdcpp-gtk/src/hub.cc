@@ -3787,7 +3787,7 @@ void Hub::on(ClientListener::E2EPMStatus, Client *, const string &nick, const st
 {
     typedef Func3<Hub, string, string, bool> F3;
     F3 *func = new F3(this, &Hub::updateE2EPMStatus_gui, nick, fingerprint, keyChanged);
-    WulforManager::get()->dispatchGuiFunc(func);
+    wulforManagerInstance()->dispatchGuiFunc(func);
 }
 
 void Hub::updateE2EPMStatus_gui(string nick, string fingerprint, bool keyWarning)
@@ -3800,7 +3800,7 @@ void Hub::updateE2EPMStatus_gui(string nick, string fingerprint, bool keyWarning
     const string &cid = it->second;
 
     // Update E2EPM status on the PM tab through MainWindow
-    MainWindow *mw = WulforManager::get()->getMainWindow();
+    MainWindow *mw = wulforManagerInstance()->getMainWindow();
     mw->updatePrivateE2EPMStatus_gui(cid, fingerprint, keyWarning);
 
     // Add a status message about encryption

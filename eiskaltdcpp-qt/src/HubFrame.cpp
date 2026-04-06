@@ -4011,7 +4011,7 @@ void HubFrame::updateE2EPMStatus(QString nick, QString fingerprint, bool keyChan
     Q_D(HubFrame);
 
     // Find the PM window for this nick (by CID)
-    UserPtr user = dcpp::getContext()->getClientManager()->findUser(nick.toStdString(), d->client->getHubUrl());
+    UserPtr user = qtCtx()->dcCtx().getClientManager()->findUser(nick.toStdString(), d->client->getHubUrl());
     if (!user) return;
 
     QString cid = _q(user->getCID().toBase32());
