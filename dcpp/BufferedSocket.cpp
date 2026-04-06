@@ -500,6 +500,13 @@ int BufferedSocket::run() {
             }
         } catch(const Exception& e) {
             fail(e.getError());
+        } catch(const std::exception& e) {
+            // Catch std::bad_alloc and other std::exception subclasses that
+            // are not derived from dcpp::Exception.  Without this, an
+            // uncaught exception would call std::terminate() and crash the
+            // entire process.
+            dcdebug("BufferedSocket::run() std::exception: %s\n", e.what());
+            fail(string("std::exception in socket thread: ") + e.what());
         }
     }
     dcdebug("BufferedSocket::run() end %p\n", (void*)this);

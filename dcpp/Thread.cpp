@@ -21,14 +21,26 @@
 
 #include "format.h"
 
+#include <cstdio>
+#include <exception>
+
 namespace dcpp {
 
 void Thread::start() {
     join();  // join any previous thread first
+    auto wrapper = [this] {
+        try {
+            run();
+        } catch(const std::exception& e) {
+            fprintf(stderr, "[Thread] uncaught std::exception in run(): %s\n", e.what());
+        } catch(...) {
+            fprintf(stderr, "[Thread] uncaught unknown exception in run()\n");
+        }
+    };
 #if DCPP_HAS_JTHREAD
-    thread_ = std::jthread([this] { run(); });
+    thread_ = std::jthread(wrapper);
 #else
-    thread_ = std::thread([this] { run(); });
+    thread_ = std::thread(wrapper);
 #endif
 }
 
