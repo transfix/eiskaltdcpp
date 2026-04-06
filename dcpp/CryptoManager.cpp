@@ -497,6 +497,9 @@ void CryptoManager::decodeBZ2(const uint8_t* is, size_t sz, string& os) {
     size_t bufsize = 2*sz;
     std::unique_ptr<char[]> buf(new char[bufsize]);
 
+    // Safety limit: cap decompressed output at 256 MB to prevent OOM / decompression bombs.
+    static constexpr size_t MAX_DECOMPRESS_SIZE = 256 * 1024 * 1024;
+
     bs.avail_in = sz;
     bs.avail_out = bufsize;
     bs.next_in = reinterpret_cast<char*>(const_cast<uint8_t*>(is));
@@ -512,6 +515,10 @@ void CryptoManager::decodeBZ2(const uint8_t* is, size_t sz, string& os) {
             throw CryptoException(_("Error during decompression"));
         }
         os.append(&buf[0], bufsize-bs.avail_out);
+        if(os.size() > MAX_DECOMPRESS_SIZE) {
+            BZ2_bzDecompressEnd(&bs);
+            throw CryptoException(_("Decompressed data exceeds size limit"));
+        }
         bs.avail_out = bufsize;
         bs.next_out = &buf[0];
     }

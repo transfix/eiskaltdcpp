@@ -271,6 +271,10 @@ bool UploadManager::prepareFile(UserConnection& aSource, const string& aType, co
         ctx().getLogManager()->message(str(F_("Unable to send file %1%: %2%") % Util::addBrackets(sourceFile) % e.getError()));
         aSource.fileNotAvail();
         return false;
+    } catch(const std::exception& e) {
+        ctx().getLogManager()->message(str(F_("Unable to send file %1%: %2%") % Util::addBrackets(sourceFile) % string(e.what())));
+        aSource.fileNotAvail();
+        return false;
     }
 
 ok:

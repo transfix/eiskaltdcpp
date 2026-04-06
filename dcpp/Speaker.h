@@ -19,6 +19,8 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdio>
+#include <exception>
 #include <ranges>
 #include <vector>
 
@@ -38,7 +40,13 @@ public:
         Lock l(listenerCS);
         auto snapshot = listeners;  // snapshot so listeners can self-remove
         for (auto* listener : snapshot) {
-            listener->on(std::forward<Args>(args)...);
+            try {
+                listener->on(std::forward<Args>(args)...);
+            } catch(const std::exception& e) {
+                fprintf(stderr, "[Speaker::fire] uncaught std::exception in listener: %s\n", e.what());
+            } catch(...) {
+                fprintf(stderr, "[Speaker::fire] uncaught unknown exception in listener\n");
+            }
         }
     }
 
