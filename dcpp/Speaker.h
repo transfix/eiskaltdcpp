@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <exception>
 #include <ranges>
+#include <typeinfo>
 #include <vector>
 
 #include "CriticalSection.h"
@@ -41,12 +42,24 @@ public:
         Lock l(listenerCS);
         auto snapshot = listeners;  // snapshot so listeners can self-remove
         for (auto* listener : snapshot) {
-            listener->on(std::forward<Args>(args)...);
+            try {
+                listener->on(std::forward<Args>(args)...);
+            } catch(const std::exception& e) {
+                fprintf(stderr, "[Speaker::fire<%s>] exception from listener %p (%s): %s\n",
+                        typeid(Listener).name(), static_cast<void*>(listener),
+                        typeid(*listener).name(), e.what());
+            } catch(...) {
+                fprintf(stderr, "[Speaker::fire<%s>] unknown exception from listener %p (%s)\n",
+                        typeid(Listener).name(), static_cast<void*>(listener),
+                        typeid(*listener).name());
+            }
         }
         } catch(const std::exception& e) {
-            fprintf(stderr, "[Speaker::fire] uncaught std::exception in listener: %s\n", e.what());
+            fprintf(stderr, "[Speaker::fire<%s>] exception during snapshot/iteration: %s\n",
+                    typeid(Listener).name(), e.what());
         } catch(...) {
-            fprintf(stderr, "[Speaker::fire] uncaught unknown exception in listener\n");
+            fprintf(stderr, "[Speaker::fire<%s>] unknown exception during snapshot/iteration\n",
+                    typeid(Listener).name());
         }
     }
 
