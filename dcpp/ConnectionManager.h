@@ -138,7 +138,7 @@ private:
         [[nodiscard]] DCContext& ctx() const noexcept { return ctx_; }
 
     private:
-        virtual int run() noexcept;
+        virtual int run();
 
         Socket sock;
         string port;
@@ -178,7 +178,7 @@ public:
 
 private:
 
-    UserConnection* getConnection(bool aNmdc, bool secure) noexcept;
+    UserConnection* getConnection(bool aNmdc, bool secure);
     void putConnection(UserConnection* aConn);
 
     void addDownloadConnection(UserConnection* uc);
@@ -189,29 +189,29 @@ private:
 
     bool checkKeyprint(UserConnection *aSource);
 
-    void accept(const Socket& sock, bool secure) noexcept;
+    void accept(const Socket& sock, bool secure);
 
     void failed(UserConnection* aSource, const string& aError, bool protocolError);
 
     bool checkHubCCBlock(const string& aServer, const string& aPort, const string& aHubUrl);
 
     // UserConnectionListener
-    virtual void on(Connected, UserConnection*) noexcept;
-    virtual void on(Failed, UserConnection*, const string&) noexcept;
-    virtual void on(ProtocolError, UserConnection*, const string&) noexcept;
-    virtual void on(CLock, UserConnection*, const string&, const string&) noexcept;
-    virtual void on(Key, UserConnection*, const string&) noexcept;
-    virtual void on(Direction, UserConnection*, const string&, const string&) noexcept;
-    virtual void on(MyNick, UserConnection*, const string&) noexcept;
-    virtual void on(Supports, UserConnection*, const StringList&) noexcept;
+    virtual void on(Connected, UserConnection*);
+    virtual void on(Failed, UserConnection*, const string&);
+    virtual void on(ProtocolError, UserConnection*, const string&);
+    virtual void on(CLock, UserConnection*, const string&, const string&);
+    virtual void on(Key, UserConnection*, const string&);
+    virtual void on(Direction, UserConnection*, const string&, const string&);
+    virtual void on(MyNick, UserConnection*, const string&);
+    virtual void on(Supports, UserConnection*, const StringList&);
 
-    virtual void on(AdcCommand::SUP, UserConnection*, const AdcCommand&) noexcept;
-    virtual void on(AdcCommand::INF, UserConnection*, const AdcCommand&) noexcept;
-    virtual void on(AdcCommand::STA, UserConnection*, const AdcCommand&) noexcept;
+    virtual void on(AdcCommand::SUP, UserConnection*, const AdcCommand&);
+    virtual void on(AdcCommand::INF, UserConnection*, const AdcCommand&);
+    virtual void on(AdcCommand::STA, UserConnection*, const AdcCommand&);
 
     // TimerManagerListener
-    virtual void on(TimerManagerListener::Second, uint64_t aTick) noexcept;
-    virtual void on(TimerManagerListener::Minute, uint64_t aTick) noexcept;
+    virtual void on(TimerManagerListener::Second, uint64_t aTick);
+    virtual void on(TimerManagerListener::Minute, uint64_t aTick);
 
 };
 

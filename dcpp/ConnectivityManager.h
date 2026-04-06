@@ -40,8 +40,8 @@ public:
     typedef X<0> Message;
     typedef X<1> Finished;
 
-    virtual void on(Message, const string&) noexcept { }
-    virtual void on(Finished) noexcept { }
+    virtual void on(Message, const string&) { }
+    virtual void on(Finished) { }
 };
 
 class ConnectivityManager : public Speaker<ConnectivityManagerListener>, public ContextAware

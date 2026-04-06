@@ -33,8 +33,8 @@ public:
     typedef X<0> DebugCommand;
     typedef X<1> DebugDetection;
 
-    virtual void on(DebugDetection, const string&) noexcept { }
-    virtual void on(DebugCommand, const string&, int, const string&) noexcept { }
+    virtual void on(DebugDetection, const string&) { }
+    virtual void on(DebugCommand, const string&, int, const string&) { }
 };
 
 class DebugManager : public Speaker<DebugManagerListener>, public ContextAware {

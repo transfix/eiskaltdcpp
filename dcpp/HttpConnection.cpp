@@ -166,7 +166,7 @@ void HttpConnection::updateSpeed() {
     }
 }
 
-void HttpConnection::on(BufferedSocketListener::Connected) noexcept {
+void HttpConnection::on(BufferedSocketListener::Connected) {
     dcassert(socket);
     socket->write(method + " " + file + " HTTP/1.1\r\n");
 
@@ -199,7 +199,7 @@ void HttpConnection::on(BufferedSocketListener::Connected) noexcept {
         socket->write(requestBody);
 }
 
-void HttpConnection::on(BufferedSocketListener::Line, const string& aLine) noexcept {
+void HttpConnection::on(BufferedSocketListener::Line, const string& aLine) {
     if(connState == CONN_CHUNKED && aLine.size() > 1) {
         string::size_type i;
         string chunkSizeStr;
@@ -280,21 +280,21 @@ void HttpConnection::on(BufferedSocketListener::Line, const string& aLine) noexc
     }
 }
 
-void HttpConnection::on(BufferedSocketListener::Failed, const string& aLine) noexcept {
+void HttpConnection::on(BufferedSocketListener::Failed, const string& aLine) {
     abortRequest(false);
     connState = CONN_FAILED;
     statusLine = Util::trimCopy(aLine);
     fire(HttpConnectionListener::Failed(), this, str(dcpp::dcpp_fmt("%1% (%2%)") % statusLine % url));
 }
 
-void HttpConnection::on(BufferedSocketListener::ModeChange) noexcept {
+void HttpConnection::on(BufferedSocketListener::ModeChange) {
     if(connState != CONN_CHUNKED) {
         abortRequest(true);
 
         fire(HttpConnectionListener::Complete(), this, url);
     }
 }
-void HttpConnection::on(BufferedSocketListener::Data, uint8_t* aBuf, size_t aLen) noexcept {
+void HttpConnection::on(BufferedSocketListener::Data, uint8_t* aBuf, size_t aLen) {
     if(size != -1 && static_cast<size_t>(size - done)  < aLen) {
         abortRequest(true);
 

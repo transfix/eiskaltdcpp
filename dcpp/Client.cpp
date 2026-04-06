@@ -160,7 +160,7 @@ void Client::send(const char* aMessage, size_t aLen) {
     CTX_COMMAND_DEBUG((Util::stricmp(getEncoding(), Text::utf8) != 0 ? Text::toUtf8(aMessage, getEncoding()) : aMessage), DebugManager::HUB_OUT, getIpPort());
 }
 
-void Client::on(Connected) noexcept {
+void Client::on(Connected) {
     updateActivity();
     ip = sock->getIp();
     localIp = sock->getLocalIp();
@@ -181,7 +181,7 @@ void Client::on(Connected) noexcept {
     state = STATE_PROTOCOL;
 }
 
-void Client::on(Failed, const string& aLine) noexcept {
+void Client::on(Failed, const string& aLine) {
     state = STATE_DISCONNECTED;
     ctx().getFavoriteManager()->removeUserCommand(getHubUrl());
     sock->removeListener(this);
@@ -285,12 +285,12 @@ uint64_t Client::search(int aSizeMode, int64_t aSize, int aFileType, const strin
     return 0;
 }
 
-void Client::on(Line, const string& aLine) noexcept {
+void Client::on(Line, const string& aLine) {
     updateActivity();
     CTX_COMMAND_DEBUG((Util::stricmp(getEncoding(), Text::utf8) != 0 ? Text::toUtf8(aLine, getEncoding()) : aLine), DebugManager::HUB_IN, getIpPort())
 }
 
-void Client::on(Second, uint64_t aTick) noexcept {
+void Client::on(Second, uint64_t aTick) {
     if(state == STATE_DISCONNECTED && getAutoReconnect() && (aTick > (getLastActivity() + getReconnDelay() * 1000)) ) {
         // Try to reconnect...
         connect();

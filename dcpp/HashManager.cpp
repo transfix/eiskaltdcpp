@@ -1112,7 +1112,7 @@ bool HashManager::isHashingPaused() const noexcept {
     return hasher.isPaused();
 }
 
-void HashManager::on(TimerManagerListener::Second, uint64_t tick) noexcept {
+void HashManager::on(TimerManagerListener::Second, uint64_t tick) {
     (void)tick;
     //fprintf(stdout,"%lld\n", tick); fflush(stdout);
     static bool firstcycle = true;

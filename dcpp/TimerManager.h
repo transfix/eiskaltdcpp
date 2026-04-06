@@ -40,8 +40,8 @@ public:
     typedef X<0> Second;
     typedef X<1> Minute;
 
-    virtual void on(Second, uint64_t) noexcept { }
-    virtual void on(Minute, uint64_t) noexcept { }
+    virtual void on(Second, uint64_t) { }
+    virtual void on(Minute, uint64_t) { }
 };
 
 class TimerManager : public Speaker<TimerManagerListener>, public Thread, public ContextAware

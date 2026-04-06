@@ -571,7 +571,7 @@ struct PartsInfoReqParam{
     string          udpPort;
 };
 
-void QueueManager::on(TimerManagerListener::Minute, uint64_t aTick) noexcept {
+void QueueManager::on(TimerManagerListener::Minute, uint64_t aTick) {
     string fn;
     string searchString;
     vector<const PartsInfoReqParam*> params;
@@ -1839,7 +1839,7 @@ void QueueManager::noDeleteFileList(const string& path) {
 }
 
 // SearchManagerListener
-void QueueManager::on(SearchManagerListener::SR, const SearchResultPtr& sr) noexcept {
+void QueueManager::on(SearchManagerListener::SR, const SearchResultPtr& sr) {
     bool added = false;
     bool wantConnection = false;
 
@@ -1876,7 +1876,7 @@ void QueueManager::on(SearchManagerListener::SR, const SearchResultPtr& sr) noex
 }
 
 // ClientManagerListener
-void QueueManager::on(ClientManagerListener::UserConnected, const UserPtr& aUser) noexcept {
+void QueueManager::on(ClientManagerListener::UserConnected, const UserPtr& aUser) {
     bool hasDown = false;
     {
         Lock l(cs);
@@ -1897,7 +1897,7 @@ void QueueManager::on(ClientManagerListener::UserConnected, const UserPtr& aUser
     }
 }
 
-void QueueManager::on(ClientManagerListener::UserDisconnected, const UserPtr& aUser) noexcept {
+void QueueManager::on(ClientManagerListener::UserDisconnected, const UserPtr& aUser) {
     Lock l(cs);
     for(int i = 0; i < QueueItem::LAST; ++i) {
         auto j = userQueue.getList(i).find(aUser);
@@ -1908,7 +1908,7 @@ void QueueManager::on(ClientManagerListener::UserDisconnected, const UserPtr& aU
     }
 }
 
-void QueueManager::on(TimerManagerListener::Second, uint64_t aTick) noexcept {
+void QueueManager::on(TimerManagerListener::Second, uint64_t aTick) {
     if(dirty && ((lastSave + 10000) < aTick)) {
         saveQueue();
     }

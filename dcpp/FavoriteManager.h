@@ -144,23 +144,23 @@ private:
     FavoriteHubEntryList::iterator getFavoriteHub(const string& aServer);
 
     // ClientManagerListener
-    virtual void on(UserUpdated, const OnlineUser& user) noexcept;
-    virtual void on(UserConnected, const UserPtr& user) noexcept;
-    virtual void on(UserDisconnected, const UserPtr& user) noexcept;
+    virtual void on(UserUpdated, const OnlineUser& user);
+    virtual void on(UserConnected, const UserPtr& user);
+    virtual void on(UserDisconnected, const UserPtr& user);
 
     // HttpConnectionListener
-    virtual void on(Data, HttpConnection*, const uint8_t*, size_t) noexcept;
-    virtual void on(Failed, HttpConnection*, const string&) noexcept;
-    virtual void on(Complete, HttpConnection*, const string&) noexcept;
-    virtual void on(Redirected, HttpConnection*, const string&) noexcept;
-    virtual void on(TypeNormal, HttpConnection*) noexcept;
-    virtual void on(TypeBZ2, HttpConnection*) noexcept;
-    virtual void on(Retried, HttpConnection*, const bool) noexcept;
+    virtual void on(Data, HttpConnection*, const uint8_t*, size_t);
+    virtual void on(Failed, HttpConnection*, const string&);
+    virtual void on(Complete, HttpConnection*, const string&);
+    virtual void on(Redirected, HttpConnection*, const string&);
+    virtual void on(TypeNormal, HttpConnection*);
+    virtual void on(TypeBZ2, HttpConnection*);
+    virtual void on(Retried, HttpConnection*, const bool);
 
     bool onHttpFinished(bool fromHttp) noexcept;
 
     // SettingsManagerListener
-    void on(SettingsManagerListener::Load, SimpleXML& xml) noexcept {
+    void on(SettingsManagerListener::Load, SimpleXML& xml) {
         load(xml);
     }
 

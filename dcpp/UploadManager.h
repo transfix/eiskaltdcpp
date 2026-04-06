@@ -119,22 +119,22 @@ private:
     void removeUpload(Upload* aUpload);
 
     // ClientManagerListener
-    virtual void on(ClientManagerListener::UserDisconnected, const UserPtr& aUser) noexcept;
+    virtual void on(ClientManagerListener::UserDisconnected, const UserPtr& aUser);
 
     // TimerManagerListener
-    virtual void on(Second, uint64_t aTick) noexcept;
-    virtual void on(Minute, uint64_t aTick) noexcept;
+    virtual void on(Second, uint64_t aTick);
+    virtual void on(Minute, uint64_t aTick);
 
     // UserConnectionListener
-    virtual void on(BytesSent, UserConnection*, size_t, size_t) noexcept;
-    virtual void on(Failed, UserConnection*, const string&) noexcept;
-    virtual void on(Get, UserConnection*, const string&, int64_t) noexcept;
-    virtual void on(Send, UserConnection*) noexcept;
-    virtual void on(GetListLength, UserConnection* conn) noexcept;
-    virtual void on(TransmitDone, UserConnection*) noexcept;
+    virtual void on(BytesSent, UserConnection*, size_t, size_t);
+    virtual void on(Failed, UserConnection*, const string&);
+    virtual void on(Get, UserConnection*, const string&, int64_t);
+    virtual void on(Send, UserConnection*);
+    virtual void on(GetListLength, UserConnection* conn);
+    virtual void on(TransmitDone, UserConnection*);
 
-    virtual void on(AdcCommand::GET, UserConnection*, const AdcCommand&) noexcept;
-    virtual void on(AdcCommand::GFI, UserConnection*, const AdcCommand&) noexcept;
+    virtual void on(AdcCommand::GET, UserConnection*, const AdcCommand&);
+    virtual void on(AdcCommand::GFI, UserConnection*, const AdcCommand&);
 
     bool prepareFile(UserConnection& aSource, const string& aType, const string& aFile, int64_t aResume, int64_t aBytes, bool listRecursive = false);
 };

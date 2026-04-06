@@ -562,7 +562,7 @@ void ClientManager::on(NmdcSearch, Client* aClient, const string& aSeeker, int a
     }
 }
 
-void ClientManager::on(AdcSearch, Client* c, const AdcCommand& adc, const CID& from) noexcept {
+void ClientManager::on(AdcSearch, Client* c, const AdcCommand& adc, const CID& from) {
     bool isUdpActive = false;
     {
         Lock l(cs);
@@ -630,7 +630,7 @@ uint64_t ClientManager::search(StringList& who, int aSizeMode, int64_t aSize, in
     return estimateSearchSpan;
 }
 
-void ClientManager::on(TimerManagerListener::Minute, uint64_t /* aTick */) noexcept {
+void ClientManager::on(TimerManagerListener::Minute, uint64_t /* aTick */) {
     Lock l(cs);
 
     // Collect some garbage...
@@ -743,29 +743,29 @@ void ClientManager::saveUser(const CID& cid) {
         i->second.second = true;
 }
 
-void ClientManager::on(Connected, Client* c) noexcept {
+void ClientManager::on(Connected, Client* c) {
     fire(ClientManagerListener::ClientConnected(), c);
 }
 
-void ClientManager::on(UserUpdated, Client*, const OnlineUser& user) noexcept {
+void ClientManager::on(UserUpdated, Client*, const OnlineUser& user) {
     updateUser(user);
 }
 
-void ClientManager::on(UsersUpdated, Client*, const OnlineUserList& l) noexcept {
+void ClientManager::on(UsersUpdated, Client*, const OnlineUserList& l) {
     for(auto& i: l) {
         updateUser(*i);
     }
 }
 
-void ClientManager::on(HubUpdated, Client* c) noexcept {
+void ClientManager::on(HubUpdated, Client* c) {
     fire(ClientManagerListener::ClientUpdated(), c);
 }
 
-void ClientManager::on(Failed, Client* client, const string&) noexcept {
+void ClientManager::on(Failed, Client* client, const string&) {
     fire(ClientManagerListener::ClientDisconnected(), client);
 }
 
-void ClientManager::on(HubUserCommand, Client* client, int aType, int ucCtx, const string& name, const string& command) noexcept {
+void ClientManager::on(HubUserCommand, Client* client, int aType, int ucCtx, const string& name, const string& command) {
     if(CTX_BOOLSETTING(HUB_USER_COMMANDS)) {
         if(aType == UserCommand::TYPE_REMOVE) {
             int cmd = ctx().getFavoriteManager()->findUserCommand(name, client->getHubUrl());

@@ -386,7 +386,7 @@ void UploadManager::reserveSlot(const HintedUser& aUser) {
         ctx().getClientManager()->connect(aUser, Util::toString(Util::rand()));
 }
 
-void UploadManager::on(UserConnectionListener::Get, UserConnection* aSource, const string& aFile, int64_t aResume) noexcept {
+void UploadManager::on(UserConnectionListener::Get, UserConnection* aSource, const string& aFile, int64_t aResume) {
     try {
     if(aSource->getState() != UserConnection::STATE_GET) {
         dcdebug("UM::onGet Bad state, ignoring\n");
@@ -406,7 +406,7 @@ void UploadManager::on(UserConnectionListener::Get, UserConnection* aSource, con
     }
 }
 
-void UploadManager::on(UserConnectionListener::Send, UserConnection* aSource) noexcept {
+void UploadManager::on(UserConnectionListener::Send, UserConnection* aSource) {
     if(aSource->getState() != UserConnection::STATE_SEND) {
         dcdebug("UM::onSend Bad state, ignoring\n");
         return;
@@ -422,7 +422,7 @@ void UploadManager::on(UserConnectionListener::Send, UserConnection* aSource) no
     fire(UploadManagerListener::Starting(), u);
 }
 
-void UploadManager::on(AdcCommand::GET, UserConnection* aSource, const AdcCommand& c) noexcept {
+void UploadManager::on(AdcCommand::GET, UserConnection* aSource, const AdcCommand& c) {
     try {
     if(aSource->getState() != UserConnection::STATE_GET) {
         dcdebug("UM::onGET Bad state, ignoring\n");
@@ -466,7 +466,7 @@ void UploadManager::on(AdcCommand::GET, UserConnection* aSource, const AdcComman
     }
 }
 
-void UploadManager::on(UserConnectionListener::BytesSent, UserConnection* aSource, size_t aBytes, size_t aActual) noexcept {
+void UploadManager::on(UserConnectionListener::BytesSent, UserConnection* aSource, size_t aBytes, size_t aActual) {
     dcassert(aSource->getState() == UserConnection::STATE_RUNNING);
     Upload* u = aSource->getUpload();
     dcassert(u != NULL);
@@ -474,7 +474,7 @@ void UploadManager::on(UserConnectionListener::BytesSent, UserConnection* aSourc
     u->tick();
 }
 
-void UploadManager::on(UserConnectionListener::Failed, UserConnection* aSource, const string& aError) noexcept {
+void UploadManager::on(UserConnectionListener::Failed, UserConnection* aSource, const string& aError) {
     Upload* u = aSource->getUpload();
 
     if(u) {
@@ -487,7 +487,7 @@ void UploadManager::on(UserConnectionListener::Failed, UserConnection* aSource, 
     removeConnection(aSource);
 }
 
-void UploadManager::on(UserConnectionListener::TransmitDone, UserConnection* aSource) noexcept {
+void UploadManager::on(UserConnectionListener::TransmitDone, UserConnection* aSource) {
     dcassert(aSource->getState() == UserConnection::STATE_RUNNING);
     Upload* u = aSource->getUpload();
     dcassert(u != NULL);
@@ -608,7 +608,7 @@ void UploadManager::reloadRestrictions(){
     limits.RenewList(NULL);
 }
 
-void UploadManager::on(TimerManagerListener::Minute, uint64_t /* aTick */) noexcept {
+void UploadManager::on(TimerManagerListener::Minute, uint64_t /* aTick */) {
     UserList disconnects;
     {
         Lock l(cs);
@@ -656,12 +656,12 @@ void UploadManager::on(TimerManagerListener::Minute, uint64_t /* aTick */) noexc
     }
 }
 
-void UploadManager::on(GetListLength, UserConnection* conn) noexcept {
+void UploadManager::on(GetListLength, UserConnection* conn) {
     conn->error("GetListLength not supported");
     conn->disconnect(false);
 }
 
-void UploadManager::on(AdcCommand::GFI, UserConnection* aSource, const AdcCommand& c) noexcept {
+void UploadManager::on(AdcCommand::GFI, UserConnection* aSource, const AdcCommand& c) {
     if(aSource->getState() != UserConnection::STATE_GET) {
         dcdebug("UM::onSend Bad state, ignoring\n");
         return;
@@ -687,7 +687,7 @@ void UploadManager::on(AdcCommand::GFI, UserConnection* aSource, const AdcComman
 }
 
 // TimerManagerListener
-void UploadManager::on(TimerManagerListener::Second, uint64_t) noexcept {
+void UploadManager::on(TimerManagerListener::Second, uint64_t) {
     Lock l(cs);
     UploadList ticks;
 
@@ -704,7 +704,7 @@ void UploadManager::on(TimerManagerListener::Second, uint64_t) noexcept {
     //notifyQueuedUsers();
 }
 
-void UploadManager::on(ClientManagerListener::UserDisconnected, const UserPtr& aUser) noexcept {
+void UploadManager::on(ClientManagerListener::UserDisconnected, const UserPtr& aUser) {
     if(!aUser->isOnline()) {
         clearUserFiles(aUser);
     }

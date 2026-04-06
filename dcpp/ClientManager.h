@@ -209,17 +209,17 @@ private:
     string getUsersFile() const { return Util::getPath(Util::PATH_USER_LOCAL) + "Users.xml"; }
 
     // ClientListener
-    virtual void on(Connected, Client* c) noexcept;
-    virtual void on(UserUpdated, Client*, const OnlineUser& user) noexcept;
-    virtual void on(UsersUpdated, Client* c, const OnlineUserList&) noexcept;
-    virtual void on(Failed, Client*, const string&) noexcept;
-    virtual void on(HubUpdated, Client* c) noexcept;
-    virtual void on(HubUserCommand, Client*, int, int, const string&, const string&) noexcept;
+    virtual void on(Connected, Client* c);
+    virtual void on(UserUpdated, Client*, const OnlineUser& user);
+    virtual void on(UsersUpdated, Client* c, const OnlineUserList&);
+    virtual void on(Failed, Client*, const string&);
+    virtual void on(HubUpdated, Client* c);
+    virtual void on(HubUserCommand, Client*, int, int, const string&, const string&);
     virtual void on(NmdcSearch, Client* aClient, const string& aSeeker, int aSearchType, int64_t aSize,
                     int aFileType, const string& aString) noexcept;
-    virtual void on(AdcSearch, Client*, const AdcCommand& adc, const CID& from) noexcept;
+    virtual void on(AdcSearch, Client*, const AdcCommand& adc, const CID& from);
     // TimerManagerListener
-    virtual void on(TimerManagerListener::Minute, uint64_t aTick) noexcept;
+    virtual void on(TimerManagerListener::Minute, uint64_t aTick);
 };
 
 } // namespace dcpp

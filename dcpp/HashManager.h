@@ -271,11 +271,11 @@ private:
         store.rebuild();
     }
 
-    virtual void on(TimerManagerListener::Minute, uint64_t) noexcept {
+    virtual void on(TimerManagerListener::Minute, uint64_t) {
         Lock l(cs);
         store.save();
     }
-    void on(TimerManagerListener::Second, uint64_t) noexcept;
+    void on(TimerManagerListener::Second, uint64_t);
 };
 
 } // namespace dcpp

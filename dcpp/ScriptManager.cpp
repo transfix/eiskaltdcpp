@@ -473,15 +473,15 @@ string ScriptInstance::GetClientType(Client* aClient) {
     return dynamic_cast<AdcHub *>(aClient)?"adch":"nmdch";
 }
 
-void ScriptManager::on(ClientDisconnected, Client* aClient) noexcept {
+void ScriptManager::on(ClientDisconnected, Client* aClient) {
     MakeCall(GetClientType(aClient), "OnHubRemoved", 0, aClient);
 }
 
-void ScriptManager::on(ClientConnected, Client* aClient) noexcept {
+void ScriptManager::on(ClientConnected, Client* aClient) {
     MakeCall(GetClientType(aClient), "OnHubAdded", 0, aClient);
 }
 
-void ScriptManager::on(Second, uint64_t /* ticks */) noexcept {
+void ScriptManager::on(Second, uint64_t /* ticks */) {
     MakeCall("dcpp", "OnTimer", 0, 0);
 }
 

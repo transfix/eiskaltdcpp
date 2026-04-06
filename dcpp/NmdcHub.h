@@ -127,11 +127,11 @@ private:
     virtual string checkNick(const string& aNick);
 
     // TimerManagerListener
-    virtual void on(Second, uint64_t aTick) noexcept;
+    virtual void on(Second, uint64_t aTick);
 
-    virtual void on(Connected) noexcept;
-    virtual void on(Line, const string& l) noexcept;
-    virtual void on(Failed, const string&) noexcept;
+    virtual void on(Connected);
+    virtual void on(Line, const string& l);
+    virtual void on(Failed, const string&);
 
 };
 

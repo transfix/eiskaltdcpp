@@ -59,7 +59,7 @@ DownloadManager::~DownloadManager() {
     }
 }
 
-void DownloadManager::on(TimerManagerListener::Second, uint64_t aTick) noexcept {
+void DownloadManager::on(TimerManagerListener::Second, uint64_t aTick) {
     typedef vector<pair<string, UserPtr> > TargetList;
     TargetList dropTargets;
 
@@ -202,7 +202,7 @@ void DownloadManager::checkDownloads(UserConnection* aConn) {
     aConn->send(d->getCommand(aConn->isSet(UserConnection::FLAG_SUPPORTS_ZLIB_GET)));
 }
 
-void DownloadManager::on(AdcCommand::SND, UserConnection* aSource, const AdcCommand& cmd) noexcept {
+void DownloadManager::on(AdcCommand::SND, UserConnection* aSource, const AdcCommand& cmd) {
     if(aSource->getState() != UserConnection::STATE_SND) {
         dcdebug("DM::onFileLength Bad state, ignoring\n");
         return;
@@ -288,7 +288,7 @@ void DownloadManager::startData(UserConnection* aSource, int64_t start, int64_t 
     }
 }
 
-void DownloadManager::on(UserConnectionListener::Data, UserConnection* aSource, const uint8_t* aData, size_t aLen) noexcept {
+void DownloadManager::on(UserConnectionListener::Data, UserConnection* aSource, const uint8_t* aData, size_t aLen) {
     Download* d = aSource->getDownload();
     dcassert(d != NULL);
 
@@ -376,7 +376,7 @@ void DownloadManager::logDownload(UserConnection* aSource, Download* d) {
     CTX_LOG(LogManager::DOWNLOAD, params);
 }
 
-void DownloadManager::on(UserConnectionListener::MaxedOut, UserConnection* aSource) noexcept {
+void DownloadManager::on(UserConnectionListener::MaxedOut, UserConnection* aSource) {
     noSlots(aSource);
 }
 
@@ -436,12 +436,12 @@ void DownloadManager::removeDownload(Download* d) {
     }
 }
 
-void DownloadManager::on(UserConnectionListener::FileNotAvailable, UserConnection* aSource) noexcept {
+void DownloadManager::on(UserConnectionListener::FileNotAvailable, UserConnection* aSource) {
     fileNotAvailable(aSource);
 }
 
 /** @todo Handle errors better */
-void DownloadManager::on(AdcCommand::STA, UserConnection* aSource, const AdcCommand& cmd) noexcept {
+void DownloadManager::on(AdcCommand::STA, UserConnection* aSource, const AdcCommand& cmd) {
     if(cmd.getParameters().size() < 2) {
         aSource->disconnect();
         return;
@@ -474,7 +474,7 @@ void DownloadManager::on(AdcCommand::STA, UserConnection* aSource, const AdcComm
     aSource->disconnect();
 }
 
-void DownloadManager::on(UserConnectionListener::Updated, UserConnection* aSource) noexcept {
+void DownloadManager::on(UserConnectionListener::Updated, UserConnection* aSource) {
     {
         Lock l(cs);
         auto i = find(idlers.begin(), idlers.end(), aSource);

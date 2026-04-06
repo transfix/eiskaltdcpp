@@ -89,11 +89,11 @@ private:
     void updateSpeed();
 
     // BufferedSocketListener
-    void on(Connected) noexcept;
-    void on(Line, const string&) noexcept;
-    void on(Data, uint8_t*, size_t) noexcept;
-    void on(ModeChange) noexcept;
-    void on(Failed, const string&) noexcept;
+    void on(Connected);
+    void on(Line, const string&);
+    void on(Data, uint8_t*, size_t);
+    void on(ModeChange);
+    void on(Failed, const string&);
 };
 
 } // namespace dcpp

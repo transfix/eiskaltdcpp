@@ -1484,7 +1484,7 @@ ShareManager::Directory::Ptr ShareManager::getDirectory(const string& fname) {
     return Directory::Ptr();
 }
 
-void ShareManager::on(QueueManagerListener::FileMoved, const string& realPath) noexcept {
+void ShareManager::on(QueueManagerListener::FileMoved, const string& realPath) {
     if(CTX_BOOLSETTING(ADD_FINISHED_INSTANTLY)) {
         // Check if finished download is supposed to be shared
         Lock l(cs);
@@ -1502,7 +1502,7 @@ void ShareManager::on(QueueManagerListener::FileMoved, const string& realPath) n
     }
 }
 
-void ShareManager::on(HashManagerListener::TTHDone, const string& realPath, const TTHValue& root) noexcept {
+void ShareManager::on(HashManagerListener::TTHDone, const string& realPath, const TTHValue& root) {
     Lock l(cs);
     Directory::Ptr d = getDirectory(realPath);
     if(d) {
@@ -1525,7 +1525,7 @@ void ShareManager::on(HashManagerListener::TTHDone, const string& realPath, cons
     }
 }
 
-void ShareManager::on(TimerManagerListener::Minute, uint64_t tick) noexcept {
+void ShareManager::on(TimerManagerListener::Minute, uint64_t tick) {
     if (CTX_SETTING(AUTO_REFRESH_TIME) > 0) {
         if(lastFullUpdate + CTX_SETTING(AUTO_REFRESH_TIME) * 60 * 1000 <= tick) {
             refresh(true, true);

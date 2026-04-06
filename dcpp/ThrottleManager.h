@@ -90,7 +90,7 @@ private:
     void waitToken();
 
     // TimerManagerListener
-    void on(TimerManagerListener::Second, uint64_t /* aTick */) noexcept;
+    void on(TimerManagerListener::Second, uint64_t /* aTick */);
 };
 
 }   // namespace dcpp

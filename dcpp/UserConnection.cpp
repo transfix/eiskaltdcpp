@@ -53,7 +53,7 @@ const string UserConnection::FILE_NOT_AVAILABLE = "File Not Available";
 const string UserConnection::UPLOAD = "Upload";
 const string UserConnection::DOWNLOAD = "Download";
 
-void UserConnection::on(BufferedSocketListener::Line, const string& aLine) noexcept {
+void UserConnection::on(BufferedSocketListener::Line, const string& aLine) {
     if(aLine.length() < 2) {
         fire(UserConnectionListener::ProtocolError(), this, _("Invalid data"));
         return;
@@ -222,35 +222,35 @@ void UserConnection::handle(AdcCommand::STA t, const AdcCommand& c) {
     fire(t, this, c);
 }
 
-void UserConnection::on(Connected) noexcept {
+void UserConnection::on(Connected) {
     lastActivity = GET_TICK();
     fire(UserConnectionListener::Connected(), this);
 }
 
-void UserConnection::on(Data, uint8_t* data, size_t len) noexcept {
+void UserConnection::on(Data, uint8_t* data, size_t len) {
     lastActivity = GET_TICK();
     fire(UserConnectionListener::Data(), this, data, len);
 }
 
-void UserConnection::on(BytesSent, size_t bytes, size_t actual) noexcept {
+void UserConnection::on(BytesSent, size_t bytes, size_t actual) {
     lastActivity = GET_TICK();
     fire(UserConnectionListener::BytesSent(), this, bytes, actual);
 }
 
-void UserConnection::on(ModeChange) noexcept {
+void UserConnection::on(ModeChange) {
     lastActivity = GET_TICK();
     fire(UserConnectionListener::ModeChange(), this);
 }
 
-void UserConnection::on(TransmitDone) noexcept {
+void UserConnection::on(TransmitDone) {
     fire(UserConnectionListener::TransmitDone(), this);
 }
 
-void UserConnection::on(Updated) noexcept {
+void UserConnection::on(Updated) {
     fire(UserConnectionListener::Updated(), this);
 }
 
-void UserConnection::on(Failed, const string& aLine) noexcept {
+void UserConnection::on(Failed, const string& aLine) {
     setState(STATE_UNCONNECTED);
     fire(UserConnectionListener::Failed(), this, aLine);
 

@@ -82,18 +82,18 @@ private:
     void onFailed(UserConnection* aSource, const string& aError);
 
     // UserConnectionListener
-    virtual void on(Data, UserConnection*, const uint8_t*, size_t) noexcept;
-    virtual void on(Failed, UserConnection* aSource, const string& aError) noexcept { onFailed(aSource, aError); }
-    virtual void on(ProtocolError, UserConnection* aSource, const string& aError) noexcept { onFailed(aSource, aError); }
-    virtual void on(MaxedOut, UserConnection*) noexcept;
-    virtual void on(FileNotAvailable, UserConnection*) noexcept;
-    virtual void on(Updated, UserConnection*) noexcept;
+    virtual void on(Data, UserConnection*, const uint8_t*, size_t);
+    virtual void on(Failed, UserConnection* aSource, const string& aError) { onFailed(aSource, aError); }
+    virtual void on(ProtocolError, UserConnection* aSource, const string& aError) { onFailed(aSource, aError); }
+    virtual void on(MaxedOut, UserConnection*);
+    virtual void on(FileNotAvailable, UserConnection*);
+    virtual void on(Updated, UserConnection*);
 
-    virtual void on(AdcCommand::SND, UserConnection*, const AdcCommand&) noexcept;
-    virtual void on(AdcCommand::STA, UserConnection*, const AdcCommand&) noexcept;
+    virtual void on(AdcCommand::SND, UserConnection*, const AdcCommand&);
+    virtual void on(AdcCommand::STA, UserConnection*, const AdcCommand&);
 
     // TimerManagerListener
-    virtual void on(TimerManagerListener::Second, uint64_t aTick) noexcept;
+    virtual void on(TimerManagerListener::Second, uint64_t aTick);
 };
 
 } // namespace dcpp

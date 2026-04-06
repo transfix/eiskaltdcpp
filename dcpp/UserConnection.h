@@ -248,14 +248,14 @@ private:
 
     void send(const string& aString);
 
-    virtual void on(Connected) noexcept;
-    virtual void on(Line, const string&) noexcept;
-    virtual void on(Data, uint8_t* data, size_t len) noexcept;
-    virtual void on(BytesSent, size_t bytes, size_t actual) noexcept ;
-    virtual void on(ModeChange) noexcept;
-    virtual void on(TransmitDone) noexcept;
-    virtual void on(Failed, const string&) noexcept;
-    virtual void on(Updated) noexcept;
+    virtual void on(Connected);
+    virtual void on(Line, const string&);
+    virtual void on(Data, uint8_t* data, size_t len);
+    virtual void on(BytesSent, size_t bytes, size_t actual) ;
+    virtual void on(ModeChange);
+    virtual void on(TransmitDone);
+    virtual void on(Failed, const string&);
+    virtual void on(Updated);
 };
 
 } // namespace dcpp

@@ -303,15 +303,15 @@ private:
     void logFinishedDownload(QueueItem* qi, Download* d, bool crcChecked);
 
     // TimerManagerListener
-    virtual void on(TimerManagerListener::Second, uint64_t aTick) noexcept;
-    virtual void on(TimerManagerListener::Minute, uint64_t aTick) noexcept;
+    virtual void on(TimerManagerListener::Second, uint64_t aTick);
+    virtual void on(TimerManagerListener::Minute, uint64_t aTick);
 
     // SearchManagerListener
-    virtual void on(SearchManagerListener::SR, const SearchResultPtr&) noexcept;
+    virtual void on(SearchManagerListener::SR, const SearchResultPtr&);
 
     // ClientManagerListener
-    virtual void on(ClientManagerListener::UserConnected, const UserPtr& aUser) noexcept;
-    virtual void on(ClientManagerListener::UserDisconnected, const UserPtr& aUser) noexcept;
+    virtual void on(ClientManagerListener::UserConnected, const UserPtr& aUser);
+    virtual void on(ClientManagerListener::UserDisconnected, const UserPtr& aUser);
 };
 
 } // namespace dcpp

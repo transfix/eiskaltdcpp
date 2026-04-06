@@ -755,12 +755,12 @@ UserCommand::List FavoriteManager::getUserCommands(int ucCtx, const StringList& 
 }
 
 // HttpConnectionListener
-void FavoriteManager::on(Data, HttpConnection*, const uint8_t* buf, size_t len) noexcept {
+void FavoriteManager::on(Data, HttpConnection*, const uint8_t* buf, size_t len) {
     if(useHttp)
         downloadBuf.append((const char*)buf, len);
 }
 
-void FavoriteManager::on(Failed, HttpConnection*, const string& aLine) noexcept {
+void FavoriteManager::on(Failed, HttpConnection*, const string& aLine) {
     c->removeListener(this);
     lastServer++;
     running = false;
@@ -769,7 +769,7 @@ void FavoriteManager::on(Failed, HttpConnection*, const string& aLine) noexcept 
         fire(FavoriteManagerListener::DownloadFailed(), aLine);
     }
 }
-void FavoriteManager::on(Complete, HttpConnection*, const string& aLine) noexcept {
+void FavoriteManager::on(Complete, HttpConnection*, const string& aLine) {
     bool parseSuccess = false;
 
     c->removeListener(this);
@@ -782,32 +782,32 @@ void FavoriteManager::on(Complete, HttpConnection*, const string& aLine) noexcep
     }
 }
 
-void FavoriteManager::on(Retried, HttpConnection*, const bool Connected) noexcept {
+void FavoriteManager::on(Retried, HttpConnection*, const bool Connected) {
     if (Connected)
         downloadBuf = Util::emptyString;
 }
 
-void FavoriteManager::on(Redirected, HttpConnection*, const string& aLine) noexcept {
+void FavoriteManager::on(Redirected, HttpConnection*, const string& aLine) {
     if(useHttp)
         fire(FavoriteManagerListener::DownloadStarting(), aLine);
 }
 
-void FavoriteManager::on(TypeNormal, HttpConnection*) noexcept {
+void FavoriteManager::on(TypeNormal, HttpConnection*) {
     if(useHttp)
         listType = TYPE_NORMAL;
 }
 
-void FavoriteManager::on(TypeBZ2, HttpConnection*) noexcept {
+void FavoriteManager::on(TypeBZ2, HttpConnection*) {
     if(useHttp)
         listType = TYPE_BZIP2;
 }
 
-void FavoriteManager::on(UserUpdated, const OnlineUser& user) noexcept {
+void FavoriteManager::on(UserUpdated, const OnlineUser& user) {
     userUpdated(user);
 }
 
 //NOTE: freedcpp
-void FavoriteManager::on(UserDisconnected, const UserPtr& user) noexcept {
+void FavoriteManager::on(UserDisconnected, const UserPtr& user) {
     Lock l(cs);
 
     auto i = users.find(user->getCID());
@@ -819,7 +819,7 @@ void FavoriteManager::on(UserDisconnected, const UserPtr& user) noexcept {
     }
 }
 
-void FavoriteManager::on(UserConnected, const UserPtr& user) noexcept {
+void FavoriteManager::on(UserConnected, const UserPtr& user) {
     Lock l(cs);
 
     auto i = users.find(user->getCID());

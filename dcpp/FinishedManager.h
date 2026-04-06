@@ -102,13 +102,13 @@ private:
 
     void onComplete(Transfer* t, bool upload, bool crc32Checked = false);
 
-    virtual void on(DownloadManagerListener::Complete, Download* d) noexcept;
-    virtual void on(DownloadManagerListener::Failed, Download* d, const string&) noexcept;
+    virtual void on(DownloadManagerListener::Complete, Download* d);
+    virtual void on(DownloadManagerListener::Failed, Download* d, const string&);
 
-    virtual void on(UploadManagerListener::Complete, Upload* u) noexcept;
-    virtual void on(UploadManagerListener::Failed, Upload* u, const string&) noexcept;
+    virtual void on(UploadManagerListener::Complete, Upload* u);
+    virtual void on(UploadManagerListener::Failed, Upload* u, const string&);
 
-    virtual void on(QueueManagerListener::CRCChecked, Download* d) noexcept;
+    virtual void on(QueueManagerListener::CRCChecked, Download* d);
 };
 
 } // namespace dcpp

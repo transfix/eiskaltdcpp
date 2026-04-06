@@ -1031,7 +1031,7 @@ void NmdcHub::clearFlooders(uint64_t aTick) {
     }
 }
 
-void NmdcHub::on(Connected) noexcept {
+void NmdcHub::on(Connected) {
     Client::on(Connected());
 
     if(state != STATE_PROTOCOL) {
@@ -1045,7 +1045,7 @@ void NmdcHub::on(Connected) noexcept {
     lastUpdate = 0;
 }
 
-void NmdcHub::on(Line, const string& aLine) noexcept {
+void NmdcHub::on(Line, const string& aLine) {
 #ifdef LUA_SCRIPT
     if (onClientMessage(this, validateMessage(aLine, true)))
         return;
@@ -1056,12 +1056,12 @@ void NmdcHub::on(Line, const string& aLine) noexcept {
     onLine(aLine);
 }
 
-void NmdcHub::on(Failed, const string& aLine) noexcept {
+void NmdcHub::on(Failed, const string& aLine) {
     clearUsers();
     Client::on(Failed(), aLine);
 }
 
-void NmdcHub::on(Second, uint64_t aTick) noexcept {
+void NmdcHub::on(Second, uint64_t aTick) {
     Client::on(Second(), aTick);
 
     if(state == STATE_NORMAL && (aTick > (getLastActivity() + 120*1000)) ) {

@@ -332,20 +332,20 @@ private:
     virtual int run();
 
     // QueueManagerListener
-    virtual void on(QueueManagerListener::FileMoved, const string& realPath) noexcept;
+    virtual void on(QueueManagerListener::FileMoved, const string& realPath);
     // HashManagerListener
-    virtual void on(HashManagerListener::TTHDone, const string& realPath, const TTHValue& root) noexcept;
+    virtual void on(HashManagerListener::TTHDone, const string& realPath, const TTHValue& root);
 
     // SettingsManagerListener
-    virtual void on(SettingsManagerListener::Save, SimpleXML& xml) noexcept {
+    virtual void on(SettingsManagerListener::Save, SimpleXML& xml) {
         save(xml);
     }
-    virtual void on(SettingsManagerListener::Load, SimpleXML& xml) noexcept {
+    virtual void on(SettingsManagerListener::Load, SimpleXML& xml) {
         load(xml);
     }
 
     // TimerManagerListener
-    virtual void on(TimerManagerListener::Minute, uint64_t tick) noexcept;
+    virtual void on(TimerManagerListener::Minute, uint64_t tick);
     void load(SimpleXML& aXml);
     void save(SimpleXML& aXml);
 

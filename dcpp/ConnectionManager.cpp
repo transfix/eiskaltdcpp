@@ -126,7 +126,7 @@ void ConnectionManager::putCQI(ConnectionQueueItem* cqi) {
     delete cqi;
 }
 
-UserConnection* ConnectionManager::getConnection(bool aNmdc, bool secure) noexcept {
+UserConnection* ConnectionManager::getConnection(bool aNmdc, bool secure) {
     UserConnection* uc = new UserConnection(secure, ctx());
     uc->addListener(this);
     {
@@ -146,7 +146,7 @@ void ConnectionManager::putConnection(UserConnection* aConn) {
     userConnections.erase(remove(userConnections.begin(), userConnections.end(), aConn), userConnections.end());
 }
 
-void ConnectionManager::on(TimerManagerListener::Second, uint64_t aTick) noexcept {
+void ConnectionManager::on(TimerManagerListener::Second, uint64_t aTick) {
     UserList passiveUsers;
     ConnectionQueueItem::List removed;
 
@@ -221,7 +221,7 @@ void ConnectionManager::on(TimerManagerListener::Second, uint64_t aTick) noexcep
     }
 }
 
-void ConnectionManager::on(TimerManagerListener::Minute, uint64_t aTick) noexcept {
+void ConnectionManager::on(TimerManagerListener::Minute, uint64_t aTick) {
     Lock l(cs);
 
     for(auto& j : userConnections) {
@@ -254,7 +254,7 @@ ConnectionManager::Server::Server(DCContext& ctx, const bool secure_, const stri
 
 static const uint32_t POLL_TIMEOUT = 250;
 
-int ConnectionManager::Server::run() noexcept {
+int ConnectionManager::Server::run() {
     {
         char threadName[17];
         snprintf(threadName, sizeof threadName, "Server_%s", port.c_str());
@@ -304,7 +304,7 @@ int ConnectionManager::Server::run() noexcept {
  * Someone's connecting, accept the connection and wait for identification...
  * It's always the other fellow that starts sending if he made the connection.
  */
-void ConnectionManager::accept(const Socket& sock, bool secure) noexcept {
+void ConnectionManager::accept(const Socket& sock, bool secure) {
     uint64_t now = GET_TICK();
 
     if(now > floodCounter) {
@@ -395,7 +395,7 @@ void ConnectionManager::disconnect() noexcept {
     secureServer = nullptr;
 }
 
-void ConnectionManager::on(AdcCommand::SUP, UserConnection* aSource, const AdcCommand& cmd) noexcept {
+void ConnectionManager::on(AdcCommand::SUP, UserConnection* aSource, const AdcCommand& cmd) {
     if(aSource->getState() != UserConnection::STATE_SUPNICK) {
         // Already got this once, ignore...@todo fix support updates
         dcdebug("CM::onSUP %p sent sup twice\n", (void*)aSource);
@@ -443,11 +443,11 @@ void ConnectionManager::on(AdcCommand::SUP, UserConnection* aSource, const AdcCo
     aSource->setState(UserConnection::STATE_INF);
 }
 
-void ConnectionManager::on(AdcCommand::STA, UserConnection*, const AdcCommand&) noexcept {
+void ConnectionManager::on(AdcCommand::STA, UserConnection*, const AdcCommand&) {
 
 }
 
-void ConnectionManager::on(UserConnectionListener::Connected, UserConnection* aSource) noexcept {
+void ConnectionManager::on(UserConnectionListener::Connected, UserConnection* aSource) {
     // incorrect check because aSource->getUser().get() == nullptr
     if(aSource->isSecure() && !aSource->isTrusted() && !CTX_BOOLSETTING(ALLOW_UNTRUSTED_CLIENTS)) {
         putConnection(aSource);
@@ -470,7 +470,7 @@ void ConnectionManager::on(UserConnectionListener::Connected, UserConnection* aS
     aSource->setState(UserConnection::STATE_SUPNICK);
 }
 
-void ConnectionManager::on(UserConnectionListener::MyNick, UserConnection* aSource, const string& aNick) noexcept {
+void ConnectionManager::on(UserConnectionListener::MyNick, UserConnection* aSource, const string& aNick) {
     if(aSource->getState() != UserConnection::STATE_SUPNICK) {
         // Already got this once, ignore...
         dcdebug("CM::onMyNick %p sent nick twice\n", (void*)aSource);
@@ -539,7 +539,7 @@ void ConnectionManager::on(UserConnectionListener::MyNick, UserConnection* aSour
     aSource->setState(UserConnection::STATE_LOCK);
 }
 
-void ConnectionManager::on(UserConnectionListener::CLock, UserConnection* aSource, const string& aLock, const string& aPk) noexcept {
+void ConnectionManager::on(UserConnectionListener::CLock, UserConnection* aSource, const string& aLock, const string& aPk) {
     (void)aPk;
 
     if(aSource->getState() != UserConnection::STATE_LOCK) {
@@ -561,7 +561,7 @@ void ConnectionManager::on(UserConnectionListener::CLock, UserConnection* aSourc
     aSource->key(ctx().getCryptoManager()->makeKey(aLock));
 }
 
-void ConnectionManager::on(UserConnectionListener::Direction, UserConnection* aSource, const string& dir, const string& num) noexcept {
+void ConnectionManager::on(UserConnectionListener::Direction, UserConnection* aSource, const string& dir, const string& num) {
     if(aSource->getState() != UserConnection::STATE_DIRECTION) {
         dcdebug("CM::onDirection %p received direction twice, ignoring\n", (void*)aSource);
         return;
@@ -650,7 +650,7 @@ void ConnectionManager::addUploadConnection(UserConnection* uc) {
     }
 }
 
-void ConnectionManager::on(UserConnectionListener::Key, UserConnection* aSource, const string&/* aKey*/) noexcept {
+void ConnectionManager::on(UserConnectionListener::Key, UserConnection* aSource, const string&/* aKey*/) {
     if(aSource->getState() != UserConnection::STATE_KEY) {
         dcdebug("CM::onKey Bad state, ignoring");
         return;
@@ -663,7 +663,7 @@ void ConnectionManager::on(UserConnectionListener::Key, UserConnection* aSource,
     }
 }
 
-void ConnectionManager::on(AdcCommand::INF, UserConnection* aSource, const AdcCommand& cmd) noexcept {
+void ConnectionManager::on(AdcCommand::INF, UserConnection* aSource, const AdcCommand& cmd) {
     if(aSource->getState() != UserConnection::STATE_INF) {
         aSource->send(AdcCommand(AdcCommand::SEV_FATAL, AdcCommand::ERROR_PROTOCOL_GENERIC, "Expecting INF"));
         aSource->disconnect();
@@ -823,11 +823,11 @@ bool ConnectionManager::checkHubCCBlock(const string& aServer, const string& aPo
     return false;
 }
 
-void ConnectionManager::on(UserConnectionListener::Failed, UserConnection* aSource, const string& aError) noexcept {
+void ConnectionManager::on(UserConnectionListener::Failed, UserConnection* aSource, const string& aError) {
     failed(aSource, aError, false);
 }
 
-void ConnectionManager::on(UserConnectionListener::ProtocolError, UserConnection* aSource, const string& aError) noexcept {
+void ConnectionManager::on(UserConnectionListener::ProtocolError, UserConnection* aSource, const string& aError) {
     if(aError.compare(0, 7, "CTM2HUB", 7) == 0) {
         {
             Lock l(cs);
@@ -882,7 +882,7 @@ void ConnectionManager::shutdown() {
 }
 
 // UserConnectionListener
-void ConnectionManager::on(UserConnectionListener::Supports, UserConnection* conn, const StringList& feat) noexcept {
+void ConnectionManager::on(UserConnectionListener::Supports, UserConnection* conn, const StringList& feat) {
     for(auto& i: feat) {
         if(i == UserConnection::FEATURE_MINISLOTS) {
             conn->setFlag(UserConnection::FLAG_SUPPORTS_MINISLOTS);

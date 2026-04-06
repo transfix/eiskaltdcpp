@@ -208,7 +208,7 @@ void ThrottleManager::shutdown()
 }
 
 // TimerManagerListener
-void ThrottleManager::on(TimerManagerListener::Second, uint64_t /* aTick */) noexcept
+void ThrottleManager::on(TimerManagerListener::Second, uint64_t /* aTick */)
 {
     int newSlots = ctx().getSettingsManager()->get(getCurSetting(SettingsManager::SLOTS));
     if(newSlots != CTX_SETTING(SLOTS)) {

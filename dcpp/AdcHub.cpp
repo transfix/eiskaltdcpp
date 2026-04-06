@@ -1061,7 +1061,7 @@ void AdcHub::unknownProtocol(uint32_t target, const string& protocol, const stri
     send(cmd);
 }
 
-void AdcHub::on(Connected c) noexcept {
+void AdcHub::on(Connected c) {
     Client::on(c);
 
     if(state != STATE_PROTOCOL) {
@@ -1089,7 +1089,7 @@ void AdcHub::on(Connected c) noexcept {
     send(cmd);
 }
 
-void AdcHub::on(Line l, const string& aLine) noexcept {
+void AdcHub::on(Line l, const string& aLine) {
     Client::on(l, aLine);
 
     if(!Text::validateUtf8(aLine)) {
@@ -1107,12 +1107,12 @@ void AdcHub::on(Line l, const string& aLine) noexcept {
     dispatch(aLine);
 }
 
-void AdcHub::on(Failed f, const string& aLine) noexcept {
+void AdcHub::on(Failed f, const string& aLine) {
     clearUsers();
     Client::on(f, aLine);
 }
 
-void AdcHub::on(Second s, uint64_t aTick) noexcept {
+void AdcHub::on(Second s, uint64_t aTick) {
     Client::on(s, aTick);
     if(state == STATE_NORMAL && (aTick > (getLastActivity() + 120*1000)) ) {
         send("\n", 1);

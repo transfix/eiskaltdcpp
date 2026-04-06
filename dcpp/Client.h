@@ -204,12 +204,12 @@ protected:
     virtual string checkNick(const string& nick) = 0;
 
     // TimerManagerListener
-    virtual void on(Second, uint64_t aTick) noexcept;
+    virtual void on(Second, uint64_t aTick);
     // BufferedSocketListener
-    virtual void on(Connecting) noexcept { fire(ClientListener::Connecting(), this); }
-    virtual void on(Connected) noexcept;
-    virtual void on(Line, const string& aLine) noexcept;
-    virtual void on(Failed, const string&) noexcept;
+    virtual void on(Connecting) { fire(ClientListener::Connecting(), this); }
+    virtual void on(Connected);
+    virtual void on(Line, const string& aLine);
+    virtual void on(Failed, const string&);
 
 private:
 
