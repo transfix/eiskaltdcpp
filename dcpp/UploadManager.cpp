@@ -279,6 +279,7 @@ bool UploadManager::prepareFile(UserConnection& aSource, const string& aType, co
 
 ok:
 
+    try {
     Lock l(cs);
 
     bool extraSlot = false;
@@ -340,6 +341,13 @@ ok:
     }
 
     return true;
+
+    } catch(const std::exception& e) {
+        delete is;
+        ctx().getLogManager()->message(str(F_("Unable to send file %1%: %2%") % Util::addBrackets(sourceFile) % string(e.what())));
+        aSource.fileNotAvail();
+        return false;
+    }
 }
 
 int64_t UploadManager::getRunningAverage() {
@@ -379,6 +387,7 @@ void UploadManager::reserveSlot(const HintedUser& aUser) {
 }
 
 void UploadManager::on(UserConnectionListener::Get, UserConnection* aSource, const string& aFile, int64_t aResume) noexcept {
+    try {
     if(aSource->getState() != UserConnection::STATE_GET) {
         dcdebug("UM::onGet Bad state, ignoring\n");
         return;
@@ -387,6 +396,13 @@ void UploadManager::on(UserConnectionListener::Get, UserConnection* aSource, con
     if(prepareFile(*aSource, Transfer::names[Transfer::TYPE_FILE], Util::toAdcFile(aFile), aResume, -1)) {
         aSource->setState(UserConnection::STATE_SEND);
         aSource->fileLength(Util::toString(aSource->getUpload()->getSize()));
+    }
+    } catch(const std::exception& e) {
+        fprintf(stderr, "[UploadManager::on(Get)] exception: %s\n", e.what());
+        aSource->fileNotAvail();
+    } catch(...) {
+        fprintf(stderr, "[UploadManager::on(Get)] unknown exception\n");
+        aSource->fileNotAvail();
     }
 }
 
@@ -407,6 +423,7 @@ void UploadManager::on(UserConnectionListener::Send, UserConnection* aSource) no
 }
 
 void UploadManager::on(AdcCommand::GET, UserConnection* aSource, const AdcCommand& c) noexcept {
+    try {
     if(aSource->getState() != UserConnection::STATE_GET) {
         dcdebug("UM::onGET Bad state, ignoring\n");
         return;
@@ -439,6 +456,13 @@ void UploadManager::on(AdcCommand::GET, UserConnection* aSource, const AdcComman
         aSource->setState(UserConnection::STATE_RUNNING);
         aSource->transmitFile(u->getStream());
         fire(UploadManagerListener::Starting(), u);
+    }
+    } catch(const std::exception& e) {
+        fprintf(stderr, "[UploadManager::on(ADC GET)] exception: %s\n", e.what());
+        aSource->fileNotAvail();
+    } catch(...) {
+        fprintf(stderr, "[UploadManager::on(ADC GET)] unknown exception\n");
+        aSource->fileNotAvail();
     }
 }
 

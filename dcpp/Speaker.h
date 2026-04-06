@@ -37,16 +37,16 @@ public:
     /// Fire an event to all registered listeners (snapshot under lock).
     template<typename... Args>
     void fire(Args&&... args) noexcept {
+        try {
         Lock l(listenerCS);
         auto snapshot = listeners;  // snapshot so listeners can self-remove
         for (auto* listener : snapshot) {
-            try {
-                listener->on(std::forward<Args>(args)...);
-            } catch(const std::exception& e) {
-                fprintf(stderr, "[Speaker::fire] uncaught std::exception in listener: %s\n", e.what());
-            } catch(...) {
-                fprintf(stderr, "[Speaker::fire] uncaught unknown exception in listener\n");
-            }
+            listener->on(std::forward<Args>(args)...);
+        }
+        } catch(const std::exception& e) {
+            fprintf(stderr, "[Speaker::fire] uncaught std::exception in listener: %s\n", e.what());
+        } catch(...) {
+            fprintf(stderr, "[Speaker::fire] uncaught unknown exception in listener\n");
         }
     }
 
