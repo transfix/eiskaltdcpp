@@ -805,8 +805,13 @@ void QueueManager::add(const string& aTarget, int64_t aSize, const TTHValue& roo
     }
 
 connect:
-    if(wantConnection && aUser.user->isOnline())
+    if(wantConnection && aUser.user->isOnline()) {
+        fprintf(stderr, "[QM::add] requesting download connection (user online)\n");
         ctx().getConnectionManager()->getDownloadConnection(aUser);
+    } else {
+        fprintf(stderr, "[QM::add] skipping connection: wantConn=%d online=%d\n",
+                (int)wantConnection, (int)aUser.user->isOnline());
+    }
 }
 
 void QueueManager::readd(const string& target, const HintedUser& aUser) {

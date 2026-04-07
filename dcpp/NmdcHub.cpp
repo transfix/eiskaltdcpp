@@ -55,6 +55,8 @@ NmdcHub::~NmdcHub() {
 void NmdcHub::connect(const OnlineUser& aUser, const string&) {
     checkstate();
     dcdebug("NmdcHub::connect %s\n", aUser.getIdentity().getNick().c_str());
+    fprintf(stderr, "[NmdcHub::connect] nick=%s active=%d\n",
+            aUser.getIdentity().getNick().c_str(), (int)isActive());
     if(isActive()) {
         connectToMe(aUser);
     } else {
@@ -868,7 +870,9 @@ void NmdcHub::connectToMe(const OnlineUser& aUser) {
     ctx().getConnectionManager()->nmdcExpect(nick, getMyNick(), getHubUrl());
     bool secure = ctx().getCryptoManager()->TLSOk() && aUser.getUser()->isSet(User::TLS);
     string port = secure ? ctx().getConnectionManager()->getSecurePort() : ctx().getConnectionManager()->getPort();
-    send("$ConnectToMe " + nick + " " + getLocalIp() + ":" + port + (secure ? "S" : "") + "|");
+    string msg = "$ConnectToMe " + nick + " " + getLocalIp() + ":" + port + (secure ? "S" : "") + "|";
+    fprintf(stderr, "[NmdcHub::connectToMe] sending: %s\n", msg.c_str());
+    send(msg);
 }
 
 void NmdcHub::revConnectToMe(const OnlineUser& aUser) {

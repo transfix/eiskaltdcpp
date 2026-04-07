@@ -419,7 +419,11 @@ void ClientManager::connect(const HintedUser& user, const string& token) {
     OnlineUser* u = findOnlineUser(user, priv);
 
     if(u) {
+        fprintf(stderr, "[ClientManager::connect] found user, calling client.connect\n");
         u->getClient().connect(*u, token);
+    } else {
+        fprintf(stderr, "[ClientManager::connect] user NOT found online (hint=%s)\n",
+                user.hint.c_str());
     }
 }
 
