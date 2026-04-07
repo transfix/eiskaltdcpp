@@ -477,6 +477,9 @@ void NmdcHub::onLine(const string& aLine) {
             }
         }
 
+        fprintf(stderr, "[NmdcHub::$ConnectToMe] server=%s port=%s secure=%d\n",
+                server.c_str(), port.c_str(), (int)secure);
+
         if(CTX_BOOLSETTING(ALLOW_NATT)) {
             if(port[port.size() - 1] == 'N') {
                 if(senderNick.empty())
@@ -504,7 +507,10 @@ void NmdcHub::onLine(const string& aLine) {
         if(port.empty())
             return;
         // For simplicity, we make the assumption that users on a hub have the same character encoding
+        fprintf(stderr, "[NmdcHub::$ConnectToMe] calling nmdcConnect(%s, %s)\n",
+                server.c_str(), port.c_str());
         ctx().getConnectionManager()->nmdcConnect(server, port, getMyNick(), getHubUrl(), getEncoding(), secure);
+        fprintf(stderr, "[NmdcHub::$ConnectToMe] nmdcConnect returned OK\n");
     } else if(cmd == "$RevConnectToMe") {
         if(state != STATE_NORMAL) {
             return;
