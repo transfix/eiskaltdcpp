@@ -725,9 +725,18 @@ void NmdcHub::onLine(const string& aLine) {
             StringTokenizer<string> t(param, "$$");
             StringList& sl = t.getTokens();
 
+            int nickLimit = CTX_SETTING(NMDC_GETINFO_LIMIT);
             for(auto& it: sl) {
                 if(it.empty())
                     continue;
+
+                // Respect the same user-count cap as $MyINFO to avoid
+                // allocating OnlineUser objects for the entire hub.
+                if(nickLimit > 0) {
+                    Lock l(cs);
+                    if(users.find(it) == users.end() && (int)users.size() >= nickLimit)
+                        continue;
+                }
 
                 v.push_back(&getUser(it));
             }
@@ -762,9 +771,15 @@ void NmdcHub::onLine(const string& aLine) {
             OnlineUserList v;
             StringTokenizer<string> t(param, "$$");
             StringList& sl = t.getTokens();
+            int opLimit = CTX_SETTING(NMDC_GETINFO_LIMIT);
             for(auto& it: sl) {
                 if(it.empty())
                     continue;
+                if(opLimit > 0) {
+                    Lock l(cs);
+                    if(users.find(it) == users.end() && (int)users.size() >= opLimit)
+                        continue;
+                }
                 OnlineUser& ou = getUser(it);
                 ou.getIdentity().setOp(true);
                 if(ou.getUser() == getMyIdentity().getUser()) {

@@ -378,31 +378,76 @@ void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, 
         return;
     }
 
-    fprintf(stderr, "[ConnectionManager::nmdcConnect] after getConnection\n");
+    fprintf(stderr, "[ConnectionManager::nmdcConnect] after getConnection uc=%p\n", (void*)uc);
 
+    // Validate the heap is usable before proceeding
     try {
-        uc->setToken(aNick);
-        uc->setHubUrl(hubUrl);
-        uc->setEncoding(encoding);
-        uc->setState(UserConnection::STATE_CONNECT);
-        uc->setFlag(UserConnection::FLAG_NMDC);
-    } catch(const std::bad_alloc&) {
-        fprintf(stderr, "[ConnectionManager::nmdcConnect] bad_alloc in setToken/setHubUrl/etc\n");
+        std::string test("nmdcConnect-heap-check");
+        test += hubUrl;
+        (void)test.size();
+    } catch(const std::exception& e) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] heap check failed: %s\n", e.what());
+        putConnection(uc);
+        delete uc;
+        return;
+    } catch(...) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] heap check failed: unknown exception\n");
         putConnection(uc);
         delete uc;
         return;
     }
 
+    fprintf(stderr, "[ConnectionManager::nmdcConnect] heap check passed, calling setToken (aNick='%s' size=%zu)\n",
+            aNick.c_str(), aNick.size());
+
+    try { uc->setToken(aNick); }
+    catch(const std::exception& e) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] exception in setToken: %s (aNick.size=%zu)\n", e.what(), aNick.size());
+        putConnection(uc);
+        delete uc;
+        return;
+    }
+    catch(...) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] unknown exception in setToken\n");
+        putConnection(uc);
+        delete uc;
+        return;
+    }
+    try { uc->setHubUrl(hubUrl); }
+    catch(const std::exception& e) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] exception in setHubUrl: %s (hubUrl.size=%zu)\n", e.what(), hubUrl.size());
+        putConnection(uc);
+        delete uc;
+        return;
+    }
+    catch(...) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] unknown exception in setHubUrl\n");
+        putConnection(uc);
+        delete uc;
+        return;
+    }
+    try { uc->setEncoding(encoding); }
+    catch(const std::exception& e) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] exception in setEncoding: %s\n", e.what());
+        putConnection(uc);
+        delete uc;
+        return;
+    }
+    catch(...) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] unknown exception in setEncoding\n");
+        putConnection(uc);
+        delete uc;
+        return;
+    }
+    uc->setState(UserConnection::STATE_CONNECT);
+
     fprintf(stderr, "[ConnectionManager::nmdcConnect] calling uc->connect\n");
 
     try {
         uc->connect(aServer, aPort, localPort, natRole);
-    } catch(const std::bad_alloc&) {
-        fprintf(stderr, "[ConnectionManager::nmdcConnect] bad_alloc in connect (server=%s port=%s secure=%d)\n",
-                aServer.c_str(), aPort.c_str(), (int)secure);
-        putConnection(uc);
-        delete uc;
-    } catch(const Exception&) {
+    } catch(const std::exception& e) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] exception in connect: %s (server=%s port=%s)\n",
+                e.what(), aServer.c_str(), aPort.c_str());
         putConnection(uc);
         delete uc;
     }
