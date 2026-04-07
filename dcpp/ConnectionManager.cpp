@@ -340,6 +340,8 @@ void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, 
 }
 
 void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, const string& localPort, BufferedSocket::NatRoles natRole, const string& aNick, const string& hubUrl, const string& encoding, bool secure) {
+    fprintf(stderr, "[ConnectionManager::nmdcConnect] ENTER server=%s port=%s secure=%d\n",
+            aServer.c_str(), aPort.c_str(), (int)secure);
     if(shuttingDown)
         return;
 
