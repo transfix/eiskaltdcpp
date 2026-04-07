@@ -359,8 +359,15 @@ void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, 
     if(shuttingDown)
         return;
 
-    if (checkHubCCBlock(aServer, aPort, hubUrl))
+    try {
+        if (checkHubCCBlock(aServer, aPort, hubUrl))
+            return;
+    } catch(const std::bad_alloc&) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] bad_alloc in checkHubCCBlock\n");
         return;
+    }
+
+    fprintf(stderr, "[ConnectionManager::nmdcConnect] after checkHubCCBlock\n");
 
     UserConnection* uc = nullptr;
     try {
@@ -370,11 +377,24 @@ void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, 
                 aServer.c_str(), aPort.c_str(), (int)secure);
         return;
     }
-    uc->setToken(aNick);
-    uc->setHubUrl(hubUrl);
-    uc->setEncoding(encoding);
-    uc->setState(UserConnection::STATE_CONNECT);
-    uc->setFlag(UserConnection::FLAG_NMDC);
+
+    fprintf(stderr, "[ConnectionManager::nmdcConnect] after getConnection\n");
+
+    try {
+        uc->setToken(aNick);
+        uc->setHubUrl(hubUrl);
+        uc->setEncoding(encoding);
+        uc->setState(UserConnection::STATE_CONNECT);
+        uc->setFlag(UserConnection::FLAG_NMDC);
+    } catch(const std::bad_alloc&) {
+        fprintf(stderr, "[ConnectionManager::nmdcConnect] bad_alloc in setToken/setHubUrl/etc\n");
+        putConnection(uc);
+        delete uc;
+        return;
+    }
+
+    fprintf(stderr, "[ConnectionManager::nmdcConnect] calling uc->connect\n");
+
     try {
         uc->connect(aServer, aPort, localPort, natRole);
     } catch(const std::bad_alloc&) {
@@ -386,6 +406,8 @@ void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, 
         putConnection(uc);
         delete uc;
     }
+
+    fprintf(stderr, "[ConnectionManager::nmdcConnect] done\n");
 }
 
 void ConnectionManager::adcConnect(const OnlineUser& aUser, const string &aPort, const string& aToken, bool secure) {
