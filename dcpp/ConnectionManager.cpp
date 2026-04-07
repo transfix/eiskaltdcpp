@@ -153,14 +153,6 @@ void ConnectionManager::on(TimerManagerListener::Second, uint64_t aTick) {
     {
         Lock l(cs);
 
-        if(!downloads.empty()) {
-            static uint64_t lastDlLog = 0;
-            if(aTick - lastDlLog >= 5000) {
-                fprintf(stderr, "[CM::onSecond] downloads.size=%zu\n", downloads.size());
-                lastDlLog = aTick;
-            }
-        }
-
         bool attemptDone = false;
 
         for(auto& cqi: downloads) {
@@ -168,13 +160,11 @@ void ConnectionManager::on(TimerManagerListener::Second, uint64_t aTick) {
             if(cqi->getState() != ConnectionQueueItem::ACTIVE) {
                 if(!cqi->getUser().user->isOnline()) {
                     // Not online anymore...remove it from the pending...
-                    fprintf(stderr, "[CM::onSecond] CQI removed: user offline\n");
                     removed.push_back(cqi);
                     continue;
                 }
 
                 if(cqi->getUser().user->isSet(User::PASSIVE) && !ctx().getClientManager()->isActive()) {
-                    fprintf(stderr, "[CM::onSecond] CQI removed: passive\n");
                     passiveUsers.push_back(cqi->getUser());
                     removed.push_back(cqi);
                     continue;
@@ -193,7 +183,6 @@ void ConnectionManager::on(TimerManagerListener::Second, uint64_t aTick) {
                     QueueItem::Priority prio = ctx().getQueueManager()->hasDownload(cqi->getUser());
 
                     if(prio == QueueItem::PAUSED) {
-                        fprintf(stderr, "[CM::onSecond] CQI removed: paused\n");
                         removed.push_back(cqi);
                         continue;
                     }
@@ -208,7 +197,6 @@ void ConnectionManager::on(TimerManagerListener::Second, uint64_t aTick) {
                             fire(ConnectionManagerListener::StatusChanged(), cqi);
                             attemptDone = true;
                         } else {
-                            fprintf(stderr, "[CM::onSecond] no download slots\n");
                             cqi->setState(ConnectionQueueItem::NO_DOWNLOAD_SLOTS);
                             fire(ConnectionManagerListener::Failed(), cqi, _("All download slots taken"));
                         }
@@ -354,57 +342,24 @@ void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, 
 }
 
 void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, const string& localPort, BufferedSocket::NatRoles natRole, const string& aNick, const string& hubUrl, const string& encoding, bool secure) {
-    fprintf(stderr, "[ConnectionManager::nmdcConnect] ENTER server=%s port=%s secure=%d\n",
-            aServer.c_str(), aPort.c_str(), (int)secure);
     if(shuttingDown)
         return;
 
-    try {
-        if (checkHubCCBlock(aServer, aPort, hubUrl))
-            return;
-    } catch(const std::bad_alloc&) {
-        fprintf(stderr, "[ConnectionManager::nmdcConnect] bad_alloc in checkHubCCBlock\n");
+    if (checkHubCCBlock(aServer, aPort, hubUrl))
         return;
-    }
 
-    fprintf(stderr, "[ConnectionManager::nmdcConnect] after checkHubCCBlock\n");
-
-    UserConnection* uc = nullptr;
-    try {
-        uc = getConnection(true, secure);
-    } catch(const std::bad_alloc&) {
-        fprintf(stderr, "[ConnectionManager::nmdcConnect] bad_alloc in getConnection (server=%s port=%s secure=%d)\n",
-                aServer.c_str(), aPort.c_str(), (int)secure);
-        return;
-    }
-
-    fprintf(stderr, "[ConnectionManager::nmdcConnect] after getConnection uc=%p\n", (void*)uc);
-
-    try {
-        uc->setToken(aNick);
-        uc->setHubUrl(hubUrl);
-        uc->setEncoding(encoding);
-        uc->setState(UserConnection::STATE_CONNECT);
-        uc->setFlag(UserConnection::FLAG_NMDC);
-    } catch(const std::exception& e) {
-        fprintf(stderr, "[ConnectionManager::nmdcConnect] exception in setters: %s\n", e.what());
-        putConnection(uc);
-        delete uc;
-        return;
-    }
-
-    fprintf(stderr, "[ConnectionManager::nmdcConnect] calling uc->connect\n");
-
+    UserConnection* uc = getConnection(true, secure);
+    uc->setToken(aNick);
+    uc->setHubUrl(hubUrl);
+    uc->setEncoding(encoding);
+    uc->setState(UserConnection::STATE_CONNECT);
+    uc->setFlag(UserConnection::FLAG_NMDC);
     try {
         uc->connect(aServer, aPort, localPort, natRole);
-    } catch(const std::exception& e) {
-        fprintf(stderr, "[ConnectionManager::nmdcConnect] exception in connect: %s (server=%s port=%s)\n",
-                e.what(), aServer.c_str(), aPort.c_str());
+    } catch(const Exception&) {
         putConnection(uc);
         delete uc;
     }
-
-    fprintf(stderr, "[ConnectionManager::nmdcConnect] done\n");
 }
 
 void ConnectionManager::adcConnect(const OnlineUser& aUser, const string &aPort, const string& aToken, bool secure) {

@@ -223,13 +223,6 @@ void NmdcHub::onLine(const string& aLine) {
         ChatMessage chatMessage = { unescape(message), findUser(nick), nullptr, nullptr, false, 0 };
 
         if(!chatMessage.from) {
-            // Cap user creation from chat messages too
-            int chatLimit = CTX_SETTING(NMDC_GETINFO_LIMIT);
-            if(chatLimit > 0) {
-                Lock l(cs);
-                if(users.find(nick) == users.end() && (int)users.size() >= chatLimit)
-                    return;
-            }
             OnlineUser& o = getUser(nick);
             // Assume that messages from unknown users come from the hub
             o.getIdentity().setHub(true);
@@ -361,17 +354,6 @@ void NmdcHub::onLine(const string& aLine) {
 
         if(nick.empty())
             return;
-
-        // Cap new-user creation to NMDC_GETINFO_LIMIT to keep heap usage
-        // bounded on large hubs.  Always allow updates for existing users.
-        {
-            int myInfoLimit = CTX_SETTING(NMDC_GETINFO_LIMIT);
-            if(myInfoLimit > 0) {
-                Lock l(cs);
-                if(users.find(nick) == users.end() && (int)users.size() >= myInfoLimit)
-                    return;
-            }
-        }
 
         i = j + 1;
 
@@ -743,18 +725,9 @@ void NmdcHub::onLine(const string& aLine) {
             StringTokenizer<string> t(param, "$$");
             StringList& sl = t.getTokens();
 
-            int nickLimit = CTX_SETTING(NMDC_GETINFO_LIMIT);
             for(auto& it: sl) {
                 if(it.empty())
                     continue;
-
-                // Respect the same user-count cap as $MyINFO to avoid
-                // allocating OnlineUser objects for the entire hub.
-                if(nickLimit > 0) {
-                    Lock l(cs);
-                    if(users.find(it) == users.end() && (int)users.size() >= nickLimit)
-                        continue;
-                }
 
                 v.push_back(&getUser(it));
             }
@@ -789,15 +762,9 @@ void NmdcHub::onLine(const string& aLine) {
             OnlineUserList v;
             StringTokenizer<string> t(param, "$$");
             StringList& sl = t.getTokens();
-            int opLimit = CTX_SETTING(NMDC_GETINFO_LIMIT);
             for(auto& it: sl) {
                 if(it.empty())
                     continue;
-                if(opLimit > 0) {
-                    Lock l(cs);
-                    if(users.find(it) == users.end() && (int)users.size() >= opLimit)
-                        continue;
-                }
                 OnlineUser& ou = getUser(it);
                 ou.getIdentity().setOp(true);
                 if(ou.getUser() == getMyIdentity().getUser()) {
@@ -848,12 +815,6 @@ void NmdcHub::onLine(const string& aLine) {
         if(!message.replyTo || !message.from) {
             if(!message.replyTo) {
                 // Assume it's from the hub
-                int pmLimit = CTX_SETTING(NMDC_GETINFO_LIMIT);
-                if(pmLimit > 0) {
-                    Lock l(cs);
-                    if(users.find(rtNick) == users.end() && (int)users.size() >= pmLimit)
-                        return;
-                }
                 OnlineUser& ou = getUser(rtNick);
                 ou.getIdentity().setHub(true);
                 ou.getIdentity().setHidden(true);
