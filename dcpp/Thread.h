@@ -23,12 +23,8 @@
 #include <thread>
 #include <version>
 
-// Apple's libc++ (Xcode ≤ 15) does not ship std::jthread.
-// Fall back to std::thread on toolchains that lack it.
-#if defined(__cpp_lib_jthread) && __cpp_lib_jthread >= 201911L
-#  define DCPP_HAS_JTHREAD 1
-#else
-#  define DCPP_HAS_JTHREAD 0
+#ifndef _WIN32
+#include <pthread.h>
 #endif
 
 #include "Exception.h"
@@ -40,24 +36,17 @@ STANDARD_EXCEPTION(ThreadException);
 /**
  * Base class for objects that run work on a background thread.
  *
- * Subclasses override `run()` and call `start()` to launch. Where
- * available the thread is stored as a std::jthread which auto-joins on
- * destruction; otherwise a plain std::thread is used with an explicit
- * join in the destructor.
+ * On POSIX, threads are created via pthread_create with a reduced
+ * 1 MiB stack (the default 8 MiB causes excessive virtual-memory
+ * consumption on busy NMDC hubs where each peer connection spawns
+ * its own BufferedSocket thread).
  */
 class Thread {
 public:
     enum Priority { IDLE = 1, LOW = 1, NORMAL = 0, HIGH = -1 };
 
     Thread() = default;
-
-#if DCPP_HAS_JTHREAD
-    virtual ~Thread() = default;   // jthread auto-joins
-#else
-    virtual ~Thread() {
-        join();
-    }
-#endif
+    virtual ~Thread() { join(); }
 
     // Non-copyable
     Thread(const Thread&) = delete;
@@ -66,25 +55,41 @@ public:
     void start();
 
     void join() {
+#ifndef _WIN32
+        if (threadActive_) {
+            pthread_join(thread_, nullptr);
+            threadActive_ = false;
+        }
+#else
         if (thread_.joinable()) {
             thread_.join();
         }
+#endif
     }
 
     void detach() {
+#ifndef _WIN32
+        if (threadActive_) {
+            pthread_detach(thread_);
+            threadActive_ = false;
+        }
+#else
         if (thread_.joinable()) {
-#if DCPP_HAS_JTHREAD
-            thread_.get_stop_source().request_stop();
-#endif
             thread_.detach();
         }
+#endif
     }
 
-    [[nodiscard]] bool joinable() const { return thread_.joinable(); }
+    [[nodiscard]] bool joinable() const {
+#ifndef _WIN32
+        return threadActive_;
+#else
+        return thread_.joinable();
+#endif
+    }
 
     void setThreadPriority([[maybe_unused]] Priority p) {
         // Platform-specific priority setting can be added if needed.
-        // On POSIX: setpriority(PRIO_PROCESS, 0, p);
     }
 
     static void sleep(uint32_t millis) {
@@ -96,10 +101,15 @@ public:
 protected:
     virtual int run() = 0;
 
-#if DCPP_HAS_JTHREAD
+#ifndef _WIN32
+    pthread_t thread_{};
+    bool threadActive_ = false;
+#else
+#if defined(__cpp_lib_jthread) && __cpp_lib_jthread >= 201911L
     std::jthread thread_;
 #else
     std::thread thread_;
+#endif
 #endif
 };
 

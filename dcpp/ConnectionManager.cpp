@@ -386,6 +386,16 @@ void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, 
         fprintf(stderr, "[CM::nmdcConnect] Exception in connect: %s\n", e.what());
         putConnection(uc);
         delete uc;
+    } catch(const std::bad_alloc&) {
+        fprintf(stderr, "[CM::nmdcConnect] bad_alloc in connect (thread/socket creation)\n");
+        putConnection(uc);
+        delete uc;
+        throw;
+    } catch(...) {
+        fprintf(stderr, "[CM::nmdcConnect] unknown exception in connect\n");
+        putConnection(uc);
+        delete uc;
+        throw;
     }
     fprintf(stderr, "[CM::nmdcConnect] done\n");
 }
@@ -415,6 +425,10 @@ void ConnectionManager::adcConnect(const OnlineUser& aUser, const string &aPort,
     } catch(const Exception&) {
         putConnection(uc);
         delete uc;
+    } catch(...) {
+        putConnection(uc);
+        delete uc;
+        throw;
     }
 }
 

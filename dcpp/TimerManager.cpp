@@ -34,7 +34,7 @@ TimerManager::TimerManager(DCContext& ctx) : ContextAware(ctx) {
 
 TimerManager::~TimerManager() {
     // Safety net: if shutdown() was not called, join the thread now
-    if (thread_.joinable()) {
+    if (joinable()) {
         mtx.unlock();
         join();
     }
