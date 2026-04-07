@@ -447,6 +447,7 @@ void NmdcHub::onLine(const string& aLine) {
         if(state != STATE_NORMAL) {
             return;
         }
+        fprintf(stderr, "[NmdcHub::$ConnectToMe] raw param=%s\n", param.c_str());
         string::size_type i = param.find(' ');
         string::size_type j;
         if( (i == string::npos) || ((i + 1) >= param.size()) ) {
@@ -1099,9 +1100,12 @@ void NmdcHub::on(Line, const string& aLine) {
         }
         // Test if the allocator actually works
         bool testAllocOk = false;
+        bool testAllocLargeOk = false;
         try { auto* p = new char[4096]; delete[] p; testAllocOk = true; } catch(...) {}
-        fprintf(stderr, "[NmdcHub::on(Line)] std::bad_alloc processing %s (line size=%zu, RSS=%ldKB, VmSize=%ldKB, VmPeak=%ldKB, testAlloc=%s)\n",
-                cmd.c_str(), aLine.size(), rssKB, vmSizeKB, vmPeakKB, testAllocOk ? "OK" : "FAIL");
+        try { auto* p = new char[65536]; delete[] p; testAllocLargeOk = true; } catch(...) {}
+        fprintf(stderr, "[NmdcHub::on(Line)] std::bad_alloc processing %s (line size=%zu, RSS=%ldKB, VmSize=%ldKB, VmPeak=%ldKB, testAlloc=%s, testAllocLarge=%s)\n",
+                cmd.c_str(), aLine.size(), rssKB, vmSizeKB, vmPeakKB,
+                testAllocOk ? "OK" : "FAIL", testAllocLargeOk ? "OK" : "FAIL");
 #else
         fprintf(stderr, "[NmdcHub::on(Line)] std::bad_alloc processing %s (line size=%zu)\n",
                 cmd.c_str(), aLine.size());

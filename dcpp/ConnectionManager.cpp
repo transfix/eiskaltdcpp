@@ -127,11 +127,26 @@ void ConnectionManager::putCQI(ConnectionQueueItem* cqi) {
 }
 
 UserConnection* ConnectionManager::getConnection(bool aNmdc, bool secure) {
-    UserConnection* uc = new UserConnection(secure, ctx());
+    fprintf(stderr, "[CM::getConnection] new UserConnection (sizeof=%zu)\n", sizeof(UserConnection));
+    UserConnection* uc = nullptr;
+    try {
+        uc = new UserConnection(secure, ctx());
+    } catch (const std::bad_alloc&) {
+        fprintf(stderr, "[CM::getConnection] bad_alloc in new UserConnection\n");
+        throw;
+    }
     uc->addListener(this);
     {
         Lock l(cs);
-        userConnections.push_back(uc);
+        fprintf(stderr, "[CM::getConnection] push_back (vec size=%zu, cap=%zu)\n",
+                userConnections.size(), userConnections.capacity());
+        try {
+            userConnections.push_back(uc);
+        } catch (const std::bad_alloc&) {
+            fprintf(stderr, "[CM::getConnection] bad_alloc in push_back\n");
+            delete uc;
+            throw;
+        }
     }
     if(aNmdc)
         uc->setFlag(UserConnection::FLAG_NMDC);
@@ -348,18 +363,31 @@ void ConnectionManager::nmdcConnect(const string& aServer, const string& aPort, 
     if (checkHubCCBlock(aServer, aPort, hubUrl))
         return;
 
+    fprintf(stderr, "[CM::nmdcConnect] step 1: getConnection\n");
     UserConnection* uc = getConnection(true, secure);
-    uc->setToken(aNick);
-    uc->setHubUrl(hubUrl);
-    uc->setEncoding(encoding);
+    fprintf(stderr, "[CM::nmdcConnect] step 2: setToken(%zu bytes)\n", aNick.size());
+    try { uc->setToken(aNick); } catch (const std::bad_alloc&) {
+        fprintf(stderr, "[CM::nmdcConnect] bad_alloc in setToken\n"); throw;
+    }
+    fprintf(stderr, "[CM::nmdcConnect] step 3: setHubUrl(%zu bytes)\n", hubUrl.size());
+    try { uc->setHubUrl(hubUrl); } catch (const std::bad_alloc&) {
+        fprintf(stderr, "[CM::nmdcConnect] bad_alloc in setHubUrl\n"); throw;
+    }
+    fprintf(stderr, "[CM::nmdcConnect] step 4: setEncoding(%zu bytes)\n", encoding.size());
+    try { uc->setEncoding(encoding); } catch (const std::bad_alloc&) {
+        fprintf(stderr, "[CM::nmdcConnect] bad_alloc in setEncoding\n"); throw;
+    }
     uc->setState(UserConnection::STATE_CONNECT);
     uc->setFlag(UserConnection::FLAG_NMDC);
+    fprintf(stderr, "[CM::nmdcConnect] step 5: connect(%s, %s)\n", aServer.c_str(), aPort.c_str());
     try {
         uc->connect(aServer, aPort, localPort, natRole);
-    } catch(const Exception&) {
+    } catch(const Exception& e) {
+        fprintf(stderr, "[CM::nmdcConnect] Exception in connect: %s\n", e.what());
         putConnection(uc);
         delete uc;
     }
+    fprintf(stderr, "[CM::nmdcConnect] done\n");
 }
 
 void ConnectionManager::adcConnect(const OnlineUser& aUser, const string &aPort, const string& aToken, bool secure) {
