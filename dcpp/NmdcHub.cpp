@@ -55,8 +55,9 @@ NmdcHub::~NmdcHub() {
 void NmdcHub::connect(const OnlineUser& aUser, const string&) {
     checkstate();
     dcdebug("NmdcHub::connect %s\n", aUser.getIdentity().getNick().c_str());
-    fprintf(stderr, "[NmdcHub::connect] nick=%s active=%d\n",
-            aUser.getIdentity().getNick().c_str(), (int)isActive());
+    fprintf(stderr, "[NmdcHub::connect] nick=%s active=%d mode=%d\n",
+            aUser.getIdentity().getNick().c_str(), (int)isActive(),
+            ctx().getClientManager()->getMode(getHubUrl()));
     if(isActive()) {
         connectToMe(aUser);
     } else {
@@ -523,6 +524,10 @@ void NmdcHub::onLine(const string& aLine) {
             return;
         }
 
+        fprintf(stderr, "[NmdcHub::$RevConnectToMe] from=%s active=%d mode=%d\n",
+                param.substr(0, j).c_str(), (int)isActive(),
+                ctx().getClientManager()->getMode(getHubUrl()));
+
         OnlineUser* u = findUser(param.substr(0, j));
         if(u == NULL)
             return;
@@ -878,7 +883,9 @@ void NmdcHub::connectToMe(const OnlineUser& aUser) {
 void NmdcHub::revConnectToMe(const OnlineUser& aUser) {
     checkstate();
     dcdebug("NmdcHub::revConnectToMe %s\n", aUser.getIdentity().getNick().c_str());
-    send("$RevConnectToMe " + fromUtf8(getMyNick()) + " " + fromUtf8(aUser.getIdentity().getNick()) + "|");
+    string msg = "$RevConnectToMe " + fromUtf8(getMyNick()) + " " + fromUtf8(aUser.getIdentity().getNick()) + "|";
+    fprintf(stderr, "[NmdcHub::revConnectToMe] sending: %s\n", msg.c_str());
+    send(msg);
 }
 
 void NmdcHub::hubMessage(const string& aMessage, bool thirdPerson) {
