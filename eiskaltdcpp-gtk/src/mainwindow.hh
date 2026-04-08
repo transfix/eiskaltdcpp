@@ -34,6 +34,7 @@
 #include "message.hh"
 #include "notify.hh"
 
+namespace dcpp { class DCContext; }
 class BookEntry;
 class Search;
 
@@ -44,7 +45,7 @@ class MainWindow:
         public dcpp::TimerManagerListener
 {
 public:
-    MainWindow();
+    explicit MainWindow(dcpp::DCContext& dcCtx);
     virtual ~MainWindow();
 
     // Inherited from Entry
@@ -73,6 +74,7 @@ public:
     void showUploadQueue_gui();
     void addPrivateMessage_gui(Msg::TypeMsg typemsg, std::string cid, std::string hubUrl = "", std::string message = "", bool useSetting = false);
     void addPrivateStatusMessage_gui(Msg::TypeMsg typemsg, std::string cid, std::string message = "");
+    void updatePrivateE2EPMStatus_gui(std::string cid, std::string fingerprint, bool keyWarning);
     void showPublicHubs_gui();
     void showShareBrowser_gui(dcpp::UserPtr user, std::string file, std::string dir, bool useSetting);
     Search *addSearch_gui();
@@ -201,6 +203,7 @@ private:
     virtual void on(dcpp::TimerManagerListener::Second, uint64_t ticks) noexcept;
     virtual void on(dcpp::QueueManagerListener::PartialList, const dcpp::HintedUser& aUser, const std::string& text) noexcept;
 
+    dcpp::DCContext& dcCtx_;
     GtkWindow *window;
     gint current_width, current_height;
     gboolean is_maximized;

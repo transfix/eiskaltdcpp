@@ -25,6 +25,8 @@
 #include "bookentry.hh"
 #include "message.hh"
 
+namespace dcpp { class DCContext; }
+
 class WulforSettingsManager;
 class EmoticonsDialog;
 
@@ -33,7 +35,7 @@ class PrivateMessage:
         public dcpp::ClientManagerListener
 {
 public:
-    PrivateMessage(const std::string &_cid, const std::string &_hubUrl);
+    PrivateMessage(dcpp::DCContext& dcCtx, const std::string &_cid, const std::string &_hubUrl);
     virtual ~PrivateMessage();
     virtual void show();
 
@@ -42,6 +44,7 @@ public:
     void addStatusMessage_gui(std::string message, Msg::TypeMsg typemsg);
     void preferences_gui();
     bool getIsOffline() { return offline;}
+    void setE2EPMEncryption_gui(bool active, const std::string &fingerprint, bool keyWarning);
 
 private:
     // GUI functions
@@ -88,6 +91,7 @@ private:
     virtual void on(dcpp::ClientManagerListener::UserConnected, const dcpp::UserPtr& aUser) noexcept;
     virtual void on(dcpp::ClientManagerListener::UserDisconnected, const dcpp::UserPtr& aUser) noexcept;
 
+    dcpp::DCContext& dcCtx_;
     GtkTextBuffer *messageBuffer;
     GtkTextMark *mark, *start_mark, *end_mark, *tag_mark, *emot_mark;
     std::string cid;
@@ -108,4 +112,10 @@ private:
     gint totalEmoticons;
     EmoticonsDialog *emotdialog;
     bool offline;
+    bool e2epmActive;
+    bool e2epmKeyWarning;
+    std::string e2epmFingerprint;
+    GtkWidget *e2epmBar;
+    GtkWidget *e2epmIcon;
+    GtkWidget *e2epmLabel;
 };

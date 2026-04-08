@@ -1,5 +1,6 @@
 /*
  * Copyright © 2004-2010 Jens Oknelid, paskharen@gmail.com
+ * Copyright (C) 2026 Joe Rivera <transfix@sublevels.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,10 +23,12 @@
 #include <dcpp/version.h>
 #include <dcpp/ClientManager.h>
 #include <dcpp/FavoriteManager.h>
+#include "dcpp/DCPlusPlus.h"
 #include "settingsmanager.hh"
 #include "emoticonsdialog.hh"
 #include "emoticons.hh"
 #include "wulformanager.hh"
+#include "GtkContextAware.hh"
 #include "WulforUtil.hh"
 #include "search.hh"
 #include "sound.hh"
@@ -33,14 +36,20 @@
 using namespace std;
 using namespace dcpp;
 
-PrivateMessage::PrivateMessage(const string &_cid, const string &_hubUrl):
-    BookEntry(Entry::PRIVATE_MESSAGE, WulforUtil::getNicks(_cid, _hubUrl), "privatemessage.ui", _cid),
+PrivateMessage::PrivateMessage(dcpp::DCContext& dcCtx, const string &_cid, const string &_hubUrl):
+    BookEntry(Entry::PRIVATE_MESSAGE, WulforUtil::getNicks(dcCtx_, _cid, _hubUrl), "privatemessage.ui", _cid),
+    dcCtx_(dcCtx),
     cid(_cid),
     hubUrl(_hubUrl),
     historyIndex(0),
     sentAwayMessage(false),
     scrollToBottom(true),
-    offline(false)
+    offline(false),
+    e2epmActive(false),
+    e2epmKeyWarning(false),
+    e2epmBar(NULL),
+    e2epmIcon(NULL),
+    e2epmLabel(NULL)
 {
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR(getWidget("status")),false);
@@ -146,10 +155,29 @@ PrivateMessage::PrivateMessage(const string &_cid, const string &_hubUrl):
 
     gtk_widget_grab_focus(getWidget("entry"));
     history.push_back("");
-    const UserPtr user = ClientManager::getInstance()->findUser(CID(_cid));
+
+    // Create E2EPM encryption indicator bar (hidden by default)
+#if GTK_CHECK_VERSION(3, 2, 0)
+    e2epmBar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+#else
+    e2epmBar = gtk_hbox_new(false, 4);
+#endif
+    e2epmIcon = gtk_image_new_from_icon_name("channel-secure-symbolic", GTK_ICON_SIZE_SMALL_TOOLBAR);
+    e2epmLabel = gtk_label_new("");
+    gtk_misc_set_alignment(GTK_MISC(e2epmLabel), 0, 0.5);
+    gtk_box_pack_start(GTK_BOX(e2epmBar), e2epmIcon, false, false, 4);
+    gtk_box_pack_start(GTK_BOX(e2epmBar), e2epmLabel, true, true, 0);
+    gtk_widget_show_all(e2epmBar);
+    gtk_widget_set_no_show_all(e2epmBar, true);
+    gtk_widget_hide(e2epmBar);
+    // Insert between scroll (pos 0) and chatHBox (pos 2)
+    gtk_box_pack_start(GTK_BOX(getWidget("mainBox")), e2epmBar, false, false, 0);
+    gtk_box_reorder_child(GTK_BOX(getWidget("mainBox")), e2epmBar, 1);
+
+    const UserPtr user = dcCtx_.getClientManager()->findUser(CID(_cid));
     isBot = user ? user->isSet(User::BOT) : false;
 
-    setLabel_gui(WulforUtil::getNicks(_cid, _hubUrl) + " [" + WulforUtil::getHubNames(_cid, _hubUrl) + "]");
+    setLabel_gui(WulforUtil::getNicks(dcCtx_, _cid, _hubUrl) + " [" + WulforUtil::getHubNames(dcCtx_, _cid, _hubUrl) + "]");
 
     /* initial tags map */
     TagsMap[Tag::TAG_PRIVATE] = createTag_gui("TAG_PRIVATE", Tag::TAG_PRIVATE);
@@ -170,7 +198,7 @@ PrivateMessage::PrivateMessage(const string &_cid, const string &_hubUrl):
 
 PrivateMessage::~PrivateMessage()
 {
-    ClientManager::getInstance()->removeListener(this);
+    dcCtx_.getClientManager()->removeListener(this);
 
     if (handCursor)
     {
@@ -192,23 +220,23 @@ PrivateMessage::~PrivateMessage()
 
 void PrivateMessage::show()
 {
-    ClientManager::getInstance()->addListener(this);
+    dcCtx_.getClientManager()->addListener(this);
 }
 
 void PrivateMessage::addMessage_gui(string message, Msg::TypeMsg typemsg)
 {
     addLine_gui(typemsg, message);
 
-    if (BOOLSETTING(LOG_PRIVATE_CHAT))
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::LOG_PRIVATE_CHAT, true))
     {
         StringMap params;
         params["message"] = message;
-        params["hubNI"] = WulforUtil::getHubNames(cid, hubUrl);
+        params["hubNI"] = WulforUtil::getHubNames(dcCtx_, cid, hubUrl);
         params["hubURL"] = hubUrl;
         params["userCID"] = cid;
-        params["userNI"] = ClientManager::getInstance()->getNicks(CID(cid), hubUrl)[0];
-        params["myCID"] = ClientManager::getInstance()->getMe()->getCID().toBase32();
-        LOG(LogManager::PM, params);
+        params["userNI"] = dcCtx_.getClientManager()->getNicks(CID(cid), hubUrl)[0];
+        params["myCID"] = dcCtx_.getClientManager()->getMe()->getCID().toBase32();
+        dcCtx_.getLogManager()->log(LogManager::PM, params);
     }
 
     if (WGETB("bold-pm"))
@@ -219,17 +247,17 @@ void PrivateMessage::addMessage_gui(string message, Msg::TypeMsg typemsg)
     {
         sentAwayMessage = false;
     }
-    else if (!sentAwayMessage && !(BOOLSETTING(NO_AWAYMSG_TO_BOTS) && isBot))
+    else if (!sentAwayMessage && !(dcCtx_.getSettingsManager()->getBool(SettingsManager::NO_AWAYMSG_TO_BOTS, true) && isBot))
     {
         sentAwayMessage = true;
         typedef Func1<PrivateMessage, string> F1;
         F1 *func = new F1(this, &PrivateMessage::sendMessage_client, Util::getAwayMessage());
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 
     if (WGETB("sound-pm"))
     {
-        MainWindow *mw = WulforManager::get()->getMainWindow();
+        MainWindow *mw = wulforManagerInstance()->getMainWindow();
 #if GTK_CHECK_VERSION(3, 0, 0)
         GdkWindowState state = gdk_window_get_state(gtk_widget_get_window(mw->getContainer())  );
 #else
@@ -249,7 +277,7 @@ void PrivateMessage::addStatusMessage_gui(string message, Msg::TypeMsg typemsg)
 
 void PrivateMessage::preferences_gui()
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
     string fore, back;
     bool bold = false, italic = false;
 
@@ -306,7 +334,7 @@ void PrivateMessage::addLine_gui(Msg::TypeMsg typemsg, const string &message)
     GtkTextIter iter;
     string line = "";
 
-    if (BOOLSETTING(TIME_STAMPS))
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::TIME_STAMPS, true))
         line += "[" + Util::getShortTimeString() + "] ";
 
     line += message + "\n";
@@ -378,7 +406,7 @@ void PrivateMessage::applyTags_gui(const string &line)
     string::size_type begin = 0;
 
     // apply timestamp tag
-    if (BOOLSETTING(TIME_STAMPS))
+    if (dcCtx_.getSettingsManager()->getBool(SettingsManager::TIME_STAMPS, true))
     {
         string ts = Util::getShortTimeString();
         gtk_text_iter_backward_chars(&start_iter, g_utf8_strlen(line.c_str(), -1) - g_utf8_strlen(ts.c_str(), -1) - 2);
@@ -762,7 +790,7 @@ void PrivateMessage::getSettingTag_gui(WulforSettingsManager *wsm, const Tag::Ty
 
 GtkTextTag* PrivateMessage::createTag_gui(const string &tagname, Tag::TypeTag type)
 {
-    WulforSettingsManager *wsm = WulforSettingsManager::getInstance();
+    WulforSettingsManager *wsm = wulforSettingsInstance();
     GtkTextTag *tag = gtk_text_tag_table_lookup(gtk_text_buffer_get_tag_table(messageBuffer), tagname.c_str());
 
     if (!tag)
@@ -912,14 +940,14 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         {
             if (Util::getAway() && param.empty())
             {
-                Util::setAway(false);
+                Util::setAway(pm->dcCtx_, false);
                 Util::setManualAway(false);
                 pm->addStatusMessage_gui(_("Away mode off"), Msg::SYSTEM);
                 pm->sentAwayMessage = false;
             }
             else
             {
-                Util::setAway(true);
+                Util::setAway(pm->dcCtx_, true);
                 Util::setManualAway(true);
                 Util::setAwayMessage(param);
                 pm->addStatusMessage_gui(_("Away mode on: ") + Util::getAwayMessage(), Msg::SYSTEM);
@@ -927,7 +955,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
         else if (command == "back")
         {
-            Util::setAway(false);
+            Util::setAway(pm->dcCtx_, false);
             pm->addStatusMessage_gui(_("Away mode off"), Msg::SYSTEM);
         }
         else if (command == "clear")
@@ -939,31 +967,31 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
         else if (command == "close")
         {
-            WulforManager::get()->getMainWindow()->removeBookEntry_gui(pm);
+            wulforManagerInstance()->getMainWindow()->removeBookEntry_gui(pm);
         }
         else if (command == "fuser" || command == "fu")
         {
             typedef Func0<PrivateMessage> F0;
             F0 *func = new F0(pm, &PrivateMessage::addFavoriteUser_client);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         else if (command == "removefu" || command == "rmfu")
         {
             typedef Func0<PrivateMessage> F0;
             F0 *func = new F0(pm, &PrivateMessage::removeFavoriteUser_client);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         else if (command == "getlist")
         {
             typedef Func0<PrivateMessage> F0;
             F0 *func = new F0(pm, &PrivateMessage::getFileList_client);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         else if (command == "grant")
         {
             typedef Func0<PrivateMessage> F0;
             F0 *func = new F0(pm, &PrivateMessage::grantSlot_client);
-            WulforManager::get()->dispatchClientFunc(func);
+            wulforManagerInstance()->dispatchClientFunc(func);
         }
         else if (command == "emoticons" || command == "emot")
         {
@@ -989,8 +1017,8 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         else if (command == "ratio")
         {
             double ratio;
-            double up   = static_cast<double>(SETTING(TOTAL_UPLOAD));
-            double down = static_cast<double>(SETTING(TOTAL_DOWNLOAD));
+            double up   = static_cast<double>(pm->dcCtx_.getSettingsManager()->get(SettingsManager::TOTAL_UPLOAD, true));
+            double down = static_cast<double>(pm->dcCtx_.getSettingsManager()->get(SettingsManager::TOTAL_DOWNLOAD, true));
 
             if (down > 0)
                 ratio = up / down;
@@ -1012,7 +1040,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
             {
                 typedef Func1<PrivateMessage, string> F1;
                 F1 *func = new F1(pm, &PrivateMessage::sendMessage_client, line);
-                WulforManager::get()->dispatchClientFunc(func);
+                wulforManagerInstance()->dispatchClientFunc(func);
             }
             else
             {
@@ -1026,7 +1054,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
         }
         else if (command == "dcpps" && !param.empty())
         {
-            string msg = SettingsManager::getInstance()->parseCoreCmd (param);
+            string msg = pm->dcCtx_.getSettingsManager()->parseCoreCmd (param);
             pm->addStatusMessage_gui(msg, Msg::SYSTEM);
         }
         else if (command == "help")
@@ -1054,7 +1082,7 @@ void PrivateMessage::onSendMessage_gui(GtkEntry *entry, gpointer data)
     {
         typedef Func1<PrivateMessage, string> F1;
         F1 *func = new F1(pm, &PrivateMessage::sendMessage_client, text);
-        WulforManager::get()->dispatchClientFunc(func);
+        wulforManagerInstance()->dispatchClientFunc(func);
     }
 }
 
@@ -1177,7 +1205,7 @@ gboolean PrivateMessage::onMagnetTagEvent_gui(GtkTextTag *tag, GObject*, GdkEven
         {
         case 1:
             // Search for magnet
-            WulforManager::get()->getMainWindow()->actionMagnet_gui(pm->selectedTagStr);
+            wulforManagerInstance()->getMainWindow()->actionMagnet_gui(pm->selectedTagStr);
             break;
         case 3:
             // Popup magnet context menu
@@ -1297,34 +1325,34 @@ void PrivateMessage::onOpenLinkClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
 
-    WulforUtil::openURI(pm->selectedTagStr);
+    WulforUtil::openURI(pm->dcCtx_, pm->selectedTagStr);
 }
 
 void PrivateMessage::onOpenHubClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
 
-    WulforManager::get()->getMainWindow()->showHub_gui(pm->selectedTagStr);
+    wulforManagerInstance()->getMainWindow()->showHub_gui(pm->selectedTagStr);
 }
 
 void PrivateMessage::onSearchMagnetClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
 
-    WulforManager::get()->getMainWindow()->addSearch_gui(pm->selectedTagStr);
+    wulforManagerInstance()->getMainWindow()->addSearch_gui(pm->selectedTagStr);
 }
 
 void PrivateMessage::onDownloadClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
-    WulforManager::get()->getMainWindow()->fileToDownload_gui(pm->selectedTagStr, SETTING(DOWNLOAD_DIRECTORY));
+    wulforManagerInstance()->getMainWindow()->fileToDownload_gui(pm->selectedTagStr, pm->dcCtx_.getSettingsManager()->get(SettingsManager::DOWNLOAD_DIRECTORY, true));
 }
 
 void PrivateMessage::onDownloadToClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
 
-    GtkWidget *dialog = WulforManager::get()->getMainWindow()->getChooserDialog_gui();
+    GtkWidget *dialog = wulforManagerInstance()->getMainWindow()->getChooserDialog_gui();
     gtk_window_set_title(GTK_WINDOW(dialog), _("Choose a directory"));
     gtk_file_chooser_set_action(GTK_FILE_CHOOSER(dialog), GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
     gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), Text::fromUtf8(WGETS("magnet-choose-dir")).c_str());
@@ -1343,7 +1371,7 @@ void PrivateMessage::onDownloadToClicked_gui(GtkMenuItem*, gpointer data)
             string path = Text::toUtf8(temp) + G_DIR_SEPARATOR_S;
             g_free(temp);
 
-            WulforManager::get()->getMainWindow()->fileToDownload_gui(pm->selectedTagStr, path);
+            wulforManagerInstance()->getMainWindow()->fileToDownload_gui(pm->selectedTagStr, path);
         }
     }
     gtk_widget_hide(dialog);
@@ -1353,7 +1381,7 @@ void PrivateMessage::onMagnetPropertiesClicked_gui(GtkMenuItem*, gpointer data)
 {
     PrivateMessage *pm = (PrivateMessage *)data;
 
-    WulforManager::get()->getMainWindow()->propertiesMagnetDialog_gui(pm->selectedTagStr);
+    wulforManagerInstance()->getMainWindow()->propertiesMagnetDialog_gui(pm->selectedTagStr);
 }
 
 void PrivateMessage::onCommandClicked_gui(GtkWidget *widget, gpointer data)
@@ -1399,53 +1427,92 @@ void PrivateMessage::updateOnlineStatus_gui(bool online)
     setIcon_gui(online ? WGETS("icon-pm-online") : WGETS("icon-pm-offline"));
 }
 
+void PrivateMessage::setE2EPMEncryption_gui(bool active, const std::string &fingerprint, bool keyWarning)
+{
+    e2epmActive = active;
+    e2epmFingerprint = fingerprint;
+    e2epmKeyWarning = keyWarning;
+
+    if (active && e2epmBar)
+    {
+        std::string text;
+        if (keyWarning)
+        {
+            text = std::string(_("⚠ E2EPM: Key changed! Fingerprint: ")) + fingerprint;
+            gtk_image_set_from_icon_name(GTK_IMAGE(e2epmIcon), "dialog-warning", GTK_ICON_SIZE_SMALL_TOOLBAR);
+        }
+        else
+        {
+            text = std::string(_("🔒 E2EPM: Encrypted — Fingerprint: ")) + fingerprint;
+            gtk_image_set_from_icon_name(GTK_IMAGE(e2epmIcon), "channel-secure-symbolic", GTK_ICON_SIZE_SMALL_TOOLBAR);
+        }
+
+        gtk_label_set_text(GTK_LABEL(e2epmLabel), text.c_str());
+        gtk_widget_set_tooltip_text(e2epmBar, fingerprint.c_str());
+        gtk_widget_show(e2epmBar);
+
+        // Update tab icon to indicate encryption
+        if (keyWarning)
+            setIcon_gui("dialog-warning");
+        else
+            setIcon_gui("channel-secure-symbolic");
+    }
+    else if (e2epmBar)
+    {
+        gtk_widget_hide(e2epmBar);
+        // Restore normal PM icon
+        bool online = !getIsOffline();
+        setIcon_gui(online ? WGETS("icon-pm-online") : WGETS("icon-pm-offline"));
+    }
+}
+
 void PrivateMessage::sendMessage_client(string message)
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
     if (user && user->isOnline())
     {
         // FIXME: WTF does the 3rd param (bool thirdPerson) do? A: Used for /me stuff
-        ClientManager::getInstance()->privateMessage(HintedUser(user, hubUrl), message, false);
+        dcCtx_.getClientManager()->privateMessage(HintedUser(user, hubUrl), message, false);
     }
     else
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
         F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, _("User went offline"), Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
 void PrivateMessage::addFavoriteUser_client()
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
-    if (user && FavoriteManager::getInstance()->isFavoriteUser(user))
+    if (user && dcCtx_.getFavoriteManager()->isFavoriteUser(user))
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
-        F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(user, hubUrl) + _(" is favorite user"),
+        F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(dcCtx_, user, hubUrl) + _(" is favorite user"),
                           Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
     else
     {
-        FavoriteManager::getInstance()->addFavoriteUser(user);
+        dcCtx_.getFavoriteManager()->addFavoriteUser(user);
     }
 }
 
 void PrivateMessage::removeFavoriteUser_client()
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
 
-    if (user && FavoriteManager::getInstance()->isFavoriteUser(user))
+    if (user && dcCtx_.getFavoriteManager()->isFavoriteUser(user))
     {
-        FavoriteManager::getInstance()->removeFavoriteUser(user);
+        dcCtx_.getFavoriteManager()->removeFavoriteUser(user);
     }
     else
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
-        F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(user, hubUrl) + _(" is not favorite user"),
+        F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, WulforUtil::getNicks(dcCtx_, user, hubUrl) + _(" is not favorite user"),
                           Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1453,30 +1520,30 @@ void PrivateMessage::getFileList_client()
 {
     try
     {
-        UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+        UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
         if (user)
-            QueueManager::getInstance()->addList(HintedUser(user, hubUrl), QueueItem::FLAG_CLIENT_VIEW);
+            dcCtx_.getQueueManager()->addList(HintedUser(user, hubUrl), QueueItem::FLAG_CLIENT_VIEW);
     }
     catch (const Exception& e)
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
         F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, e.getError(), Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
 void PrivateMessage::grantSlot_client()
 {
-    UserPtr user = ClientManager::getInstance()->findUser(CID(cid));
+    UserPtr user = dcCtx_.getClientManager()->findUser(CID(cid));
     if (user)
     {
-        UploadManager::getInstance()->reserveSlot(HintedUser(user, hubUrl));
+        dcCtx_.getUploadManager()->reserveSlot(HintedUser(user, hubUrl));
     }
     else
     {
         typedef Func2<PrivateMessage, string, Msg::TypeMsg> F2;
         F2 *func = new F2(this, &PrivateMessage::addStatusMessage_gui, _("Slot granted"), Msg::STATUS);
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
     }
 }
 
@@ -1486,7 +1553,7 @@ void PrivateMessage::on(ClientManagerListener::UserConnected, const UserPtr& aUs
     {
         typedef Func1<PrivateMessage, bool> F1;
         F1 *func = new F1(this, &PrivateMessage::updateOnlineStatus_gui, aUser->isOnline());
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
         offline = false;
     }
 }
@@ -1497,7 +1564,7 @@ void PrivateMessage::on(ClientManagerListener::UserDisconnected, const UserPtr& 
     {
         typedef Func1<PrivateMessage, bool> F1;
         F1 *func = new F1(this, &PrivateMessage::updateOnlineStatus_gui, aUser->isOnline());
-        WulforManager::get()->dispatchGuiFunc(func);
+        wulforManagerInstance()->dispatchGuiFunc(func);
         offline = true;
     }
 }

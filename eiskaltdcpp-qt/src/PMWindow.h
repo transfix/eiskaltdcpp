@@ -6,6 +6,9 @@
 *   (at your option) any later version.                                   *
 *                                                                         *
 ***************************************************************************/
+/*
+ * Copyright (C) 2026 Joe Rivera <transfix@sublevels.net>
+ */
 
 #pragma once
 
@@ -19,6 +22,8 @@ class QObject;
 class QCloseEvent;
 class QMenu;
 class QShowEvent;
+class QLabel;
+class QToolButton;
 
 class PMWindow: public  QWidget,
                 private Ui::UIPrivateMessage,
@@ -54,6 +59,11 @@ public:
     void setHasHighlightMessages(bool h);
     bool hasNewMessages();
 
+    // E2EPM encryption indicators
+    void setE2EPMStatus(bool encrypted, const QString &fingerprint, bool keyChanged = false);
+    bool isE2EPMActive() const { return e2epmActive; }
+    QString e2epmFingerprintStr() const { return e2epmFingerprint; }
+
 public Q_SLOTS:
     void slotActivate();
     void clearChat();
@@ -71,7 +81,7 @@ private Q_SLOTS:
     void slotHideSearchBar();
     void slotFindTextEdited(const QString &);
     void slotFindAll();
-    void slotFindForward() { findText(nullptr); }
+    void slotFindForward() { findText(QTextDocument::FindFlags()); }
     void slotFindBackward(){ findText(QTextDocument::FindBackward); }
     void slotClose();
 
@@ -96,6 +106,13 @@ private:
 
     bool hasMessages;
     bool hasHighlightMessages;
+
+    // E2EPM state
+    bool e2epmActive;
+    bool e2epmKeyWarning;
+    QString e2epmFingerprint;
+    QLabel *labelE2EPMIcon;
+    QLabel *labelE2EPMText;
 
     QString cid;
     QString hubUrl;

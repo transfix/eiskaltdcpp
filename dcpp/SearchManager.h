@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2001-2012 Jacek Sieka, arnetheduck on gmail point com
  * Copyright (C) 2009-2019 EiskaltDC++ developers
+ * Copyright (C) 2026 Joe Rivera <transfix@sublevels.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +24,7 @@
 #include "User.h"
 #include "Thread.h"
 #include "Client.h"
-#include "Singleton.h"
+#include "DCContext.h"
 #include "Semaphore.h"
 #include "SearchManagerListener.h"
 #include "TimerManager.h"
@@ -35,7 +36,7 @@ namespace dcpp {
 class SearchManager;
 class SocketException;
 
-class SearchManager : public Speaker<SearchManagerListener>, public Singleton<SearchManager>, public Thread
+class SearchManager : public Speaker<SearchManagerListener>, public Thread, public ContextAware
 {
 public:
     enum SizeModes {
@@ -80,7 +81,7 @@ public:
     }
 
     void listen();
-    void disconnect() noexcept;
+    void disconnect();
     void onSearchResult(const string& aLine) {
         onData((const uint8_t*)aLine.data(), aLine.length(), Util::emptyString);
     }
@@ -92,13 +93,16 @@ public:
 private:
     class UdpQueue: public Thread {
     public:
-        UdpQueue() : stop(false) {}
-        ~UdpQueue() noexcept { shutdown(); }
+        explicit UdpQueue(DCContext& ctx) : stop(false), ctx_(ctx) {}
+        ~UdpQueue() { shutdown(); }
+
+        [[nodiscard]] DCContext& ctx() const { return ctx_; }
 
         int run();
         void shutdown() {
             stop = true;
             s.signal();
+            join();
         }
         void addResult(const string& buf, const string& ip) {
             {
@@ -115,20 +119,84 @@ private:
         deque<pair<string, string> > resultList;
 
         bool stop;
+        DCContext& ctx_;
     } queue;
 
     CriticalSection cs;
     std::unique_ptr<Socket> socket;
     string port;
     bool stop;
-    friend class Singleton<SearchManager>;
 
-    SearchManager();
+#ifdef WITH_NMDCPB
+public:
+    // ── Stealth search aggregation (NMDCpb) ──
+
+    struct StealthSearchHit {
+        std::string filename;
+        std::string path;
+        uint64_t    size = 0;
+        std::string tth;           // base32
+        bool        isDirectory = false;
+        StringList  peers;         // nicks offering this file
+        uint32_t    bestFreeSlots = 0;
+        uint32_t    bestTotalSlots = 0;
+
+        std::string uniqueKey() const {
+            return tth.empty()
+                ? (path + "/" + filename + ":" + std::to_string(size))
+                : (tth + ":" + std::to_string(size));
+        }
+    };
+
+    struct StealthSearchContext {
+        std::string queryId;
+        std::string searchQuery;
+        std::string searchTTH;
+        uint32_t    peersExpected = 0;
+        StringList  peersResponded;
+        bool        complete = false;
+        time_t      created = 0;
+        std::map<std::string, StealthSearchHit> hits;  // uniqueKey → hit
+    };
+
+    /// Register a new stealth search and get an opaque query-id back.
+    std::string registerStealthSearch(const std::string& query,
+                                      const std::string& tth);
+
+    /// Feed a PbUserQueryResult into the matching context.
+    void onStealthUserQueryResult(const std::string& queryId,
+                                  uint32_t totalMatching,
+                                  uint32_t sweepCount,
+                                  const std::string& error);
+
+    /// Feed a PbPrivateSearchResult into the matching context.
+    void onStealthSearchResult(const std::string& queryId,
+                               const std::string& fromNick,
+                               const std::vector<StealthSearchHit>& results);
+
+    /// Check if a stealth search is complete.
+    bool isStealthSearchComplete(const std::string& queryId);
+
+    /// Get aggregated hits for a completed search. Clears the context.
+    std::vector<StealthSearchHit> takeStealthResults(const std::string& queryId);
+
+    /// Prune old stealth contexts (older than maxAge seconds).
+    void pruneStealthSearches(time_t maxAge = 120);
+
+private:
+    CriticalSection csStealthSearch;
+    std::map<std::string, StealthSearchContext> mStealthSearches;
+    uint32_t mStealthSeqNo = 0;
+#endif // WITH_NMDCPB
+
+public:
+    explicit SearchManager(DCContext& ctx);
+    virtual ~SearchManager();
+
+private:
 
     static std::string normalizeWhitespace(const std::string& aString);
     int run();
-
-    ~SearchManager();
     void onData(const uint8_t* buf, size_t aLen, const string& address);
 
     string getPartsString(const PartsInfo& partsInfo) const;

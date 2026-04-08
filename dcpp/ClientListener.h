@@ -44,29 +44,33 @@ public:
     typedef X<16> SearchFlood;
     typedef X<17> NmdcSearch;
     typedef X<18> AdcSearch;
+    typedef X<19> NmdcPbMessage;
+    typedef X<20> E2EPMStatus;
 
     enum StatusFlags {
         FLAG_NORMAL = 0x00,
         FLAG_IS_SPAM = 0x01
     };
 
-    virtual void on(Connecting, Client*) noexcept { }
-    virtual void on(Connected, Client*) noexcept { }
-    virtual void on(UserUpdated, Client*, const OnlineUser&) noexcept { }
-    virtual void on(UsersUpdated, Client*, const OnlineUserList&) noexcept { }
-    virtual void on(UserRemoved, Client*, const OnlineUser&) noexcept { }
-    virtual void on(Redirect, Client*, const string&) noexcept { }
-    virtual void on(Failed, Client*, const string&) noexcept { }
-    virtual void on(GetPassword, Client*) noexcept { }
-    virtual void on(HubUpdated, Client*) noexcept { }
-    virtual void on(Message, Client*, const ChatMessage&) noexcept { }
-    virtual void on(StatusMessage, Client*, const string&, int = FLAG_NORMAL) noexcept { }
-    virtual void on(HubUserCommand, Client*, int, int, const string&, const string&) noexcept { }
-    virtual void on(HubFull, Client*) noexcept { }
-    virtual void on(NickTaken, Client*) noexcept { }
-    virtual void on(SearchFlood, Client*, const string&) noexcept { }
-    virtual void on(NmdcSearch, Client*, const string&, int, int64_t, int, const string&) noexcept { }
-    virtual void on(AdcSearch, Client*, const AdcCommand&, const CID&) noexcept { }
+    virtual void on(Connecting, Client*) { }
+    virtual void on(Connected, Client*) { }
+    virtual void on(UserUpdated, Client*, const OnlineUser&) { }
+    virtual void on(UsersUpdated, Client*, const OnlineUserList&) { }
+    virtual void on(UserRemoved, Client*, const OnlineUser&) { }
+    virtual void on(Redirect, Client*, const string&) { }
+    virtual void on(Failed, Client*, const string&) { }
+    virtual void on(GetPassword, Client*) { }
+    virtual void on(HubUpdated, Client*) { }
+    virtual void on(Message, Client*, const ChatMessage&) { }
+    virtual void on(StatusMessage, Client*, const string&, int = FLAG_NORMAL) { }
+    virtual void on(HubUserCommand, Client*, int, int, const string&, const string&) { }
+    virtual void on(HubFull, Client*) { }
+    virtual void on(NickTaken, Client*) { }
+    virtual void on(SearchFlood, Client*, const string&) { }
+    virtual void on(NmdcSearch, Client*, const string&, int, int64_t, int, const string&) { }
+    virtual void on(AdcSearch, Client*, const AdcCommand&, const CID&) { }
+    virtual void on(NmdcPbMessage, Client*, const string& /*cmd*/, const string& /*nick*/, const string& /*data*/) { }
+    virtual void on(E2EPMStatus, Client*, const string& /*nick*/, const string& /*fingerprint*/, bool /*keyChanged*/) { }
 };
 
 } // namespace dcpp
