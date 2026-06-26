@@ -511,6 +511,7 @@ jobs:
           -D "CPACK_PACKAGE_FILE_NAME=EiskaltDC++-${version}-win64" `
           -D "CPACK_PACKAGE_VENDOR=EiskaltDC++ developers" `
           -D "CPACK_PACKAGE_DESCRIPTION_SUMMARY=EiskaltDC++ - Direct Connect and ADC client" `
+          -D "CPACK_PACKAGE_DESCRIPTION=A cross-platform program that uses the Direct Connect and ADC protocols." `
           -D "CPACK_RESOURCE_FILE_LICENSE=$PWD/license.txt" `
           -D "CPACK_WIX_UPGRADE_GUID=3865DE45-924A-4472-8C58-B436605A57A0" `
           -D "CPACK_WIX_PRODUCT_GUID=*" `
