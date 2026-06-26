@@ -1102,6 +1102,10 @@ jobs:
         version=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
         export QMAKE="$(command -v qmake6)"
         export OUTPUT="EiskaltDC++-Qt6-${version}-x86_64.AppImage"
+        # The core library installs to usr/lib/x86_64-linux-gnu inside the
+        # AppDir, which is not on the default loader path; expose it so
+        # linuxdeploy's dependency resolver can find libeiskaltdcpp.so.*.
+        export LD_LIBRARY_PATH="$PWD/AppDir/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
         desktop="AppDir/usr/share/applications/eiskaltdcpp-qt.desktop"
         # Pick the largest available app icon
         icon=$(find AppDir/usr/share/icons/hicolor -name 'eiskaltdcpp.png' | sort -t/ -k7 -r | head -1)
