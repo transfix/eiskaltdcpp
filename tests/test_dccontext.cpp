@@ -8,14 +8,13 @@
  */
 
 /*
- * Unit tests for dcpp::DCContext, dcpp::ContextAware, and Singleton bridging.
+ * Unit tests for dcpp::DCContext and dcpp::ContextAware.
  */
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "stdinc.h"
 #include "DCContext.h"
-#include "Singleton.h"
 
 using namespace dcpp;
 
@@ -62,34 +61,4 @@ TEST_CASE("Multiple DCContext instances can coexist", "[DCContext]") {
     DCContext ctx2;
     REQUIRE_FALSE(ctx1.isRunning());
     REQUIRE_FALSE(ctx2.isRunning());
-}
-
-// ── Singleton::newInstance / deleteInstance tests ────────────────────────
-
-// FakeMgr must live in namespace dcpp because MSVC requires explicit
-// specialisations to reside in the same namespace as the primary template.
-namespace dcpp {
-struct FakeMgr : public Singleton<FakeMgr> {
-    int value = 42;
-};
-template<> FakeMgr* Singleton<FakeMgr>::instance = nullptr;
-} // namespace dcpp
-using dcpp::FakeMgr;
-
-TEST_CASE("Singleton newInstance creates and deleteInstance destroys", "[Singleton]") {
-    // Note: we don't call getInstance() before newInstance() because
-    // in Debug builds dcassert(instance) would fire an interactive dialog on MSVC.
-    FakeMgr::newInstance();
-    REQUIRE(FakeMgr::getInstance() != nullptr);
-    REQUIRE(FakeMgr::getInstance()->value == 42);
-    FakeMgr::deleteInstance();
-    // After deleteInstance, instance is nullptr — don't call getInstance()
-    // as dcassert would fire. Just verify deleteInstance didn't crash.
-    SUCCEED();
-}
-
-TEST_CASE("Singleton deleteInstance is safe when already null", "[Singleton]") {
-    // instance is already nullptr from the previous test's deleteInstance
-    FakeMgr::deleteInstance(); // Should not crash
-    SUCCEED();
 }

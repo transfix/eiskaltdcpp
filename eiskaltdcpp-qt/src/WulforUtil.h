@@ -23,7 +23,6 @@
 //#include <QHttpHeader>
 
 #include "dcpp/stdinc.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/ClientManager.h"
 #include "dcpp/User.h"
 #include "dcpp/CID.h"

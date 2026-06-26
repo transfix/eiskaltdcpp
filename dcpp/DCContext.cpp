@@ -41,7 +41,6 @@
 #include "ScriptManager.h"
 #endif
 #include "ShareManager.h"
-#include "Singleton.h"
 #include "ThrottleManager.h"
 #include "TimerManager.h"
 #include "UploadManager.h"
