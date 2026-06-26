@@ -36,7 +36,6 @@ using namespace std;
 #include "dcpp/QueueManager.h"
 #include "dcpp/HashManager.h"
 #include "dcpp/Thread.h"
-#include "dcpp/Singleton.h"
 
 #include "WulforUtil.h"
 #include "WulforSettings.h"

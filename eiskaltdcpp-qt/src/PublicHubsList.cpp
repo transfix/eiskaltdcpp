@@ -17,7 +17,6 @@
 #include <QInputDialog>
 
 #include "dcpp/stdinc.h"
-#include "dcpp/Singleton.h"
 #include "dcpp/FavoriteManager.h"
 #include "dcpp/SettingsManager.h"
 #include "dcpp/DCPlusPlus.h"
