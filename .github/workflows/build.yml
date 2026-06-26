@@ -468,6 +468,64 @@ jobs:
         name: ${{ env.AP }}-windows-x64-qt6-nsis-installer
         path: install-nsis/*.exe
 
+    - name: Install WiX Toolset (Release only)
+      if: matrix.build_type == 'Release'
+      shell: pwsh
+      run: |
+        $maxRetries = 3
+        for ($i = 1; $i -le $maxRetries; $i++) {
+          Write-Host "Attempting to install WiX Toolset (attempt $i/$maxRetries)..."
+          choco install wixtoolset -y --no-progress
+          if ($LASTEXITCODE -eq 0) { break }
+          if ($i -lt $maxRetries) {
+            Write-Host "Chocolatey install failed (exit $LASTEXITCODE), retrying in 30s..."
+            Start-Sleep -Seconds 30
+          } else {
+            throw "Failed to install WiX Toolset after $maxRetries attempts"
+          }
+        }
+        # Locate the WiX v3 bin directory (candle.exe / light.exe) and add to PATH
+        $wixBin = Get-ChildItem 'C:\Program Files (x86)' -Filter 'WiX Toolset v3*' -Directory -ErrorAction SilentlyContinue |
+                  Sort-Object Name -Descending |
+                  Select-Object -First 1 |
+                  ForEach-Object { Join-Path $_.FullName 'bin' }
+        if (-not $wixBin -or -not (Test-Path "$wixBin/candle.exe")) {
+          throw "WiX bin directory with candle.exe not found after install"
+        }
+        echo "$wixBin" >> $env:GITHUB_PATH
+        Write-Host "WiX installed at: $wixBin"
+
+    - name: Build MSI installer (Release only)
+      if: matrix.build_type == 'Release'
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path install-msi
+        $version = (Select-String -Path CMakeLists.txt -Pattern 'set \(APP_VERSION "([^"]+)"' |
+                    ForEach-Object { $_.Matches.Groups[1].Value }) | Select-Object -First 1
+        # WiX requires the license file to have a .txt or .rtf extension;
+        # the repo's COPYING has none, so stage a .txt copy for the dialog.
+        Copy-Item COPYING license.txt -Force
+        cpack -G WIX `
+          -D "CPACK_PACKAGE_NAME=EiskaltDC++" `
+          -D "CPACK_PACKAGE_VERSION=$version" `
+          -D "CPACK_PACKAGE_FILE_NAME=EiskaltDC++-${version}-win64" `
+          -D "CPACK_PACKAGE_VENDOR=EiskaltDC++ developers" `
+          -D "CPACK_PACKAGE_DESCRIPTION_SUMMARY=EiskaltDC++ - Direct Connect and ADC client" `
+          -D "CPACK_RESOURCE_FILE_LICENSE=$PWD/license.txt" `
+          -D "CPACK_WIX_UPGRADE_GUID=3865DE45-924A-4472-8C58-B436605A57A0" `
+          -D "CPACK_WIX_PRODUCT_GUID=*" `
+          -D "CPACK_WIX_PROGRAM_MENU_FOLDER=EiskaltDC++" `
+          -D "CPACK_INSTALLED_DIRECTORIES=$PWD/dist;." `
+          -D "CPACK_PACKAGE_DIRECTORY=$PWD/install-msi" `
+          --verbose
+
+    - name: Upload MSI installer
+      if: matrix.build_type == 'Release'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.AP }}-windows-x64-qt6-msi-installer
+        path: install-msi/*.msi
+
   build-windows-gtk3:
     name: Windows / GTK3 / MSYS2 (${{ matrix.build_type }})
     needs: prepare
@@ -973,6 +1031,95 @@ jobs:
         name: ${{ env.AP }}-linux-x64-gtk3-deb
         path: "*.deb"
 
+  package-linux-qt6-appimage:
+    name: Package Linux Qt6 AppImage
+    runs-on: ubuntu-24.04
+    needs: [prepare, build-linux-qt6]
+    env:
+      AP: ${{ needs.prepare.outputs.artifact_prefix }}
+      # linuxdeploy AppImages need FUSE; the GitHub runners lack libfuse2,
+      # so tell them to self-extract and run instead of mounting.
+      APPIMAGE_EXTRACT_AND_RUN: 1
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          cmake ninja-build g++ gettext file desktop-file-utils \
+          libbz2-dev zlib1g-dev libssl-dev \
+          libminiupnpc-dev libidn2-dev libpcre2-dev \
+          liblua5.4-dev libaspell-dev \
+          qt6-base-dev qt6-tools-dev qt6-tools-dev-tools \
+          qt6-multimedia-dev qt6-declarative-dev \
+          qt6-l10n-tools libqt6svg6-dev \
+          libgl-dev libdbus-1-dev libsqlite3-dev
+
+    - name: Download build tree
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.AP }}-linux-x64-qt6-Release-buildtree
+        path: build/
+
+    - name: Re-run CMake configure (restore install metadata)
+      run: |
+        cmake -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/usr \
+          -DUSE_QT6=ON \
+          -DUSE_GTK3=OFF \
+          -DUSE_JS=ON \
+          -DUSE_QT_QML=OFF \
+          -DUSE_MINIUPNP=ON \
+          -DWITH_DHT=ON \
+          -DUSE_IDN2=ON \
+          -DLUA_SCRIPT=ON \
+          -DPERL_REGEX=ON \
+          -DUSE_ASPELL=ON \
+          -DDBUS_NOTIFY=ON \
+          -DWITH_EMOTICONS=ON \
+          -DWITH_SOUNDS=ON \
+          -DBUILD_TESTS=OFF
+
+    - name: Install into AppDir
+      run: |
+        DESTDIR="$PWD/AppDir" cmake --install build
+        echo "=== AppDir tree (top) ==="
+        find AppDir -maxdepth 4 -type d | sort | head -60
+
+    - name: Fetch linuxdeploy
+      run: |
+        base="https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous"
+        qtbase="https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous"
+        wget -q "${base}/linuxdeploy-x86_64.AppImage"
+        wget -q "${qtbase}/linuxdeploy-plugin-qt-x86_64.AppImage"
+        chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+    - name: Build AppImage
+      run: |
+        version=$(grep 'set (APP_VERSION' CMakeLists.txt | head -1 | sed 's/.*"\(.*\)".*/\1/')
+        export QMAKE="$(command -v qmake6)"
+        export OUTPUT="EiskaltDC++-Qt6-${version}-x86_64.AppImage"
+        desktop="AppDir/usr/share/applications/eiskaltdcpp-qt.desktop"
+        # Pick the largest available app icon
+        icon=$(find AppDir/usr/share/icons/hicolor -name 'eiskaltdcpp.png' | sort -t/ -k7 -r | head -1)
+        echo "Using desktop=$desktop icon=$icon QMAKE=$QMAKE"
+        ./linuxdeploy-x86_64.AppImage \
+          --appdir AppDir \
+          --plugin qt \
+          --output appimage \
+          --desktop-file "$desktop" \
+          --icon-file "$icon"
+        ls -la *.AppImage
+
+    - name: Upload AppImage
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.AP }}-linux-x64-qt6-appimage
+        path: "*.AppImage"
+
   # ─── macOS Packaging (depends on successful builds) ───────────────
 
   package-macos-qt6:
@@ -1180,6 +1327,7 @@ jobs:
       - build-macos-gtk3
       - package-linux-qt6
       - package-linux-gtk3
+      - package-linux-qt6-appimage
       - package-macos-qt6
       - package-macos-gtk3
     env:
@@ -1226,6 +1374,10 @@ jobs:
         find "release-assets/${AP}-linux-x64-gtk3-deb" -name '*.deb' -exec cp {} release/ \; 2>/dev/null || true
         # Copy NSIS installer if present
         find "release-assets/${AP}-windows-x64-qt6-nsis-installer" -name '*.exe' -exec cp {} release/ \; 2>/dev/null || true
+        # Copy WiX MSI installer if present
+        find "release-assets/${AP}-windows-x64-qt6-msi-installer" -name '*.msi' -exec cp {} release/ \; 2>/dev/null || true
+        # Copy Linux AppImage if present
+        find "release-assets/${AP}-linux-x64-qt6-appimage" -name '*.AppImage' -exec cp {} release/ \; 2>/dev/null || true
         # Copy macOS DMG files (Release, arm64)
         for arch in arm64; do
           find "release-assets/${AP}-macos-${arch}-qt6-dmg" -name '*.dmg' -exec cp {} release/ \; 2>/dev/null || true
