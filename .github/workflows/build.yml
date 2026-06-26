@@ -505,6 +505,9 @@ jobs:
         # WiX requires the license file to have a .txt or .rtf extension;
         # the repo's COPYING has none, so stage a .txt copy for the dialog.
         Copy-Item COPYING license.txt -Force
+        # Suppress WiX ICE validation (light -sval): MSI validation needs the
+        # Windows Installer service and frequently fails on CI runners even
+        # when the package itself is valid.
         cpack -G WIX `
           -D "CPACK_PACKAGE_NAME=EiskaltDC++" `
           -D "CPACK_PACKAGE_VERSION=$version" `
@@ -518,9 +521,16 @@ jobs:
           -D "CPACK_WIX_PRODUCT_GUID=*" `
           -D "CPACK_WIX_SIZEOF_VOID_P=8" `
           -D "CPACK_WIX_PROGRAM_MENU_FOLDER=EiskaltDC++" `
+          -D "CPACK_WIX_LIGHT_EXTRA_FLAGS=-sval" `
           -D "CPACK_INSTALLED_DIRECTORIES=$PWD/dist;." `
           -D "CPACK_PACKAGE_DIRECTORY=$PWD/install-msi" `
           --verbose
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "=== cpack failed; dumping wix.log ==="
+          Get-ChildItem install-msi -Recurse -Filter wix.log -ErrorAction SilentlyContinue |
+            ForEach-Object { Write-Host "----- $($_.FullName) -----"; Get-Content $_.FullName }
+          exit 1
+        }
 
     - name: Upload MSI installer
       if: matrix.build_type == 'Release'
