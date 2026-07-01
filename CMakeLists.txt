@@ -466,8 +466,8 @@ set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "EiskaltDC++ - Direct Connect and ADC cli
 set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
 
 if (WIN32)
-    # NSIS installer
-    set (CPACK_GENERATOR "NSIS;ZIP")
+    # NSIS installer, WiX MSI, and a plain ZIP
+    set (CPACK_GENERATOR "NSIS;WIX;ZIP")
     set (CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME_GLOBAL}")
     set (CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME_GLOBAL}")
     set (CPACK_NSIS_INSTALL_ROOT "$PROGRAMFILES64")
@@ -481,6 +481,12 @@ if (WIN32)
     # Desktop shortcut (optional, offered during install)
     set (CPACK_NSIS_MODIFY_PATH OFF)
     set (CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
+    # WiX MSI installer. The upgrade GUID is fixed so future MSIs are
+    # recognised as upgrades of the same product (never regenerate it).
+    set (CPACK_WIX_UPGRADE_GUID "3865DE45-924A-4472-8C58-B436605A57A0")
+    set (CPACK_WIX_PRODUCT_GUID "*") # regenerated per build (new product code)
+    set (CPACK_WIX_PROGRAM_MENU_FOLDER "${PROJECT_NAME_GLOBAL}")
+    set (CPACK_WIX_PROPERTY_ARPURLINFOABOUT "https://github.com/eiskaltdcpp/eiskaltdcpp")
 elseif (APPLE)
     set (CPACK_GENERATOR "DragNDrop")
 else ()

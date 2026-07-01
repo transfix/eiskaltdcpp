@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <emoticons-map name="flylink">
-	<emoticon file="!!!.png"><name text=":!!!:"/></emoticon>
-	<emoticon file="!!.png"><name text=":!!:"/></emoticon>
-	<emoticon file="!.png"><name text=":!:"/></emoticon>
-	<emoticon file="!$$.png"><name text=":???:"/></emoticon>
-	<emoticon file="!$.png"><name text=":?:"/></emoticon>
-	<emoticon file="!Abiohazard.png"><name text=":зараза:"/></emoticon>
-	<emoticon file="!Aradiation.png"><name text=":радиация:"/></emoticon>
-	<emoticon file="!goto.png"><name text=":вперёд:"/></emoticon>
-	<emoticon file="!man.png"><name text=":чувак:"/></emoticon>
-	<emoticon file="!women.png"><name text=":чувиха:"/></emoticon>
-	<emoticon file="!no mat.png"><name text=":цензура:"/></emoticon>
-	<emoticon file="!Stop.png"><name text=":стоп:"/></emoticon>
-	<emoticon file="!toleft.png"><name text=":влево:"/></emoticon>
-	<emoticon file="!toright.png"><name text=":вправо:"/></emoticon>
-	<emoticon file="!Wmoon.png"><name text=":луна:"/></emoticon>
-	<emoticon file="!Wsun.png"><name text=":солнце:"/></emoticon>
-	<emoticon file="!Wrain.png"><name text=":гроза:"/></emoticon>
-	<emoticon file="!XP.png"><name text=":ХР:"/></emoticon>
-	<emoticon file="+-1.png"><name text=":-1:"/></emoticon>
-	<emoticon file="+1.png"><name text=":+1:"/></emoticon>
-	<emoticon file="+Beer.png"><name text=":пыво:"/></emoticon>
-	<emoticon file="+cup.png"><name text=":кубок:"/></emoticon>
-	<emoticon file="+Gift.png"><name text=":подарок:"/></emoticon>
-	<emoticon file="+hrtred.png"><name text=":сердце:"/></emoticon>
+	<emoticon file="fly_b3daba1baa.png"><name text=":!!!:"/></emoticon>
+	<emoticon file="fly_5a17e3e032.png"><name text=":!!:"/></emoticon>
+	<emoticon file="fly_f4295e8dba.png"><name text=":!:"/></emoticon>
+	<emoticon file="fly_65e57a446c.png"><name text=":???:"/></emoticon>
+	<emoticon file="fly_cc2c20f498.png"><name text=":?:"/></emoticon>
+	<emoticon file="fly_0c0c963bc9.png"><name text=":зараза:"/></emoticon>
+	<emoticon file="fly_1a108bab8e.png"><name text=":радиация:"/></emoticon>
+	<emoticon file="fly_8a6d30b860.png"><name text=":вперёд:"/></emoticon>
+	<emoticon file="fly_2dc269bc06.png"><name text=":чувак:"/></emoticon>
+	<emoticon file="fly_23f205839d.png"><name text=":чувиха:"/></emoticon>
+	<emoticon file="fly_da23440795.png"><name text=":цензура:"/></emoticon>
+	<emoticon file="fly_ce3b3a669f.png"><name text=":стоп:"/></emoticon>
+	<emoticon file="fly_734f8e69ff.png"><name text=":влево:"/></emoticon>
+	<emoticon file="fly_de949bfd5f.png"><name text=":вправо:"/></emoticon>
+	<emoticon file="fly_e9ed7f5f30.png"><name text=":луна:"/></emoticon>
+	<emoticon file="fly_33fe85b85f.png"><name text=":солнце:"/></emoticon>
+	<emoticon file="fly_8f76379a79.png"><name text=":гроза:"/></emoticon>
+	<emoticon file="fly_40069cd433.png"><name text=":ХР:"/></emoticon>
+	<emoticon file="fly_02719d4970.png"><name text=":-1:"/></emoticon>
+	<emoticon file="fly_80d51b405c.png"><name text=":+1:"/></emoticon>
+	<emoticon file="fly_20302bc4ea.png"><name text=":пыво:"/></emoticon>
+	<emoticon file="fly_24fbd11be9.png"><name text=":кубок:"/></emoticon>
+	<emoticon file="fly_83e1ebe689.png"><name text=":подарок:"/></emoticon>
+	<emoticon file="fly_2037e48a6b.png"><name text=":сердце:"/></emoticon>
 	<emoticon file="hearts.png"><name text=":сердца:"/></emoticon>
-	<emoticon file="+Kiss.png"><name text=":чмок:"/></emoticon>
-	<emoticon file="+medal.png"><name text=":орден:"/></emoticon>
-	<emoticon file="+PM.png"><name text=":ЛС:"/></emoticon>
-	<emoticon file="+Rose.png"><name text=":+роза:"/></emoticon>
+	<emoticon file="fly_2fa93a74ff.png"><name text=":чмок:"/></emoticon>
+	<emoticon file="fly_ebe429bc3e.png"><name text=":орден:"/></emoticon>
+	<emoticon file="fly_b563cefd36.png"><name text=":ЛС:"/></emoticon>
+	<emoticon file="fly_a66118e5b9.png"><name text=":+роза:"/></emoticon>
 	<emoticon file="0bomb.png"><name text=":бомба:"/></emoticon>
 	<emoticon file="0boyan.png"><name text=":баян:"/></emoticon>
 	<emoticon file="0clock.png"><name text=":часы:"/></emoticon>
@@ -103,7 +103,7 @@
 	<emoticon file="sad7.png"><name text=":\"/></emoticon>
 	<emoticon file="blush3.png"><name text=":нупжлст:"/></emoticon>
 	<emoticon file="pray.png"><name text=":молюсь:"/></emoticon>
-	<emoticon file="cry!.png"><name text=":'("/></emoticon>
+	<emoticon file="fly_708a2286d4.png"><name text=":'("/></emoticon>
 	<emoticon file="cry.png"><name text=":плакалъ:"/></emoticon>
 	<emoticon file="crylol.png"><name text=":рыдаю:"/></emoticon>
 	<emoticon file="bad1.png"><name text=":$"/></emoticon>
@@ -162,7 +162,7 @@
 	<emoticon file="russian.png"><name text=":мужик:"/></emoticon>
 	<emoticon file="download.png"><name text=":качаю:"/></emoticon>
 	<emoticon file="fhyu.png"><name text=":фхуу:"/></emoticon>
-	<emoticon file="big boss.png"><name text=":босс:"/></emoticon>
+	<emoticon file="fly_873c514035.png"><name text=":босс:"/></emoticon>
 	<emoticon file="proud.png"><name text=":гордый:"/></emoticon>
 	<emoticon file="resent.png"><name text=":танувас:"/></emoticon>
 	<emoticon file="rich.png"><name text="$)"/></emoticon>
@@ -182,7 +182,7 @@
 	<emoticon file="girl_princess.png"><name text=":прынцесса:"/></emoticon>
 	<emoticon file="Flirt1.png"><name text=":флирт:"/></emoticon>
 	<emoticon file="Flirt2.png"><name text=";*"/></emoticon>
-	<emoticon file="flirt brunette.png"><name text=":брюнетка:"/></emoticon>
+	<emoticon file="fly_e22829dd2d.png"><name text=":брюнетка:"/></emoticon>
 	<emoticon file="Love1.png"><name text=":лав:"/></emoticon>
 	<emoticon file="crazy_love.png"><name text="8P"/></emoticon>
 	<emoticon file="Love2.png"><name text=":поцелуй:"/></emoticon>
@@ -231,26 +231,26 @@
 	<emoticon file="superman.png"><name text=":супермэн:"/></emoticon>
 	<emoticon file="pilot.png"><name text=":пилот:"/></emoticon>
 	<emoticon file="trinity.png"><name text=":Тринити:"/></emoticon>
-	<emoticon file="gun tommy.png"><name text=":томмиган:"/></emoticon>
+	<emoticon file="fly_77cb0a2420.png"><name text=":томмиган:"/></emoticon>
 	<emoticon file="ment.png"><name text=":мент:"/></emoticon>
 	<emoticon file="doctor.png"><name text=":санитар:"/></emoticon>
 	<emoticon file="comando.png"><name text=":ВДВ:"/></emoticon>
 	<emoticon file="security.png"><name text=":секьюрити:"/></emoticon>
 	<emoticon file="ninja.png"><name text=":нинзя:"/></emoticon>
 	<emoticon file="hide.png"><name text=":спряталсо:"/></emoticon>
-	<emoticon file="au!.png"><name text=":ау:"/></emoticon>
+	<emoticon file="fly_0009e98988.png"><name text=":ау:"/></emoticon>
 	<emoticon file="ku-ku.png"><name text=":куку:"/></emoticon>
 	<emoticon file="search1.png"><name text=":Шэрлок:"/></emoticon>
 	<emoticon file="search2.png"><name text=":ищу:"/></emoticon>
-	<emoticon file="v nosu.png"><name text=":в носу:"/></emoticon>
-	<emoticon file="dnt spk.png"><name text=":Х"/></emoticon>
+	<emoticon file="fly_474adb6423.png"><name text=":в носу:"/></emoticon>
+	<emoticon file="fly_2e4beeb6b1.png"><name text=":Х"/></emoticon>
 	<emoticon file="secret.png"><name text=":секрет:"/></emoticon>
 	<emoticon file="nono.png"><name text=":не шали:"/></emoticon>
 	<emoticon file="recall.png"><name text=":эй:"/></emoticon>
 	<emoticon file="victory.png"><name text=":победа:"/></emoticon>
 	<emoticon file="cool3.png"><name text=":класс:"/></emoticon>
 	<emoticon file="cool4.png"><name text=":кул:"/></emoticon>
-	<emoticon file="yes!.png"><name text=":йес!:"/></emoticon>
+	<emoticon file="fly_7d05c01719.png"><name text=":йес!:"/></emoticon>
 	<emoticon file="yo.png"><name text=":йоу:"/></emoticon>
 	<emoticon file="P_Rose.png"><name text=":розочка:"/></emoticon>
 	<emoticon file="P.png"><name text=":пять:"/></emoticon>
