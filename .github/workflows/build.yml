@@ -1135,7 +1135,8 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.AP }}-linux-x64-qt6-appimage
-        path: "*.AppImage"
+        # Match only our output, not the downloaded linuxdeploy-*.AppImage tools
+        path: "EiskaltDC++-*.AppImage"
 
   # ─── macOS Packaging (depends on successful builds) ───────────────
 
