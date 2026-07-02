@@ -162,11 +162,17 @@ jobs:
       - name: Configure core (SDK, core-only)
         run: |
           HB="$(brew --prefix)"
+          # Homebrew's gcc formula ships a version-suffixed binary (gcc-14,
+          # gcc-15, ...). Pick the highest installed one instead of hardcoding.
+          GCC_BIN="$(brew --prefix gcc)/bin"
+          GCC_CC="$(ls "$GCC_BIN"/gcc-[0-9]* 2>/dev/null | sort -V | tail -1)"
+          GCC_CXX="$(ls "$GCC_BIN"/g++-[0-9]* 2>/dev/null | sort -V | tail -1)"
+          echo "Using GCC: ${GCC_CC} / ${GCC_CXX}"
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DEISKALTDCPP_SDK=ON \
-            -DCMAKE_C_COMPILER="$(brew --prefix gcc)/bin/gcc-14" \
-            -DCMAKE_CXX_COMPILER="$(brew --prefix gcc)/bin/g++-14" \
+            -DCMAKE_C_COMPILER="${GCC_CC}" \
+            -DCMAKE_CXX_COMPILER="${GCC_CXX}" \
             -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)" \
             -DCMAKE_PREFIX_PATH="$(brew --prefix openssl@3);$(brew --prefix bzip2);$(brew --prefix pcre2);$(brew --prefix miniupnpc);$(brew --prefix libidn2);$(brew --prefix lua);$(brew --prefix gettext)" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
@@ -333,6 +339,9 @@ jobs:
     name: Attach SDKs to release
     runs-on: ubuntu-latest
     needs: [sdk-linux, sdk-macos, sdk-windows]
+    # Run as long as the pipeline was not cancelled, so the SDKs that did
+    # build still get attached even if one platform failed.
+    if: ${{ !cancelled() }}
     steps:
       - name: Download SDK archives
         uses: actions/download-artifact@v4
@@ -342,7 +351,7 @@ jobs:
           merge-multiple: true
 
       - name: List archives
-        run: ls -la sdks/
+        run: ls -la sdks/ || true
 
       - name: Resolve release tag
         id: tag
