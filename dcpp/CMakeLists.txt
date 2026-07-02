@@ -55,6 +55,15 @@ if (NOT LINK)
     set (LINK SHARED)
 endif (NOT LINK)
 
+# For language-binding SDKs, always build a single self-contained shared
+# library.  This overrides the STATIC default on Apple/Windows so that the
+# DHT, extra and system dependencies are linked into one relocatable
+# library that a Python/SWIG module can link against and bundle, avoiding
+# per-platform static transitivity handling in the consumer.
+if (EISKALTDCPP_SDK)
+    set (LINK SHARED)
+endif (EISKALTDCPP_SDK)
+
 if (APPLE)
     set (APPLE_LIBS "iconv")
 endif (APPLE)
@@ -154,10 +163,24 @@ set_target_properties(dcpp PROPERTIES
                       SOVERSION ${SO_VERSION}
                       OUTPUT_NAME "eiskaltdcpp")
 
+if (EISKALTDCPP_SDK AND WIN32)
+    # No dllexport annotations exist in the sources, so let CMake generate an
+    # import library that exports every symbol from the shared core.
+    set_target_properties(dcpp PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif ()
+
 if (APPLE)
-    set (LIBDIR ${PROJECT_NAME_GLOBAL}.app/Contents/Frameworks)
-    set_target_properties(dcpp PROPERTIES BUILD_WITH_INSTALL_RPATH 1
-                          INSTALL_NAME_DIR "@executable_path/../Frameworks")
+    if (EISKALTDCPP_SDK)
+        # A relocatable install name so the wheel-repair tools (delocate) can
+        # bundle and re-point the dylib relative to the Python module.
+        set_target_properties(dcpp PROPERTIES
+                              BUILD_WITH_INSTALL_RPATH 1
+                              INSTALL_NAME_DIR "@rpath")
+    else ()
+        set (LIBDIR ${PROJECT_NAME_GLOBAL}.app/Contents/Frameworks)
+        set_target_properties(dcpp PROPERTIES BUILD_WITH_INSTALL_RPATH 1
+                              INSTALL_NAME_DIR "@executable_path/../Frameworks")
+    endif ()
 endif(APPLE)
 
 if (LINK STREQUAL SHARED)
