@@ -1069,6 +1069,7 @@ jobs:
           libbz2-dev zlib1g-dev libssl-dev \
           libminiupnpc-dev libidn2-dev libpcre2-dev \
           liblua5.4-dev libaspell-dev \
+          protobuf-compiler libprotobuf-dev \
           qt6-base-dev qt6-tools-dev qt6-tools-dev-tools \
           qt6-multimedia-dev qt6-declarative-dev \
           qt6-l10n-tools libqt6svg6-dev \
