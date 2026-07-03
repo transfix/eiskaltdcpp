@@ -31,6 +31,7 @@
 #include "RelayConnection.h"
 #include "SegmentCoordinator.h"
 #include "MediaManager.h"
+#include "ChannelManager.h"
 #include <google/protobuf/arena.h>
 #endif
 
@@ -138,6 +139,10 @@ public:
     void sendPbEnvelope(const string& toNick, const string& serializedEnvelope);
     // Get relay manager for this hub
     RelayManager& getRelayManager() { return relayManager; }
+    // Get channel manager for this hub (listener registration + high-level API)
+    ChannelManager& getChannelManager() { return channelManager; }
+    // Send a channel action / message (serialized PbEnvelope) to the hub
+    void sendChannelEnvelope(const string& serializedEnvelope);
 #endif
 
     virtual void password(const string& aPass) { send("$MyPass " + fromUtf8(aPass) + "|"); }
@@ -185,6 +190,7 @@ private:
 #ifdef WITH_NMDCPB
     RelayManager relayManager;
     MediaManager mediaManager;
+    ChannelManager channelManager;
     // Pre-allocated serialization buffer (avoids repeated heap alloc on hot path)
     string pbSerializeBuf;
     // Active segmented downloads (downloadId → coordinator)

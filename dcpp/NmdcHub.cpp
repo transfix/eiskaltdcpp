@@ -1319,6 +1319,13 @@ void NmdcHub::sendPbEnvelope(const string& toNick, const string& serializedEnvel
     }
 }
 
+void NmdcHub::sendChannelEnvelope(const string& serializedEnvelope) {
+    // Channel actions/messages are HUB-routed: the hub inspects the envelope
+    // (route == HUB) and enforces permissions / fans out to members.
+    // Wire framing is the same broadcast $PB form.
+    sendPbEnvelope(Util::emptyString, serializedEnvelope);
+}
+
 void NmdcHub::sendPrivateSearch(const string& targetNick, const string& searchId,
                                 const string& query, const string& tth,
                                 int fileType, uint64_t minSize, uint64_t maxSize,
@@ -2029,6 +2036,16 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
         // Notification that media was deleted
         dcdebug("NmdcHub: media_delete notification: %s\n",
                 env->media_delete().media_id().c_str());
+
+    // ------------------------------------------------------------------
+    // Channels — list / created / member updates / history / invites /
+    // encrypted messages / sender-key rotation
+    // ------------------------------------------------------------------
+    } else if(env->has_channel_list() || env->has_channel_created() ||
+              env->has_channel_member_update() || env->has_channel_history() ||
+              env->has_channel_encrypted() || env->has_channel_invite() ||
+              env->has_sender_key_rotation()) {
+        channelManager.handleEnvelope(*env);
     }
 }
 

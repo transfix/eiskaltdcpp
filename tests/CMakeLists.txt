@@ -79,6 +79,7 @@ if (WITH_NMDCPB)
         test_nmdcpb_proto.cpp
         test_segment_coordinator.cpp
         test_media_manager.cpp
+        test_channel_manager.cpp
     )
 endif ()
 
