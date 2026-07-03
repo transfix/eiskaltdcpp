@@ -80,6 +80,7 @@ if (WITH_NMDCPB)
         test_segment_coordinator.cpp
         test_media_manager.cpp
         test_channel_manager.cpp
+        test_call_manager.cpp
     )
 endif ()
 

@@ -1326,6 +1326,12 @@ void NmdcHub::sendChannelEnvelope(const string& serializedEnvelope) {
     sendPbEnvelope(Util::emptyString, serializedEnvelope);
 }
 
+void NmdcHub::sendCallEnvelope(const string& serializedEnvelope) {
+    // Call signaling is HUB-routed: the hub validates the sender, enforces
+    // call permissions, and forwards to the target participant(s).
+    sendPbEnvelope(Util::emptyString, serializedEnvelope);
+}
+
 void NmdcHub::sendPrivateSearch(const string& targetNick, const string& searchId,
                                 const string& query, const string& tth,
                                 int fileType, uint64_t minSize, uint64_t maxSize,
@@ -2046,6 +2052,19 @@ void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
               env->has_channel_encrypted() || env->has_channel_invite() ||
               env->has_sender_key_rotation()) {
         channelManager.handleEnvelope(*env);
+
+    // ------------------------------------------------------------------
+    // Calls — offer / answer / candidate / end / media-control signaling
+    // ------------------------------------------------------------------
+    } else if(env->has_call_offer() || env->has_call_answer() ||
+              env->has_call_candidate() || env->has_call_end() ||
+              env->has_call_media_control()) {
+        // The reliable sender identity is the one parsed from the $PB frame;
+        // ensure the envelope carries it before the manager reads from_nick().
+        if(env->from_nick().empty()) {
+            env->set_from_nick(fromNick);
+        }
+        callManager.handleEnvelope(*env);
     }
 }
 
