@@ -20,7 +20,6 @@
 #ifdef WITH_NMDCPB
 
 #include "CriticalSection.h"
-#include "Singleton.h"
 #include "Util.h"
 #include "proto/nmdcpb.pb.h"
 
