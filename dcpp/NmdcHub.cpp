@@ -28,6 +28,7 @@
 #include "CryptoManager.h"
 #include "format.h"
 #include "SearchManager.h"
+#include "SearchResult.h"
 #include "ShareManager.h"
 #include "Socket.h"
 #include "StringTokenizer.h"
@@ -35,6 +36,16 @@
 #include "UploadManager.h"
 #include "UserCommand.h"
 #include "version.h"
+
+#ifdef WITH_NMDCPB
+#include "E2EPMManager.h"
+#include "HashManager.h"
+#include "RelayConnection.h"
+#include "NmdcPbCrypto.h"
+#include "SegmentCoordinator.h"
+#include "proto/nmdcpb.pb.h"
+#include "Encoder.h"
+#endif
 
 namespace dcpp {
 
@@ -49,6 +60,9 @@ NmdcHub::~NmdcHub() {
     clearUsers();
 }
 
+bool NmdcHub::isRelayOnly() const {
+    return CTX_BOOLSETTING(RELAY_ONLY_MODE) && hasHubRelaySupport() && hasNmdcPbSupport();
+}
 
 #define checkstate() if(state != STATE_NORMAL) return
 
@@ -58,6 +72,25 @@ void NmdcHub::connect(const OnlineUser& aUser, const string&) {
     fprintf(stderr, "[NmdcHub::connect] nick=%s active=%d mode=%d\n",
             aUser.getIdentity().getNick().c_str(), (int)isActive(),
             ctx().getClientManager()->getMode(getHubUrl()));
+#ifdef WITH_NMDCPB
+    if(isRelayOnly()) {
+        auto& relayMgr = getRelayManager();
+        auto result = relayMgr.initiateRelay(getHubUrl(), aUser.getIdentity().getNick());
+        nmdcpb::PbEnvelope env;
+        env.set_route(nmdcpb::PbEnvelope::DIRECT);
+        env.set_from_nick(getMyNick());
+        env.set_to_nick(aUser.getIdentity().getNick());
+        auto* rr = env.mutable_relay_request();
+        rr->set_target_nick(aUser.getIdentity().getNick());
+        rr->set_token(result.token);
+        rr->set_public_key(result.publicKey.data(), result.publicKey.size());
+        rr->set_purpose(nmdcpb::PbRelayRequest::FILE_TRANSFER);
+        std::string serialized;
+        env.SerializeToString(&serialized);
+        sendPbEnvelope(aUser.getIdentity().getNick(), serialized);
+        return;
+    }
+#endif
     if(isActive()) {
         connectToMe(aUser);
     } else {
@@ -448,6 +481,12 @@ void NmdcHub::onLine(const string& aLine) {
             return;
         }
         fprintf(stderr, "[NmdcHub::$ConnectToMe] raw param=%s\n", param.c_str());
+#ifdef WITH_NMDCPB
+        if(isRelayOnly()) {
+            dcdebug("NmdcHub: incoming $ConnectToMe ignored in relay-only mode\n");
+            return; // Never accept direct TCP connections in relay-only mode
+        }
+#endif
         string::size_type i = param.find(' ');
         string::size_type j;
         if( (i == string::npos) || ((i + 1) >= param.size()) ) {
@@ -519,6 +558,30 @@ void NmdcHub::onLine(const string& aLine) {
         if(state != STATE_NORMAL) {
             return;
         }
+#ifdef WITH_NMDCPB
+        if(isRelayOnly()) {
+            // In relay-only mode, respond to RCTM with a relay request instead of CTM
+            string::size_type j = param.find(' ');
+            if(j == string::npos) return;
+            OnlineUser* u = findUser(param.substr(0, j));
+            if(!u) return;
+            auto& relayMgr = getRelayManager();
+            auto result = relayMgr.initiateRelay(getHubUrl(), u->getIdentity().getNick());
+            nmdcpb::PbEnvelope env;
+            env.set_route(nmdcpb::PbEnvelope::DIRECT);
+            env.set_from_nick(getMyNick());
+            env.set_to_nick(u->getIdentity().getNick());
+            auto* rr = env.mutable_relay_request();
+            rr->set_target_nick(u->getIdentity().getNick());
+            rr->set_token(result.token);
+            rr->set_public_key(result.publicKey.data(), result.publicKey.size());
+            rr->set_purpose(nmdcpb::PbRelayRequest::FILE_TRANSFER);
+            std::string serialized;
+            env.SerializeToString(&serialized);
+            sendPbEnvelope(u->getIdentity().getNick(), serialized);
+            return;
+        }
+#endif
 
         string::size_type j = param.find(' ');
         if(j == string::npos) {
@@ -548,7 +611,25 @@ void NmdcHub::onLine(const string& aLine) {
                 // Notify the user that we're passive too...
                 revConnectToMe(*u);
                 updated(*u);
-
+#ifdef WITH_NMDCPB
+            } else if (hasHubRelaySupport()) {
+                // Both sides passive, hub supports relay — initiate relay
+                auto& relayMgr = getRelayManager();
+                auto result = relayMgr.initiateRelay(getHubUrl(), u->getIdentity().getNick());
+                // Build PbRelayRequest and send via $PBR
+                nmdcpb::PbEnvelope env;
+                env.set_route(nmdcpb::PbEnvelope::DIRECT);
+                env.set_from_nick(getMyNick());
+                env.set_to_nick(u->getIdentity().getNick());
+                auto* rr = env.mutable_relay_request();
+                rr->set_target_nick(u->getIdentity().getNick());
+                rr->set_token(result.token);
+                rr->set_public_key(result.publicKey.data(), result.publicKey.size());
+                rr->set_purpose(nmdcpb::PbRelayRequest::FILE_TRANSFER);
+                std::string serialized;
+                env.SerializeToString(&serialized);
+                sendPbEnvelope(u->getIdentity().getNick(), serialized);
+#endif
                 return;
             }
         }
@@ -583,6 +664,12 @@ void NmdcHub::onLine(const string& aLine) {
                 supportFlags |= SUPPORTS_NOGETINFO;
             } else if(i == "UserIP2") {
                 supportFlags |= SUPPORTS_USERIP2;
+            } else if(i == "NMDCpb") {
+                supportFlags |= SUPPORTS_NMDCPB;
+            } else if(i == "HubRelay") {
+                supportFlags |= SUPPORTS_HUBRELAY;
+            } else if(i == "RelayOnly") {
+                supportFlags |= SUPPORTS_RELAYONLY;
             }
         }
     } else if(cmd == "$UserCommand") {
@@ -646,6 +733,12 @@ void NmdcHub::onLine(const string& aLine) {
                     "TTHSearch",
                     "ZPipe0"
                 };
+
+                feat.push_back("NMDCpb");
+                feat.push_back("HubRelay");
+
+                if(CTX_BOOLSETTING(RELAY_ONLY_MODE))
+                    feat.push_back("RelayOnly");
 
                 if(ctx().getCryptoManager()->TLSOk())
                     feat.push_back("TLS");
@@ -714,6 +807,10 @@ void NmdcHub::onLine(const string& aLine) {
                 OnlineUser* u = findUser(it.substr(0, j));
 
                 if(!u)
+                    continue;
+
+                // In relay-only mode, only store our own IP (skip other users)
+                if(isRelayOnly() && u->getUser() != getMyIdentity().getUser())
                     continue;
 
                 u->getIdentity().setIp(it.substr(j+1));
@@ -853,6 +950,41 @@ void NmdcHub::onLine(const string& aLine) {
         } catch (const Exception& e) {
             dcdebug("NmdcHub::onLine %s failed with error: %s\n", cmd.c_str(), e.getError().c_str());
         }
+    } else if(cmd == "$PB" || cmd == "$PBB" || cmd == "$PBR") {
+        // NMDCpb protobuf message
+        if(!param.empty()) {
+            if(cmd == "$PBR") {
+                // $PBR <to> <from> <base64data> — 3-field split
+                string::size_type j1 = param.find(' ');
+                if(j1 != string::npos) {
+                    string::size_type j2 = param.find(' ', j1 + 1);
+                    if(j2 != string::npos) {
+                        string toNick = toUtf8(param.substr(0, j1));
+                        string fromNick = toUtf8(param.substr(j1 + 1, j2 - j1 - 1));
+                        string data = param.substr(j2 + 1);
+                        // For $PBR, pass fromNick as nick, data as data
+                        fire(ClientListener::NmdcPbMessage(), this, cmd, fromNick, data);
+#ifdef WITH_NMDCPB
+                        handlePbCommand(cmd, param);
+#endif
+                    }
+                }
+            } else {
+                // $PB / $PBB: <nick> <base64data>
+                string nick, data;
+                string::size_type j = param.find(' ');
+                if(j != string::npos) {
+                    nick = toUtf8(param.substr(0, j));
+                    data = param.substr(j + 1);
+                } else {
+                    nick = toUtf8(param);
+                }
+                fire(ClientListener::NmdcPbMessage(), this, cmd, nick, data);
+#ifdef WITH_NMDCPB
+                handlePbCommand(cmd, param);
+#endif
+            }
+        }
     } else {
         dcassert(cmd[0] == '$');
         dcdebug("NmdcHub::onLine Unknown command %s\n", aLine.c_str());
@@ -871,6 +1003,12 @@ string NmdcHub::checkNick(const string& aNick) {
 
 void NmdcHub::connectToMe(const OnlineUser& aUser) {
     checkstate();
+#ifdef WITH_NMDCPB
+    if(isRelayOnly()) {
+        dcdebug("NmdcHub::connectToMe blocked in relay-only mode for %s\n", aUser.getIdentity().getNick().c_str());
+        return; // Never send our IP in $ConnectToMe
+    }
+#endif
     dcdebug("NmdcHub::connectToMe %s\n", aUser.getIdentity().getNick().c_str());
     string nick = fromUtf8(aUser.getIdentity().getNick());
     ctx().getConnectionManager()->nmdcExpect(nick, getMyNick(), getHubUrl());
@@ -883,6 +1021,12 @@ void NmdcHub::connectToMe(const OnlineUser& aUser) {
 
 void NmdcHub::revConnectToMe(const OnlineUser& aUser) {
     checkstate();
+#ifdef WITH_NMDCPB
+    if(isRelayOnly()) {
+        dcdebug("NmdcHub::revConnectToMe blocked in relay-only mode for %s\n", aUser.getIdentity().getNick().c_str());
+        return; // Never send $RevConnectToMe which could trigger CTM with our IP
+    }
+#endif
     dcdebug("NmdcHub::revConnectToMe %s\n", aUser.getIdentity().getNick().c_str());
     string msg = "$RevConnectToMe " + fromUtf8(getMyNick()) + " " + fromUtf8(aUser.getIdentity().getNick()) + "|";
     fprintf(stderr, "[NmdcHub::revConnectToMe] sending: %s\n", msg.c_str());
@@ -904,6 +1048,8 @@ void NmdcHub::myInfo(bool alwaysSend) {
     char modeChar = '?';
     if(CTX_SETTING(OUTGOING_CONNECTIONS) == SettingsManager::OUTGOING_SOCKS5)
         modeChar = '5';
+    else if(isRelayOnly())
+        modeChar = 'R';
     else if(isActive())
         modeChar = 'A';
     else
@@ -960,7 +1106,7 @@ void NmdcHub::search(int aSizeType, int64_t aSize, int aFileType, const string& 
         tmp[i] = '$';
     }
     string tmp2;
-    if(isActive() && !CTX_BOOLSETTING(SEARCH_PASSIVE)) {
+    if(isActive() && !CTX_BOOLSETTING(SEARCH_PASSIVE) && !isRelayOnly()) {
         tmp2 = getLocalIp() + ':' + ctx().getSearchManager()->getPort();
     } else {
         tmp2 = "Hub:" + fromUtf8(getMyNick());
@@ -1133,6 +1279,821 @@ void NmdcHub::on(Second, uint64_t aTick) {
         send("|", 1);
     }
 }
+
+void NmdcHub::pbBroadcast(const string& base64data) {
+    checkstate();
+
+    if(!(supportFlags & SUPPORTS_NMDCPB)) {
+        dcdebug("NmdcHub::pbBroadcast hub does not support NMDCpb\n");
+        return;
+    }
+
+    send("$PB " + fromUtf8(getMyNick()) + " " + base64data + "|");
+}
+
+void NmdcHub::pbRouted(const string& toNick, const string& base64data) {
+    checkstate();
+
+    if(!(supportFlags & SUPPORTS_NMDCPB)) {
+        dcdebug("NmdcHub::pbRouted hub does not support NMDCpb\n");
+        return;
+    }
+
+    send("$PBR " + fromUtf8(toNick) + " " + fromUtf8(getMyNick()) + " " + base64data + "|");
+}
+
+#ifdef WITH_NMDCPB
+
+void NmdcHub::sendPbEnvelope(const string& toNick, const string& serializedEnvelope) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return;
+
+    // Base64url encode the serialized envelope
+    string encoded = Encoder::toBase64(serializedEnvelope);
+    if(toNick.empty()) {
+        // Broadcast
+        send("$PB " + fromUtf8(getMyNick()) + " " + encoded + "|");
+    } else {
+        // Routed
+        send("$PBR " + fromUtf8(toNick) + " " + fromUtf8(getMyNick()) + " " + encoded + "|");
+    }
+}
+
+void NmdcHub::sendPrivateSearch(const string& targetNick, const string& searchId,
+                                const string& query, const string& tth,
+                                int fileType, uint64_t minSize, uint64_t maxSize,
+                                uint32_t maxResults, const StringList& extensions) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return;
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick(getMyNick());
+    env.set_to_nick(targetNick);
+    auto* ps = env.mutable_private_search();
+    ps->set_search_id(searchId);
+    if(!tth.empty()) {
+        ps->set_tth(tth);
+        ps->set_file_type(nmdcpb::PbPrivateSearch::TTH);
+    } else {
+        ps->set_query(query);
+        ps->set_file_type(static_cast<nmdcpb::PbPrivateSearch::FileType>(fileType));
+    }
+    ps->set_min_size(minSize);
+    ps->set_max_size(maxSize);
+    if(maxResults == 0) maxResults = 10;
+    if(maxResults > 100) maxResults = 100;
+    ps->set_max_results(maxResults);
+    for(auto& ext : extensions) {
+        ps->add_extensions(ext);
+    }
+
+    string serialized;
+    env.SerializeToString(&serialized);
+    sendPbEnvelope(targetNick, serialized);
+}
+
+void NmdcHub::sendRelayResume(const string& toNick, const string& token,
+                               uint64_t resumeOffset,
+                               const vector<uint8_t>& partialSha256) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return;
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick(getMyNick());
+    env.set_to_nick(toNick);
+    auto* rr = env.mutable_relay_resume();
+    rr->set_token(token);
+    rr->set_resume_offset(resumeOffset);
+    if(!partialSha256.empty()) {
+        rr->set_partial_sha256(partialSha256.data(), partialSha256.size());
+    }
+
+    // Generate new ephemeral key for forward secrecy
+    auto kp = generateX25519KeyPair();
+    // Store our key in the relay session
+    auto* session = relayManager.findByToken(token);
+    if(session) {
+        memcpy(session->localPrivKey, kp.privateKey, X25519_KEY_SIZE);
+        memcpy(session->localPubKey, kp.publicKey, X25519_KEY_SIZE);
+    }
+
+    string serialized;
+    env.SerializeToString(&serialized);
+    sendPbEnvelope(toNick, serialized);
+}
+
+void NmdcHub::sendSegmentRequest(const string& toNick, const string& fileTth,
+                                  uint64_t fileSize, uint64_t segOffset,
+                                  uint64_t segLength, const string& requestId) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return;
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick(getMyNick());
+    env.set_to_nick(toNick);
+    auto* sr = env.mutable_segment_request();
+    sr->set_file_tth(fileTth);
+    sr->set_file_size(fileSize);
+    sr->set_segment_offset(segOffset);
+    sr->set_segment_length(segLength);
+    sr->set_request_id(requestId);
+
+    string serialized;
+    env.SerializeToString(&serialized);
+    sendPbEnvelope(toNick, serialized);
+}
+
+void NmdcHub::sendUserQuery(const string& queryId, const string& featureFilter,
+                             uint64_t minShareSize, uint32_t maxResults,
+                             bool sweep, const string& sweepQuery,
+                             const string& sweepTth, int sweepFileType) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return;
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::HUB);
+    env.set_from_nick(getMyNick());
+    auto* uq = env.mutable_user_query();
+    uq->set_query_id(queryId);
+    uq->set_feature_filter(featureFilter);
+    uq->set_min_share_size(minShareSize);
+    if(maxResults == 0) maxResults = 50;
+    uq->set_max_results(maxResults);
+    uq->set_sweep(sweep);
+
+    if(sweep && (!sweepQuery.empty() || !sweepTth.empty())) {
+        auto* ps = uq->mutable_search();
+        ps->set_search_id(queryId + "-sweep");
+        if(!sweepTth.empty()) {
+            ps->set_tth(sweepTth);
+            ps->set_file_type(nmdcpb::PbPrivateSearch::TTH);
+        } else {
+            ps->set_query(sweepQuery);
+            ps->set_file_type(static_cast<nmdcpb::PbPrivateSearch::FileType>(sweepFileType));
+        }
+    }
+
+    string serialized;
+    env.SerializeToString(&serialized);
+    sendPbEnvelope("", serialized);  // Empty toNick → HUB route → $PB broadcast to hub
+}
+
+string NmdcHub::stealthSearch(const string& query, const string& tth,
+                               uint32_t maxPeers, uint64_t minShareSize) {
+    if(state != STATE_NORMAL) return string();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return string();
+
+    // Rate limit: at most one stealth search per 2 seconds
+    static time_t lastStealthSearch = 0;
+    time_t now = time(nullptr);
+    if(now - lastStealthSearch < 2) return string();
+    lastStealthSearch = now;
+
+    // Prune old contexts
+    ctx().getSearchManager()->pruneStealthSearches(120);
+
+    // Register aggregation context in SearchManager
+    auto queryId = ctx().getSearchManager()->registerStealthSearch(query, tth);
+
+    // Fire PbUserQuery with sweep = true
+    sendUserQuery(queryId,
+                  "NMDCpb",       // feature filter
+                  minShareSize,
+                  maxPeers,
+                  true,           // sweep
+                  query,
+                  tth);
+
+    return queryId;
+}
+
+string NmdcHub::startSegmentedDownload(const string& fileTTH, uint64_t fileSize,
+                                        const vector<string>& peers,
+                                        const string& downloadDir,
+                                        uint64_t segmentSize) {
+    if(state != STATE_NORMAL) return string();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) return string();
+    if(peers.empty() || fileSize == 0) return string();
+
+    Lock l(cs);
+    // Generate a unique download ID
+    string downloadId = "seg_" + fileTTH.substr(0, 8) + "_" + Util::toString(time(nullptr));
+
+    auto coord = make_unique<SegmentCoordinator>(
+        fileTTH, fileSize, peers, segmentSize,
+        downloadDir.empty() ? "/tmp" : downloadDir);
+
+    // Try to load the TTH tree for per-segment verification
+    auto* hm = ctx().getHashManager();
+    if(hm) {
+        TigerTree tt;
+        if(hm->getTree(TTHValue(fileTTH), tt)) {
+            coord->setTTHTree(tt);
+            dcdebug("SegmentedDownload %s: loaded TTH tree (%zu leaves)\n",
+                     downloadId.c_str(), tt.getLeaves().size());
+        }
+    }
+
+    // Plan segments
+    coord->planSegments();
+
+    // Set up callbacks
+    coord->onSegmentComplete = [this, downloadId](const RelaySegment& seg) {
+        dcdebug("SegmentedDownload %s: segment %u complete\n",
+                 downloadId.c_str(), seg.index);
+    };
+
+    coord->onDownloadComplete = [this, downloadId](const SegmentedDownloadInfo& info) {
+        dcdebug("SegmentedDownload %s: all %u segments complete! %.1f KB\n",
+                 downloadId.c_str(), info.segmentCount,
+                 static_cast<double>(info.fileSize) / 1024.0);
+        // Fire listener event
+        fire(ClientListener::StatusMessage(), this,
+             "Segmented download complete: " + info.fileTTH);
+    };
+
+    coord->onSegmentFailed = [this, downloadId](const RelaySegment& seg) {
+        dcdebug("SegmentedDownload %s: segment %u FAILED after %u retries\n",
+                 downloadId.c_str(), seg.index, seg.retries);
+    };
+
+    // Initiate relay sessions for PENDING segments (up to concurrency limits)
+    auto pending = coord->pendingSegments();
+    for(auto* seg : pending) {
+        if(!coord->canAssignPeer(seg->peerNick))
+            continue;
+
+        // Request relay session for this segment
+        auto result = relayManager.initiateRelay(getHubUrl(), seg->peerNick);
+
+        nmdcpb::PbEnvelope env;
+        env.set_route(nmdcpb::PbEnvelope::DIRECT);
+        env.set_from_nick(getMyNick());
+        env.set_to_nick(seg->peerNick);
+        auto* rr = env.mutable_relay_request();
+        rr->set_target_nick(seg->peerNick);
+        rr->set_token(result.token);
+        rr->set_public_key(result.publicKey.data(), result.publicKey.size());
+        rr->set_purpose(nmdcpb::PbRelayRequest::FILE_TRANSFER);
+
+        pbSerializeBuf.clear();
+        env.SerializeToString(&pbSerializeBuf);
+        sendPbEnvelope(seg->peerNick, pbSerializeBuf);
+
+        // We don't have relayId yet — it comes in the ack.
+        // Mark as ASSIGNED with relayId=0 for now.
+        coord->assignSegment(seg->index, seg->peerNick, 0);
+    }
+
+    segmentedDownloads[downloadId] = std::move(coord);
+    dcdebug("SegmentedDownload %s: started with %zu peers, %zu segments\n",
+             downloadId.c_str(), peers.size(), pending.size());
+    return downloadId;
+}
+
+void NmdcHub::cancelSegmentedDownload(const string& downloadId) {
+    Lock l(cs);
+    auto it = segmentedDownloads.find(downloadId);
+    if(it == segmentedDownloads.end()) return;
+
+    // Close all relay sessions associated with this download
+    for(auto& seg : it->second->info().segments) {
+        if(seg.relayId > 0)
+            relayToDownload.erase(seg.relayId);
+    }
+
+    segmentedDownloads.erase(it);
+}
+
+const SegmentedDownloadInfo* NmdcHub::getSegmentedDownloadInfo(const string& downloadId) const {
+    Lock l(cs);
+    auto it = segmentedDownloads.find(downloadId);
+    if(it == segmentedDownloads.end()) return nullptr;
+    return &it->second->info();
+}
+
+void NmdcHub::sendEncryptedPM(const string& targetNick, const string& message, bool thirdPerson) {
+    checkstate();
+    if(!(supportFlags & SUPPORTS_NMDCPB)) {
+        // Fallback to legacy PM
+        privateMessage(targetNick, message);
+        return;
+    }
+
+    auto* mgr = ctx().getE2EPMManager();
+    if(!mgr) return;
+    if(!mgr->isEstablished(getHubUrl(), targetNick)) {
+        if(!mgr->hasSession(getHubUrl(), targetNick)) {
+            // Initiate key exchange
+            auto ourPubKey = mgr->initiateKeyExchange(getHubUrl(), targetNick);
+            if(!ourPubKey.empty()) {
+                // Build PbPMKeyExchange envelope
+                nmdcpb::PbEnvelope env;
+                env.set_route(nmdcpb::PbEnvelope::DIRECT);
+                env.set_from_nick(getMyNick());
+                env.set_to_nick(targetNick);
+                auto* kex = env.mutable_pm_key_exchange();
+                kex->set_target_nick(targetNick);
+                kex->set_public_key(ourPubKey.data(), ourPubKey.size());
+                kex->set_protocol_version(1);
+
+                string serialized;
+                env.SerializeToString(&serialized);
+                sendPbEnvelope(targetNick, serialized);
+            }
+        }
+        // Queue message to send after session establishment
+        mgr->queuePendingMessage(getHubUrl(), targetNick, message, thirdPerson);
+        return;
+    }
+
+    // Session established — encrypt and send
+    auto encrypted = mgr->encryptPM(getHubUrl(), targetNick, message, thirdPerson);
+    if(encrypted.ciphertext.empty()) {
+        // Fallback
+        privateMessage(targetNick, message);
+        return;
+    }
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::DIRECT);
+    env.set_from_nick(getMyNick());
+    env.set_to_nick(targetNick);
+    auto* epm = env.mutable_encrypted_pm();
+    epm->set_target_nick(targetNick);
+    epm->set_nonce(encrypted.nonce);
+    epm->set_ciphertext(encrypted.ciphertext.data(), encrypted.ciphertext.size());
+    epm->set_sender_pubkey_hint(encrypted.senderPubHint, 8);
+
+    string serialized;
+    env.SerializeToString(&serialized);
+    sendPbEnvelope(targetNick, serialized);
+}
+
+void NmdcHub::handlePbCommand(const string& cmd, const string& param) {
+    // Extract base64 data portion
+    string base64data;
+    string fromNick;
+
+    if(cmd == "$PBR") {
+        // $PBR <to> <from> <base64data>
+        string::size_type j1 = param.find(' ');
+        if(j1 == string::npos) return;
+        string::size_type j2 = param.find(' ', j1 + 1);
+        if(j2 == string::npos) return;
+        fromNick = toUtf8(param.substr(j1 + 1, j2 - j1 - 1));
+        base64data = param.substr(j2 + 1);
+    } else {
+        // $PB / $PBB: <nick> <base64data>
+        string::size_type j = param.find(' ');
+        if(j == string::npos) return;
+        fromNick = toUtf8(param.substr(0, j));
+        base64data = param.substr(j + 1);
+    }
+
+    // Decode base64
+    string decoded;
+    decoded = Encoder::fromBase64(base64data);
+    if(decoded.empty()) return;
+
+    // Parse PbEnvelope
+    nmdcpb::PbEnvelope envMsg;
+    if(!envMsg.ParseFromString(decoded)) {
+        dcdebug("NmdcHub::handlePbCommand: failed to parse PbEnvelope\n");
+        return;
+    }
+    auto* env = &envMsg;
+
+    // Dispatch by payload type
+    if(env->has_pm_key_exchange()) {
+        auto& kex = env->pm_key_exchange();
+        if(kex.public_key().size() != X25519_KEY_SIZE) return;
+
+        auto* mgr = ctx().getE2EPMManager();
+        if(!mgr) return;
+        const uint8_t* peerPub = reinterpret_cast<const uint8_t*>(kex.public_key().data());
+
+        // TOFU check
+        bool keyChanged = mgr->checkKeyChanged(getHubUrl(), fromNick, peerPub);
+        if(keyChanged) {
+            // Key changed! Fire warning event.
+            dcdebug("E2EPM: key changed for %s — possible MITM\n", fromNick.c_str());
+        }
+        mgr->updateLastKnownKey(getHubUrl(), fromNick, peerPub);
+
+        auto ourPubKey = mgr->handleKeyExchange(getHubUrl(), fromNick, peerPub);
+        if(!ourPubKey.empty()) {
+            // Send our key exchange response
+            nmdcpb::PbEnvelope resp;
+            resp.set_route(nmdcpb::PbEnvelope::DIRECT);
+            resp.set_from_nick(getMyNick());
+            resp.set_to_nick(fromNick);
+            auto* rkex = resp.mutable_pm_key_exchange();
+            rkex->set_target_nick(fromNick);
+            rkex->set_public_key(ourPubKey.data(), ourPubKey.size());
+            rkex->set_protocol_version(1);
+
+            pbSerializeBuf.clear();
+            resp.SerializeToString(&pbSerializeBuf);
+            sendPbEnvelope(fromNick, pbSerializeBuf);
+        }
+
+        // Flush pending messages if session is now established
+        if(mgr->isEstablished(getHubUrl(), fromNick)) {
+            // Notify UI about encryption status
+            {
+                Lock l(cs);
+                auto ou = findUser(fromNick);
+                auto me = findUser(getMyNick());
+                if(ou && me) {
+                    string fp = mgr->getFingerprint(getHubUrl(), fromNick);
+                    ChatMessage chatMsg;
+                    chatMsg.text = keyChanged
+                        ? "⚠ E2E encryption key changed for this user! Verify fingerprint: " + fp
+                        : "🔒 E2E encrypted session established. Fingerprint: " + fp;
+                    chatMsg.from = ou;
+                    chatMsg.to = me;
+                    chatMsg.replyTo = ou;
+                    chatMsg.thirdPerson = false;
+                    chatMsg.timestamp = 0;
+                    chatMsg.e2epmEncrypted = true;
+                    chatMsg.e2epmFingerprint = fp;
+                    chatMsg.e2epmKeyChanged = keyChanged;
+                    fire(ClientListener::E2EPMStatus(), this, fromNick, fp, keyChanged);
+                }
+            }
+            auto pending = mgr->drainPendingMessages(getHubUrl(), fromNick);
+            for(auto& [text, isAction] : pending) {
+                sendEncryptedPM(fromNick, text, isAction);
+            }
+        }
+    } else if(env->has_encrypted_pm()) {
+        auto& epm = env->encrypted_pm();
+        auto* mgr = ctx().getE2EPMManager();
+        if(!mgr) return;
+
+        const uint8_t* hint = epm.sender_pubkey_hint().size() >= 8
+            ? reinterpret_cast<const uint8_t*>(epm.sender_pubkey_hint().data())
+            : nullptr;
+
+        try {
+            auto decrypted = mgr->decryptPM(
+                getHubUrl(), fromNick,
+                epm.nonce(),
+                std::vector<uint8_t>(epm.ciphertext().begin(), epm.ciphertext().end()),
+                hint);
+
+            // Fire as a regular PM event with E2EPM metadata
+            Lock l(cs);
+            auto ou = findUser(fromNick);
+            auto me = findUser(getMyNick());
+            if(ou && me) {
+                ChatMessage chatMsg;
+                chatMsg.text = decrypted.text;
+                chatMsg.from = ou;
+                chatMsg.to = me;
+                chatMsg.replyTo = ou;
+                chatMsg.thirdPerson = decrypted.isAction;
+                chatMsg.timestamp = 0;
+                chatMsg.e2epmEncrypted = true;
+                chatMsg.e2epmFingerprint = mgr->getFingerprint(getHubUrl(), fromNick);
+                chatMsg.e2epmKeyChanged = false;
+                fire(ClientListener::Message(), this, chatMsg);
+            }
+        } catch(const CryptoError& e) {
+            dcdebug("E2EPM decrypt failed from %s: %s\n", fromNick.c_str(), e.what());
+        }
+    } else if(env->has_relay_request()) {
+        auto& rr = env->relay_request();
+        if(rr.public_key().size() != X25519_KEY_SIZE) return;
+
+        const uint8_t* peerPub = reinterpret_cast<const uint8_t*>(rr.public_key().data());
+        auto ourPub = relayManager.handleRelayRequest(
+            getHubUrl(), fromNick, rr.token(), peerPub);
+
+        if(!ourPub.empty()) {
+            // Auto-accept file transfer relays
+            bool accepted = relayManager.respondToRelay(rr.token(), true);
+
+            // Send relay ack
+            nmdcpb::PbEnvelope resp;
+            resp.set_route(nmdcpb::PbEnvelope::DIRECT);
+            resp.set_from_nick(getMyNick());
+            resp.set_to_nick(fromNick);
+            auto* ack = resp.mutable_relay_ack();
+            ack->set_token(rr.token());
+            ack->set_accepted(accepted);
+            ack->set_public_key(ourPub.data(), ourPub.size());
+
+            pbSerializeBuf.clear();
+            resp.SerializeToString(&pbSerializeBuf);
+            sendPbEnvelope(fromNick, pbSerializeBuf);
+        }
+    } else if(env->has_relay_ack()) {
+        auto& ack = env->relay_ack();
+        const uint8_t* peerPub = ack.public_key().size() == X25519_KEY_SIZE
+            ? reinterpret_cast<const uint8_t*>(ack.public_key().data()) : nullptr;
+
+        if(peerPub) {
+            relayManager.handleRelayAck(
+                ack.token(), ack.accepted(), ack.relay_id(), peerPub);
+        }
+    } else if(env->has_relay_closed()) {
+        auto& rc = env->relay_closed();
+        relayManager.handleRelayClosed(rc.relay_id());
+    } else if(env->has_private_search()) {
+        // A peer is asking us to search our local shares
+        auto& ps = env->private_search();
+        if(ps.search_id().empty()) return;
+
+        auto* sm = ctx().getShareManager();
+        if(!sm) return;
+
+        uint32_t maxRes = ps.max_results();
+        if(maxRes == 0) maxRes = 10;
+        if(maxRes > 100) maxRes = 100;
+
+        SearchResultList results;
+        int fileType = static_cast<int>(ps.file_type());
+        int64_t size = 0;
+        int searchType = 0; // SIZE_DONTCARE
+
+        if(!ps.tth().empty()) {
+            // TTH search
+            sm->search(results, "TTH:" + ps.tth(), 0, 0, SearchManager::TYPE_TTH, this, maxRes);
+        } else if(!ps.query().empty()) {
+            // Size filtering
+            if(ps.min_size() > 0) {
+                size = static_cast<int64_t>(ps.min_size());
+                searchType = 1; // SIZE_ATLEAST
+            } else if(ps.max_size() > 0) {
+                size = static_cast<int64_t>(ps.max_size());
+                searchType = 2; // SIZE_ATMOST
+            }
+            sm->search(results, ps.query(), searchType, size, fileType, this, maxRes);
+        } else {
+            return; // No query and no TTH
+        }
+
+        // Build response
+        nmdcpb::PbEnvelope resp;
+        resp.set_route(nmdcpb::PbEnvelope::DIRECT);
+        resp.set_from_nick(getMyNick());
+        resp.set_to_nick(fromNick);
+        auto* sr = resp.mutable_private_search_result();
+        sr->set_search_id(ps.search_id());
+
+        uint8_t totalSlots = ctx().getUploadManager()->getSlots();
+        int freeSlots = ctx().getUploadManager()->getFreeSlots();
+
+        for(auto& r : results) {
+            auto* item = sr->add_results();
+            const string& file = r->getFile();
+            // Split into path and filename
+            auto lastSep = file.rfind('\\');
+            if(lastSep != string::npos) {
+                item->set_path(file.substr(0, lastSep + 1));
+                item->set_filename(file.substr(lastSep + 1));
+            } else {
+                item->set_filename(file);
+            }
+            item->set_size(static_cast<uint64_t>(r->getSize()));
+            item->set_tth(r->getTTH().toBase32());
+            item->set_free_slots(static_cast<uint32_t>(freeSlots));
+            item->set_total_slots(static_cast<uint32_t>(totalSlots));
+            item->set_is_directory(r->getType() == SearchResult::TYPE_DIRECTORY);
+        }
+
+        sr->set_is_partial(results.size() >= maxRes);
+
+        pbSerializeBuf.clear();
+        resp.SerializeToString(&pbSerializeBuf);
+        sendPbEnvelope(fromNick, pbSerializeBuf);
+
+    } else if(env->has_private_search_result()) {
+        // Results from a peer in response to our private search
+        auto& psr = env->private_search_result();
+
+        Lock l(cs);
+        auto ou = findUser(fromNick);
+        if(!ou) return;
+        auto& user = ou->getUser();
+
+        // Also feed into stealth search aggregation
+        std::vector<SearchManager::StealthSearchHit> stealthHits;
+
+        for(int i = 0; i < psr.results_size(); ++i) {
+            auto& r = psr.results(i);
+            SearchResult::Types type = r.is_directory() ? SearchResult::TYPE_DIRECTORY : SearchResult::TYPE_FILE;
+            string fullPath = r.path() + r.filename();
+            TTHValue tth;
+            if(!r.tth().empty()) {
+                tth = TTHValue(r.tth());
+            }
+            SearchResultPtr srp(new SearchResult(
+                user, type, static_cast<int>(r.total_slots()), static_cast<int>(r.free_slots()),
+                static_cast<int64_t>(r.size()), fullPath, getHubName(), getHubUrl(),
+                Util::emptyString, tth, psr.search_id()));
+            ctx().getSearchManager()->fire(SearchManagerListener::SR(), srp);
+
+            // Collect for stealth aggregation
+            SearchManager::StealthSearchHit sh;
+            sh.filename = r.filename();
+            sh.path = r.path();
+            sh.size = r.size();
+            sh.tth = r.tth();
+            sh.isDirectory = r.is_directory();
+            sh.bestFreeSlots = r.free_slots();
+            sh.bestTotalSlots = r.total_slots();
+            stealthHits.push_back(std::move(sh));
+        }
+
+        if(!stealthHits.empty()) {
+            // The search_id may contain the stealth query_id
+            // (format: "queryid-sweep")
+            string searchId = psr.search_id();
+            string queryId;
+            auto pos = searchId.rfind("-sweep");
+            if(pos != string::npos)
+                queryId = searchId.substr(0, pos);
+            else
+                queryId = searchId;
+            ctx().getSearchManager()->onStealthSearchResult(queryId, fromNick, stealthHits);
+        }
+
+    // ------------------------------------------------------------------
+    // Phase 3.5: Relay Resume
+    // ------------------------------------------------------------------
+    } else if(env->has_relay_resume()) {
+        auto& rr = env->relay_resume();
+        if(rr.token().empty()) return;
+
+        // Peer wants to resume a relay session from a given offset.
+        // We re-key with new ephemeral keys for forward secrecy.
+        auto ourPub = relayManager.handleRelayResume(
+            rr.token(), rr.resume_offset(), nullptr /* peer pubkey comes later from ack */);
+
+        if(!ourPub.empty()) {
+            // Send PbRelayAck with new public key to confirm resume
+            nmdcpb::PbEnvelope resp;
+            resp.set_route(nmdcpb::PbEnvelope::DIRECT);
+            resp.set_from_nick(getMyNick());
+            resp.set_to_nick(fromNick);
+            auto* ack = resp.mutable_relay_ack();
+            ack->set_token(rr.token());
+            ack->set_accepted(true);
+            ack->set_public_key(ourPub.data(), ourPub.size());
+
+            // Use existing relay_id from session
+            auto* session = relayManager.findByToken(rr.token());
+            if(session) {
+                ack->set_relay_id(session->relayId);
+            }
+
+            pbSerializeBuf.clear();
+            resp.SerializeToString(&pbSerializeBuf);
+            sendPbEnvelope(fromNick, pbSerializeBuf);
+        }
+
+    // ------------------------------------------------------------------
+    // Phase 3.5: Segment Request (peer asking us for a file segment)
+    // ------------------------------------------------------------------
+    } else if(env->has_segment_request()) {
+        auto& sr = env->segment_request();
+        if(sr.request_id().empty() || sr.file_tth().empty()) return;
+
+        auto* sm = ctx().getShareManager();
+        if(!sm) return;
+
+        // Check if we have the file
+        SearchResultList results;
+        sm->search(results, "TTH:" + sr.file_tth(), 0, 0,
+                   SearchManager::TYPE_TTH, this, 1);
+
+        nmdcpb::PbEnvelope resp;
+        resp.set_route(nmdcpb::PbEnvelope::DIRECT);
+        resp.set_from_nick(getMyNick());
+        resp.set_to_nick(fromNick);
+        auto* si = resp.mutable_segment_info();
+        si->set_request_id(sr.request_id());
+        si->set_segment_offset(sr.segment_offset());
+        si->set_segment_length(sr.segment_length());
+        si->set_peer_nick(getMyNick());
+
+        if(!results.empty()) {
+            si->set_available(true);
+        } else {
+            si->set_available(false);
+        }
+
+        pbSerializeBuf.clear();
+        resp.SerializeToString(&pbSerializeBuf);
+        sendPbEnvelope(fromNick, pbSerializeBuf);
+
+    // ------------------------------------------------------------------
+    // Phase 3.5: Segment Info (response to our segment request)
+    // ------------------------------------------------------------------
+    } else if(env->has_segment_info()) {
+        auto& si = env->segment_info();
+        // Fire as a generic NmdcPb event — the Python layer handles aggregation
+        dcdebug("NmdcHub: segment_info from %s for request %s: available=%d\n",
+                fromNick.c_str(), si.request_id().c_str(), si.available());
+        // Event already dispatched above as pb_message
+
+    // ------------------------------------------------------------------
+    // Phase 3.5: User Query Result (from hub, listing matching users)
+    // ------------------------------------------------------------------
+    } else if(env->has_user_query_result()) {
+        auto& uqr = env->user_query_result();
+        dcdebug("NmdcHub: user_query_result: query_id=%s total=%u sweep=%d\n",
+                uqr.query_id().c_str(), uqr.total_matching(), uqr.sweep_started());
+        // Feed into stealth search aggregation
+        ctx().getSearchManager()->onStealthUserQueryResult(
+            uqr.query_id(), uqr.total_matching(), uqr.sweep_count(), uqr.error());
+        // Event already dispatched above as pb_message
+
+    // ------------------------------------------------------------------
+    // Phase 4: MediaShare — incoming media messages from hub
+    // ------------------------------------------------------------------
+    } else if(env->has_media_capabilities()) {
+        mediaManager.onPbMediaCapabilities(env->media_capabilities());
+    } else if(env->has_media_meta()) {
+        mediaManager.onPbMediaMeta(env->media_meta());
+    } else if(env->has_media_upload()) {
+        // Server echoed our upload — should not happen, ignore
+        dcdebug("NmdcHub: unexpected media_upload from %s\n", fromNick.c_str());
+    } else if(env->has_media_delete()) {
+        // Notification that media was deleted
+        dcdebug("NmdcHub: media_delete notification: %s\n",
+                env->media_delete().media_id().c_str());
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4: MediaShare public API
+// ---------------------------------------------------------------------------
+
+string NmdcHub::requestMediaUpload(const string& localPath,
+                                    const string& mimeType,
+                                    uint32_t ttl, bool encrypted) {
+    string reqId = mediaManager.requestUpload(localPath, mimeType, ttl, encrypted);
+    if(reqId.empty()) return reqId;
+
+    // Build PbMediaUpload and send to hub
+    auto* req = mediaManager.getUploadRequest(reqId);
+    if(!req) return Util::emptyString;
+
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::HUB);
+    env.set_from_nick(getMyNick());
+    auto* upload = env.mutable_media_upload();
+    upload->set_filename(req->filename);
+    upload->set_mime_type(req->mimeType);
+    upload->set_size(req->size);
+    upload->set_requested_ttl(req->requestedTtl);
+    upload->set_is_encrypted(req->isEncrypted);
+    upload->set_checksum_sha256(req->checksumSha256);
+
+    pbSerializeBuf.clear();
+    env.SerializeToString(&pbSerializeBuf);
+    // Send as broadcast to hub (HUB route)
+    string encoded = Encoder::toBase64(pbSerializeBuf);
+    send("$PB " + fromUtf8(getMyNick()) + " " + encoded + "|");
+    return reqId;
+}
+
+void NmdcHub::requestMediaDelete(const string& mediaId, const string& reason) {
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::HUB);
+    env.set_from_nick(getMyNick());
+    auto* del = env.mutable_media_delete();
+    del->set_media_id(mediaId);
+    if(!reason.empty()) del->set_reason(reason);
+
+    pbSerializeBuf.clear();
+    env.SerializeToString(&pbSerializeBuf);
+    string encoded = Encoder::toBase64(pbSerializeBuf);
+    send("$PB " + fromUtf8(getMyNick()) + " " + encoded + "|");
+}
+
+void NmdcHub::requestMediaMeta(const string& mediaId) {
+    // Send a media_capabilities request to hub; the hub responds with PbMediaMeta
+    // For now, we re-request capabilities which include quota info
+    nmdcpb::PbEnvelope env;
+    env.set_route(nmdcpb::PbEnvelope::HUB);
+    env.set_from_nick(getMyNick());
+    env.mutable_media_capabilities(); // empty = request
+
+    pbSerializeBuf.clear();
+    env.SerializeToString(&pbSerializeBuf);
+    string encoded = Encoder::toBase64(pbSerializeBuf);
+    send("$PB " + fromUtf8(getMyNick()) + " " + encoded + "|");
+}
+
+#endif // WITH_NMDCPB
 
 #ifdef LUA_SCRIPT
 bool NmdcHubScriptInstance::onClientMessage(NmdcHub* aClient, const string& aLine) {

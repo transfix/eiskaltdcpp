@@ -58,6 +58,10 @@ Currently supported features (not full list):
 * Support of IDN2 (recognition of national domain names).
 * Support of URL encoded strings for hub addresses.
 * Support of traffic encryption.
+* **NMDCpb** — Protobuf structured messaging over NMDC (`$PB` broadcast, `$PBR` direct routed).
+* **E2EPM** — End-to-end encrypted private messaging (X25519 + ChaCha20-Poly1305, TOFU key continuity, emoji fingerprints).
+* **HubRelay** — File transfers relayed through the hub for passive-to-passive clients, with relay-only privacy mode.
+* **PrivateSearch** — Targeted, search-spy-invisible search against a specific user's shares via `$PBR` routing.
 
 <a href="https://tehnick.github.io/eiskaltdcpp/eiskaltdcpp-qt-2.2.10-588_search_widget.png" title="Example of search results">
     <img src="https://tehnick.github.io/eiskaltdcpp/eiskaltdcpp-qt-2.2.10-588_search_widget.png" width="99%">

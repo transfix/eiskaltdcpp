@@ -99,6 +99,7 @@ const string SettingsManager::settingTags[] =
     "ShareSkipZeroByte", "RequireTLS", "LogSpy", "AppUnitBase",
     "LogCmdDebug",
     "NmdcGetinfoLimit",
+    "RelayOnlyMode",
     "SENTRY",
     // Int64
     "TotalUpload", "TotalDownload",
@@ -313,6 +314,7 @@ SettingsManager::SettingsManager(DCContext& ctx) : ContextAware(ctx)
     setDefault(APP_UNIT_BASE, 0);
     setDefault(REQUIRE_TLS, true); // True by default: We assume TLS is commonplace enough among ADC clients.
     setDefault(NMDC_GETINFO_LIMIT, 0); // 0 = unlimited; positive = max $GetINFO requests per $NickList
+    setDefault(RELAY_ONLY_MODE, false);
 
     setSearchTypeDefaults();
 }

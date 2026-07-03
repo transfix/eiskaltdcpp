@@ -26,6 +26,9 @@
 #include "ConnectivityManager.h"
 #include "CryptoManager.h"
 #include "DebugManager.h"
+#ifdef WITH_NMDCPB
+#include "E2EPMManager.h"
+#endif
 #include "DownloadManager.h"
 #include "FavoriteManager.h"
 #include "File.h"
@@ -139,6 +142,9 @@ void DCContext::startup(ProgressFn progress) {
     debugManager_        = makeManager<DebugManager>(*this);
     dynDNS_              = makeManager<DynDNS>(*this);
     ipFilter_            = makeManager<IPFilter>(*this);
+#ifdef WITH_NMDCPB
+    e2epmManager_        = makeManager<E2EPMManager>(*this);
+#endif
 #ifdef LUA_SCRIPT
     scriptManager_       = makeManager<ScriptManager>(*this);
 #endif
@@ -206,6 +212,9 @@ void DCContext::shutdown() {
     running_ = false;
 
     // ── Phase 1: tear down debug & conditional singletons ───────────────
+#ifdef WITH_NMDCPB
+    e2epmManager_.reset();
+#endif
     debugManager_.reset();
 
 #ifdef WITH_DHT

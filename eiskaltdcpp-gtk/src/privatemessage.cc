@@ -44,7 +44,12 @@ PrivateMessage::PrivateMessage(dcpp::DCContext& dcCtx, const string &_cid, const
     historyIndex(0),
     sentAwayMessage(false),
     scrollToBottom(true),
-    offline(false)
+    offline(false),
+    e2epmActive(false),
+    e2epmKeyWarning(false),
+    e2epmBar(NULL),
+    e2epmIcon(NULL),
+    e2epmLabel(NULL)
 {
 #if !GTK_CHECK_VERSION(3,0,0)
     gtk_statusbar_set_has_resize_grip (GTK_STATUSBAR(getWidget("status")),false);
@@ -150,6 +155,25 @@ PrivateMessage::PrivateMessage(dcpp::DCContext& dcCtx, const string &_cid, const
 
     gtk_widget_grab_focus(getWidget("entry"));
     history.push_back("");
+
+    // Create E2EPM encryption indicator bar (hidden by default)
+#if GTK_CHECK_VERSION(3, 2, 0)
+    e2epmBar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+#else
+    e2epmBar = gtk_hbox_new(false, 4);
+#endif
+    e2epmIcon = gtk_image_new_from_icon_name("channel-secure-symbolic", GTK_ICON_SIZE_SMALL_TOOLBAR);
+    e2epmLabel = gtk_label_new("");
+    gtk_misc_set_alignment(GTK_MISC(e2epmLabel), 0, 0.5);
+    gtk_box_pack_start(GTK_BOX(e2epmBar), e2epmIcon, false, false, 4);
+    gtk_box_pack_start(GTK_BOX(e2epmBar), e2epmLabel, true, true, 0);
+    gtk_widget_show_all(e2epmBar);
+    gtk_widget_set_no_show_all(e2epmBar, true);
+    gtk_widget_hide(e2epmBar);
+    // Insert between scroll (pos 0) and chatHBox (pos 2)
+    gtk_box_pack_start(GTK_BOX(getWidget("mainBox")), e2epmBar, false, false, 0);
+    gtk_box_reorder_child(GTK_BOX(getWidget("mainBox")), e2epmBar, 1);
+
     const UserPtr user = dcCtx_.getClientManager()->findUser(CID(_cid));
     isBot = user ? user->isSet(User::BOT) : false;
 
@@ -1401,6 +1425,45 @@ void PrivateMessage::onUseEmoticons_gui(GtkWidget*, gpointer data)
 void PrivateMessage::updateOnlineStatus_gui(bool online)
 {
     setIcon_gui(online ? WGETS("icon-pm-online") : WGETS("icon-pm-offline"));
+}
+
+void PrivateMessage::setE2EPMEncryption_gui(bool active, const std::string &fingerprint, bool keyWarning)
+{
+    e2epmActive = active;
+    e2epmFingerprint = fingerprint;
+    e2epmKeyWarning = keyWarning;
+
+    if (active && e2epmBar)
+    {
+        std::string text;
+        if (keyWarning)
+        {
+            text = std::string(_("⚠ E2EPM: Key changed! Fingerprint: ")) + fingerprint;
+            gtk_image_set_from_icon_name(GTK_IMAGE(e2epmIcon), "dialog-warning", GTK_ICON_SIZE_SMALL_TOOLBAR);
+        }
+        else
+        {
+            text = std::string(_("🔒 E2EPM: Encrypted — Fingerprint: ")) + fingerprint;
+            gtk_image_set_from_icon_name(GTK_IMAGE(e2epmIcon), "channel-secure-symbolic", GTK_ICON_SIZE_SMALL_TOOLBAR);
+        }
+
+        gtk_label_set_text(GTK_LABEL(e2epmLabel), text.c_str());
+        gtk_widget_set_tooltip_text(e2epmBar, fingerprint.c_str());
+        gtk_widget_show(e2epmBar);
+
+        // Update tab icon to indicate encryption
+        if (keyWarning)
+            setIcon_gui("dialog-warning");
+        else
+            setIcon_gui("channel-secure-symbolic");
+    }
+    else if (e2epmBar)
+    {
+        gtk_widget_hide(e2epmBar);
+        // Restore normal PM icon
+        bool online = !getIsOffline();
+        setIcon_gui(online ? WGETS("icon-pm-online") : WGETS("icon-pm-offline"));
+    }
 }
 
 void PrivateMessage::sendMessage_client(string message)

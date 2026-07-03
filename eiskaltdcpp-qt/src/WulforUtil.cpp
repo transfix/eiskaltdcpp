@@ -443,6 +443,8 @@ bool WulforUtil::loadIcons(){
     m_PixmapMap[eiOPEN_LOG_FILE]= FROMTHEME("log_file", resourceFound);
     m_PixmapMap[eiPLUGIN]       = FROMTHEME("plugin", resourceFound);
     m_PixmapMap[eiPMMSG]        = FROMTHEME("pmmsg", resourceFound);
+    m_PixmapMap[eiE2EPM_LOCK]   = FROMTHEME("e2epm-lock", resourceFound);
+    m_PixmapMap[eiE2EPM_WARN]   = FROMTHEME("e2epm-warn", resourceFound);
     m_PixmapMap[eiRECONNECT]    = FROMTHEME("reconnect", resourceFound);
     m_PixmapMap[eiREFRLIST]     = FROMTHEME("refrlist", resourceFound);
     m_PixmapMap[eiRELOAD]       = FROMTHEME("reload", resourceFound);

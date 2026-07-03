@@ -74,6 +74,7 @@ public:
     void showUploadQueue_gui();
     void addPrivateMessage_gui(Msg::TypeMsg typemsg, std::string cid, std::string hubUrl = "", std::string message = "", bool useSetting = false);
     void addPrivateStatusMessage_gui(Msg::TypeMsg typemsg, std::string cid, std::string message = "");
+    void updatePrivateE2EPMStatus_gui(std::string cid, std::string fingerprint, bool keyWarning);
     void showPublicHubs_gui();
     void showShareBrowser_gui(dcpp::UserPtr user, std::string file, std::string dir, bool useSetting);
     Search *addSearch_gui();

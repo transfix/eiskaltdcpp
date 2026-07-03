@@ -518,4 +518,127 @@ AdcCommand SearchManager::toPSR(bool wantResponse, const string& myNick, const s
     return cmd;
 }
 
+// =========================================================================
+// NMDCpb stealth search aggregation
+// =========================================================================
+#ifdef WITH_NMDCPB
+
+std::string SearchManager::registerStealthSearch(const std::string& query,
+                                                  const std::string& tth) {
+    Lock l(csStealthSearch);
+
+    std::string queryId = "ss-" + std::to_string(++mStealthSeqNo);
+
+    StealthSearchContext ctx;
+    ctx.queryId      = queryId;
+    ctx.searchQuery  = query;
+    ctx.searchTTH    = tth;
+    ctx.created      = time(nullptr);
+    mStealthSearches[queryId] = std::move(ctx);
+
+    return queryId;
+}
+
+void SearchManager::onStealthUserQueryResult(const std::string& queryId,
+                                              uint32_t totalMatching,
+                                              uint32_t sweepCount,
+                                              const std::string& error) {
+    Lock l(csStealthSearch);
+    auto it = mStealthSearches.find(queryId);
+    if (it == mStealthSearches.end()) return;
+
+    auto& ctx = it->second;
+    if (!error.empty()) {
+        ctx.complete = true;
+        return;
+    }
+    ctx.peersExpected = sweepCount;
+    if (sweepCount == 0)
+        ctx.complete = true;
+}
+
+void SearchManager::onStealthSearchResult(const std::string& queryId,
+                                           const std::string& fromNick,
+                                           const std::vector<StealthSearchHit>& results) {
+    Lock l(csStealthSearch);
+    auto it = mStealthSearches.find(queryId);
+    if (it == mStealthSearches.end()) return;
+
+    auto& ctx = it->second;
+
+    // Record this peer as having responded
+    ctx.peersResponded.push_back(fromNick);
+
+    // Merge/de-dup results
+    for (const auto& r : results) {
+        auto key = r.uniqueKey();
+        auto hit_it = ctx.hits.find(key);
+        if (hit_it != ctx.hits.end()) {
+            auto& hit = hit_it->second;
+            // Add peer if not already listed
+            bool found = false;
+            for (const auto& p : hit.peers) {
+                if (p == fromNick) { found = true; break; }
+            }
+            if (!found) hit.peers.push_back(fromNick);
+            if (r.bestFreeSlots > hit.bestFreeSlots)
+                hit.bestFreeSlots = r.bestFreeSlots;
+            if (r.bestTotalSlots > hit.bestTotalSlots)
+                hit.bestTotalSlots = r.bestTotalSlots;
+        } else {
+            StealthSearchHit hit = r;
+            if (hit.peers.empty()) hit.peers.push_back(fromNick);
+            ctx.hits[key] = std::move(hit);
+        }
+    }
+
+    // Check completeness
+    if (ctx.peersExpected > 0 &&
+        ctx.peersResponded.size() >= ctx.peersExpected)
+        ctx.complete = true;
+}
+
+bool SearchManager::isStealthSearchComplete(const std::string& queryId) {
+    Lock l(csStealthSearch);
+    auto it = mStealthSearches.find(queryId);
+    if (it == mStealthSearches.end()) return true;  // unknown → consider done
+    return it->second.complete;
+}
+
+std::vector<SearchManager::StealthSearchHit>
+SearchManager::takeStealthResults(const std::string& queryId) {
+    Lock l(csStealthSearch);
+    auto it = mStealthSearches.find(queryId);
+    if (it == mStealthSearches.end()) return {};
+
+    std::vector<StealthSearchHit> out;
+    out.reserve(it->second.hits.size());
+    for (auto& [key, hit] : it->second.hits)
+        out.push_back(std::move(hit));
+
+    mStealthSearches.erase(it);
+
+    // Sort: most peers first, then free slots, then filename
+    std::sort(out.begin(), out.end(), [](const StealthSearchHit& a, const StealthSearchHit& b) {
+        if (a.peers.size() != b.peers.size()) return a.peers.size() > b.peers.size();
+        if (a.bestFreeSlots != b.bestFreeSlots) return a.bestFreeSlots > b.bestFreeSlots;
+        return a.filename < b.filename;
+    });
+
+    return out;
+}
+
+void SearchManager::pruneStealthSearches(time_t maxAge) {
+    Lock l(csStealthSearch);
+    time_t now = time(nullptr);
+    for (auto it = mStealthSearches.begin(); it != mStealthSearches.end(); ) {
+        if (now - it->second.created > maxAge)
+            it = mStealthSearches.erase(it);
+        else
+            ++it;
+    }
+}
+
+#endif // WITH_NMDCPB
+
 } // namespace dcpp

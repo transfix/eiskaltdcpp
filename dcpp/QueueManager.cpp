@@ -42,6 +42,10 @@
 #include "version.h"
 #include "ZUtils.h"
 
+#ifdef WITH_NMDCPB
+#include "NmdcHub.h"
+#endif
+
 #ifdef WITH_DHT
 #include "dht/DHT.h"
 #include "dht/IndexManager.h"
@@ -881,8 +885,26 @@ bool QueueManager::addSource(QueueItem* qi, const HintedUser& aUser, Flags::Mask
     qi->addSource(aUser);
 
     if(aUser.user->isSet(User::PASSIVE) && !ctx().getClientManager()->isActive() ) {
-        qi->removeSource(aUser, QueueItem::Source::FLAG_PASSIVE);
-        wantConnection = false;
+#ifdef WITH_NMDCPB
+        // Allow source if the hub supports HubRelay (passive-to-passive via relay)
+        bool relayAvailable = false;
+        {
+            auto lk = ctx().getClientManager()->lock();
+            for (auto* c : ctx().getClientManager()->getClients()) {
+                if (c->getHubUrl() == aUser.hint) {
+                    if (auto* nmdcHub = dynamic_cast<NmdcHub*>(c)) {
+                        relayAvailable = nmdcHub->hasHubRelaySupport();
+                    }
+                    break;
+                }
+            }
+        }
+        if (!relayAvailable)
+#endif
+        {
+            qi->removeSource(aUser, QueueItem::Source::FLAG_PASSIVE);
+            wantConnection = false;
+        }
     } else if(qi->isFinished()) {
         wantConnection = false;
     } else {

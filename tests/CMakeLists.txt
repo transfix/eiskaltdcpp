@@ -7,12 +7,16 @@ project(eiskaltdcpp-tests)
 include(FetchContent)
 set(CATCH2_VERSION "3.5.2")
 set(CATCH2_SHA256 "269543a49eb76f40b3f93ff231d4c24c27a7e16c90e47d2e45bcc564de470c6e")
+set(CATCH2_EXTRA_ARGS "")
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+    list(APPEND CATCH2_EXTRA_ARGS DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+endif()
 FetchContent_Declare(
     Catch2
     URL        https://github.com/catchorg/Catch2/archive/refs/tags/v${CATCH2_VERSION}.tar.gz
                https://codeload.github.com/catchorg/Catch2/tar.gz/refs/tags/v${CATCH2_VERSION}
     URL_HASH   SHA256=${CATCH2_SHA256}
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    ${CATCH2_EXTRA_ARGS}
 )
 FetchContent_MakeAvailable(Catch2)
 
@@ -21,7 +25,7 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 
 # Test executable
-add_executable(eiskaltdcpp-tests
+set(TEST_SOURCES
     test_main.cpp
     test_cid.cpp
     test_util.cpp
@@ -68,6 +72,18 @@ add_executable(eiskaltdcpp-tests
     test_dht_context.cpp
 )
 
+if (WITH_NMDCPB)
+    list(APPEND TEST_SOURCES
+        test_nmdcpb_crypto.cpp
+        test_nmdcpb_security.cpp
+        test_nmdcpb_proto.cpp
+        test_segment_coordinator.cpp
+        test_media_manager.cpp
+    )
+endif ()
+
+add_executable(eiskaltdcpp-tests ${TEST_SOURCES})
+
 target_include_directories(eiskaltdcpp-tests PRIVATE
     ${CMAKE_SOURCE_DIR}          # for "dcpp/..." includes from extra/
     ${CMAKE_SOURCE_DIR}/dcpp     # for "Singleton.h" etc.
@@ -88,6 +104,14 @@ target_link_libraries(eiskaltdcpp-tests PRIVATE
     Catch2::Catch2WithMain
 )
 
+if (WITH_NMDCPB)
+    target_include_directories(eiskaltdcpp-tests PRIVATE
+        ${Protobuf_INCLUDE_DIRS}
+        ${CMAKE_BINARY_DIR}/dcpp    # for generated nmdcpb.pb.h
+    )
+    target_link_libraries(eiskaltdcpp-tests PRIVATE ${Protobuf_LIBRARIES})
+endif ()
+
 # Auto-discover test cases
 catch_discover_tests(eiskaltdcpp-tests)
 
@@ -100,3 +124,53 @@ endif()
 if (USE_GTK3)
     add_subdirectory(gtk)
 endif()
+
+# =========================================================================
+# Fuzz targets (optional — build with -DBUILD_FUZZ_TARGETS=ON)
+# Requires clang with -fsanitize=fuzzer support
+# =========================================================================
+option(BUILD_FUZZ_TARGETS "Build libFuzzer fuzz targets" OFF)
+
+if (BUILD_FUZZ_TARGETS AND WITH_NMDCPB)
+    set(FUZZ_COMPILE_FLAGS "-fsanitize=fuzzer,address -g -O1")
+    set(FUZZ_LINK_FLAGS "-fsanitize=fuzzer,address")
+
+    # Fuzz target: protobuf deserialization
+    add_executable(fuzz_protobuf fuzz/fuzz_protobuf.cpp)
+    target_include_directories(fuzz_protobuf PRIVATE
+        ${CMAKE_SOURCE_DIR}/dcpp
+        ${Protobuf_INCLUDE_DIRS}
+        ${CMAKE_BINARY_DIR}/dcpp
+    )
+    target_link_libraries(fuzz_protobuf PRIVATE dcpp ${Protobuf_LIBRARIES})
+    set_target_properties(fuzz_protobuf PROPERTIES
+        COMPILE_FLAGS "${FUZZ_COMPILE_FLAGS}"
+        LINK_FLAGS "${FUZZ_LINK_FLAGS}"
+    )
+
+    # Fuzz target: ChaCha20-Poly1305 crypto
+    add_executable(fuzz_crypto fuzz/fuzz_crypto.cpp)
+    target_include_directories(fuzz_crypto PRIVATE
+        ${CMAKE_SOURCE_DIR}/dcpp
+        ${OPENSSL_INCLUDE_DIR}
+    )
+    target_link_libraries(fuzz_crypto PRIVATE dcpp ${OPENSSL_LIBRARIES})
+    set_target_properties(fuzz_crypto PROPERTIES
+        COMPILE_FLAGS "${FUZZ_COMPILE_FLAGS}"
+        LINK_FLAGS "${FUZZ_LINK_FLAGS}"
+    )
+
+    # Fuzz target: base64url encode/decode
+    add_executable(fuzz_base64 fuzz/fuzz_base64.cpp)
+    target_include_directories(fuzz_base64 PRIVATE
+        ${CMAKE_SOURCE_DIR}/dcpp
+    )
+    target_link_libraries(fuzz_base64 PRIVATE dcpp)
+    set_target_properties(fuzz_base64 PROPERTIES
+        COMPILE_FLAGS "${FUZZ_COMPILE_FLAGS}"
+        LINK_FLAGS "${FUZZ_LINK_FLAGS}"
+    )
+
+    message(STATUS "Fuzz targets enabled: fuzz_protobuf, fuzz_crypto, fuzz_base64")
+endif ()
+

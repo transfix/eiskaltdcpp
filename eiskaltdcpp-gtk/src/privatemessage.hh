@@ -44,6 +44,7 @@ public:
     void addStatusMessage_gui(std::string message, Msg::TypeMsg typemsg);
     void preferences_gui();
     bool getIsOffline() { return offline;}
+    void setE2EPMEncryption_gui(bool active, const std::string &fingerprint, bool keyWarning);
 
 private:
     // GUI functions
@@ -111,4 +112,10 @@ private:
     gint totalEmoticons;
     EmoticonsDialog *emotdialog;
     bool offline;
+    bool e2epmActive;
+    bool e2epmKeyWarning;
+    std::string e2epmFingerprint;
+    GtkWidget *e2epmBar;
+    GtkWidget *e2epmIcon;
+    GtkWidget *e2epmLabel;
 };

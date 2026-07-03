@@ -186,6 +186,7 @@ Q_SIGNALS:
     void closeRequest();
     void highlighted(const VarMap&);
     void new_msg(const VarMap&);
+    void coreE2EPMStatus(QString nick, QString fingerprint, bool keyChanged);
 
 public Q_SLOTS:
     void disableChat();
@@ -263,6 +264,7 @@ private Q_SLOTS:
     void getPassword();
     void newMsg(const VarMap&);
     void newPm(const VarMap&);
+    void updateE2EPMStatus(QString nick, QString fingerprint, bool keyChanged);
 
 private:
     // Chat functions
@@ -303,6 +305,7 @@ private:
     virtual void on(ClientListener::StatusMessage, Client*, const string&, int = ClientListener::FLAG_NORMAL) noexcept;
     virtual void on(ClientListener::NickTaken, Client*) noexcept;
     virtual void on(ClientListener::SearchFlood, Client*, const string&) noexcept;
+    virtual void on(ClientListener::E2EPMStatus, Client*, const string&, const string&, bool) noexcept;
 
     Q_DECLARE_PRIVATE(HubFrame)
     HubFramePrivate *d_ptr;
