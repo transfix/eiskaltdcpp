@@ -32,6 +32,7 @@ public:
         Sharing,
         GUI,
         Notifications,
+        Media,
         Logs,
         UserCommands,
         Shortcuts,

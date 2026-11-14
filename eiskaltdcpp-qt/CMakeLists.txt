@@ -20,6 +20,14 @@ else ()
     message (STATUS "${QT}::Multimedia not found — sound notifications disabled")
     add_definitions (-DNO_QT_MULTIMEDIA)
 endif ()
+# MultimediaWidgets is optional (needed for the camera preview in Media settings)
+find_package (${QT} COMPONENTS MultimediaWidgets QUIET)
+if (${QT}MultimediaWidgets_FOUND)
+    message (STATUS "Found ${QT}::MultimediaWidgets — camera preview enabled")
+else ()
+    message (STATUS "${QT}::MultimediaWidgets not found — camera preview disabled")
+    add_definitions (-DNO_QT_MULTIMEDIAWIDGETS)
+endif ()
 # LinguistTools is optional (only needed for updating translations)
 find_package (${QT} COMPONENTS LinguistTools QUIET)
 
@@ -60,6 +68,15 @@ if (USE_QT_SQLITE)
 else (USE_QT_SQLITE)
     message (STATUS "Building without Qt SQLite support")
 endif (USE_QT_SQLITE)
+
+# NMDCpb (protobuf extension) — dcpp exports WITH_NMDCPB as a PUBLIC target
+# compile definition, but qt_wrap_cpp (manual moc) does not inherit target
+# INTERFACE definitions. Mirror it into the directory scope so moc emits the
+# guarded channel/call signals and slots.
+if (WITH_NMDCPB)
+    add_definitions (-DWITH_NMDCPB)
+    message (STATUS "Building eiskaltdcpp-qt with NMDCpb channels/calls UI")
+endif (WITH_NMDCPB)
 
 aux_source_directory(${PROJECT_SOURCE_DIR}/src SRCS)
 
@@ -227,6 +244,9 @@ list (APPEND LIBS ${QT}::Core
                   ${QT}::Network)
 if (${QT}Multimedia_FOUND)
     list (APPEND LIBS ${QT}::Multimedia)
+endif ()
+if (${QT}MultimediaWidgets_FOUND)
+    list (APPEND LIBS ${QT}::MultimediaWidgets)
 endif ()
 if (USE_QT_QML)
     list (APPEND LIBS ${QT}::Quick ${QT}::QuickWidgets)

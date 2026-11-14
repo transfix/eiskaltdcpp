@@ -44,6 +44,12 @@
 #include "dcpp/ChatMessage.h"
 #include "dcpp/DCPlusPlus.h"
 
+#ifdef WITH_NMDCPB
+#include "dcpp/NmdcHub.h"
+#include "ChannelFrame.h"
+#include "CallFrame.h"
+#endif
+
 #if HAVE_MALLOC_TRIM
 #include <malloc.h>
 #endif
@@ -1065,6 +1071,11 @@ void HubFrame::closeEvent(QCloseEvent *e){
 
     qtCtx()->hubManager()->unregisterHubUrl(_q(d->client->getHubUrl()));
 
+#ifdef WITH_NMDCPB
+    teardownNmdcpbCalls();
+    teardownNmdcpbChannels();
+#endif
+
     d->client->removeListener(this);
     d->client->disconnect(true);
     qtCtx()->dcCtx().getClientManager()->putClient(d->client);
@@ -1201,6 +1212,25 @@ void HubFrame::init(){
     connect(this, &HubFrame::coreFavoriteUserAdded, this, &HubFrame::changeFavStatus, Qt::QueuedConnection);
     connect(this, &HubFrame::coreFavoriteUserRemoved, this, &HubFrame::changeFavStatus, Qt::QueuedConnection);
 
+#ifdef WITH_NMDCPB
+    qRegisterMetaType<ChannelRow>("ChannelRow");
+    qRegisterMetaType<QList<ChannelRow>>("QList<ChannelRow>");
+    connect(this, &HubFrame::coreChannelList, this, &HubFrame::updateChannelList, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreChannelCreated, this, &HubFrame::updateChannelCreated, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreChannelMemberUpdate, this, &HubFrame::updateChannelMemberUpdate, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreChannelMessage, this, &HubFrame::updateChannelMessage, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreChannelInvite, this, &HubFrame::updateChannelInvite, Qt::QueuedConnection);
+    setupNmdcpbChannels();
+
+    qRegisterMetaType<CallRow>("CallRow");
+    qRegisterMetaType<QList<CallRow>>("QList<CallRow>");
+    connect(this, &HubFrame::coreCallOffer, this, &HubFrame::updateCallOffer, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreCallAnswer, this, &HubFrame::updateCallAnswer, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreCallEnd, this, &HubFrame::updateCallEnd, Qt::QueuedConnection);
+    connect(this, &HubFrame::coreCallMediaControl, this, &HubFrame::updateCallMediaControl, Qt::QueuedConnection);
+    setupNmdcpbCalls();
+#endif
+
     connect(label_LAST_STATUS, &QLabel::linkActivated, this, &HubFrame::slotStatusLinkOpen);
     connect(treeView_USERS, &QTreeView::customContextMenuRequested, this, &HubFrame::slotUserListMenu);
     connect(treeView_USERS->header(), &QHeaderView::customContextMenuRequested, this, &HubFrame::slotHeaderMenu);
@@ -1269,6 +1299,19 @@ void HubFrame::initMenu(){
                          );
 
     d->arenaMenu->addMenu(copyInfo);
+
+#ifdef WITH_NMDCPB
+    if (dynamic_cast<dcpp::NmdcHub*>(d->client)) {
+        QAction *sepCh    = new QAction(d->arenaMenu);
+        sepCh->setSeparator(true);
+        QAction *channels = new QAction(WU->getPixmap(WulforUtil::eiCHAT), tr("Channels..."), d->arenaMenu);
+        d->arenaMenu->addActions(QList<QAction*>() << sepCh << channels);
+        connect(channels, &QAction::triggered, this, &HubFrame::slotOpenChannels);
+        QAction *calls = new QAction(WU->getPixmap(WulforUtil::eiCHAT), tr("Calls..."), d->arenaMenu);
+        d->arenaMenu->addAction(calls);
+        connect(calls, &QAction::triggered, this, &HubFrame::slotOpenCalls);
+    }
+#endif
 
     if (d->client && d->client->isConnected()){
         QMenu *u_c = qtCtx()->wulforUtil()->buildUserCmdMenu(d->client->getHubUrl(), UserCommand::CONTEXT_HUB, d->arenaMenu);
@@ -4034,3 +4077,401 @@ void HubFrame::updateE2EPMStatus(QString nick, QString fingerprint, bool keyChan
                        .arg(nick, fingerprint));
     }
 }
+
+#ifdef WITH_NMDCPB
+// ===========================================================================
+// NMDCpb channels — HubFrame owns the ChannelManager wiring, ChannelFrame is
+// the UI. Listener callbacks fire on core threads → emit queued coreChannel*
+// signals → updateChannel* slots run on the GUI thread.
+// ===========================================================================
+
+void HubFrame::setupNmdcpbChannels() {
+    Q_D(HubFrame);
+    if (!d->client)
+        return;
+    nmdcHub_ = dynamic_cast<dcpp::NmdcHub*>(d->client);
+    if (nmdcHub_)
+        nmdcHub_->getChannelManager().addListener(this);
+}
+
+void HubFrame::teardownNmdcpbChannels() {
+    if (nmdcHub_) {
+        nmdcHub_->getChannelManager().removeListener(this);
+        nmdcHub_ = nullptr;
+    }
+    if (channelFrame_) {
+        disconnect(channelFrame_, nullptr, this, nullptr);
+        qtCtx()->arenaWidgetManager()->rem(channelFrame_);
+        channelFrame_ = nullptr;
+    }
+}
+
+QList<ChannelRow> HubFrame::collectChannelRows() {
+    QList<ChannelRow> rows;
+    if (!nmdcHub_)
+        return rows;
+    for (const auto &ci : nmdcHub_->getChannelManager().getChannels()) {
+        ChannelRow r;
+        r.id          = _q(ci.channelId);
+        r.name        = _q(ci.name);
+        r.topic       = _q(ci.topic);
+        r.isPrivate   = ci.isPrivate;
+        r.owner       = _q(ci.ownerNick);
+        r.memberCount = (int)ci.memberCount;
+        r.joined      = ci.joined;
+        rows.append(r);
+    }
+    return rows;
+}
+
+// ---- ChannelManagerListener (core thread) ----
+
+void HubFrame::onChannelList(const std::vector<dcpp::ChannelInfo>& channels) {
+    QList<ChannelRow> rows;
+    for (const auto &ci : channels) {
+        ChannelRow r;
+        r.id          = _q(ci.channelId);
+        r.name        = _q(ci.name);
+        r.topic       = _q(ci.topic);
+        r.isPrivate   = ci.isPrivate;
+        r.owner       = _q(ci.ownerNick);
+        r.memberCount = (int)ci.memberCount;
+        r.joined      = ci.joined;
+        rows.append(r);
+    }
+    emit coreChannelList(rows);
+}
+
+void HubFrame::onChannelCreated(const std::string& channelId, const std::string& ownerNick,
+                                bool isPrivate) {
+    emit coreChannelCreated(_q(channelId), _q(ownerNick), isPrivate);
+}
+
+void HubFrame::onChannelMemberUpdate(const std::string& channelId, const std::string& nick,
+                                     int updateType, dcpp::ChannelRole newRole,
+                                     const std::string& reason) {
+    emit coreChannelMemberUpdate(_q(channelId), _q(nick), updateType,
+                                 (int)newRole, _q(reason));
+}
+
+void HubFrame::onChannelMessage(const std::string& channelId, const std::string& fromNick,
+                                const std::string& text, bool isAction, uint64_t timestamp) {
+    emit coreChannelMessage(_q(channelId), _q(fromNick), _q(text), isAction,
+                            (quint64)timestamp);
+}
+
+void HubFrame::onChannelInvite(const std::string& channelId, const std::string& /*targetNick*/,
+                               const std::string& inviterNick) {
+    emit coreChannelInvite(_q(channelId), _q(inviterNick));
+}
+
+// ---- GUI-thread appliers ----
+
+void HubFrame::updateChannelList(const QList<ChannelRow> &channels) {
+    if (channelFrame_)
+        channelFrame_->setChannelList(channels);
+}
+
+void HubFrame::updateChannelCreated(QString channelId, QString ownerNick, bool isPrivate) {
+    if (channelFrame_)
+        channelFrame_->channelCreated(channelId, ownerNick, isPrivate);
+}
+
+void HubFrame::updateChannelMemberUpdate(QString channelId, QString nick, int updateType,
+                                         int newRole, QString reason) {
+    if (channelFrame_)
+        channelFrame_->memberUpdate(channelId, nick, updateType, newRole, reason);
+}
+
+void HubFrame::updateChannelMessage(QString channelId, QString fromNick, QString text,
+                                    bool isAction, quint64 timestamp) {
+    if (channelFrame_)
+        channelFrame_->channelMessage(channelId, fromNick, text, isAction, timestamp);
+}
+
+void HubFrame::updateChannelInvite(QString channelId, QString inviterNick) {
+    if (channelFrame_)
+        channelFrame_->channelInvite(channelId, inviterNick);
+    else
+        addStatus(tr("Channel invitation to \"%1\" from %2").arg(channelId, inviterNick));
+}
+
+// ---- Open / wire the ChannelFrame ----
+
+void HubFrame::slotOpenChannels() {
+    Q_D(HubFrame);
+    if (!nmdcHub_) {
+        addStatus(tr("Channels are only available on NMDC hubs with protocol extensions."));
+        return;
+    }
+    if (!channelFrame_) {
+        channelFrame_ = ArenaWidgetFactory().create<ChannelFrame, QString, QString>(
+            _q(d->client->getHubUrl()), getHubName());
+        wireChannelFrame();
+        // seed with any channels we already know about
+        channelFrame_->setChannelList(collectChannelRows());
+    }
+    qtCtx()->arenaWidgetManager()->activate(channelFrame_);
+    // ask the hub for a fresh list
+    chReqRefresh();
+}
+
+void HubFrame::wireChannelFrame() {
+    if (!channelFrame_)
+        return;
+    connect(channelFrame_, &ChannelFrame::refreshRequested,     this, &HubFrame::chReqRefresh);
+    connect(channelFrame_, &ChannelFrame::createRequested,      this, &HubFrame::chReqCreate);
+    connect(channelFrame_, &ChannelFrame::joinRequested,        this, &HubFrame::chReqJoin);
+    connect(channelFrame_, &ChannelFrame::leaveRequested,       this, &HubFrame::chReqLeave);
+    connect(channelFrame_, &ChannelFrame::sendMessageRequested, this, &HubFrame::chReqSend);
+    connect(channelFrame_, &ChannelFrame::setTopicRequested,    this, &HubFrame::chReqSetTopic);
+    connect(channelFrame_, &ChannelFrame::inviteRequested,      this, &HubFrame::chReqInvite);
+    connect(channelFrame_, &ChannelFrame::kickRequested,        this, &HubFrame::chReqKick);
+    connect(channelFrame_, &ChannelFrame::setRoleRequested,     this, &HubFrame::chReqSetRole);
+    connect(channelFrame_, &ChannelFrame::inviteResponse,       this, &HubFrame::chReqInviteResponse);
+    connect(channelFrame_, &QObject::destroyed,                 this, &HubFrame::slotChannelFrameDestroyed);
+}
+
+void HubFrame::slotChannelFrameDestroyed() {
+    channelFrame_ = nullptr;
+}
+
+// ---- Action handlers: build a PbEnvelope and send it to the hub ----
+
+void HubFrame::chReqRefresh() {
+    if (nmdcHub_)
+        nmdcHub_->sendChannelEnvelope(nmdcHub_->getChannelManager().buildListChannels());
+}
+
+void HubFrame::chReqCreate(const QString &channelId, const QString &name,
+                           const QString &topic, bool isPrivate) {
+    if (nmdcHub_)
+        nmdcHub_->sendChannelEnvelope(nmdcHub_->getChannelManager().buildCreateChannel(
+            _tq(channelId), _tq(name), _tq(topic), isPrivate));
+}
+
+void HubFrame::chReqJoin(const QString &channelId) {
+    if (nmdcHub_)
+        nmdcHub_->sendChannelEnvelope(nmdcHub_->getChannelManager().buildJoinChannel(_tq(channelId)));
+}
+
+void HubFrame::chReqLeave(const QString &channelId) {
+    if (nmdcHub_)
+        nmdcHub_->sendChannelEnvelope(nmdcHub_->getChannelManager().buildLeaveChannel(_tq(channelId)));
+}
+
+void HubFrame::chReqSend(const QString &channelId, const QString &text, bool isAction) {
+    if (!nmdcHub_)
+        return;
+    const std::string env = nmdcHub_->getChannelManager().buildEncryptedChannelMessage(
+        _tq(channelId), _tq(text), isAction);
+    if (env.empty()) {
+        if (channelFrame_)
+            channelFrame_->channelStatus(channelId,
+                tr("Cannot send: no encryption key established for this channel yet."));
+        return;
+    }
+    nmdcHub_->sendChannelEnvelope(env);
+}
+
+void HubFrame::chReqSetTopic(const QString &channelId, const QString &topic) {
+    if (nmdcHub_)
+        nmdcHub_->sendChannelEnvelope(nmdcHub_->getChannelManager().buildSetTopic(
+            _tq(channelId), _tq(topic)));
+}
+
+void HubFrame::chReqInvite(const QString &channelId, const QString &nick) {
+    if (nmdcHub_)
+        nmdcHub_->sendChannelEnvelope(nmdcHub_->getChannelManager().buildInvite(
+            _tq(channelId), _tq(nick)));
+}
+
+void HubFrame::chReqKick(const QString &channelId, const QString &nick) {
+    if (nmdcHub_)
+        nmdcHub_->sendChannelEnvelope(nmdcHub_->getChannelManager().buildKick(
+            _tq(channelId), _tq(nick)));
+}
+
+void HubFrame::chReqSetRole(const QString &channelId, const QString &nick, int role) {
+    if (nmdcHub_)
+        nmdcHub_->sendChannelEnvelope(nmdcHub_->getChannelManager().buildSetRole(
+            _tq(channelId), _tq(nick), (dcpp::ChannelRole)role));
+}
+
+void HubFrame::chReqInviteResponse(const QString &channelId, bool accepted) {
+    if (nmdcHub_)
+        nmdcHub_->sendChannelEnvelope(nmdcHub_->getChannelManager().buildInviteResponse(
+            _tq(channelId), accepted));
+}
+
+// ===========================================================================
+// NMDCpb calls — same pattern as channels. HubFrame owns the CallManager
+// wiring; CallFrame is the UI. Listener callbacks fire on core threads →
+// emit queued coreCall* signals → updateCall* slots on the GUI thread.
+// ===========================================================================
+
+void HubFrame::setupNmdcpbCalls() {
+    // nmdcHub_ is resolved by setupNmdcpbChannels(); both share the same hub.
+    if (nmdcHub_)
+        nmdcHub_->getCallManager().addListener(this);
+}
+
+void HubFrame::teardownNmdcpbCalls() {
+    if (nmdcHub_)
+        nmdcHub_->getCallManager().removeListener(this);
+    if (callFrame_) {
+        disconnect(callFrame_, nullptr, this, nullptr);
+        qtCtx()->arenaWidgetManager()->rem(callFrame_);
+        callFrame_ = nullptr;
+    }
+}
+
+QList<CallRow> HubFrame::collectCallRows() {
+    QList<CallRow> rows;
+    if (!nmdcHub_)
+        return rows;
+    for (const auto &ci : nmdcHub_->getCallManager().getCalls()) {
+        CallRow r;
+        r.id                  = _q(ci.callId);
+        r.peer                = _q(ci.peerNick);
+        r.isGroup             = ci.isGroup;
+        r.groupId             = _q(ci.groupId);
+        r.state               = (int)ci.state;
+        r.hasVideo            = false;
+        for (const auto &m : ci.media)
+            if (m == dcpp::CallMediaType::VIDEO)
+                r.hasVideo = true;
+        r.localAudioMuted     = ci.localMedia.audioMuted;
+        r.localVideoMuted     = ci.localMedia.videoMuted;
+        r.localScreenSharing  = ci.localMedia.screenSharing;
+        r.remoteAudioMuted    = ci.remoteMedia.audioMuted;
+        r.remoteVideoMuted    = ci.remoteMedia.videoMuted;
+        r.remoteScreenSharing = ci.remoteMedia.screenSharing;
+        rows.append(r);
+    }
+    return rows;
+}
+
+// ---- CallManagerListener (core thread) ----
+
+void HubFrame::onCallOffer(const std::string& callId, const std::string& fromNick,
+                           bool isGroup, const std::vector<dcpp::CallMediaType>& media) {
+    QList<int> m;
+    for (const auto &t : media)
+        m.append((int)t);
+    emit coreCallOffer(_q(callId), _q(fromNick), isGroup, m);
+}
+
+void HubFrame::onCallAnswer(const std::string& callId, const std::string& fromNick,
+                            bool accepted, const std::string& rejectReason) {
+    emit coreCallAnswer(_q(callId), _q(fromNick), accepted, _q(rejectReason));
+}
+
+void HubFrame::onCallEnd(const std::string& callId, dcpp::CallEndReason reason,
+                         uint32_t durationSec) {
+    emit coreCallEnd(_q(callId), (int)reason, (quint32)durationSec);
+}
+
+void HubFrame::onCallMediaControl(const std::string& callId, const std::string& fromNick,
+                                  bool audioMuted, bool videoMuted, bool screenSharing) {
+    emit coreCallMediaControl(_q(callId), _q(fromNick), audioMuted, videoMuted, screenSharing);
+}
+
+// ---- GUI-thread appliers ----
+
+void HubFrame::updateCallOffer(QString callId, QString fromNick, bool isGroup, QList<int> media) {
+    if (!callFrame_)
+        slotOpenCalls(); // surface incoming calls even if the frame is closed
+    if (callFrame_)
+        callFrame_->callOffer(callId, fromNick, isGroup, media);
+}
+
+void HubFrame::updateCallAnswer(QString callId, QString fromNick, bool accepted, QString rejectReason) {
+    if (callFrame_)
+        callFrame_->callAnswer(callId, fromNick, accepted, rejectReason);
+}
+
+void HubFrame::updateCallEnd(QString callId, int reason, quint32 durationSec) {
+    if (callFrame_)
+        callFrame_->callEnded(callId, reason, durationSec);
+}
+
+void HubFrame::updateCallMediaControl(QString callId, QString fromNick, bool audioMuted,
+                                      bool videoMuted, bool screenSharing) {
+    if (callFrame_)
+        callFrame_->callMediaControl(callId, fromNick, audioMuted, videoMuted, screenSharing);
+}
+
+// ---- Open / wire the CallFrame ----
+
+void HubFrame::slotOpenCalls() {
+    Q_D(HubFrame);
+    if (!nmdcHub_) {
+        addStatus(tr("Calls are only available on NMDC hubs with protocol extensions."));
+        return;
+    }
+    if (!callFrame_) {
+        callFrame_ = ArenaWidgetFactory().create<CallFrame, QString, QString>(
+            _q(d->client->getHubUrl()), getHubName());
+        wireCallFrame();
+        callFrame_->setCallList(collectCallRows());
+    }
+    qtCtx()->arenaWidgetManager()->activate(callFrame_);
+}
+
+void HubFrame::wireCallFrame() {
+    if (!callFrame_)
+        return;
+    connect(callFrame_, &CallFrame::callRequested,         this, &HubFrame::clReqOffer);
+    connect(callFrame_, &CallFrame::answerRequested,       this, &HubFrame::clReqAnswer);
+    connect(callFrame_, &CallFrame::endRequested,          this, &HubFrame::clReqEnd);
+    connect(callFrame_, &CallFrame::mediaControlRequested, this, &HubFrame::clReqMediaControl);
+    connect(callFrame_, &QObject::destroyed,               this, &HubFrame::slotCallFrameDestroyed);
+}
+
+void HubFrame::slotCallFrameDestroyed() {
+    callFrame_ = nullptr;
+}
+
+// ---- Action handlers: build a PbEnvelope and send it to the hub ----
+
+void HubFrame::clReqOffer(const QString &targetNick, const QList<int> &media,
+                          bool isGroup, const QString &groupId) {
+    if (!nmdcHub_)
+        return;
+    std::vector<dcpp::CallMediaType> m;
+    for (int t : media)
+        m.push_back((dcpp::CallMediaType)t);
+    std::string callId;
+    const std::string env = nmdcHub_->getCallManager().buildOffer(
+        _tq(targetNick), m, isGroup, _tq(groupId), callId);
+    nmdcHub_->sendCallEnvelope(env);
+    // refresh the frame so the new RINGING_OUT call appears
+    if (callFrame_)
+        callFrame_->setCallList(collectCallRows());
+}
+
+void HubFrame::clReqAnswer(const QString &callId, bool accepted, const QString &rejectReason) {
+    if (nmdcHub_)
+        nmdcHub_->sendCallEnvelope(nmdcHub_->getCallManager().buildAnswer(
+            _tq(callId), accepted, _tq(rejectReason)));
+    if (callFrame_)
+        callFrame_->setCallList(collectCallRows());
+}
+
+void HubFrame::clReqEnd(const QString &callId) {
+    if (nmdcHub_)
+        nmdcHub_->sendCallEnvelope(nmdcHub_->getCallManager().buildEnd(
+            _tq(callId), dcpp::CallEndReason::NORMAL));
+    if (callFrame_)
+        callFrame_->setCallList(collectCallRows());
+}
+
+void HubFrame::clReqMediaControl(const QString &callId, bool audioMuted,
+                                 bool videoMuted, bool screenSharing) {
+    if (nmdcHub_)
+        nmdcHub_->sendCallEnvelope(nmdcHub_->getCallManager().buildMediaControl(
+            _tq(callId), audioMuted, videoMuted, screenSharing));
+}
+#endif // WITH_NMDCPB
+

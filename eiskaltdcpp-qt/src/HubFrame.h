@@ -41,6 +41,14 @@
 #include "ArenaWidget.h"
 #include "WulforUtil.h"
 
+#ifdef WITH_NMDCPB
+#include "dcpp/ChannelManager.h"
+#include "dcpp/CallManager.h"
+#include "ChannelFrame.h"
+#include "CallFrame.h"
+namespace dcpp { class NmdcHub; }
+#endif
+
 class ShellCommandRunner;
 class PMWindow;
 class HubFramePrivate;
@@ -59,6 +67,10 @@ class HubFrame :
         private Ui::UIHubFrame,
         private dcpp::ClientListener,
         private FavoriteManagerListener,
+#ifdef WITH_NMDCPB
+        private dcpp::ChannelManagerListener,
+        private dcpp::CallManagerListener,
+#endif
         public  ArenaWidget
 {
     Q_OBJECT
@@ -188,6 +200,22 @@ Q_SIGNALS:
     void new_msg(const VarMap&);
     void coreE2EPMStatus(QString nick, QString fingerprint, bool keyChanged);
 
+#ifdef WITH_NMDCPB
+    void coreChannelList(const QList<ChannelRow> &channels);
+    void coreChannelCreated(QString channelId, QString ownerNick, bool isPrivate);
+    void coreChannelMemberUpdate(QString channelId, QString nick, int updateType,
+                                 int newRole, QString reason);
+    void coreChannelMessage(QString channelId, QString fromNick, QString text,
+                            bool isAction, quint64 timestamp);
+    void coreChannelInvite(QString channelId, QString inviterNick);
+
+    void coreCallOffer(QString callId, QString fromNick, bool isGroup, QList<int> media);
+    void coreCallAnswer(QString callId, QString fromNick, bool accepted, QString rejectReason);
+    void coreCallEnd(QString callId, int reason, quint32 durationSec);
+    void coreCallMediaControl(QString callId, QString fromNick, bool audioMuted,
+                              bool videoMuted, bool screenSharing);
+#endif
+
 public Q_SLOTS:
     void disableChat();
     void clearChat();
@@ -266,6 +294,49 @@ private Q_SLOTS:
     void newPm(const VarMap&);
     void updateE2EPMStatus(QString nick, QString fingerprint, bool keyChanged);
 
+#ifdef WITH_NMDCPB
+    // Open the channels arena widget for this hub
+    void slotOpenChannels();
+    // GUI-thread appliers (from queued coreChannel* signals)
+    void updateChannelList(const QList<ChannelRow> &channels);
+    void updateChannelCreated(QString channelId, QString ownerNick, bool isPrivate);
+    void updateChannelMemberUpdate(QString channelId, QString nick, int updateType,
+                                   int newRole, QString reason);
+    void updateChannelMessage(QString channelId, QString fromNick, QString text,
+                              bool isAction, quint64 timestamp);
+    void updateChannelInvite(QString channelId, QString inviterNick);
+    // Action handlers wired from ChannelFrame's *Requested signals
+    void chReqRefresh();
+    void chReqCreate(const QString &channelId, const QString &name,
+                     const QString &topic, bool isPrivate);
+    void chReqJoin(const QString &channelId);
+    void chReqLeave(const QString &channelId);
+    void chReqSend(const QString &channelId, const QString &text, bool isAction);
+    void chReqSetTopic(const QString &channelId, const QString &topic);
+    void chReqInvite(const QString &channelId, const QString &nick);
+    void chReqKick(const QString &channelId, const QString &nick);
+    void chReqSetRole(const QString &channelId, const QString &nick, int role);
+    void chReqInviteResponse(const QString &channelId, bool accepted);
+    void slotChannelFrameDestroyed();
+
+    // Open the calls arena widget for this hub
+    void slotOpenCalls();
+    // GUI-thread appliers (from queued coreCall* signals)
+    void updateCallOffer(QString callId, QString fromNick, bool isGroup, QList<int> media);
+    void updateCallAnswer(QString callId, QString fromNick, bool accepted, QString rejectReason);
+    void updateCallEnd(QString callId, int reason, quint32 durationSec);
+    void updateCallMediaControl(QString callId, QString fromNick, bool audioMuted,
+                                bool videoMuted, bool screenSharing);
+    // Action handlers wired from CallFrame's *Requested signals
+    void clReqOffer(const QString &targetNick, const QList<int> &media,
+                    bool isGroup, const QString &groupId);
+    void clReqAnswer(const QString &callId, bool accepted, const QString &rejectReason);
+    void clReqEnd(const QString &callId);
+    void clReqMediaControl(const QString &callId, bool audioMuted,
+                           bool videoMuted, bool screenSharing);
+    void slotCallFrameDestroyed();
+#endif
+
 private:
     // Chat functions
     void addOutput(QString);
@@ -306,6 +377,47 @@ private:
     virtual void on(ClientListener::NickTaken, Client*) noexcept;
     virtual void on(ClientListener::SearchFlood, Client*, const string&) noexcept;
     virtual void on(ClientListener::E2EPMStatus, Client*, const string&, const string&, bool) noexcept;
+
+#ifdef WITH_NMDCPB
+    // ChannelManagerListener interface (fires on core threads → emit queued signals)
+    void onChannelList(const std::vector<dcpp::ChannelInfo>& channels) override;
+    void onChannelCreated(const std::string& channelId, const std::string& ownerNick,
+                          bool isPrivate) override;
+    void onChannelMemberUpdate(const std::string& channelId, const std::string& nick,
+                               int updateType, dcpp::ChannelRole newRole,
+                               const std::string& reason) override;
+    void onChannelMessage(const std::string& channelId, const std::string& fromNick,
+                          const std::string& text, bool isAction,
+                          uint64_t timestamp) override;
+    void onChannelInvite(const std::string& channelId, const std::string& targetNick,
+                         const std::string& inviterNick) override;
+
+    // CallManagerListener interface (fires on core threads → emit queued signals)
+    void onCallOffer(const std::string& callId, const std::string& fromNick,
+                     bool isGroup, const std::vector<dcpp::CallMediaType>& media) override;
+    void onCallAnswer(const std::string& callId, const std::string& fromNick,
+                      bool accepted, const std::string& rejectReason) override;
+    void onCallEnd(const std::string& callId, dcpp::CallEndReason reason,
+                   uint32_t durationSec) override;
+    void onCallMediaControl(const std::string& callId, const std::string& fromNick,
+                            bool audioMuted, bool videoMuted, bool screenSharing) override;
+
+    // NMDCpb channel helpers
+    void setupNmdcpbChannels();      ///< called from init(): dynamic_cast + addListener
+    void teardownNmdcpbChannels();   ///< called from closeEvent: removeListener
+    void wireChannelFrame();         ///< connect ChannelFrame signals ↔ HubFrame slots
+    QList<ChannelRow> collectChannelRows();
+
+    // NMDCpb call helpers
+    void setupNmdcpbCalls();         ///< called from init(): dynamic_cast + addListener
+    void teardownNmdcpbCalls();      ///< called from closeEvent: removeListener
+    void wireCallFrame();            ///< connect CallFrame signals ↔ HubFrame slots
+    QList<CallRow> collectCallRows();
+
+    dcpp::NmdcHub *nmdcHub_ = nullptr;
+    ChannelFrame  *channelFrame_ = nullptr;
+    CallFrame     *callFrame_ = nullptr;
+#endif
 
     Q_DECLARE_PRIVATE(HubFrame)
     HubFramePrivate *d_ptr;

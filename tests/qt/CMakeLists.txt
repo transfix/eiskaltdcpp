@@ -13,6 +13,15 @@ include(Catch)
 
 # --- Qt6 ---
 find_package(Qt6 6.2.0 COMPONENTS Core Gui Widgets Test REQUIRED)
+# Multimedia is optional; SettingsMedia guards on these like the main build.
+find_package(Qt6 COMPONENTS Multimedia QUIET)
+if (NOT Qt6Multimedia_FOUND)
+    add_definitions(-DNO_QT_MULTIMEDIA)
+endif()
+find_package(Qt6 COMPONENTS MultimediaWidgets QUIET)
+if (NOT Qt6MultimediaWidgets_FOUND)
+    add_definitions(-DNO_QT_MULTIMEDIAWIDGETS)
+endif()
 
 # Enable automoc for Q_OBJECT classes
 set(CMAKE_AUTOMOC ON)
@@ -32,6 +41,17 @@ set(QT_MODEL_SOURCES
     ${QT_SRC_DIR}/SearchBlacklist.cpp
     ${QT_SRC_DIR}/Antispam.cpp
 )
+set(QT_NMDCPB_SOURCES)
+set(QT_NMDCPB_TESTS)
+if (WITH_NMDCPB)
+    list(APPEND QT_NMDCPB_SOURCES
+        ${QT_SRC_DIR}/ChannelFrame.cpp
+        ${QT_SRC_DIR}/CallFrame.cpp
+        ${QT_SRC_DIR}/SettingsMedia.cpp
+        ${QT_SRC_DIR}/ArenaWidget.cpp
+    )
+    list(APPEND QT_NMDCPB_TESTS test_channelframe.cpp test_callframe.cpp test_settingsmedia.cpp)
+endif()
 
 # --- Test sources ---
 add_executable(eiskaltdcpp-qt-tests
@@ -44,8 +64,10 @@ add_executable(eiskaltdcpp-qt-tests
     test_wulforsettings.cpp
     test_searchblacklist.cpp
     test_antispam.cpp
+    ${QT_NMDCPB_TESTS}
     stubs_wulforutil.cpp
     ${QT_MODEL_SOURCES}
+    ${QT_NMDCPB_SOURCES}
 )
 
 target_include_directories(eiskaltdcpp-qt-tests PRIVATE
@@ -55,6 +77,9 @@ target_include_directories(eiskaltdcpp-qt-tests PRIVATE
     ${GETTEXT_INCLUDE_DIR}
 )
 target_compile_definitions(eiskaltdcpp-qt-tests PRIVATE QT_CONTEXT_MINIMAL)
+if (WITH_NMDCPB)
+    target_compile_definitions(eiskaltdcpp-qt-tests PRIVATE WITH_NMDCPB)
+endif()
 if (LUA_SCRIPT)
     target_include_directories(eiskaltdcpp-qt-tests PRIVATE ${LUA_INCLUDE_DIR})
 endif()
@@ -67,6 +92,12 @@ target_link_libraries(eiskaltdcpp-qt-tests PRIVATE
     Qt6::Widgets
     Qt6::Test
 )
+if (Qt6Multimedia_FOUND)
+    target_link_libraries(eiskaltdcpp-qt-tests PRIVATE Qt6::Multimedia)
+endif()
+if (Qt6MultimediaWidgets_FOUND)
+    target_link_libraries(eiskaltdcpp-qt-tests PRIVATE Qt6::MultimediaWidgets)
+endif()
 
 # Auto-discover test cases.
 # - PRE_TEST defers discovery to ctest time (avoids build-time env issues)

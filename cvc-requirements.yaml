@@ -1,0 +1,34 @@
+# cvc-requirements.yaml — cvcpkg dependency set for eiskaltdcpp (Linux).
+#
+# Usage:
+#   cvcpkg install --from cvc-requirements.yaml --prefix ./deps
+#
+# Notes:
+# - Qt Declarative (Qt6::Qml / Quick / QuickWidgets) is not published for
+#   linux/x86_64 in cvcpkg yet, so a build against this prefix must use:
+#     -DUSE_JS=OFF -DUSE_QT_QML=OFF
+# - Lua currently has no linux/x86_64 bundle in cvcpkg; keep using system
+#   Lua dev packages when LUA_SCRIPT=ON.
+# - For WITH_NMDCPB builds, protobuf/protoc come from this cvcpkg prefix.
+#   Use a clean build dir and keep protoc + libprotobuf from the same prefix
+#   (do not mix with system /usr/bin/protoc or system libprotobuf).
+
+platform: auto
+arch: auto
+config: release
+link: shared
+
+components:
+  - bzip2
+  - zlib
+  - openssl
+  - protobuf
+  - gettext
+  - iconv
+  - pcre2
+  - idn2
+  - libunistring
+  - miniupnpc
+  - aspell
+  - qt6
+  - qtmultimedia

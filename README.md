@@ -94,6 +94,56 @@ cmake -B build -DUSE_QT6=ON -DUSE_JS=ON
 cmake --build build
 ```
 
+### Build with cvcpkg (optional, Linux)
+
+Use this when you want a reproducible dependency prefix (including Qt6
+Multimedia / MultimediaWidgets for camera preview).
+
+1. Install cvcpkg from latest `libcvc-deps` master:
+
+```bash
+pip install --break-system-packages /path/to/libcvc-deps/tools/cvcpkg
+```
+
+2. Install dependencies into a local prefix:
+
+```bash
+cd eiskaltdcpp
+env -u LD_LIBRARY_PATH cvcpkg install --from cvc-requirements.yaml --prefix ./deps
+```
+
+3. Configure a separate build tree against that prefix:
+
+```bash
+cmake -S . -B build-cvc \
+    -DCMAKE_PREFIX_PATH="$PWD/deps" \
+    -DProtobuf_DIR="$PWD/deps/lib/cmake/protobuf" \
+    -DWITH_NMDCPB=ON -DBUILD_TESTS=ON \
+    -DUSE_JS=OFF -DUSE_QT_QML=OFF
+cmake --build build-cvc -j"$(nproc)"
+```
+
+4. Build/run with the prefix activated:
+
+```bash
+source ./deps/bin/activate
+cmake --build build-cvc --target eiskaltdcpp-qt eiskaltdcpp-qt-tests -j"$(nproc)"
+QT_QPA_PLATFORM=offscreen ./build-cvc/tests/qt/eiskaltdcpp-qt-tests
+```
+
+If `LD_LIBRARY_PATH` is set to `./deps/lib` while running `cvcpkg`, Python may
+load cvcpkg OpenSSL and fail TLS catalog fetch with certificate verification
+errors. Use `env -u LD_LIBRARY_PATH cvcpkg ...` for cvcpkg commands.
+
+Current caveat: `qtdeclarative` bundles are not published for Linux yet,
+so Qt JS/QML support is disabled in this mode (`USE_JS=OFF`,
+`USE_QT_QML=OFF`).
+
+For `WITH_NMDCPB=ON`, this mode uses protobuf/protoc from `./deps`
+(`Protobuf_DIR=$PWD/deps/lib/cmake/protobuf`). Keep the pair consistent
+(protoc and libprotobuf from the same prefix) and use a clean build
+directory when switching between system and cvcpkg protobuf.
+
 GNU/Linux and FreeBSD users may install [packages](https://github.com/eiskaltdcpp/eiskaltdcpp#packages-and-installers) from official and unofficial repositories, ports, etc.
 
 macOS users may install and update official builds using [Homebrew](https://brew.sh/) cask:

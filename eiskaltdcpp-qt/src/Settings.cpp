@@ -20,6 +20,7 @@
 #include "SettingsSharing.h"
 #include "SettingsGUI.h"
 #include "SettingsNotification.h"
+#include "SettingsMedia.h"
 #include "SettingsLog.h"
 #include "SettingsUC.h"
 #include "SettingsShortcuts.h"
@@ -82,6 +83,11 @@ void Settings::init(){
     connect(this, &Settings::timeToDie, notify, &SettingsNotification::ok);
     widgets.insert(item, (int)Page::Notifications);
 
+    item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiMESSAGE), tr("Media"), listWidget);
+    SettingsMedia *media = new SettingsMedia(this);
+    connect(this, &Settings::timeToDie, media, &SettingsMedia::ok);
+    widgets.insert(item, (int)Page::Media);
+
     item = new QListWidgetItem(WU->getPixmap(WulforUtil::eiOPEN_LOG_FILE), tr("Logs"), listWidget);
     SettingsLog *logs = new SettingsLog(this);
     connect(this, &Settings::timeToDie, logs, &SettingsLog::ok);
@@ -115,6 +121,7 @@ void Settings::init(){
     stackedWidget->insertWidget((int)Page::Sharing, prepareWidget(sharing));
     stackedWidget->insertWidget((int)Page::GUI, prepareWidget(gui));
     stackedWidget->insertWidget((int)Page::Notifications, prepareWidget(notify));
+    stackedWidget->insertWidget((int)Page::Media, prepareWidget(media));
     stackedWidget->insertWidget((int)Page::Logs, prepareWidget(logs));
     stackedWidget->insertWidget((int)Page::UserCommands, prepareWidget(ucs));
     stackedWidget->insertWidget((int)Page::Shortcuts, prepareWidget(sshs));

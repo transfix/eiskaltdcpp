@@ -44,6 +44,8 @@ public:
         QueuedUsers,
         CmdDebug,
         Secretary,
+        Channel,
+        Call,
         NoRole  //Not valid for widgets
     };
 
