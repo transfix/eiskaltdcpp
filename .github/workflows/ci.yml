@@ -1,6 +1,9 @@
 #
 # CI — build + test on every PR and push
 #
+# GitHub-hosted runners only: this repository is public, and a pull request's workflows must
+# never reach self-hosted runners.
+#
 name: CI
 
 on:
@@ -13,9 +16,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     strategy:
@@ -28,9 +34,6 @@ jobs:
             daemon-only: true
 
     steps:
-      - name: Clean workspace
-        run: sudo rm -rf "$GITHUB_WORKSPACE"/*
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -54,7 +57,7 @@ jobs:
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
             -DBUILD_TESTS=ON \
-            -DUSE_QT5=OFF \
+            -DUSE_QT6=OFF \
             -DUSE_GTK3=OFF \
             -DNO_UI_DAEMON=ON
 
@@ -64,7 +67,7 @@ jobs:
           cmake -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
             -DBUILD_TESTS=ON \
-            -DUSE_QT5=OFF \
+            -DUSE_QT6=OFF \
             -DUSE_GTK3=OFF \
             -DNO_UI_DAEMON=ON
 
