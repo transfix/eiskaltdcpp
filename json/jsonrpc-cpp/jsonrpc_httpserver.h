@@ -28,6 +28,12 @@
 #include "jsonrpc_common.h"
 #include "jsonrpc_handler.h"
 
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
+
+struct mg_server;
+
 namespace Json
 {
 
@@ -52,7 +58,20 @@ namespace Json
          */
         virtual ~HTTPServer();
 
+        /**
+         * \brief Create the server and poll it until stopPolling() is
+         * called. Blocks; the server is destroyed on this thread before
+         * it returns.
+         * \return false if the server could not be created or polling
+         * was already stopped
+         */
         bool startPolling();
+
+        /**
+         * \brief Ask the polling loop to exit and wait until it has
+         * destroyed the server. Must not be called from the polling
+         * thread (for example from an RPC method).
+         */
         bool stopPolling();
         bool onRequest(const std::string &str, void* addInfo);
         bool sendResponse(std::string& response, void* addInfo = NULL);
@@ -113,6 +132,25 @@ namespace Json
          * \brief Local port.
          */
         uint16_t m_port;
+
+        /**
+         * \brief Server owned by the polling thread while it polls.
+         */
+        struct mg_server* m_server = nullptr;
+
+        /**
+         * \brief Set by stopPolling() to end the polling loop.
+         */
+        std::atomic<bool> m_exit{false};
+
+        /**
+         * \brief True from server creation until the polling thread has
+         * destroyed it; guarded by m_mutex.
+         */
+        bool m_polling = false;
+
+        std::mutex m_mutex;
+        std::condition_variable m_stopped;
     };
 
   } /* namespace Rpc */

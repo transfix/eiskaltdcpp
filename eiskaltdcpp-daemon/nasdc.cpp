@@ -40,8 +40,9 @@ char local_dir[1024+1] = {0};
 
 #ifndef _WIN32
 static ServerManager* g_serverMgr = nullptr;
+static volatile sig_atomic_t g_stopSignal = 0;
 
-static void SigHandler(int sig) {
+static string stopSignalMessage(int sig) {
     string str = "Received signal ";
 
     if (sig == SIGINT) {
@@ -50,20 +51,24 @@ static void SigHandler(int sig) {
         str += "SIGTERM";
     } else if (sig == SIGQUIT) {
         str += "SIGQUIT";
-    } else if (sig == SIGHUP) {
-       if (g_serverMgr) g_serverMgr->configReload();
-       return;
     } else {
         str += Util::toString(sig);
     }
 
-    str += " ending...";
+    return str + " ending...";
+}
 
-    if (g_serverMgr) {
-        const auto& cfg = g_serverMgr->config();
-        logging(cfg.daemon, cfg.useSyslog, true, str);
-        g_serverMgr->stop();
+static void SigHandler(int sig) {
+    if (sig == SIGHUP) {
+       if (g_serverMgr) g_serverMgr->configReload();
+       return;
     }
+
+    // The signal may land on any thread, including the JSON-RPC polling
+    // thread that stop() waits for, so only flag it here; main() stops.
+    g_stopSignal = sig;
+    if (g_serverMgr)
+        g_serverMgr->requestTermination();
 
     // restore to default...
     struct sigaction sigact;
@@ -382,8 +387,13 @@ int main(int argc, char* argv[])
 
     while (mgr.isRunning()) {
         Thread::sleep(1);
-        if (mgr.isTerminated())
+        if (mgr.isTerminated()) {
+#ifndef _WIN32
+            if (g_stopSignal)
+                logging(config.daemon, config.useSyslog, true, stopSignalMessage(g_stopSignal));
+#endif
             mgr.stop();
+        }
     }
 
 #ifndef _WIN32

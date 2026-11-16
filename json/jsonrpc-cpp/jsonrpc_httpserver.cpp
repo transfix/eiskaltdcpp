@@ -34,9 +34,6 @@ namespace Json
 
   namespace Rpc
   {
-    struct mg_server *server;
-    static int exit_flag;
-
     static int ev_handler(struct mg_connection *conn, enum mg_event ev) {
         int result = MG_FALSE;
         if (ev == MG_AUTH) {
@@ -57,14 +54,6 @@ namespace Json
         return result;
     }
 
-    static void *serving_thread_func(void *param) {
-      struct mg_server *srv = (struct mg_server *) param;
-      while (exit_flag == 0) {
-        mg_poll_server(srv, 1000);
-      }
-      return NULL;
-    }
-
     bool HTTPServer::onRequest(const std::string& str, void* addInfo)
     {
         Json::Value response;
@@ -78,7 +67,6 @@ namespace Json
     {
       m_address = address;
       m_port = port;
-      exit_flag = 0;
     }
 
     HTTPServer::~HTTPServer()
@@ -87,21 +75,39 @@ namespace Json
 
     bool HTTPServer::startPolling()
     {
-        // Create and configure the server
-        if ((server = mg_create_server(this, ev_handler)) == NULL) {
-            return false;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if (m_exit || m_polling) {
+                return false;
+            }
+            // Create and configure the server
+            if ((m_server = mg_create_server(this, ev_handler)) == NULL) {
+                return false;
+            }
+            char tmp_port[30];
+            snprintf(tmp_port, sizeof(tmp_port), "%s:%d", GetAddress().c_str(), GetPort());
+            mg_set_option(m_server, "listening_port", tmp_port);
+            m_polling = true;
         }
-        char tmp_port[30];
-        sprintf(tmp_port,"%s:%d", GetAddress().c_str(),GetPort());
-        mg_set_option(server, "listening_port", tmp_port);
-        serving_thread_func(server);
+
+        // Only this thread touches the server from here on, so it is
+        // destroyed here rather than by the thread calling stopPolling().
+        while (!m_exit) {
+            mg_poll_server(m_server, 1000);
+        }
+
+        std::lock_guard<std::mutex> lock(m_mutex);
+        mg_destroy_server(&m_server);
+        m_polling = false;
+        m_stopped.notify_all();
         return true;
     }
 
     bool HTTPServer::stopPolling()
     {
-        exit_flag = 1;
-        mg_destroy_server(&server);
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_exit = true;
+        m_stopped.wait(lock, [this] { return !m_polling; });
         return true;
     }
 
