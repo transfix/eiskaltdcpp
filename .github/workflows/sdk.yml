@@ -137,7 +137,7 @@ jobs:
       matrix:
         include:
           - arch: arm64
-            runner: macos-14
+            runner: macos-15
     steps:
       - uses: actions/checkout@v4
         with:

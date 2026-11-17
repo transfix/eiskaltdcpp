@@ -382,19 +382,21 @@ jobs:
       if: matrix.build_type == 'Release'
       shell: pwsh
       run: |
+        $nsisDir = "C:\Program Files (x86)\NSIS"
         $maxRetries = 3
         for ($i = 1; $i -le $maxRetries; $i++) {
           Write-Host "Attempting to install NSIS (attempt $i/$maxRetries)..."
           choco install nsis -y --no-progress
-          if ($LASTEXITCODE -eq 0) { break }
+          # choco can exit 0 without installing anything (e.g. a 504 from the
+          # community feed), so check for makensis.exe, not the exit code.
+          if (Test-Path "$nsisDir\makensis.exe") { break }
           if ($i -lt $maxRetries) {
-            Write-Host "Chocolatey install failed (exit $LASTEXITCODE), retrying in 30s..."
+            Write-Host "NSIS not installed (choco exit $LASTEXITCODE), retrying in 30s..."
             Start-Sleep -Seconds 30
           } else {
             throw "Failed to install NSIS after $maxRetries attempts"
           }
         }
-        $nsisDir = "C:\Program Files (x86)\NSIS"
         echo "$nsisDir" >> $env:GITHUB_PATH
         Write-Host "NSIS installed: $(& "$nsisDir\makensis.exe" /VERSION 2>&1)"
 
@@ -474,23 +476,28 @@ jobs:
       if: matrix.build_type == 'Release'
       shell: pwsh
       run: |
+        # Locate the WiX v3 bin directory (candle.exe / light.exe)
+        function Find-WixBin {
+          Get-ChildItem 'C:\Program Files (x86)' -Filter 'WiX Toolset v3*' -Directory -ErrorAction SilentlyContinue |
+            Sort-Object Name -Descending |
+            Select-Object -First 1 |
+            ForEach-Object { Join-Path $_.FullName 'bin' }
+        }
         $maxRetries = 3
         for ($i = 1; $i -le $maxRetries; $i++) {
           Write-Host "Attempting to install WiX Toolset (attempt $i/$maxRetries)..."
           choco install wixtoolset -y --no-progress
-          if ($LASTEXITCODE -eq 0) { break }
+          # choco can exit 0 without installing anything (e.g. a 504 from the
+          # community feed), so check for candle.exe, not the exit code.
+          $wixBin = Find-WixBin
+          if ($wixBin -and (Test-Path "$wixBin/candle.exe")) { break }
           if ($i -lt $maxRetries) {
-            Write-Host "Chocolatey install failed (exit $LASTEXITCODE), retrying in 30s..."
+            Write-Host "WiX not installed (choco exit $LASTEXITCODE), retrying in 30s..."
             Start-Sleep -Seconds 30
           } else {
             throw "Failed to install WiX Toolset after $maxRetries attempts"
           }
         }
-        # Locate the WiX v3 bin directory (candle.exe / light.exe) and add to PATH
-        $wixBin = Get-ChildItem 'C:\Program Files (x86)' -Filter 'WiX Toolset v3*' -Directory -ErrorAction SilentlyContinue |
-                  Sort-Object Name -Descending |
-                  Select-Object -First 1 |
-                  ForEach-Object { Join-Path $_.FullName 'bin' }
         if (-not $wixBin -or -not (Test-Path "$wixBin/candle.exe")) {
           throw "WiX bin directory with candle.exe not found after install"
         }
@@ -684,7 +691,7 @@ jobs:
         build_type: [Debug, Release]
         include:
           - arch: arm64
-            runner: macos-14
+            runner: macos-15
 
     steps:
     - uses: actions/checkout@v4
@@ -754,7 +761,7 @@ jobs:
         build_type: [Debug, Release]
         include:
           - arch: arm64
-            runner: macos-14
+            runner: macos-15
 
     steps:
     - uses: actions/checkout@v4
@@ -1154,7 +1161,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: macos-14
+          - runner: macos-15
             arch: arm64
 
     steps:
@@ -1225,7 +1232,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: macos-14
+          - runner: macos-15
             arch: arm64
 
     steps:
