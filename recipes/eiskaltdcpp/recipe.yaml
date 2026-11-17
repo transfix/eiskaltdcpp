@@ -1,7 +1,7 @@
 schema_version: 1
 recipe:
   name: eiskaltdcpp
-  upstream_version: "2.6.1"
+  upstream_version: "2.6.2"
   cvc_revision: 1
   maintainer: "cy-pca"
   maintainer_url: "https://github.com/transfix/eiskaltdcpp"
@@ -12,21 +12,22 @@ recipe:
   license: GPL-3.0-or-later
   tags: [networking, p2p, direct-connect, daemon, libraries]
   description: >-
-    EiskaltDC++ 2.6.1 from the transfix fork, a Direct Connect (NMDC and ADC) client: the
+    EiskaltDC++ 2.6.2 from the transfix fork, a Direct Connect (NMDC and ADC) client: the
     headless eiskaltdcpp-daemon, controlled over JSON-RPC, and the libeiskaltdcpp core library
     with its development headers (what the eiskaltdcpp-py bindings build against). Built from
     source with Lua scripting, DHT, UPnP (miniupnpc), PCRE2, IDN2 and the fork's NMDCpb
     (protobuf) extension. No GUI. Linux.
 
 # Upstream source: this repository (transfix/eiskaltdcpp, a fork of eiskaltdcpp/eiskaltdcpp), tag
-# v2.6.1 (8b36c25, 2026-11-16): v2.6.0 plus the daemon stop fix (#6). A recipe cannot pin the
-# commit it is committed in, so it pins the tag's commit and moves with each release. The fork's
-# other branches (wip/*, nmdcpb-*, qt6-migration, fix/clean-shutdown) are work in progress or
-# merged, and are not packaged.
+# v2.6.2 (d8d5fe9, 2026-11-17): v2.6.0 plus the daemon stop fix (#6) and the build fixes (#8, #9;
+# CryptoManager builds against OpenSSL 4). A recipe cannot pin the commit it is committed in,
+# so it pins the tag's commit and moves with each release. The fork's other branches (wip/*,
+# nmdcpb-*, qt6-migration, fix/clean-shutdown) are work in progress or merged, and are not
+# packaged.
 source:
   type: tarball
-  url: https://github.com/transfix/eiskaltdcpp/archive/8b36c254abbfa4a0220aba0cf2607dcbb4681d6b.tar.gz
-  sha256: "4e3033fb324db7859a84d743ec8e99904d1c67ebe5381eda9082ab3204907438"
+  url: https://github.com/transfix/eiskaltdcpp/archive/d8d5fe95b527a0dbdd22bb9441c1cfd7428e615c.tar.gz
+  sha256: "fb9053012a32354dcc4bf3c343507e7a3e8439112ba7ff16cab8441ec8d04d9f"
   strip_components: 1
 
 patches: []

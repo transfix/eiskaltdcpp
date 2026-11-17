@@ -59,7 +59,7 @@ install -m 0644 "${CVC_BUILD_DIR}"/dcpp/proto/*.pb.h "${inc}/proto/"
 share="${CVC_INSTALL_DIR}/share/eiskaltdcpp"
 install -d "${share}"
 cat > "${share}/build-flags.txt" <<TXT
-# eiskaltdcpp ${CVC_PACKAGE_VERSION:-2.6.1}: compile definitions a consumer of include/eiskaltdcpp needs
+# eiskaltdcpp ${CVC_PACKAGE_VERSION:-2.6.2}: compile definitions a consumer of include/eiskaltdcpp needs
 LUA_SCRIPT
 WITH_DHT
 WITH_NMDCPB

@@ -16,7 +16,7 @@ cleanup() { [[ -z "$pid" ]] || kill -KILL "$pid" 2>/dev/null || true; rm -rf "$T
 trap cleanup EXIT
 export HOME="$T"
 
-[[ "$(daemon -V)" == 2.6.1 ]] || { echo "eiskaltdcpp-daemon -V: $(daemon -V)"; exit 1; }
+[[ "$(daemon -V)" == 2.6.2 ]] || { echo "eiskaltdcpp-daemon -V: $(daemon -V)"; exit 1; }
 for f in dcpp/DCPlusPlus.h extra/lunar.h dht/DHT.h proto/nmdcpb.pb.h; do
   test -f "${CVC_INSTALL_DIR}/include/eiskaltdcpp/$f" || { echo "missing include/eiskaltdcpp/$f"; exit 1; }
 done
@@ -35,7 +35,7 @@ start_daemon() {
     sleep 0.5
   done
   echo "show.version: $out"
-  echo "$out" | grep -q '"result":"2\.6\.1"' || { echo "JSON-RPC did not answer"; cat "$T/daemon.log"; exit 1; }
+  echo "$out" | grep -q '"result":"2\.6\.2"' || { echo "JSON-RPC did not answer"; cat "$T/daemon.log"; exit 1; }
 }
 rpc() {
   curl -fsS -X POST -H 'Content-Type: application/json' \

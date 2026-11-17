@@ -58,4 +58,4 @@ jobs:
           cvcpkg pack eiskaltdcpp --local --recipes-dir recipes \
             --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
           ls -l dist/
-          ls dist/eiskaltdcpp-2.6.1+cvc.*-linux-x86_64-release-shared.tar.gz
+          ls dist/eiskaltdcpp-2.6.2+cvc.*-linux-x86_64-release-shared.tar.gz
