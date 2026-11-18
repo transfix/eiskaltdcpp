@@ -1,0 +1,61 @@
+name: cvcpkg recipe
+
+# Builds recipes/eiskaltdcpp as cvcpkg-publish.yml does, and throws the result away. `cvcpkg pack`
+# builds it into the prefix, runs recipes/eiskaltdcpp/test.sh on the staged tree (the daemon
+# answers JSON-RPC, then exits 0 on daemon.stop and on SIGTERM), checks its globs, relocation and
+# glibc floor, and archives it. Nothing is published or uploaded.
+#
+# ubuntu-22.04 with GCC 12: cvcpkg's linux bundles must start on glibc 2.35, so `cvcpkg pack`
+# refuses one built on a newer glibc (24.04 has 2.39).
+#
+# GitHub-hosted runners only: this repository is public, and a pull request's workflows must
+# never reach self-hosted runners.
+
+on:
+  pull_request:
+    paths:
+      - 'recipes/eiskaltdcpp/**'
+      - '.github/workflows/cvcpkg-recipe.yml'
+      - '.github/actions/setup-cvcpkg/**'
+  push:
+    branches: [master]
+    paths:
+      - 'recipes/eiskaltdcpp/**'
+      - '.github/workflows/cvcpkg-recipe.yml'
+      - '.github/actions/setup-cvcpkg/**'
+  workflow_dispatch:
+
+concurrency:
+  group: cvcpkg-recipe-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  CC: gcc-12
+  CXX: g++-12
+
+jobs:
+  eiskaltdcpp:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-cvcpkg
+      - name: msgfmt (the build compiles its message catalogues)
+        run: command -v msgfmt || { sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends gettext; }
+      - name: Dependencies (cvcpkg.org)
+        run: |
+          set -euo pipefail
+          "$CXX" --version | head -1
+          cvcpkg install-deps eiskaltdcpp --recipes-dir recipes \
+            --prefix "$RUNNER_TEMP/prefix" --config release --link shared \
+            --no-fallback-to-source --include-host-tools
+      - name: Build, test and pack
+        run: |
+          set -euo pipefail
+          cvcpkg pack eiskaltdcpp --local --recipes-dir recipes \
+            --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
+          ls -l dist/
+          ls dist/eiskaltdcpp-2.6.2+cvc.*-linux-x86_64-release-shared.tar.gz
