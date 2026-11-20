@@ -427,7 +427,9 @@ bool CryptoManager::checkCertificate() {
         return false;
     }
 
-    const X509_NAME* name = X509_get_subject_name(x509);
+    // auto: these getters return const pointers from OpenSSL 4 on, and
+    // X509_NAME_get_index_by_NID() only takes a const X509_NAME* from 3.0 on.
+    auto name = X509_get_subject_name(x509);
     if(!name) {
         return false;
     }
@@ -435,8 +437,8 @@ bool CryptoManager::checkCertificate() {
     if(i == -1) {
         return false;
     }
-    const X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
-    const ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
+    auto entry = X509_NAME_get_entry(name, i);
+    auto str = X509_NAME_ENTRY_get_data(entry);
     if(!str) {
         return false;
     }
