@@ -112,6 +112,7 @@ option (USE_GOLD "Use ld.gold instead ld.bfd" OFF)
 option (USE_CCACHE "Use ccache tool if found" ON)
 option (LOCAL_JSONCPP "Use local JsonCpp" ON)
 option (BUILD_STATIC "Static build (only for MS Windows and GNU/Linux)" OFF)
+option (STATIC_CORE "Link libeiskaltdcpp statically into the programs (always on for MS Windows, macOS and Haiku)" OFF)
 option (INSTALL_QT_TRANSLATIONS "Install Qt internal translations" OFF)
 option (INSTALL_METAINFO "Install programs metainfo" OFF)
 
@@ -301,6 +302,11 @@ set (CLIENT_ICONS_DEST "${CLIENT_DATA_DIR}/icons")
 add_definitions (-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_REENTRANT)
 add_definitions (-D_DATADIR="${CLIENT_DATA_DIR}")
 add_definitions (-DLOCALE_DIR="${LOCALE_DIR}")
+if (UNIX AND NOT APPLE AND NOT HAIKU)
+    # The data and locale paths above are absolute. A relocated install (an unpacked bundle) looks
+    # for them under its own prefix instead: the executable's directory, then "..".
+    add_definitions (-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
+endif ()
 add_definitions (-DBUILDING_DCPP)
 
 if (DEBUG)

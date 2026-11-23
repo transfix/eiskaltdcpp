@@ -73,6 +73,8 @@ public:
                         "  -h, --help\t Show this message\n"
                         "  -V, --version\t Show version string"
                         );
+        // A separate string, so the translations of the one above still apply.
+        msg += "\n" + tr("  --quit\t Quit the running instance without asking");
 
         printf("%s\n", msg.toUtf8().constData());
     }

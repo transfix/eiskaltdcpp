@@ -81,6 +81,14 @@
 
 using namespace dcpp;
 
+namespace {
+// A data path compiled in under CMAKE_INSTALL_PREFIX, found in a relocated install too (Linux;
+// unchanged elsewhere).
+QString installedPath(const QString &path) {
+    return QString::fromStdString(Util::getInstalledPath(path.toStdString()));
+}
+}
+
 const QString WulforUtil::magnetSignature = "magnet:?xt=urn:tree:tiger:";
 
 WulforUtil::WulforUtil(dcpp::DCContext& ctx)
@@ -158,7 +166,7 @@ QString WulforUtil::findAppIconsPath() const
         bin_path + "/appl/" + icon_theme,
         bin_path + "/icons/appl/" + icon_theme,
         bin_path + "/../icons/appl/" + icon_theme,
-        CLIENT_ICONS_DIR "/appl/" + icon_theme,
+        installedPath(CLIENT_ICONS_DIR "/appl/" + icon_theme),
         bin_path + CLIENT_ICONS_DIR "/appl/" + icon_theme,
         bin_path + "/../" CLIENT_ICONS_DIR "/appl/" + icon_theme,
         bin_path + "/../../" CLIENT_ICONS_DIR "/appl/" + icon_theme
@@ -189,7 +197,7 @@ QString WulforUtil::findUserIconsPath() const
         bin_path + "/icons/user/" + user_theme,
         bin_path + "/../icons/user/" + user_theme,
         bin_path + "/user/" + user_theme,
-        CLIENT_ICONS_DIR "/user/" + user_theme,
+        installedPath(CLIENT_ICONS_DIR "/user/" + user_theme),
         bin_path + CLIENT_ICONS_DIR "/user/" + user_theme,
         bin_path + "/../" CLIENT_ICONS_DIR "/user/" + user_theme,
         bin_path + "/../../" CLIENT_ICONS_DIR "/user/" + user_theme
@@ -216,9 +224,7 @@ QString WulforUtil::getEmoticonsPath() const
 #elif defined (Q_OS_MAC)
     static const QString emoticonsPath = bin_path + "/../Resources/emoticons/";
 #else // Other OS
-    static QString emoticonsPath = CLIENT_DATA_DIR "/emoticons/";
-    if (!QDir(emoticonsPath).exists()) // Fix for Snap, AppImage, etc.
-        emoticonsPath = bin_path + "/../../" + emoticonsPath;
+    static const QString emoticonsPath = installedPath(CLIENT_DATA_DIR "/emoticons/");
 #endif
     return QDir(emoticonsPath).absolutePath() + "/";
 }
@@ -230,9 +236,7 @@ QString WulforUtil::getClientIconsPath() const
 #elif defined (Q_OS_MAC)
     static const QString iconsPath = bin_path + "/../Resources/" CLIENT_ICONS_DIR "/";
 #else // Other OS
-    static QString iconsPath = CLIENT_ICONS_DIR "/";
-    if (!QDir(iconsPath).exists()) // Fix for Snap, AppImage, etc.
-        iconsPath = QString(bin_path + "/../../" + iconsPath);
+    static const QString iconsPath = installedPath(CLIENT_ICONS_DIR "/");
 #endif
     return QDir(iconsPath).absolutePath();
 }
@@ -244,9 +248,7 @@ QString WulforUtil::getTranslationsPath() const
 #elif defined (Q_OS_MAC)
     static const QString translationsPath = bin_path + "/../Resources/translations/";
 #else // Other OS
-    static QString translationsPath = CLIENT_TRANSLATIONS_DIR "/";
-    if (!QDir(translationsPath).exists()) // Fix for Snap, AppImage, etc.
-        translationsPath = QString(bin_path + "/../../" + translationsPath);
+    static const QString translationsPath = installedPath(CLIENT_TRANSLATIONS_DIR "/");
 #endif
     return QDir(QDir::toNativeSeparators(translationsPath)).absolutePath();
 }
@@ -258,9 +260,7 @@ QString WulforUtil::getAspellDataPath() const
 #elif defined (Q_OS_MAC)
     static const QString aspellDataPath = bin_path + "/../Resources/aspell/";
 #elif defined(LOCAL_ASPELL_DATA) // Other OS
-    static const QString aspellDataPath = CLIENT_DATA_DIR "/aspell/";
-    if (!QDir(QDir::toNativeSeparators(aspellDataPath)).exists())
-        return QString(bin_path + "/../../" + aspellDataPath);
+    static const QString aspellDataPath = installedPath(CLIENT_DATA_DIR "/aspell/");
 #else
     static const QString aspellDataPath = QString();
 #endif
@@ -279,8 +279,8 @@ QString WulforUtil::getClientResourcesPath() const
     QString client_res_path = QString(CLIENT_RES_DIR) + PATH_SEPARATOR_STR + icon_theme + ".rcc";
     if (!QFile(client_res_path).exists()) // Build tree: .rcc next to binary
         client_res_path = bin_path + icon_theme + ".rcc";
-    if (!QFile(client_res_path).exists()) // Fix for Snap, AppImage, etc.
-        client_res_path = bin_path + "/../../" + QString(CLIENT_RES_DIR) + PATH_SEPARATOR_STR + icon_theme + ".rcc";
+    if (!QFile(client_res_path).exists())
+        client_res_path = installedPath(QString(CLIENT_RES_DIR) + PATH_SEPARATOR_STR + icon_theme + ".rcc");
 #endif
 
     return QDir(client_res_path).absolutePath();;
