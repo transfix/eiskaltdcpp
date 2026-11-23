@@ -1,0 +1,143 @@
+schema_version: 1
+recipe:
+  name: eiskaltdcpp-qt
+  upstream_version: "2.6.2"
+  cvc_revision: 1
+  maintainer: "cy-pca"
+  maintainer_url: "https://github.com/transfix/eiskaltdcpp"
+  homepage: https://github.com/transfix/eiskaltdcpp
+  # COPYING: GPL-3.0-or-later, with the EiskaltDC++ developers' exception permitting linking with
+  # OpenSSL. The dcpp core it derives from (DC++) is GPL-2.0-or-later. cvcpkg copies COPYING and
+  # LICENSE to share/licenses/eiskaltdcpp-qt/.
+  license: GPL-3.0-or-later
+  tags: [networking, p2p, direct-connect, desktop, gui]
+  description: >-
+    EiskaltDC++ 2.6.2 Qt, the desktop client of the transfix fork of EiskaltDC++, a Direct
+    Connect (NMDC and ADC) client, built against cvcpkg's Qt 6 with the core library linked in:
+    bin/eiskaltdcpp-qt (Linux; on macOS it starts EiskaltDC++.app) or bin\EiskaltDC++.exe
+    (Windows). Lua scripting, DHT, UPnP (miniupnpc), PCRE2, IDN2 and the fork's NMDCpb
+    (protobuf) extension, as in the eiskaltdcpp package; on Linux it depends on that package for
+    the core's message catalogues. Linux x86_64, Windows x86_64, macOS arm64.
+
+# Upstream source: this repository (transfix/eiskaltdcpp, a fork of eiskaltdcpp/eiskaltdcpp), tag
+# v2.6.2 (d8d5fe9, 2026-11-17), the same source as the eiskaltdcpp recipe, plus the patch below.
+# The patch is the fork's pull request for the same changes; once they are in a tag, the recipe
+# pins that tag and the patch goes.
+source:
+  type: tarball
+  url: https://github.com/transfix/eiskaltdcpp/archive/d8d5fe95b527a0dbdd22bb9441c1cfd7428e615c.tar.gz
+  sha256: "fb9053012a32354dcc4bf3c343507e7a3e8439112ba7ff16cab8441ec8d04d9f"
+  strip_components: 1
+
+patches:
+  - patches/0001-relocatable-data-quit-static-core.patch
+
+depends:
+  build:
+    - cmake
+    - ninja
+  runtime:
+    - name: qt6
+      version: "^6.8"
+    - name: openssl
+    - name: zlib
+    - name: bzip2
+    - name: protobuf
+    - name: abseil
+    - name: pcre2
+    - name: idn2
+    - name: lua
+    - name: miniupnpc
+    # The core's gettext (libintl, and msgfmt for the build) and iconv. Linux has them from
+    # glibc and the host's gettext, as for the eiskaltdcpp recipe.
+    - { name: gettext, platforms: [macos, windows] }
+    - { name: iconv, platforms: [macos, windows] }
+    # The core's message catalogues (share/locale), which this package leaves out on Linux so
+    # that the two can share a prefix.
+    - name: eiskaltdcpp
+      version: "==2.6.2"
+      platforms: [linux]
+  host_tools: []
+
+build:
+  matrix:
+    - platform: linux
+      script: build.sh
+    # arm64 (Apple Silicon); 13.0 is the deployment target of cvcpkg's macOS bundles. cvcpkg's
+    # miniupnpc has no macOS x86_64 bundle.
+    - platform: macos
+      script: build.sh
+      env:
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+    - platform: windows
+      script: build.ps1
+
+package:
+  files:
+    - { glob: bin/eiskaltdcpp-qt, platforms: [linux, macos] }
+    - { glob: share/eiskaltdcpp/qt/, platforms: [linux] }
+    - { glob: share/eiskaltdcpp/emoticons/, platforms: [linux] }
+    - { glob: share/eiskaltdcpp/sounds/, platforms: [linux] }
+    - { glob: share/eiskaltdcpp/luascripts/, platforms: [linux] }
+    - { glob: share/applications/eiskaltdcpp-qt.desktop, platforms: [linux] }
+    - { glob: share/man/man1/eiskaltdcpp-qt.1, platforms: [linux] }
+    - { glob: "EiskaltDC++.app/", platforms: [macos] }
+    - { glob: "bin/EiskaltDC++.exe", platforms: [windows] }
+    - { glob: bin/resources/, platforms: [windows] }
+    - share/licenses/eiskaltdcpp-qt/
+
+test:
+  script: test.sh
+
+abi:
+  cxx_std: 20
+
+toolchain:
+  note: >-
+    C++20: GCC 12 or newer on Linux (with the host's gettext msgfmt, as for the eiskaltdcpp
+    recipe), Apple clang on macOS, and MSVC (Visual Studio 2022's C++ workload) on Windows,
+    where build.ps1 sets up the developer environment itself (vswhere) when cl.exe is not on
+    PATH. Every library, and cmake and ninja, is a cvcpkg package.
+
+notes:
+  - title: "The patch"
+    description: >-
+      patches/0001-relocatable-data-quit-static-core.patch, the same change as the fork's pull
+      request for master: (1) on Linux the GUI and the core look for their data (icons, the
+      default.rcc resources, emoticons, the core's catalogues, GeoIP file and Lua scripts) under
+      the prefix the executable runs from when the path compiled in (the build's install
+      prefix) is not there, so the bundle works wherever it is unpacked; (2) eiskaltdcpp-qt
+      --quit quits the running instance without asking (the smoke test's clean exit); (3) -h
+      and -V release the single-instance lock before they exit, so the next start no longer
+      takes the stale lock for a running instance and quits; (4) a STATIC_CORE option links
+      libeiskaltdcpp into the programs on Linux, as the Windows and macOS builds already do.
+  - title: "Not built: QML, JavaScript scripting, translations, spell checking, sounds"
+    description: >-
+      cvcpkg's Qt 6 is qtbase (and qtmultimedia, separately): it has no Qt Quick/QML, so
+      USE_QT_QML and USE_JS are off; and no Linguist tools (lrelease), so the GUI's own strings
+      are in English. On Linux the core's messages are translated through the eiskaltdcpp
+      package's catalogues; on Windows and macOS they are in English too. cvcpkg has no aspell
+      for the spell checker. Sound notifications need Qt Multimedia, which is not linked. Qt
+      SQL's SQLite driver (finished transfers) and, on Linux, D-Bus notifications are on.
+  - title: "Layout and display"
+    description: >-
+      Linux: bin/eiskaltdcpp-qt and share/eiskaltdcpp/, on Qt's xcb plugin (X11, or Xwayland)
+      from cvcpkg's qt6, with OpenGL from the host's GLVND vendor library. macOS:
+      EiskaltDC++.app at the top of the prefix, loading Qt's frameworks from the prefix's lib/
+      (it is not a self-contained bundle to drag elsewhere), with bin/eiskaltdcpp-qt starting
+      it. Windows: bin\EiskaltDC++.exe with its resources\ beside it and the DLLs of Qt and the
+      other dependencies; settings go to %APPDATA%\EiskaltDC++ unless a dcppboot.xml beside the
+      executable selects local mode. QT_QPA_PLATFORM=offscreen runs it with no display.
+  - title: "Core library"
+    description: >-
+      libeiskaltdcpp is linked into the GUI (STATIC_CORE on Linux; static by default on Windows
+      and macOS), not loaded from the eiskaltdcpp package's libeiskaltdcpp.so, so the GUI does
+      not depend on that library's ABI or build flags.
+  - title: "Smoke test"
+    description: >-
+      test.sh, on Qt's offscreen platform with a config directory and single-instance key of its
+      own: -V reports 2.6.2; the GUI starts, loads its icons and resources, and exits 0 with the
+      core shut down and its settings saved when a second instance sends --quit; started with
+      --quit it exits 0 at once. On Linux it runs again from a copy of bin/ and share/ in another
+      directory, with the staged data hidden. On Windows it runs from a copy in local mode, so
+      it never writes to %APPDATA%.

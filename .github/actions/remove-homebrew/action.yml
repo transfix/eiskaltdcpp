@@ -1,0 +1,40 @@
+name: Remove Homebrew
+description: >
+  Takes the macOS runner image's Homebrew off PATH for every later step and moves it aside, as
+  cy-pca/cvcpkg's own macOS CI does, so no build can find its cmake, ninja, python, pkgconf,
+  boost, openssl or anything else, whatever looks. Fails on anything but a GitHub-hosted runner:
+  moving Homebrew is only safe on an ephemeral machine.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        if [ "${RUNNER_ENVIRONMENT:-}" != "github-hosted" ]; then
+          echo "::error::refusing to move Homebrew aside on a ${RUNNER_ENVIRONMENT:-unknown} runner"
+          exit 1
+        fi
+        brew_dir() {
+          case "$1" in
+            /opt/homebrew|/opt/homebrew/*) return 0 ;;
+            /usr/local/Homebrew|/usr/local/Homebrew/*|/usr/local/Cellar|/usr/local/Cellar/*) return 0 ;;
+            /usr/local/opt|/usr/local/opt/*|/usr/local/Caskroom|/usr/local/Caskroom/*) return 0 ;;
+            /usr/local|/usr/local/*) [ -d /usr/local/Homebrew ] ;;
+            *) return 1 ;;
+          esac
+        }
+        clean=""
+        set -f; IFS=:
+        for d in $PATH; do
+          [ -n "$d" ] || continue
+          if brew_dir "$d"; then echo "dropping from PATH: $d"; continue; fi
+          clean="${clean:+$clean:}$d"
+        done
+        unset IFS; set +f
+        echo "PATH=$clean" >> "$GITHUB_ENV"
+        for d in /opt/homebrew /usr/local/Homebrew /usr/local/Cellar; do
+          if [ -e "$d" ]; then
+            sudo mv "$d" "$d.hidden-from-builds"
+            echo "moved aside: $d"
+          fi
+        done
