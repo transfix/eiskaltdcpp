@@ -3,8 +3,7 @@
 # statically, as the upstream Windows build does.
 #
 # Every input except the compiler is a cvcpkg package: the libraries from the dependency prefix,
-# and cmake, ninja and gettext's msgfmt from the build or dependency prefix (never the
-# machine's). The compiler is MSVC: a Visual Studio developer environment, or a Visual Studio
+# and cmake and ninja from the build or dependency prefix (never the machine's). The compiler is MSVC: a Visual Studio developer environment, or a Visual Studio
 # with the C++ workload that vswhere can find.
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -61,11 +60,26 @@ Import-MsvcEnv
 $clDir = Split-Path -Parent (Get-Command cl.exe -CommandType Application | Select-Object -First 1).Source
 $cmake  = Find-CvcFile 'bin\cmake.exe' 'cmake'
 $ninja  = Find-CvcFile 'bin\ninja.exe' 'ninja'
-$msgfmt = Find-CvcFile 'bin\msgfmt.exe' 'gettext'
+# The core's gettext calls link proxy-libintl (MSVC's intl.lib), which forwards them to a
+# libintl-8.dll when one is found and returns the untranslated text otherwise.
+$intlLib = Find-CvcFile 'lib\intl.lib' 'proxy-libintl'
+$intlInclude = Split-Path -Parent (Find-CvcFile 'include\libintl.h' 'proxy-libintl')
 # protoc (protobuf) and the dependency DLLs, for the build's code generators.
-$env:PATH = "$clDir;$(Join-Path $env:CVC_DEPS_PREFIX 'bin');$(Split-Path -Parent $msgfmt);$env:PATH"
+$env:PATH = "$clDir;$(Join-Path $env:CVC_DEPS_PREFIX 'bin');$env:PATH"
 & $cmake --version | Select-Object -First 1
-Write-Host "cmake  $cmake`nninja  $ninja`nmsgfmt $msgfmt"
+Write-Host "cmake  $cmake`nninja  $ninja`nintl   $intlLib"
+
+# The build compiles no message catalogues (linguas is empty: see the recipe's notes), but the
+# core's FindGettext requires all six gettext tools, and cvcpkg's Windows gettext ships none.
+# They are set to a stub that fails the build if anything ever runs one, rather than taken from
+# the machine (MSYS2, Git for Windows).
+New-Item -ItemType Directory -Force -Path $env:CVC_BUILD_DIR | Out-Null
+$noTool = Join-Path $env:CVC_BUILD_DIR 'no-gettext-tool.cmd'
+"@echo eiskaltdcpp-qt: a gettext tool was run, but this build has none (linguas is empty) 1>&2`r`n@exit /b 1`r`n" |
+    Set-Content -Encoding ascii -NoNewline -LiteralPath $noTool
+$gettextTools = foreach ($t in 'XGETTEXT', 'MSGINIT', 'MSGMERGE', 'MSGCAT', 'MSGCONV', 'MSGFMT') {
+    "-DGETTEXT_${t}_EXECUTABLE=$(ConvertTo-CMakePath $noTool)"
+}
 
 $src = $env:CVC_SOURCE_DIR
 $prefixPath = ($cvcRoots | ForEach-Object { ConvertTo-CMakePath $_ }) -join ';'
@@ -73,14 +87,15 @@ $prefixPath = ($cvcRoots | ForEach-Object { ConvertTo-CMakePath $_ }) -join ';'
 # (BINDIR "."), and looks for them beside the executable. Here that is bin\, beside the DLLs of
 # Qt and the other dependencies.
 $bin = Join-Path $env:CVC_INSTALL_DIR 'bin'
-Invoke-Checked $cmake @(
+$configure = @(
     '-G', 'Ninja', '-S', $src, '-B', $env:CVC_BUILD_DIR,
     "-DCMAKE_MAKE_PROGRAM=$(ConvertTo-CMakePath $ninja)",
     "-DCMAKE_BUILD_TYPE=$buildType",
     "-DCMAKE_INSTALL_PREFIX=$(ConvertTo-CMakePath $bin)",
     "-DCMAKE_PREFIX_PATH=$prefixPath",
-    "-DGETTEXT_SEARCH_PATH=$(ConvertTo-CMakePath $env:CVC_DEPS_PREFIX)",
-    "-DGETTEXT_MSGFMT_EXECUTABLE=$(ConvertTo-CMakePath $msgfmt)",
+    "-DGETTEXT_INCLUDE_DIR=$(ConvertTo-CMakePath $intlInclude)",
+    "-DGETTEXT_INTL_LIBRARY=$(ConvertTo-CMakePath $intlLib)",
+    '-Dlinguas=',
     "-DCMAKE_MSVC_RUNTIME_LIBRARY=$msvcRuntime",
     '-DCMAKE_C_COMPILER=cl', '-DCMAKE_CXX_COMPILER=cl',
     # The same features as the eiskaltdcpp recipe's core.
@@ -95,7 +110,8 @@ Invoke-Checked $cmake @(
     '-DWITH_EMOTICONS=ON', '-DWITH_SOUNDS=ON', '-DWITH_EXAMPLES=OFF', '-DWITH_LUASCRIPTS=ON',
     '-DOPENSSL_MSVC=ON', '-DINSTALL_DEPENDENCIES=OFF', '-DINSTALL_QT_TRANSLATIONS=OFF',
     '-DUSE_CCACHE=OFF', '-DBUILD_TESTS=OFF'
-)
+) + $gettextTools
+Invoke-Checked $cmake $configure
 Invoke-Checked $cmake @('--build', $env:CVC_BUILD_DIR, '-j', "$jobs")
 Invoke-Checked $cmake @('--install', $env:CVC_BUILD_DIR)
 

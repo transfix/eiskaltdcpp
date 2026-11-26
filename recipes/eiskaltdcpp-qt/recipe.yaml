@@ -48,9 +48,11 @@ depends:
     - name: idn2
     - name: lua
     - name: miniupnpc
-    # The core's gettext (libintl, and msgfmt for the build) and iconv. Linux has them from
-    # glibc and the host's gettext, as for the eiskaltdcpp recipe.
-    - { name: gettext, platforms: [macos, windows] }
+    # The core's libintl and iconv. Linux has them in glibc (and msgfmt from the host's
+    # gettext, as for the eiskaltdcpp recipe). Windows links proxy-libintl, the MSVC build of
+    # the libintl API; cvcpkg's Windows gettext is a MinGW build without the tools.
+    - { name: gettext, platforms: [macos] }
+    - { name: proxy-libintl, platforms: [windows] }
     - { name: iconv, platforms: [macos, windows] }
     # The core's message catalogues (share/locale), which this package leaves out on Linux so
     # that the two can share a prefix.
