@@ -1,23 +1,33 @@
 name: cvcpkg publish
 
-# Publish recipes/eiskaltdcpp to cvcpkg.org under the cy-pca organisation. Started by hand, on
-# master only: tag a release, point recipes/eiskaltdcpp at it (upstream_version, source url and
-# sha256; cvc_revision for a packaging-only change), merge, then run this. transfix/eiskaltdcpp-py
-# builds its eiskaltdcpp-py columns against the bundle this publishes.
+# Publish recipes/eiskaltdcpp and recipes/eiskaltdcpp-qt to cvcpkg.org under the cy-pca
+# organisation. Started by hand, on master only, with `package` choosing what to publish
+# (eiskaltdcpp, eiskaltdcpp-qt or both): tag a release, point the recipes at it (upstream_version,
+# source url and sha256; cvc_revision for a packaging-only change), merge, then run this.
+# transfix/eiskaltdcpp-py builds its eiskaltdcpp-py columns against the eiskaltdcpp bundle this
+# publishes; eiskaltdcpp-qt needs eiskaltdcpp on cvcpkg.org first (linux), and is published for
+# linux x86_64, macOS arm64 and windows x86_64.
 #
-# The bundle is built as cvcpkg-recipe.yml builds it (ubuntu-22.04 for cvcpkg's glibc 2.35 floor,
-# GCC 12), with recipes/eiskaltdcpp/test.sh run on the staged tree before the pack, and its
-# dependencies taken from cvcpkg.org only: a bundle must never need something the registry cannot
-# give the person installing it. After publishing, it is installed from cvcpkg.org into an empty
-# prefix and test.sh runs again there.
+# Each bundle is built as cvcpkg-recipe.yml builds it (linux on ubuntu-22.04 for cvcpkg's glibc
+# 2.35 floor, GCC 12; macOS on macos-15 without Homebrew; windows on windows-2022 with MSVC),
+# with the recipe's test.sh run on the staged tree before the pack, and its dependencies taken
+# from cvcpkg.org only: a bundle must never need something the registry cannot give the person
+# installing it. After publishing, it is installed from cvcpkg.org into an empty prefix and
+# test.sh runs again there.
 #
 # The token is the CVCPKG_PUBLISHER_TOKEN repository secret: a cvcpkg.org publisher that is a
-# member of the cy-pca organisation. Only the publish step sees it. Without it the job builds,
+# member of the cy-pca organisation. Only the publish steps see it. Without it a job builds,
 # tests and packs, then fails before publishing anything. Nothing is uploaded as an artifact.
 # cvcpkg publish skips a bundle the registry already has, so a second run is harmless.
 
 on:
   workflow_dispatch:
+    inputs:
+      package:
+        description: What to publish
+        type: choice
+        options: [eiskaltdcpp-qt, eiskaltdcpp, all]
+        default: eiskaltdcpp-qt
 
 concurrency:
   group: cvcpkg-publish
@@ -26,15 +36,14 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  CC: gcc-12
-  CXX: g++-12
-
 jobs:
   eiskaltdcpp:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && (inputs.package == 'eiskaltdcpp' || inputs.package == 'all')
     runs-on: ubuntu-22.04
     timeout-minutes: 60
+    env:
+      CC: gcc-12
+      CXX: g++-12
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-cvcpkg
@@ -73,3 +82,157 @@ jobs:
           cvcpkg install eiskaltdcpp --prefix "$check" --config release --link shared \
             --no-fallback-to-source
           CVC_INSTALL_DIR="$check" CVC_DEPS_PREFIX="$check" bash recipes/eiskaltdcpp/test.sh
+
+  eiskaltdcpp-qt:
+    # After eiskaltdcpp when both are published (linux depends on it); a skipped eiskaltdcpp
+    # (package: eiskaltdcpp-qt) does not hold it back, a failed one does.
+    needs: [eiskaltdcpp]
+    if: >-
+      !cancelled() && !failure() && github.ref == 'refs/heads/master' &&
+      (inputs.package == 'eiskaltdcpp-qt' || inputs.package == 'all')
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      CC: gcc-12
+      CXX: g++-12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-cvcpkg
+      - name: msgfmt (the core's build looks for gettext's tools)
+        run: command -v msgfmt || { sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends gettext; }
+      - name: Dependencies (cvcpkg.org only)
+        run: |
+          cvcpkg install-deps eiskaltdcpp-qt --recipes-dir recipes \
+            --prefix "$RUNNER_TEMP/prefix" --config release --link shared \
+            --no-fallback-to-source --include-host-tools
+      - name: Build, test and pack
+        run: |
+          set -euo pipefail
+          cvcpkg pack eiskaltdcpp-qt --local --recipes-dir recipes \
+            --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
+          ls -l dist/
+          n=$(ls dist/eiskaltdcpp-qt-[0-9]*-linux-x86_64-release-shared.tar.gz | wc -l)
+          [ "$n" = 1 ] || { echo "::error::expected one eiskaltdcpp-qt bundle, packed $n"; exit 1; }
+      - name: Publish
+        env:
+          CVCPKG_TOKEN: ${{ secrets.CVCPKG_PUBLISHER_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CVCPKG_TOKEN:-}" ]; then
+            echo "::error::no CVCPKG_PUBLISHER_TOKEN secret: the bundle packed but was not published"
+            exit 1
+          fi
+          cvcpkg publish dist/eiskaltdcpp-qt-[0-9]* --server https://cvcpkg.org --org cy-pca
+          # The server-side recipe row (the package page, the dependency graph). An upsert.
+          cvcpkg recipe push eiskaltdcpp-qt --recipes-dir recipes --no-default-recipes \
+            --server https://cvcpkg.org --org cy-pca
+      - name: Install it from cvcpkg.org and test it there
+        run: |
+          set -euo pipefail
+          check="$RUNNER_TEMP/check"
+          cvcpkg install eiskaltdcpp-qt --prefix "$check" --config release --link shared \
+            --no-fallback-to-source
+          CVC_INSTALL_DIR="$check" CVC_DEPS_PREFIX="$check" bash recipes/eiskaltdcpp-qt/test.sh
+
+  eiskaltdcpp-qt-macos:
+    if: github.ref == 'refs/heads/master' && (inputs.package == 'eiskaltdcpp-qt' || inputs.package == 'all')
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/remove-homebrew
+      - uses: ./.github/actions/setup-cvcpkg
+      - name: Dependencies (cvcpkg.org only)
+        run: |
+          cvcpkg install-deps eiskaltdcpp-qt --recipes-dir recipes \
+            --prefix "$RUNNER_TEMP/prefix" --config release --link shared \
+            --no-fallback-to-source --include-host-tools
+      - name: Build, test and pack
+        run: |
+          set -euo pipefail
+          cvcpkg pack eiskaltdcpp-qt --local --recipes-dir recipes \
+            --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
+          ls -l dist/
+          n=$(ls dist/eiskaltdcpp-qt-[0-9]*-macos-arm64-release-shared.tar.* | wc -l)
+          [ "$n" = 1 ] || { echo "::error::expected one eiskaltdcpp-qt bundle, packed $n"; exit 1; }
+      - uses: ./.github/actions/check-macos-bundle
+        with:
+          archive: dist/eiskaltdcpp-qt-[0-9]*-macos-arm64-release-shared.tar.*
+          unpack-dir: ${{ runner.temp }}/unpacked
+      - name: Publish
+        env:
+          CVCPKG_TOKEN: ${{ secrets.CVCPKG_PUBLISHER_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CVCPKG_TOKEN:-}" ]; then
+            echo "::error::no CVCPKG_PUBLISHER_TOKEN secret: the bundle packed but was not published"
+            exit 1
+          fi
+          cvcpkg publish dist/eiskaltdcpp-qt-[0-9]* --server https://cvcpkg.org --org cy-pca
+      - name: Install it from cvcpkg.org and test it there
+        run: |
+          set -euo pipefail
+          check="$RUNNER_TEMP/check"
+          cvcpkg install eiskaltdcpp-qt --prefix "$check" --config release --link shared \
+            --no-fallback-to-source
+          CVC_INSTALL_DIR="$check" CVC_DEPS_PREFIX="$check" bash recipes/eiskaltdcpp-qt/test.sh
+
+  eiskaltdcpp-qt-windows:
+    if: github.ref == 'refs/heads/master' && (inputs.package == 'eiskaltdcpp-qt' || inputs.package == 'all')
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      VCPKG_ROOT: ""
+      VCPKG_INSTALLATION_ROOT: ""
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Take vcpkg out of the environment
+        shell: pwsh
+        run: |
+          $clean = ($env:PATH -split ';' | Where-Object { $_ -and $_ -notmatch '\\vcpkg(\\|$)' }) -join ';'
+          "PATH=$clean" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+      - uses: ./.github/actions/setup-cvcpkg
+      - name: Dependencies (cvcpkg.org only)
+        run: |
+          set -euo pipefail
+          prefix="$(cygpath -m "$RUNNER_TEMP")/prefix"
+          echo "PREFIX=$prefix" >> "$GITHUB_ENV"
+          cvcpkg install-deps eiskaltdcpp-qt --platform windows --recipes-dir recipes \
+            --prefix "$prefix" --config release --link shared \
+            --no-fallback-to-source --include-host-tools
+      - name: Build, test and pack
+        run: |
+          set -euo pipefail
+          cvcpkg pack eiskaltdcpp-qt --local --platform windows --recipes-dir recipes \
+            --prefix "$PREFIX" --config release --link shared --output-dir dist
+          ls -l dist/
+          n=$(ls dist/eiskaltdcpp-qt-[0-9]*-windows-x86_64-release-shared.zip | wc -l)
+          [ "$n" = 1 ] || { echo "::error::expected one eiskaltdcpp-qt bundle, packed $n"; exit 1; }
+      - name: Publish
+        env:
+          CVCPKG_TOKEN: ${{ secrets.CVCPKG_PUBLISHER_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CVCPKG_TOKEN:-}" ]; then
+            echo "::error::no CVCPKG_PUBLISHER_TOKEN secret: the bundle packed but was not published"
+            exit 1
+          fi
+          cvcpkg publish dist/eiskaltdcpp-qt-[0-9]* --server https://cvcpkg.org --org cy-pca
+      - name: Install it from cvcpkg.org and test it there
+        run: |
+          set -euo pipefail
+          check="$(cygpath -m "$RUNNER_TEMP")/check"
+          cvcpkg install eiskaltdcpp-qt --prefix "$check" --config release --link shared \
+            --no-fallback-to-source \
+            --platform windows
+          CVC_INSTALL_DIR="$check" CVC_DEPS_PREFIX="$check" bash recipes/eiskaltdcpp-qt/test.sh

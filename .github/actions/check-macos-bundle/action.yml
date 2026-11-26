@@ -1,0 +1,48 @@
+name: Check a macOS bundle
+description: >
+  Unpacks a macOS bundle from dist/ and fails if any Mach-O file in it loads a
+  library from anywhere but itself and its dependencies (@rpath, @loader_path) or macOS
+  (/usr/lib, /System), or has an rpath that is not @loader_path- or @executable_path-relative.
+inputs:
+  archive:
+    description: Glob naming the one bundle archive to check.
+    required: true
+  unpack-dir:
+    description: Where to unpack it; later steps may run test.sh on it.
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        ARCHIVE: ${{ inputs.archive }}
+        X: ${{ inputs.unpack-dir }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$X"
+        n=0
+        # shellcheck disable=SC2086
+        for a in $ARCHIVE; do
+          [ -e "$a" ] || continue
+          tar -xf "$a" -C "$X"; n=$((n + 1))
+        done
+        [ "$n" = 1 ] || { echo "::error::expected one archive matching $ARCHIVE, found $n"; exit 1; }
+        bad="$RUNNER_TEMP/check-macos-bundle.bad"
+        rm -f "$bad"
+        while IFS= read -r f; do
+          case "$(file -b "$f")" in *Mach-O*) ;; *) continue ;; esac
+          echo "== ${f#"$X"/}"
+          otool -L "$f" | tail -n +2 | awk '{print $1}' | while read -r dep; do
+            case "$dep" in
+              @rpath/*|@loader_path/*|/usr/lib/*|/System/*) echo "   $dep" ;;
+              *) echo "::error::${f#"$X"/} loads $dep"; echo bad >> "$bad" ;;
+            esac
+          done
+          otool -l "$f" | awk '/cmd LC_RPATH/ {getline; getline; print $2}' | while read -r rp; do
+            case "$rp" in
+              @loader_path*|@executable_path*) echo "   rpath $rp" ;;
+              *) echo "::error::${f#"$X"/} has rpath $rp"; echo bad >> "$bad" ;;
+            esac
+          done
+        done < <(find "$X" -type f)
+        [ ! -e "$bad" ]

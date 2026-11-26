@@ -92,7 +92,8 @@ notes:
       build time, which points into the build machine once the bundle is installed elsewhere.
       The daemon runs without it, and this build installs neither (the example scripts install
       with the GUI only). Making that path relative to the library is a change for the fork.
-  - title: "No GUI yet"
+  - title: "No GUI"
     description: >-
-      The fork's Qt 6 GUI (eiskaltdcpp-qt) is not built. qt6 and qtmultimedia are on cvcpkg, so
-      it can be a separate recipe (eiskaltdcpp-qt), keeping Qt out of the daemon's closure.
+      The fork's Qt 6 desktop client is the separate eiskaltdcpp-qt recipe (recipes/
+      eiskaltdcpp-qt), which keeps Qt out of the daemon's closure. On Linux it depends on this
+      package for the core's message catalogues.

@@ -1,12 +1,23 @@
 name: cvcpkg recipe
 
-# Builds recipes/eiskaltdcpp as cvcpkg-publish.yml does, and throws the result away. `cvcpkg pack`
-# builds it into the prefix, runs recipes/eiskaltdcpp/test.sh on the staged tree (the daemon
-# answers JSON-RPC, then exits 0 on daemon.stop and on SIGTERM), checks its globs, relocation and
-# glibc floor, and archives it. Nothing is published or uploaded.
+# Builds recipes/eiskaltdcpp and recipes/eiskaltdcpp-qt as cvcpkg-publish.yml does, and throws the
+# results away. `cvcpkg pack` builds each into the prefix, runs its test.sh on the staged tree,
+# checks its globs, relocation and (linux) glibc floor, and archives it. Nothing is published or
+# uploaded.
 #
-# ubuntu-22.04 with GCC 12: cvcpkg's linux bundles must start on glibc 2.35, so `cvcpkg pack`
-# refuses one built on a newer glibc (24.04 has 2.39).
+# - eiskaltdcpp (daemon, library, headers): the daemon answers JSON-RPC, then exits 0 on
+#   daemon.stop and on SIGTERM.
+# - eiskaltdcpp-qt (the Qt 6 desktop client) on linux x86_64, macOS arm64 and windows x86_64:
+#   on Qt's offscreen platform the GUI starts, loads its resources and exits 0 when told to quit.
+#
+# linux: ubuntu-22.04 with GCC 12: cvcpkg's linux bundles must start on glibc 2.35, so
+# `cvcpkg pack` refuses one built on a newer glibc (24.04 has 2.39).
+# macOS: macos-15 (arm64) with Apple clang; the image's Homebrew is moved aside first, so nothing
+# can find its cmake, Qt or libraries, and the packed bundle may load nothing but itself, its
+# dependencies (@rpath) and macOS.
+# windows: windows-2022 (Visual Studio 2022), the image cvcpkg's own Windows bundles are built
+# on, with the image's vcpkg taken out of the environment.
+# Every dependency and tool comes from cvcpkg.org (--no-fallback-to-source).
 #
 # GitHub-hosted runners only: this repository is public, and a pull request's workflows must
 # never reach self-hosted runners.
@@ -15,14 +26,16 @@ on:
   pull_request:
     paths:
       - 'recipes/eiskaltdcpp/**'
+      - 'recipes/eiskaltdcpp-qt/**'
       - '.github/workflows/cvcpkg-recipe.yml'
-      - '.github/actions/setup-cvcpkg/**'
+      - '.github/actions/**'
   push:
     branches: [master]
     paths:
       - 'recipes/eiskaltdcpp/**'
+      - 'recipes/eiskaltdcpp-qt/**'
       - '.github/workflows/cvcpkg-recipe.yml'
-      - '.github/actions/setup-cvcpkg/**'
+      - '.github/actions/**'
   workflow_dispatch:
 
 concurrency:
@@ -32,14 +45,13 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  CC: gcc-12
-  CXX: g++-12
-
 jobs:
   eiskaltdcpp:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
+    env:
+      CC: gcc-12
+      CXX: g++-12
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-cvcpkg
@@ -59,3 +71,96 @@ jobs:
             --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
           ls -l dist/
           ls dist/eiskaltdcpp-2.6.2+cvc.*-linux-x86_64-release-shared.tar.gz
+
+  eiskaltdcpp-qt:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      CC: gcc-12
+      CXX: g++-12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-cvcpkg
+      - name: msgfmt (the core's build looks for gettext's tools)
+        run: command -v msgfmt || { sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends gettext; }
+      - name: Dependencies (cvcpkg.org)
+        run: |
+          set -euo pipefail
+          "$CXX" --version | head -1
+          cvcpkg install-deps eiskaltdcpp-qt --recipes-dir recipes \
+            --prefix "$RUNNER_TEMP/prefix" --config release --link shared \
+            --no-fallback-to-source --include-host-tools
+      - name: Build, test and pack
+        run: |
+          set -euo pipefail
+          cvcpkg pack eiskaltdcpp-qt --local --recipes-dir recipes \
+            --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
+          ls -l dist/
+          ls dist/eiskaltdcpp-qt-2.6.2+cvc.*-linux-x86_64-release-shared.tar.gz
+
+  eiskaltdcpp-qt-macos:
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/remove-homebrew
+      - uses: ./.github/actions/setup-cvcpkg
+      - name: Dependencies (cvcpkg.org)
+        run: |
+          set -euo pipefail
+          "$CXX" --version | head -1
+          cvcpkg install-deps eiskaltdcpp-qt --recipes-dir recipes \
+            --prefix "$RUNNER_TEMP/prefix" --config release --link shared \
+            --no-fallback-to-source --include-host-tools
+      - name: Build, test and pack
+        run: |
+          set -euo pipefail
+          cvcpkg pack eiskaltdcpp-qt --local --recipes-dir recipes \
+            --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
+          ls -l dist/
+          ls dist/eiskaltdcpp-qt-2.6.2+cvc.*-macos-arm64-release-shared.tar.*
+      - uses: ./.github/actions/check-macos-bundle
+        with:
+          archive: dist/eiskaltdcpp-qt-2.6.2+cvc.*-macos-arm64-release-shared.tar.*
+          unpack-dir: ${{ runner.temp }}/unpacked
+
+  eiskaltdcpp-qt-windows:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      VCPKG_ROOT: ""
+      VCPKG_INSTALLATION_ROOT: ""
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Take vcpkg out of the environment
+        shell: pwsh
+        run: |
+          $clean = ($env:PATH -split ';' | Where-Object { $_ -and $_ -notmatch '\\vcpkg(\\|$)' }) -join ';'
+          "PATH=$clean" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+      - uses: ./.github/actions/setup-cvcpkg
+      - name: Dependencies (cvcpkg.org)
+        run: |
+          set -euo pipefail
+          prefix="$(cygpath -m "$RUNNER_TEMP")/prefix"
+          echo "PREFIX=$prefix" >> "$GITHUB_ENV"
+          cl 2>&1 | head -1
+          cvcpkg install-deps eiskaltdcpp-qt --platform windows --recipes-dir recipes \
+            --prefix "$prefix" --config release --link shared \
+            --no-fallback-to-source --include-host-tools
+      - name: Build, test and pack
+        run: |
+          set -euo pipefail
+          cvcpkg pack eiskaltdcpp-qt --local --platform windows --recipes-dir recipes \
+            --prefix "$PREFIX" --config release --link shared --output-dir dist
+          ls -l dist/
+          ls dist/eiskaltdcpp-qt-2.6.2+cvc.*-windows-x86_64-release-shared.zip
