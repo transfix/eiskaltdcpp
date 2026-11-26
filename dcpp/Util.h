@@ -132,6 +132,11 @@ public:
     /** Migrate from pre-localmode config location */
     static void migrate(const string& file);
 
+    /** A data path compiled in under the install prefix, found in a relocated install (Linux):
+        the path itself if it exists, else the same path under the prefix the executable runs
+        from, else under the executable's "../../" (Snap, AppImage). */
+    static string getInstalledPath(const string& path);
+
     /** */
     static string getLoginName();
 

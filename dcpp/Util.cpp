@@ -283,11 +283,10 @@ void Util::initialize(PathsMap pathOverrides) {
 #elif defined(__HAIKU__)
         paths[PATH_LOCALE] = "/boot/system/apps/Eiskaltdcpp/locale/";
 #elif defined(__linux)
-        paths[PATH_LOCALE] = LOCALE_DIR PATH_SEPARATOR_STR;
-        const string test_path = paths[PATH_LOCALE] + "en/LC_MESSAGES/libeiskaltdcpp.mo";
-        if(!Util::fileExists(test_path)) { // Fix for Snap, AppImage, etc.
-            paths[PATH_LOCALE] = linExecutablePath() + "/../../" LOCALE_DIR PATH_SEPARATOR_STR;
-        }
+        // Found by a catalogue every install has, so a relocated install finds its own.
+        const string probe = "en/LC_MESSAGES/libeiskaltdcpp.mo";
+        const string mo = getInstalledPath(LOCALE_DIR PATH_SEPARATOR_STR + probe);
+        paths[PATH_LOCALE] = mo.substr(0, mo.size() - probe.size());
 #else // Other systems
         paths[PATH_LOCALE] = LOCALE_DIR PATH_SEPARATOR_STR;
 #endif // defined(_WIN32)
@@ -320,7 +319,7 @@ void Util::initialize(PathsMap pathOverrides) {
         string file = getPath(PATH_RESOURCES) + "GeoIPCountryWhois.csv";
 #else //_WIN32
         string file_usr = getPath(PATH_RESOURCES) + "GeoIPCountryWhois.csv";
-        string file_sys = string(_DATADIR) + PATH_SEPARATOR + "GeoIPCountryWhois.csv";
+        string file_sys = getInstalledPath(string(_DATADIR) + PATH_SEPARATOR + "GeoIPCountryWhois.csv");
         string file = "";
 
         struct stat stFileInfo;
@@ -1445,6 +1444,27 @@ string Util::getTempPath() {
 #else
     return "/tmp/";
 #endif
+}
+
+string Util::getInstalledPath(const string& path) {
+#if defined(__linux) && defined(INSTALL_PREFIX)
+    if (fileExists(path))
+        return path;
+    const string exe = linExecutablePath();
+    if (exe.empty())
+        return path;
+    const string prefix = INSTALL_PREFIX;
+    if (path.compare(0, prefix.size(), prefix) == 0) {
+        // <prefix>/bin/<program>: the relocated prefix is the executable's "..".
+        const string relocated = exe + PATH_SEPARATOR_STR ".." + path.substr(prefix.size());
+        if (fileExists(relocated))
+            return relocated;
+    }
+    const string snap = exe + "/../../" + path; // Snap, AppImage, etc.
+    if (fileExists(snap))
+        return snap;
+#endif
+    return path;
 }
 
 bool Util::fileExists(const string &aFile) {

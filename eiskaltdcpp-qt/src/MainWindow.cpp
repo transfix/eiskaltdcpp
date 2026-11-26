@@ -1955,6 +1955,14 @@ void MainWindow::parseCmdLine(const QStringList &args){
         else if (arg.startsWith("adc://") || arg.startsWith("adcs://")){
             newHubFrame(arg, "UTF-8");
         }
+        else if (arg == "--quit"){
+            // From a second "eiskaltdcpp-qt --quit", or on this one's own command line. Quits
+            // once the event loop runs, with no exit confirmation.
+            QTimer::singleShot(0, this, [this](){
+                beginExit();
+                close();
+            });
+        }
     }
 }
 

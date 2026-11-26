@@ -288,17 +288,29 @@ int main(int argc, char *argv[])
     return ret;
 }
 
+// Exit after -h or -V. The application has taken the single-instance lock by then, and exit()
+// skips its destructor, so the lock is released here: left behind, the next start would take it
+// for a running instance and quit.
+static void exitBeforeStart(){
+#if !defined (Q_OS_HAIKU)
+    EiskaltApp *eapp = dynamic_cast<EiskaltApp*>(qApp);
+    if (eapp)
+        eapp->getSharedMemory().detach();
+#endif
+    exit(0);
+}
+
 void parseCmdLine(const QStringList &args){
     for (const auto &arg : args){
         if (arg == "-h" || arg == "--help"){
             About().printHelp();
 
-            exit(0);
+            exitBeforeStart();
         }
         else if (arg == "-V" || arg == "--version"){
             About().printVersion();
 
-            exit(0);
+            exitBeforeStart();
         }
     }
 }

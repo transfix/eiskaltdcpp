@@ -286,7 +286,7 @@ int LuaManager::GetScriptsPath(lua_State* L) {
 #ifdef _WIN32
         scripts_path = Text::utf8ToAcp(Util::getPath(Util::PATH_GLOBAL_CONFIG)) + "resources" + PATH_SEPARATOR + "luascripts" + PATH_SEPARATOR;
 #else //_WIN32
-        scripts_path = string(_DATADIR) + PATH_SEPARATOR + "luascripts" + PATH_SEPARATOR;
+        scripts_path = Util::getInstalledPath(string(_DATADIR) + PATH_SEPARATOR + "luascripts") + PATH_SEPARATOR;
 #endif //_WIN32
     }
     lua_pushstring(L, scripts_path.c_str());
@@ -428,25 +428,12 @@ void ScriptInstance::EvaluateFile(const string& fn) {
         }
 #else //_WIN32
         test_path_0 = Text::utf8ToAcp(Util::getPath(Util::PATH_USER_CONFIG)) + "luascripts" + PATH_SEPARATOR + fn;
-        test_path_1 = string(_DATADIR) + PATH_SEPARATOR + "luascripts" + PATH_SEPARATOR + fn;
-#ifdef __linux
-        string test_path_2;
-        char result[PATH_MAX];
-        const ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-        if (count != -1) {
-            test_path_2 = Util::getFilePath(string(result)) + "/../../";
-        }
-        test_path_2 = test_path_2 + string(_DATADIR) + PATH_SEPARATOR + "luascripts" + PATH_SEPARATOR + fn;
-#endif // __linux
+        test_path_1 = Util::getInstalledPath(string(_DATADIR) + PATH_SEPARATOR + "luascripts" + PATH_SEPARATOR + fn);
 
         if(Util::fileExists(test_path_0))
             script_full_name = test_path_0;
         else if(Util::fileExists(test_path_1))
             script_full_name = test_path_1;
-#ifdef __linux
-        else if(Util::fileExists(test_path_2))
-            script_full_name = test_path_2;
-#endif // __linux
         else {
             luaGetDCContext(L)->getLogManager()->message("File '" + fn + "' not found!");
             printf("File '%s' not found!\n",fn.c_str()); fflush(stdout);// temporary
