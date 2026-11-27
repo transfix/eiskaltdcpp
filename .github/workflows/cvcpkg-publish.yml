@@ -61,7 +61,7 @@ jobs:
             --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
           ls -l dist/
           n=$(ls dist/eiskaltdcpp-[0-9]*-linux-x86_64-release-shared.tar.gz | wc -l)
-          [ "$n" = 1 ] || { echo "::error::expected one eiskaltdcpp bundle, packed $n"; exit 1; }
+          [ "$n" -eq 1 ] || { echo "::error::expected one eiskaltdcpp bundle, packed $n"; exit 1; }
       - name: Publish
         env:
           CVCPKG_TOKEN: ${{ secrets.CVCPKG_PUBLISHER_TOKEN }}
@@ -112,7 +112,7 @@ jobs:
             --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
           ls -l dist/
           n=$(ls dist/eiskaltdcpp-qt-[0-9]*-linux-x86_64-release-shared.tar.gz | wc -l)
-          [ "$n" = 1 ] || { echo "::error::expected one eiskaltdcpp-qt bundle, packed $n"; exit 1; }
+          [ "$n" -eq 1 ] || { echo "::error::expected one eiskaltdcpp-qt bundle, packed $n"; exit 1; }
       - name: Publish
         env:
           CVCPKG_TOKEN: ${{ secrets.CVCPKG_PUBLISHER_TOKEN }}
@@ -157,7 +157,7 @@ jobs:
             --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
           ls -l dist/
           n=$(ls dist/eiskaltdcpp-qt-[0-9]*-macos-arm64-release-shared.tar.* | wc -l)
-          [ "$n" = 1 ] || { echo "::error::expected one eiskaltdcpp-qt bundle, packed $n"; exit 1; }
+          [ "$n" -eq 1 ] || { echo "::error::expected one eiskaltdcpp-qt bundle, packed $n"; exit 1; }
       - uses: ./.github/actions/check-macos-bundle
         with:
           archive: dist/eiskaltdcpp-qt-[0-9]*-macos-arm64-release-shared.tar.*
@@ -217,7 +217,7 @@ jobs:
             --prefix "$PREFIX" --config release --link shared --output-dir dist
           ls -l dist/
           n=$(ls dist/eiskaltdcpp-qt-[0-9]*-windows-x86_64-release-shared.zip | wc -l)
-          [ "$n" = 1 ] || { echo "::error::expected one eiskaltdcpp-qt bundle, packed $n"; exit 1; }
+          [ "$n" -eq 1 ] || { echo "::error::expected one eiskaltdcpp-qt bundle, packed $n"; exit 1; }
       - name: Publish
         env:
           CVCPKG_TOKEN: ${{ secrets.CVCPKG_PUBLISHER_TOKEN }}
