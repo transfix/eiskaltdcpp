@@ -5,7 +5,7 @@
 # core shut down and its settings saved when a second `eiskaltdcpp-qt --quit` asks it to; started
 # with --quit it exits 0 as soon as it is up. On Linux it runs once more from a copy of bin/ and
 # share/ elsewhere, with the staged share/eiskaltdcpp hidden, which only finds its data through
-# the relocation in the recipe's patch.
+# its relocatable data paths (transfix/eiskaltdcpp#12).
 #
 # Linux, macOS (cvcpkg runs it with /bin/bash 3.2 there) and Windows (Git Bash).
 set -euo pipefail
@@ -89,7 +89,7 @@ esac
 [[ -e "${CVC_INSTALL_DIR}/$data" ]] || { echo "missing $data"; exit 1; }
 
 version="$("$root/$exe" -V 2>/dev/null </dev/null | tr -d '\r' | tail -1)"
-[[ "$version" == 2.6.2* ]] || { echo "eiskaltdcpp-qt -V: '$version'"; exit 1; }
+[[ "$version" == 2.6.3* ]] || { echo "eiskaltdcpp-qt -V: '$version'"; exit 1; }
 echo "eiskaltdcpp-qt -V: $version"
 
 # Wait for the process to exit; it must exit 0, and have shut the core down. Its stdout is a
