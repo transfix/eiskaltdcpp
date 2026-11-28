@@ -1,7 +1,7 @@
 schema_version: 1
 recipe:
   name: eiskaltdcpp-qt
-  upstream_version: "2.6.2"
+  upstream_version: "2.6.3"
   cvc_revision: 1
   maintainer: "cy-pca"
   maintainer_url: "https://github.com/transfix/eiskaltdcpp"
@@ -12,7 +12,7 @@ recipe:
   license: GPL-3.0-or-later
   tags: [networking, p2p, direct-connect, desktop, gui]
   description: >-
-    EiskaltDC++ 2.6.2 Qt, the desktop client of the transfix fork of EiskaltDC++, a Direct
+    EiskaltDC++ 2.6.3 Qt, the desktop client of the transfix fork of EiskaltDC++, a Direct
     Connect (NMDC and ADC) client, built against cvcpkg's Qt 6 with the core library linked in:
     bin/eiskaltdcpp-qt (Linux; on macOS it starts EiskaltDC++.app) or bin\EiskaltDC++.exe
     (Windows). Lua scripting, DHT, UPnP (miniupnpc), PCRE2, IDN2 and the fork's NMDCpb
@@ -20,17 +20,17 @@ recipe:
     the core's message catalogues. Linux x86_64, Windows x86_64, macOS arm64.
 
 # Upstream source: this repository (transfix/eiskaltdcpp, a fork of eiskaltdcpp/eiskaltdcpp), tag
-# v2.6.2 (d8d5fe9, 2026-11-17), the same source as the eiskaltdcpp recipe, plus the patch below.
-# The patch is the fork's pull request for the same changes; once they are in a tag, the recipe
-# pins that tag and the patch goes.
+# v2.6.3 (9e1dec4, 2026-11-28): v2.6.2 plus the Qt client's relocatable data paths, --quit, the
+# -h/-V lock fix and STATIC_CORE (#12), and the CryptoManager build against OpenSSL 1.1.1 (#10).
+# A recipe cannot pin the commit it is committed in, so it pins the tag's commit and moves with
+# each release.
 source:
   type: tarball
-  url: https://github.com/transfix/eiskaltdcpp/archive/d8d5fe95b527a0dbdd22bb9441c1cfd7428e615c.tar.gz
-  sha256: "fb9053012a32354dcc4bf3c343507e7a3e8439112ba7ff16cab8441ec8d04d9f"
+  url: https://github.com/transfix/eiskaltdcpp/archive/9e1dec453bc70df0e602d17cec4dac74b502ba5c.tar.gz
+  sha256: "84ec144c30a1430b154ece96dd4626f0e2e6a5737a50ff79ce050ab2811bb7a0"
   strip_components: 1
 
-patches:
-  - patches/0001-relocatable-data-quit-static-core.patch
+patches: []
 
 depends:
   build:
@@ -55,9 +55,9 @@ depends:
     - { name: proxy-libintl, platforms: [windows] }
     - { name: iconv, platforms: [macos, windows] }
     # The core's message catalogues (share/locale), which this package leaves out on Linux so
-    # that the two can share a prefix.
+    # that the two can share a prefix. Any 2.6 from 2.6.2 on: v2.6.3 changed no core message.
     - name: eiskaltdcpp
-      version: "==2.6.2"
+      version: "^2.6.2"
       platforms: [linux]
   host_tools: []
 
@@ -102,17 +102,12 @@ toolchain:
     PATH. Every library, and cmake and ninja, is a cvcpkg package.
 
 notes:
-  - title: "The patch"
+  - title: "Relocatable install"
     description: >-
-      patches/0001-relocatable-data-quit-static-core.patch, the same change as the fork's pull
-      request for master: (1) on Linux the GUI and the core look for their data (icons, the
-      default.rcc resources, emoticons, the core's catalogues, GeoIP file and Lua scripts) under
-      the prefix the executable runs from when the path compiled in (the build's install
-      prefix) is not there, so the bundle works wherever it is unpacked; (2) eiskaltdcpp-qt
-      --quit quits the running instance without asking (the smoke test's clean exit); (3) -h
-      and -V release the single-instance lock before they exit, so the next start no longer
-      takes the stale lock for a running instance and quits; (4) a STATIC_CORE option links
-      libeiskaltdcpp into the programs on Linux, as the Windows and macOS builds already do.
+      On Linux the GUI and the core look for their data (icons, the default.rcc resources,
+      emoticons, the core's catalogues, GeoIP file and Lua scripts) under the prefix the
+      executable runs from when the path compiled in (the build's install prefix) is not there,
+      so the bundle works wherever it is unpacked (transfix/eiskaltdcpp#12, in v2.6.3).
   - title: "Not built: QML, JavaScript scripting, translations, spell checking, sounds"
     description: >-
       cvcpkg's Qt 6 is qtbase (and qtmultimedia, separately): it has no Qt Quick/QML, so
@@ -138,7 +133,7 @@ notes:
   - title: "Smoke test"
     description: >-
       test.sh, on Qt's offscreen platform with a config directory and single-instance key of its
-      own: -V reports 2.6.2; the GUI starts, loads its icons and resources, and exits 0 with the
+      own: -V reports 2.6.3; the GUI starts, loads its icons and resources, and exits 0 with the
       core shut down and its settings saved when a second instance sends --quit; started with
       --quit it exits 0 at once. On Linux it runs again from a copy of bin/ and share/ in another
       directory, with the staged data hidden. On Windows it runs from a copy in local mode, so

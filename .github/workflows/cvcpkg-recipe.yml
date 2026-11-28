@@ -96,7 +96,7 @@ jobs:
           cvcpkg pack eiskaltdcpp-qt --local --recipes-dir recipes \
             --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
           ls -l dist/
-          ls dist/eiskaltdcpp-qt-2.6.2+cvc.*-linux-x86_64-release-shared.tar.gz
+          ls dist/eiskaltdcpp-qt-2.6.3+cvc.*-linux-x86_64-release-shared.tar.gz
 
   eiskaltdcpp-qt-macos:
     runs-on: macos-15
@@ -121,10 +121,10 @@ jobs:
           cvcpkg pack eiskaltdcpp-qt --local --recipes-dir recipes \
             --prefix "$RUNNER_TEMP/prefix" --config release --link shared --output-dir dist
           ls -l dist/
-          ls dist/eiskaltdcpp-qt-2.6.2+cvc.*-macos-arm64-release-shared.tar.*
+          ls dist/eiskaltdcpp-qt-2.6.3+cvc.*-macos-arm64-release-shared.tar.*
       - uses: ./.github/actions/check-macos-bundle
         with:
-          archive: dist/eiskaltdcpp-qt-2.6.2+cvc.*-macos-arm64-release-shared.tar.*
+          archive: dist/eiskaltdcpp-qt-2.6.3+cvc.*-macos-arm64-release-shared.tar.*
           unpack-dir: ${{ runner.temp }}/unpacked
 
   eiskaltdcpp-qt-windows:
@@ -163,4 +163,4 @@ jobs:
           cvcpkg pack eiskaltdcpp-qt --local --platform windows --recipes-dir recipes \
             --prefix "$PREFIX" --config release --link shared --output-dir dist
           ls -l dist/
-          ls dist/eiskaltdcpp-qt-2.6.2+cvc.*-windows-x86_64-release-shared.zip
+          ls dist/eiskaltdcpp-qt-2.6.3+cvc.*-windows-x86_64-release-shared.zip
